@@ -10,6 +10,7 @@ class TeamSelectPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final teamProvider = Provider.of<TeamProvider>(context).getTeam('team');
+    final selectedTeam = context.watch<TeamProvider>().selectedTeam;
 
     return Scaffold(
       body: Column(
@@ -39,6 +40,8 @@ class TeamSelectPage extends StatelessWidget {
 
                 return ThemeTile(
                   teamModel: team,
+                  isSelected:
+                      context.watch<TeamProvider>().selectedTeam == team,
                   onTap: () {
                     context.read<TeamProvider>().selectTeam(team);
                     // Navigator.push(
@@ -47,21 +50,13 @@ class TeamSelectPage extends StatelessWidget {
                     //     builder: (context) => CustomBottomNavigation(),
                     //   ),
                     // );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '선택구단: ${team.name}',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    );
                   },
                 );
               },
             ),
           ),
           GestureDetector(
-            onTap: () {},
+            onTap: selectedTeam == null ? null : () {},
             child: Padding(
               padding: const EdgeInsets.all(10.0),
               child: Container(
@@ -69,7 +64,7 @@ class TeamSelectPage extends StatelessWidget {
                 width: double.infinity,
                 height: 58,
                 decoration: BoxDecoration(
-                  color: Eagles,
+                  color: selectedTeam == null ? Colors.grey : Eagles,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
