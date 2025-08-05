@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lockerroom/teamSelect/team_select_page.dart';
+import 'package:lockerroom/page/team_select_page.dart';
 
 void main() {
   runApp(const MyApp());
