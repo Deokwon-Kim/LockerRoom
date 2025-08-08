@@ -13,6 +13,7 @@ class TeamSelectPage extends StatelessWidget {
     final selectedTeam = context.watch<TeamProvider>().selectedTeam;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Column(
         children: [
           SizedBox(height: 50),

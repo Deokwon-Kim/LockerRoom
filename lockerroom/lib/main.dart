@@ -1,9 +1,12 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:lockerroom/firebase_options.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+void main() async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (context) => TeamProvider())],
