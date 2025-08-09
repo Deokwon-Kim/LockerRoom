@@ -1,6 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
+import 'package:lockerroom/login/login_page.dart';
 import 'package:lockerroom/login/signup_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -30,7 +33,45 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
-      home: const SignupPage(),
+      home: const AuthWrapper(),
+      routes: {
+        'signUp': (context) => const SignupPage(),
+        'signIn': (context) => const LoginPage(),
+      },
+    );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
+        print('AuthWrapper - ConnectionState: ${snapshot.connectionState}');
+        print('AuthWrapper - HasData: ${snapshot.hasData}');
+        print('AuthWrapper - HasError: ${snapshot.hasError}');
+        if (snapshot.hasData) {
+          print('AuthWrapper - Current User: ${snapshot.data?.uid}');
+          // 사용자 정보를 UserProvider에 로드
+          // WidgetsBinding.instance.addPostFrameCallback((_) {
+          //   Provider.of<UserProvider>(context, listen: false).loadNickname();
+          // });
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: Eagles));
+        } else if (snapshot.hasError) {
+          return const Center(child: Text('에러가 발생하였습니다.'));
+        } else if (snapshot.hasData) {
+          // return const BottomTabBar();
+          return const TeamSelectPage();
+        } else {
+          return const LoginPage();
+        }
+      },
     );
   }
 }
