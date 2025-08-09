@@ -12,6 +12,30 @@ class TeamProvider extends ChangeNotifier {
         color: Doosan,
       ),
       TeamModel(
+        name: '삼성 라이온즈',
+        logoPath: 'assets/images/logo/samsung_logo.png',
+        symbolPath: 'assets/images/symbol/samsung_symbol.png',
+        color: Samsung,
+      ),
+      TeamModel(
+        name: '롯데 자이언츠',
+        logoPath: 'assets/images/logo/lotte_logo.png',
+        symbolPath: 'assets/images/symbol/lotte_symbol.png',
+        color: Lotte,
+      ),
+      TeamModel(
+        name: '기아 타이거즈',
+        logoPath: 'assets/images/logo/kia_logo.png',
+        symbolPath: 'assets/images/symbol/kia_symbol.png',
+        color: Kia,
+      ),
+      TeamModel(
+        name: 'LG 트윈스',
+        logoPath: 'assets/images/logo/lg_logo.png',
+        symbolPath: 'assets/images/symbol/lg_symbol.png',
+        color: LG,
+      ),
+      TeamModel(
         name: 'SSG 랜더스',
         logoPath: 'assets/images/logo/ssg_logo.png',
         symbolPath: 'assets/images/symbol/landers_symbol.png',
@@ -29,36 +53,14 @@ class TeamProvider extends ChangeNotifier {
         symbolPath: 'assets/images/symbol/kiwoom_symbol.png',
         color: KIWOOM,
       ),
-      TeamModel(
-        name: '삼성 라이온즈',
-        logoPath: 'assets/images/logo/samsung_logo.png',
-        symbolPath: 'assets/images/symbol/samsung_symbol.png',
-        color: Samsung,
-      ),
-      TeamModel(
-        name: 'LG 트윈스',
-        logoPath: 'assets/images/logo/lg_logo.png',
-        symbolPath: 'assets/images/symbol/lg_symbol.png',
-        color: LG,
-      ),
-      TeamModel(
-        name: '롯데 자이언츠',
-        logoPath: 'assets/images/logo/lotte_logo.png',
-        symbolPath: 'assets/images/symbol/lotte_symbol.png',
-        color: Lotte,
-      ),
+
       TeamModel(
         name: 'NC 다이노스',
         logoPath: 'assets/images/logo/nc_logo.png',
         symbolPath: 'assets/images/symbol/nc_symbol.png',
         color: NC,
       ),
-      TeamModel(
-        name: '기아 타이거즈',
-        logoPath: 'assets/images/logo/kia_logo.png',
-        symbolPath: 'assets/images/symbol/kia_symbol.png',
-        color: Kia,
-      ),
+
       TeamModel(
         name: 'KT 위즈',
         logoPath: 'assets/images/logo/kt_logo.png',
