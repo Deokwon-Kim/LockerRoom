@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/components/theme_tile.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -45,19 +46,22 @@ class TeamSelectPage extends StatelessWidget {
                       context.watch<TeamProvider>().selectedTeam == team,
                   onTap: () {
                     context.read<TeamProvider>().selectTeam(team);
-                    // Navigator.push(
-                    //   context,
-                    //   MaterialPageRoute(
-                    //     builder: (context) => CustomBottomNavigation(),
-                    //   ),
-                    // );
                   },
                 );
               },
             ),
           ),
           GestureDetector(
-            onTap: selectedTeam == null ? null : () {},
+            onTap: selectedTeam == null
+                ? null
+                : () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BottomTabBar(),
+                      ),
+                    );
+                  },
             child: Padding(
               padding: const EdgeInsets.all(10.0),
               child: Container(
@@ -65,7 +69,7 @@ class TeamSelectPage extends StatelessWidget {
                 width: double.infinity,
                 height: 58,
                 decoration: BoxDecoration(
-                  color: selectedTeam == null ? Colors.grey : Eagles,
+                  color: selectedTeam == null ? Colors.grey : BUTTON,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
