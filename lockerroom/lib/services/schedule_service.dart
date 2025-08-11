@@ -32,36 +32,36 @@ class ScheduleService {
     final int idxDoubleHeader = header.indexOf('doubleheader_no');
     final int idxNote = header.indexOf('note');
 
-    String normalizeToHour00(String rawTime) {
-      final String t = rawTime.trim();
+    String normalizeToHHmm(String rawTime) {
+      final t = rawTime.trim();
       if (t.isEmpty) return '00:00';
 
-      final RegExp ampmRe = RegExp(r'^(오전|오후)\s*(\d{1,2})(?::(\d{1,2}))?');
-      final Match? ampmM = ampmRe.firstMatch(t);
+      final ampmRe = RegExp(r'^(오전|오후)\s*(\d{1,2})(?::(\d{1,2}))?');
+      final ampmM = ampmRe.firstMatch(t);
       if (ampmM != null) {
-        final String ampm = ampmM.group(1)!; // 오전/오후
+        final ampm = ampmM.group(1)!; // 오전/오후
         int hour = int.tryParse(ampmM.group(2)!) ?? 0;
+        int minute = int.tryParse(ampmM.group(3) ?? '0') ?? 0;
         if (ampm == '오후' && hour < 12) hour += 12;
         if (ampm == '오전' && hour == 12) hour = 0;
-        return '${hour.toString().padLeft(2, '0')}:00';
+        return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
       }
 
-      final RegExp hmRe = RegExp(r'^(\d{1,2})(?::(\d{1,2}))?');
-      final Match? hmM = hmRe.firstMatch(t);
+      final hmRe = RegExp(r'^(\d{1,2})(?::(\d{1,2}))?');
+      final hmM = hmRe.firstMatch(t);
       if (hmM != null) {
         int hour = int.tryParse(hmM.group(1)!) ?? 0;
+        int minute = int.tryParse(hmM.group(2) ?? '0') ?? 0;
         if (hour >= 24) hour = 0;
-        return '${hour.toString().padLeft(2, '0')}:00';
+        return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
       }
 
       return '00:00';
     }
 
     DateTime parseKst(String date, String time) {
-      // CSV의 시각을 '그대로' 화면에 보여주기 위해 로컬 고정 시각으로 파싱
-      // date: YYYY-MM-DD, time: various formats -> normalize to HH:00
-      final String hhmm = normalizeToHour00(time);
-      final String isoLocal = '${date.trim()}T$hhmm:00'; // 오프셋 제거
+      final String hhmm = normalizeToHHmm(time); // ← 여기로 변경
+      final String isoLocal = '${date.trim()}T$hhmm:00'; // 초는 00 유지
       return DateTime.parse(isoLocal);
     }
 
