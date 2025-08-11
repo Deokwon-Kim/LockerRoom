@@ -41,7 +41,7 @@ class _SchedulePageState extends State<SchedulePage> {
         final teamName = teamProvider.selectedTeam?.name;
 
         return Scaffold(
-          backgroundColor: WHITE,
+          backgroundColor: GRAYSCALE_LABEL_50,
           appBar: AppBar(
             backgroundColor: selectedTeam.color,
             leading: IconButton(
@@ -52,7 +52,11 @@ class _SchedulePageState extends State<SchedulePage> {
             ),
             title: Text(
               '$teamName 경기일정',
-              style: TextStyle(color: WHITE, fontSize: 17),
+              style: TextStyle(
+                color: WHITE,
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           body: Column(

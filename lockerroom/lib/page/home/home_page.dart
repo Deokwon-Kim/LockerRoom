@@ -24,7 +24,11 @@ class HomePage extends StatelessWidget {
             ),
             title: Text(
               selectedTeam.name,
-              style: TextStyle(color: WHITE, fontSize: 17),
+              style: TextStyle(
+                color: WHITE,
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             actions: [
               IconButton(
