@@ -58,13 +58,13 @@ class _SchedulePageState extends State<SchedulePage> {
           body: Column(
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
                     onPressed: _prevMonth,
                     icon: Icon(Icons.arrow_back_ios, color: Colors.black),
                   ),
-                  SizedBox(width: 10),
+
                   Text(
                     '${_currentMonth.year}년 ${_currentMonth.month.toString().padLeft(2, '0')}월',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -131,7 +131,7 @@ class _SchedulePageState extends State<SchedulePage> {
                         final homeTeamModel = nameToTeam[s.homeTeam];
                         final awayTeamModel = nameToTeam[s.awayTeam];
                         return Padding(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(15),
                           child: Container(
                             width: double.infinity,
                             height: 150,
