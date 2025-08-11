@@ -70,7 +70,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
                 items: [
                   BottomNavigationBarItem(
                     icon: _buildTabIcon(0, Icons.home_outlined, Icons.home),
-                    label: '',
+                    label: '홈',
                   ),
                   BottomNavigationBarItem(
                     icon: _buildTabIcon(
@@ -78,7 +78,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
                       CupertinoIcons.search,
                       CupertinoIcons.search,
                     ),
-                    label: '',
+                    label: '게시물',
                   ),
                   BottomNavigationBarItem(
                     icon: _buildTabIcon(
@@ -86,7 +86,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
                       CupertinoIcons.add_circled,
                       CupertinoIcons.add_circled_solid,
                     ),
-                    label: '',
+                    label: '업로드',
                   ),
                   BottomNavigationBarItem(
                     icon: _buildTabIcon(
@@ -94,11 +94,11 @@ class _BottomTabBarState extends State<BottomTabBar> {
                       Icons.storefront_outlined,
                       Icons.storefront_rounded,
                     ),
-                    label: '',
+                    label: '중고마켓',
                   ),
                   BottomNavigationBarItem(
                     icon: _buildTabIcon(4, Icons.person_outline, Icons.person),
-                    label: '',
+                    label: '프로필',
                   ),
                 ],
               ),
@@ -119,7 +119,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
       padding: const EdgeInsets.only(top: 5),
       child: Icon(
         isSelected ? selectedIcon : unselectedIcon,
-        size: 28,
+        size: 25,
         color: isSelected ? BUTTON : Colors.grey,
       ),
     );
