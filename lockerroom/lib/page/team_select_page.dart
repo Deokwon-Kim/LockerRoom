@@ -65,7 +65,7 @@ class TeamSelectPage extends StatelessWidget {
                 width: double.infinity,
                 height: 58,
                 decoration: BoxDecoration(
-                  color: selectedTeam == null ? Colors.grey : Eagles,
+                  color: selectedTeam == null ? Colors.grey : BUTTON,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(

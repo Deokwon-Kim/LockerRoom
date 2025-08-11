@@ -163,9 +163,7 @@ class _LoginPageState extends State<LoginPage> {
                       width: double.infinity,
                       height: 56,
                       decoration: BoxDecoration(
-                        color: _isButtonEnabled
-                            ? ORANGE_PRIMARY_500
-                            : GRAYSCALE_LABEL_300,
+                        color: _isButtonEnabled ? BUTTON : GRAYSCALE_LABEL_300,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -197,7 +195,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: Text(
                           '회원가입',
                           style: TextStyle(
-                            color: BLUE_SECONDARY_600,
+                            color: BUTTON,
                             fontSize: 15.0,
                             fontWeight: FontWeight.bold,
                           ),
