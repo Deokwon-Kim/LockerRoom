@@ -65,27 +65,22 @@ class UploadPage extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Container(
-                          constraints: BoxConstraints(
-                            minHeight: 10,
-                            maxHeight: 100,
-                          ),
-                          child: TextField(
-                            cursorColor: teamProvider.selectedTeam?.color,
-                            controller: postProvider.captionController,
-                            maxLines: null,
-                            expands: true,
-                            textAlignVertical: TextAlignVertical.top,
-                            decoration: InputDecoration(
-                              hintText: '새로운 소식이 있나요?',
-                              hintStyle: TextStyle(
-                                fontSize: 15,
-                                color: Colors.grey[500],
-                              ),
-                              border: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              isDense: true,
+                        TextField(
+                          cursorColor: teamProvider.selectedTeam?.color,
+                          controller: postProvider.captionController,
+                          maxLines: null,
+                          minLines: 1,
+                          textAlignVertical: TextAlignVertical.top,
+                          decoration: InputDecoration(
+                            hintText: '새로운 소식이 있나요?',
+                            hintStyle: TextStyle(
+                              fontSize: 15,
+                              color: Colors.grey[500],
                             ),
+                            border: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: EdgeInsets.all(8),
+                            isDense: true,
                           ),
                         ),
                       ],
@@ -109,7 +104,7 @@ class UploadPage extends StatelessWidget {
                     ),
                   ),
                 ),
-              SizedBox(height: 0),
+              SizedBox(height: 10),
               // 이미지 선택 버튼
               GestureDetector(
                 onTap: postProvider.pickImage,
