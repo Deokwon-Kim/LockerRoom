@@ -3,7 +3,9 @@ import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/bottom_tab_bar_provider.dart';
 import 'package:lockerroom/provider/post_provider.dart';
+import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 
 class UploadPage extends StatelessWidget {
@@ -11,8 +13,11 @@ class UploadPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final postProvider = Provider.of<PostProvider>(context);
-    final teamProvider = Provider.of<TeamProvider>(context);
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+    final teamProvider = Provider.of<TeamProvider>(context, listen: false);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userName =
+        userProvider.nickname ?? userProvider.currentUser?.displayName ?? '사용자';
 
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
@@ -38,18 +43,23 @@ class UploadPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 사용자 프로필 이미지
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(25),
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      color: Colors.grey[300],
-                      child: Icon(
-                        Icons.person,
-                        color: Colors.grey[600],
-                        size: 30,
-                      ),
+                  Selector<ProfileProvider, ImageProvider?>(
+                    selector: (_, p) => p.currentImageProvider,
+                    builder: (_, img, _) => CircleAvatar(
+                      radius: 30,
+                      backgroundImage: img,
+                      child: img == null ? Icon(Icons.person) : null,
                     ),
+                    // child: Container(
+                    //   width: 100,
+                    //   height: 100,
+                    //   color: Colors.grey[300],
+                    //   child: Icon(
+                    //     Icons.person,
+                    //     color: Colors.grey[600],
+                    //     size: 30,
+                    //   ),
+                    // ),
                   ),
                   SizedBox(width: 12),
                   // 텍스트 필드 영역
@@ -58,7 +68,7 @@ class UploadPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'deok_1',
+                          userName,
                           style: TextStyle(
                             fontSize: 15,
                             color: Colors.black,
