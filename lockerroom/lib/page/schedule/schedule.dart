@@ -160,22 +160,29 @@ class _SchedulePageState extends State<SchedulePage> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       if (awayTeamModel != null)
-                                        Row(
-                                          children: [
-                                            Text(
-                                              s.awayTeam,
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
+                                        Flexible(
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                s.awayTeam,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                ),
                                               ),
-                                            ),
-                                            SizedBox(width: 10),
-                                            Image.asset(
-                                              awayTeamModel.logoPath,
-                                              width: 50,
-                                              height: 50,
-                                              fit: BoxFit.contain,
-                                            ),
-                                          ],
+                                              SizedBox(width: 8),
+                                              Flexible(
+                                                child: AspectRatio(
+                                                  aspectRatio: 1.0,
+                                                  child: Image.asset(
+                                                    awayTeamModel.logoPath,
+                                                    fit: BoxFit.contain,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
 
                                       const SizedBox(width: 12),
@@ -188,22 +195,29 @@ class _SchedulePageState extends State<SchedulePage> {
                                       ),
                                       const SizedBox(width: 12),
                                       if (homeTeamModel != null)
-                                        Row(
-                                          children: [
-                                            Image.asset(
-                                              homeTeamModel.logoPath,
-                                              width: 50,
-                                              height: 50,
-                                              fit: BoxFit.contain,
-                                            ),
-                                            SizedBox(width: 10),
-                                            Text(
-                                              s.homeTeam,
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
+                                        Flexible(
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Flexible(
+                                                child: AspectRatio(
+                                                  aspectRatio: 1.0,
+                                                  child: Image.asset(
+                                                    homeTeamModel.logoPath,
+                                                    fit: BoxFit.contain,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                              SizedBox(width: 10),
+                                              Text(
+                                                s.homeTeam,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                     ],
                                   ),
