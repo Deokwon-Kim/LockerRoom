@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:lockerroom/model/user_model.dart';
 
 class UserProvider extends ChangeNotifier {
@@ -13,6 +14,10 @@ class UserProvider extends ChangeNotifier {
   User? _currentUser;
   String? _nickname;
   String? _email;
+
+  // Firestore users/{uid} 실시간 구독용
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userSub;
+  String? _listeningUserId;
 
   // 게터
   bool get isLoading => _isLoading;
@@ -45,8 +50,38 @@ class UserProvider extends ChangeNotifier {
     if (_currentUser != null) {
       _nickname = _currentUser!.displayName;
       _email = _currentUser!.email;
+    } else {
+      _nickname = null;
+      _email = null;
     }
     notifyListeners();
+  }
+
+  // Firestore users/{uid} 문서를 실시간으로 구독하여 닉네임/이메일 동기화
+  void startListeningUserDoc(String userId) {
+    if (_listeningUserId == userId && _userSub != null) return;
+    stopListeningUserDoc();
+    _listeningUserId = userId;
+    _userSub = _firestore.collection('users').doc(userId).snapshots().listen(
+      (doc) {
+        final data = doc.data();
+        if (data != null) {
+          // 우선순위: Firestore 값 -> FirebaseAuth 값
+          _nickname = (data['username'] as String?) ?? _auth.currentUser?.displayName;
+          _email = (data['email'] as String?) ?? _auth.currentUser?.email;
+          notifyListeners();
+        }
+      },
+      onError: (e) {
+        debugPrint('UserProvider Firestore listen error: $e');
+      },
+    );
+  }
+
+  void stopListeningUserDoc() {
+    _userSub?.cancel();
+    _userSub = null;
+    _listeningUserId = null;
   }
 
   // 사용자 정보 새로고침
@@ -129,12 +164,19 @@ class UserProvider extends ChangeNotifier {
   Future<void> signOut() async {
     await FirebaseAuth.instance.signOut();
 
-    // 사용자 관련 모든 상태 초기화
+    // 구독 해제 및 사용자 관련 모든 상태 초기화
+    stopListeningUserDoc();
     _currentUser = null;
     _nickname = null;
     _email = null;
     _errorMessage = null;
     _isSignUpSuccess = false;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    stopListeningUserDoc();
+    super.dispose();
   }
 }
