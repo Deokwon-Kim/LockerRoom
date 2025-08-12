@@ -39,6 +39,27 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // 사용자 정보 초기화
+  void initializeUser() {
+    _currentUser = _auth.currentUser;
+    if (_currentUser != null) {
+      _nickname = _currentUser!.displayName;
+      _email = _currentUser!.email;
+    }
+    notifyListeners();
+  }
+
+  // 사용자 정보 새로고침
+  Future<void> refreshUserInfo() async {
+    if (_auth.currentUser != null) {
+      await _auth.currentUser!.reload();
+      _currentUser = _auth.currentUser;
+      _nickname = _currentUser!.displayName;
+      _email = _currentUser!.email;
+      notifyListeners();
+    }
+  }
+
   // 회원가입 함수
   Future<bool> signUp({
     required String email,
@@ -103,5 +124,17 @@ class UserProvider extends ChangeNotifier {
       setLoading(false);
       return false;
     }
+  }
+
+  Future<void> signOut() async {
+    await FirebaseAuth.instance.signOut();
+
+    // 사용자 관련 모든 상태 초기화
+    _currentUser = null;
+    _nickname = null;
+    _email = null;
+    _errorMessage = null;
+    _isSignUpSuccess = false;
+    notifyListeners();
   }
 }
