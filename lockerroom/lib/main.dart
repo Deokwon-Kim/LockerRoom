@@ -8,9 +8,11 @@ import 'package:lockerroom/login/signup_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/provider/bottom_tab_bar_provider.dart';
 import 'package:lockerroom/provider/post_provider.dart';
+import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:toastification/toastification.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +24,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => UserProvider()),
         ChangeNotifierProvider(create: (context) => PostProvider()),
         ChangeNotifierProvider(create: (context) => BottomTabBarProvider()),
+        ChangeNotifierProvider(create: (context) => ProfileProvider()),
       ],
       child: const MyApp(),
     ),
@@ -34,14 +37,16 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
-      home: const AuthWrapper(),
-      routes: {
-        'signUp': (context) => const SignupPage(),
-        'signIn': (context) => const LoginPage(),
-      },
+    return ToastificationWrapper(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Flutter Demo',
+        home: const AuthWrapper(),
+        routes: {
+          'signUp': (context) => const SignupPage(),
+          'signIn': (context) => const LoginPage(),
+        },
+      ),
     );
   }
 }
@@ -59,9 +64,18 @@ class AuthWrapper extends StatelessWidget {
         print('AuthWrapper - HasError: ${snapshot.hasError}');
         if (snapshot.hasData) {
           print('AuthWrapper - Current User: ${snapshot.data?.uid}');
-          // 사용자 정보를 UserProvider에 초기화
+          // 사용자 정보를 UserProvider에 초기화하고 프로필 스트림 구독 시작
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            Provider.of<UserProvider>(context, listen: false).initializeUser();
+            final user = snapshot.data!;
+            context.read<UserProvider>().initializeUser();
+            context.read<UserProvider>().startListeningUserDoc(user.uid);
+            context.read<ProfileProvider>().startListening(user.uid);
+          });
+        } else {
+          // 비인증 상태에서는 스트림 구독 해제
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            context.read<ProfileProvider>().stopListening();
+            context.read<UserProvider>().stopListeningUserDoc();
           });
         }
 
