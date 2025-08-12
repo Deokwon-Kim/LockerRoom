@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -17,7 +18,18 @@ class ProfileProvider extends ChangeNotifier {
   bool get isUploading => _isUploading;
   double get uploadProgress => _uploadProgress;
 
+  // 뷰에서 바로 사용할 수 있는 표시용 이미지 게터
+  ImageProvider? get currentImageProvider {
+    if (_image != null) return FileImage(_image!);
+    if (_imageUrl != null && _imageUrl!.isNotEmpty) return NetworkImage(_imageUrl!);
+    return null;
+  }
+
   final ImagePicker _picker = ImagePicker();
+
+  // Firestore 구독 관리용 필드
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _sub;
+  String? _listeningUserId;
 
   Future<void> pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
@@ -132,5 +144,40 @@ class ProfileProvider extends ChangeNotifier {
       print('프로필 이미지 삭제 에러: $e');
       throw Exception('프로필 이미지 삭제 실패: $e');
     }
+  }
+
+  // Firestore users/{userId} 문서를 실시간으로 구독 시작
+  void startListening(String userId) {
+    if (_listeningUserId == userId && _sub != null) {
+      // 이미 같은 사용자에 대해 구독 중이면 무시
+      return;
+    }
+    stopListening();
+
+    _listeningUserId = userId;
+    _sub = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .listen((doc) {
+      final data = doc.data();
+      _imageUrl = data != null ? data['profileImage'] as String? : null;
+      notifyListeners();
+    }, onError: (e) {
+      print('프로필 이미지 스트림 에러: $e');
+    });
+  }
+
+  // 스트림 구독 해제
+  void stopListening() {
+    _sub?.cancel();
+    _sub = null;
+    _listeningUserId = null;
+  }
+
+  @override
+  void dispose() {
+    stopListening();
+    super.dispose();
   }
 }
