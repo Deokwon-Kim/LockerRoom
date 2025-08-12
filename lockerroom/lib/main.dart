@@ -59,10 +59,10 @@ class AuthWrapper extends StatelessWidget {
         print('AuthWrapper - HasError: ${snapshot.hasError}');
         if (snapshot.hasData) {
           print('AuthWrapper - Current User: ${snapshot.data?.uid}');
-          // 사용자 정보를 UserProvider에 로드
-          // WidgetsBinding.instance.addPostFrameCallback((_) {
-          //   Provider.of<UserProvider>(context, listen: false).loadNickname();
-          // });
+          // 사용자 정보를 UserProvider에 초기화
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Provider.of<UserProvider>(context, listen: false).initializeUser();
+          });
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
