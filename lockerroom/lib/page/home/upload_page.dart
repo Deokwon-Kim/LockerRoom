@@ -170,43 +170,37 @@ class UploadPage extends StatelessWidget {
                 },
               ),
               SizedBox(height: 10),
-              // 이미지 선택 버튼들
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: postProvider.pickImage,
-                      child: Container(
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.photo_outlined,
-                              color: Colors.grey[600],
-                              size: 24,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              '이미지',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+              // 이미지 선택 버튼
+              GestureDetector(
+                onTap: postProvider.pickImages,
+                child: Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.add_photo_alternate_outlined,
+                        color: Colors.grey[600],
+                        size: 24,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        '이미지 추가 (한 장 또는 여러 장)',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                  SizedBox(width: 8),
-                ],
+                ),
               ),
               SizedBox(height: 10),
               // 이미지 초기화 버튼 (이미지가 있을 때만 표시)
@@ -250,34 +244,86 @@ class UploadPage extends StatelessWidget {
                 },
               ),
               SizedBox(height: 20),
-              // 업로드 버튼
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    postProvider.upload();
-                    context.read<BottomTabBarProvider>().setIndex(1);
-
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => BottomTabBar()),
-                      (route) => false,
+              // 업로드 상태 표시
+              Consumer<PostProvider>(
+                builder: (context, postProvider, child) {
+                  if (postProvider.isUploading) {
+                    return Container(
+                      width: double.infinity,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  teamProvider.selectedTeam?.color ??
+                                      Colors.blue,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              postProvider.uploadStatus,
+                              style: TextStyle(
+                                color: Colors.grey[700],
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: teamProvider.selectedTeam?.color,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  }
+                  return SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await postProvider.uploadPost(context);
+
+                        // 업로드 성공 시에만 피드로 이동
+                        if (!postProvider.isUploading &&
+                            postProvider.uploadStatus == '업로드 성공!') {
+                          context.read<BottomTabBarProvider>().setIndex(
+                            1,
+                          ); // 피드 탭으로 이동
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => BottomTabBar(),
+                            ),
+                            (route) => false,
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: teamProvider.selectedTeam?.color,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        '게시하기',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    '게시하기',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
+                  );
+                },
               ),
             ],
           ),
