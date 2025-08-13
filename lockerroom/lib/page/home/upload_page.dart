@@ -98,54 +98,156 @@ class UploadPage extends StatelessWidget {
                   ),
                 ],
               ),
-              if (postProvider.imageFile != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 60.0, right: 60.0),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 300,
-
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: Image.file(
-                        postProvider.imageFile!,
-                        fit: BoxFit.cover,
+              // 선택된 이미지들 표시
+              Consumer<PostProvider>(
+                builder: (context, postProvider, child) {
+                  if (postProvider.imageFiles.isNotEmpty) {
+                    return Container(
+                      margin: EdgeInsets.only(left: 70.0, top: 10, bottom: 10),
+                      height: 120,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: postProvider.imageFiles.length,
+                        itemBuilder: (context, index) {
+                          return Container(
+                            margin: EdgeInsets.only(right: 8),
+                            child: Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.file(
+                                    postProvider.imageFiles[index],
+                                    width: 100,
+                                    height: 120,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 5,
+                                  right: 5,
+                                  child: GestureDetector(
+                                    onTap: () =>
+                                        postProvider.removeImage(index),
+                                    child: Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  } else if (postProvider.imageFile != null) {
+                    // 단일 이미지 표시 (기존 코드와 호환성 유지)
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 70.0, right: 70.0),
+                      child: SizedBox(
+                        width: 100,
+                        height: 150,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(
+                            postProvider.imageFile!,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  return SizedBox.shrink();
+                },
+              ),
+              SizedBox(height: 10),
+              // 이미지 선택 버튼들
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: postProvider.pickImage,
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.photo_outlined,
+                              color: Colors.grey[600],
+                              size: 24,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              '이미지',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
+                  SizedBox(width: 8),
+                ],
+              ),
               SizedBox(height: 10),
-              // 이미지 선택 버튼
-              GestureDetector(
-                onTap: postProvider.pickImage,
-                child: Container(
-                  width: double.infinity,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.add_photo_alternate_outlined,
-                        color: Colors.grey[600],
-                        size: 24,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        '이미지 추가',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+              // 이미지 초기화 버튼 (이미지가 있을 때만 표시)
+              Consumer<PostProvider>(
+                builder: (context, postProvider, child) {
+                  if (postProvider.imageFiles.isNotEmpty ||
+                      postProvider.imageFile != null) {
+                    return GestureDetector(
+                      onTap: postProvider.clearImages,
+                      child: Container(
+                        width: double.infinity,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red[200]!),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.delete_outline,
+                              color: Colors.red[600],
+                              size: 20,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              '모든 이미지 삭제',
+                              style: TextStyle(
+                                color: Colors.red[600],
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                    );
+                  }
+                  return SizedBox.shrink();
+                },
               ),
               SizedBox(height: 20),
               // 업로드 버튼
@@ -155,7 +257,7 @@ class UploadPage extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () {
                     postProvider.upload();
-                    context.read<BottomTabBarProvider>().setIndex(0);
+                    context.read<BottomTabBarProvider>().setIndex(1);
 
                     Navigator.pushAndRemoveUntil(
                       context,
