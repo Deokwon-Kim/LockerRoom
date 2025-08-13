@@ -7,6 +7,7 @@ import 'package:lockerroom/page/home/home_page.dart';
 import 'package:lockerroom/page/home/mypage.dart';
 import 'package:lockerroom/page/home/upload_page.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/bottom_tab_bar_provider.dart';
 import 'package:lockerroom/widgets/svg_icon.dart';
 import 'package:provider/provider.dart';
 
@@ -29,42 +30,41 @@ class _BottomTabBarState extends State<BottomTabBar> {
     AfterMarket(),
     Mypage(),
   ];
-  int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    context.read<BottomTabBarProvider>().setIndex(index);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            height: 70, // 바텀바 전체 높이 조절
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: GRAYSCALE_LABEL_100,
-                  spreadRadius: 1,
-                  blurRadius: 7,
-                  offset: Offset(0, 2),
+    return Consumer<BottomTabBarProvider>(
+      builder: (context, tabProvider, child) {
+        return Scaffold(
+          body: _pages[tabProvider.selectedIndex],
+          bottomNavigationBar: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 70, // 바텀바 전체 높이 조절
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: GRAYSCALE_LABEL_100,
+                      spreadRadius: 1,
+                      blurRadius: 7,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                splashFactory: NoSplash.splashFactory,
-                splashColor: Colors.transparent,
-                highlightColor: Colors.transparent,
-              ),
-              child: BottomNavigationBar(
-                currentIndex: _selectedIndex,
-                onTap: _onItemTapped,
+                child: Theme(
+                  data: Theme.of(context).copyWith(
+                    splashFactory: NoSplash.splashFactory,
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                  ),
+                  child: BottomNavigationBar(
+                    currentIndex: tabProvider.selectedIndex,
+                    onTap: _onItemTapped,
                 type: BottomNavigationBarType.fixed,
                 selectedItemColor: BUTTON,
                 unselectedItemColor: GRAYSCALE_LABEL_500,
@@ -74,44 +74,49 @@ class _BottomTabBarState extends State<BottomTabBar> {
                 unselectedFontSize: 0,
                 iconSize: 25,
                 items: [
-                  BottomNavigationBarItem(
-                    icon: _buildSvgTabIcon(0, AppIcons.home, AppIcons.homeFill),
-                    label: '',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _buildTabIcon(
-                      1,
-                      CupertinoIcons.search,
-                      CupertinoIcons.search,
+                    BottomNavigationBarItem(
+                      icon: _buildSvgTabIcon(0, AppIcons.home, AppIcons.homeFill, tabProvider.selectedIndex),
+                      label: '',
                     ),
-                    label: '',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _buildSvgTabIcon(2, AppIcons.add, AppIcons.add),
-                    label: '',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _buildTabIcon(
-                      3,
-                      Icons.storefront_outlined,
-                      Icons.storefront_rounded,
+                    BottomNavigationBarItem(
+                      icon: _buildTabIcon(
+                        1,
+                        CupertinoIcons.search,
+                        CupertinoIcons.search,
+                        tabProvider.selectedIndex,
+                      ),
+                      label: '',
                     ),
-                    label: '',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _buildSvgTabIcon(
-                      4,
-                      AppIcons.person,
-                      AppIcons.personFill,
+                    BottomNavigationBarItem(
+                      icon: _buildSvgTabIcon(2, AppIcons.add, AppIcons.add, tabProvider.selectedIndex),
+                      label: '',
                     ),
-                    label: '',
-                  ),
+                    BottomNavigationBarItem(
+                      icon: _buildTabIcon(
+                        3,
+                        Icons.storefront_outlined,
+                        Icons.storefront_rounded,
+                        tabProvider.selectedIndex,
+                      ),
+                      label: '',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: _buildSvgTabIcon(
+                        4,
+                        AppIcons.person,
+                        AppIcons.personFill,
+                        tabProvider.selectedIndex,
+                      ),
+                      label: '',
+                    ),
                 ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -119,8 +124,9 @@ class _BottomTabBarState extends State<BottomTabBar> {
     int index,
     IconData unselectedIcon,
     IconData selectedIcon,
+    int selectedIndex,
   ) {
-    bool isSelected = _selectedIndex == index;
+    bool isSelected = selectedIndex == index;
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 8), // 상하 패딩 조절
       child: Icon(
@@ -136,8 +142,9 @@ class _BottomTabBarState extends State<BottomTabBar> {
     int index,
     String unselectedSvgPath,
     String selectedSvgPath,
+    int selectedIndex,
   ) {
-    bool isSelected = _selectedIndex == index;
+    bool isSelected = selectedIndex == index;
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 8), // 상하 패딩 조절
       child: SvgIcon(
