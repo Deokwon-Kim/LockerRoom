@@ -112,6 +112,22 @@ class ProfileProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  
+  Future<String?> getProfileImageUrl(String userId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      if (doc.exists) {
+        return doc.data()?['profileImage'] as String?;
+      }
+      return null;
+    } catch (e) {
+      print('프로필 이미지 URL 가져오기 실패: $e');
+      return null;
+    }
+  }
 
   Future<void> deleteProfileImage(String userId) async {
     try {
