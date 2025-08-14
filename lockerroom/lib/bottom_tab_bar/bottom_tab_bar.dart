@@ -7,6 +7,7 @@ import 'package:lockerroom/page/home/home_page.dart';
 import 'package:lockerroom/page/home/mypage.dart';
 import 'package:lockerroom/page/home/upload_page.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/provider/bottom_tab_bar_provider.dart';
 import 'package:lockerroom/widgets/svg_icon.dart';
 import 'package:provider/provider.dart';
@@ -20,10 +21,18 @@ class BottomTabBar extends StatefulWidget {
 
 class _BottomTabBarState extends State<BottomTabBar> {
   final List<Widget> _pages = [
-    Consumer<TeamProvider>(
-      builder: (context, teamProvider, _) => HomePage(
-        teamModel: teamProvider.selectedTeam ?? teamProvider.getTeam('team')[0],
-      ),
+    Consumer2<TeamProvider, UserProvider>(
+      builder: (context, teamProvider, userProvider, _) {
+        // Firestore에 저장된 선호팀을 반영
+        final fav = userProvider.favoriteTeam;
+        if (fav != null && teamProvider.selectedTeam?.name != fav) {
+          teamProvider.selectTeamByName(fav);
+        }
+        return HomePage(
+          teamModel:
+              teamProvider.selectedTeam ?? teamProvider.getTeam('team')[0],
+        );
+      },
     ),
     FeedPage(),
     UploadPage(),
@@ -65,51 +74,61 @@ class _BottomTabBarState extends State<BottomTabBar> {
                   child: BottomNavigationBar(
                     currentIndex: tabProvider.selectedIndex,
                     onTap: _onItemTapped,
-                type: BottomNavigationBarType.fixed,
-                selectedItemColor: BUTTON,
-                unselectedItemColor: GRAYSCALE_LABEL_500,
-                backgroundColor: WHITE,
-                elevation: 0,
-                selectedFontSize: 0,
-                unselectedFontSize: 0,
-                iconSize: 25,
-                items: [
-                    BottomNavigationBarItem(
-                      icon: _buildSvgTabIcon(0, AppIcons.home, AppIcons.homeFill, tabProvider.selectedIndex),
-                      label: '',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: _buildTabIcon(
-                        1,
-                        CupertinoIcons.search,
-                        CupertinoIcons.search,
-                        tabProvider.selectedIndex,
+                    type: BottomNavigationBarType.fixed,
+                    selectedItemColor: BUTTON,
+                    unselectedItemColor: GRAYSCALE_LABEL_500,
+                    backgroundColor: WHITE,
+                    elevation: 0,
+                    selectedFontSize: 0,
+                    unselectedFontSize: 0,
+                    iconSize: 25,
+                    items: [
+                      BottomNavigationBarItem(
+                        icon: _buildSvgTabIcon(
+                          0,
+                          AppIcons.home,
+                          AppIcons.homeFill,
+                          tabProvider.selectedIndex,
+                        ),
+                        label: '',
                       ),
-                      label: '',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: _buildSvgTabIcon(2, AppIcons.add, AppIcons.add, tabProvider.selectedIndex),
-                      label: '',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: _buildTabIcon(
-                        3,
-                        Icons.storefront_outlined,
-                        Icons.storefront_rounded,
-                        tabProvider.selectedIndex,
+                      BottomNavigationBarItem(
+                        icon: _buildTabIcon(
+                          1,
+                          CupertinoIcons.search,
+                          CupertinoIcons.search,
+                          tabProvider.selectedIndex,
+                        ),
+                        label: '',
                       ),
-                      label: '',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: _buildSvgTabIcon(
-                        4,
-                        AppIcons.person,
-                        AppIcons.personFill,
-                        tabProvider.selectedIndex,
+                      BottomNavigationBarItem(
+                        icon: _buildSvgTabIcon(
+                          2,
+                          AppIcons.add,
+                          AppIcons.add,
+                          tabProvider.selectedIndex,
+                        ),
+                        label: '',
                       ),
-                      label: '',
-                    ),
-                ],
+                      BottomNavigationBarItem(
+                        icon: _buildTabIcon(
+                          3,
+                          Icons.storefront_outlined,
+                          Icons.storefront_rounded,
+                          tabProvider.selectedIndex,
+                        ),
+                        label: '',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: _buildSvgTabIcon(
+                          4,
+                          AppIcons.person,
+                          AppIcons.personFill,
+                          tabProvider.selectedIndex,
+                        ),
+                        label: '',
+                      ),
+                    ],
                   ),
                 ),
               ),
