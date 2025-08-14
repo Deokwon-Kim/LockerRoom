@@ -15,22 +15,9 @@ class FeedPage extends StatefulWidget {
 }
 
 class _FeedPageState extends State<FeedPage> {
-  bool _didRefreshTokenOnce = false;
-
   @override
   void initState() {
     super.initState();
-    // 첫 프레임 이후 1회만 토큰 갱신 시도
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final userProvider = context.read<UserProvider>();
-      if (userProvider.currentUser != null && !_didRefreshTokenOnce) {
-        _didRefreshTokenOnce = true;
-        await userProvider.refreshAuthToken();
-        if (kDebugMode) {
-          debugPrint('FeedPage: token refreshed once');
-        }
-      }
-    });
   }
 
   @override
