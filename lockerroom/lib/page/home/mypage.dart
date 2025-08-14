@@ -112,6 +112,7 @@ class Mypage extends StatelessWidget {
                       context: context,
                       builder: (ctx) {
                         return AlertDialog(
+                          backgroundColor: BACKGROUND_COLOR,
                           title: Text('응원팀 변경'),
                           content: SizedBox(
                             width: double.maxFinite,
