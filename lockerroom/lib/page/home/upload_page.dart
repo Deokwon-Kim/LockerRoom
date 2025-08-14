@@ -16,6 +16,7 @@ class UploadPage extends StatelessWidget {
     final postProvider = Provider.of<PostProvider>(context, listen: false);
     final teamProvider = Provider.of<TeamProvider>(context, listen: false);
     final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final profileProvider = context.watch<ProfileProvider>();
     final userName =
         userProvider.nickname ?? userProvider.currentUser?.displayName ?? '사용자';
 
@@ -43,24 +44,18 @@ class UploadPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 사용자 프로필 이미지
-                  Selector<ProfileProvider, ImageProvider?>(
-                    selector: (_, p) => p.currentImageProvider,
-                    builder: (_, img, _) => CircleAvatar(
-                      radius: 30,
-                      backgroundImage: img,
-                      child: img == null ? Icon(Icons.person) : null,
-                    ),
-                    // child: Container(
-                    //   width: 100,
-                    //   height: 100,
-                    //   color: Colors.grey[300],
-                    //   child: Icon(
-                    //     Icons.person,
-                    //     color: Colors.grey[600],
-                    //     size: 30,
-                    //   ),
-                    // ),
-                  ),
+                  profileProvider.isLoading
+                      ? const CircularProgressIndicator()
+                      : CircleAvatar(
+                          radius: 50,
+                          backgroundImage:
+                              profileProvider.profileImageUrl != null
+                              ? NetworkImage(profileProvider.profileImageUrl!)
+                              : null,
+                          child: profileProvider.profileImageUrl == null
+                              ? const Icon(Icons.person, size: 50)
+                              : null,
+                        ),
                   SizedBox(width: 12),
                   // 텍스트 필드 영역
                   Expanded(
