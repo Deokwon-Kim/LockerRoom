@@ -1,11 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/provider/bottom_tab_bar_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'package:toastification/toastification.dart';
 
 class Mypage extends StatelessWidget {
   const Mypage({super.key});
@@ -153,6 +156,25 @@ class Mypage extends StatelessWidget {
                             .set({
                               'favoriteTeam': selected,
                             }, SetOptions(merge: true));
+
+                        context.read<BottomTabBarProvider>().setIndex(
+                          0,
+                        ); // 피드 탭으로 이동
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BottomTabBar(),
+                          ),
+                          (route) => false,
+                        );
+
+                        toastification.show(
+                          context: context,
+                          type: ToastificationType.success,
+                          alignment: Alignment.bottomCenter,
+                          autoCloseDuration: Duration(seconds: 2),
+                          title: Text('변경 팀: ${selected}'),
+                        );
                       }
                     }
                   },
