@@ -64,21 +64,27 @@ class UserProvider extends ChangeNotifier {
     if (_listeningUserId == userId && _userSub != null) return;
     stopListeningUserDoc();
     _listeningUserId = userId;
-    _userSub = _firestore.collection('users').doc(userId).snapshots().listen(
-      (doc) {
-        final data = doc.data();
-        if (data != null) {
-          // 우선순위: Firestore 값 -> FirebaseAuth 값
-          _nickname = (data['username'] as String?) ?? _auth.currentUser?.displayName;
-          _email = (data['email'] as String?) ?? _auth.currentUser?.email;
-          _favoriteTeam = data['favoriteTeam'] as String?;
-          notifyListeners();
-        }
-      },
-      onError: (e) {
-        debugPrint('UserProvider Firestore listen error: $e');
-      },
-    );
+    _userSub = _firestore
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .listen(
+          (doc) {
+            final data = doc.data();
+            if (data != null) {
+              // 우선순위: Firestore 값 -> FirebaseAuth 값
+              _nickname =
+                  (data['username'] as String?) ??
+                  _auth.currentUser?.displayName;
+              _email = (data['email'] as String?) ?? _auth.currentUser?.email;
+              _favoriteTeam = data['favoriteTeam'] as String?;
+              notifyListeners();
+            }
+          },
+          onError: (e) {
+            debugPrint('UserProvider Firestore listen error: $e');
+          },
+        );
   }
 
   void stopListeningUserDoc() {
@@ -118,7 +124,7 @@ class UserProvider extends ChangeNotifier {
         // 토큰 강제 갱신
         await user.getIdToken(true);
         print('Firebase Auth 토큰 갱신 완료');
-        
+
         // 사용자 정보도 다시 로드
         await user.reload();
         _currentUser = _auth.currentUser;
