@@ -20,25 +20,7 @@ class BottomTabBar extends StatefulWidget {
 }
 
 class _BottomTabBarState extends State<BottomTabBar> {
-  final List<Widget> _pages = [
-    Consumer2<TeamProvider, UserProvider>(
-      builder: (context, teamProvider, userProvider, _) {
-        // Firestore에 저장된 선호팀을 반영
-        final fav = userProvider.favoriteTeam;
-        if (fav != null && teamProvider.selectedTeam?.name != fav) {
-          teamProvider.selectTeamByName(fav);
-        }
-        return HomePage(
-          teamModel:
-              teamProvider.selectedTeam ?? teamProvider.getTeam('team')[0],
-        );
-      },
-    ),
-    FeedPage(),
-    UploadPage(),
-    AfterMarket(),
-    Mypage(),
-  ];
+  String? _lastAppliedFavoriteTeam;
 
   void _onItemTapped(int index) {
     context.read<BottomTabBarProvider>().setIndex(index);
@@ -48,8 +30,45 @@ class _BottomTabBarState extends State<BottomTabBar> {
   Widget build(BuildContext context) {
     return Consumer<BottomTabBarProvider>(
       builder: (context, tabProvider, child) {
+        Widget body;
+        switch (tabProvider.selectedIndex) {
+          case 0:
+            body = Consumer2<TeamProvider, UserProvider>(
+              builder: (context, teamProvider, userProvider, _) {
+                final fav = userProvider.favoriteTeam;
+                if (fav != null &&
+                    teamProvider.selectedTeam?.name != fav &&
+                    _lastAppliedFavoriteTeam != fav) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    context.read<TeamProvider>().selectTeamByName(fav);
+                    _lastAppliedFavoriteTeam = fav;
+                  });
+                }
+                return HomePage(
+                  teamModel:
+                      teamProvider.selectedTeam ??
+                      teamProvider.getTeam('team')[0],
+                );
+              },
+            );
+            break;
+          case 1:
+            body = const FeedPage();
+            break;
+          case 2:
+            body = const UploadPage();
+            break;
+          case 3:
+            body = const AfterMarket();
+            break;
+          case 4:
+          default:
+            body = const Mypage();
+            break;
+        }
         return Scaffold(
-          body: _pages[tabProvider.selectedIndex],
+          body: body,
           bottomNavigationBar: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

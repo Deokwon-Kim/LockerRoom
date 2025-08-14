@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
+import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/login/login_page.dart';
 import 'package:lockerroom/login/signup_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
@@ -84,8 +86,31 @@ class AuthWrapper extends StatelessWidget {
         } else if (snapshot.hasError) {
           return const Center(child: Text('에러가 발생하였습니다.'));
         } else if (snapshot.hasData) {
-          // return const BottomTabBar();
-          return const TeamSelectPage();
+          final uid = snapshot.data!.uid;
+          // 사용자 문서를 조회해 선호팀 여부에 따라 초기 라우팅 분기
+          return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            future: FirebaseFirestore.instance
+                .collection('users')
+                .doc(uid)
+                .get(),
+            builder: (context, userDocSnap) {
+              if (userDocSnap.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Eagles),
+                );
+              }
+              final data = userDocSnap.data?.data();
+              final favoriteTeam = data != null
+                  ? data['favoriteTeam'] as String?
+                  : null;
+              if (favoriteTeam != null && favoriteTeam.isNotEmpty) {
+                // 선호팀이 있으면 바로 하단탭으로
+                return const BottomTabBar();
+              } else {
+                return const TeamSelectPage();
+              }
+            },
+          );
         } else {
           return const LoginPage();
         }
