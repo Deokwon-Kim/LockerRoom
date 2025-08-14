@@ -82,4 +82,24 @@ class TeamProvider extends ChangeNotifier {
     _selectedTeam = team;
     notifyListeners();
   }
+
+  TeamModel? findTeamByName(String teamName) {
+    for (final entry in _teamList.values) {
+      try {
+        final matched = entry.firstWhere(
+          (t) => t.name == teamName,
+          orElse: () => entry.isNotEmpty ? entry.first : entry.first,
+        );
+        if (matched.name == teamName) return matched;
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  void selectTeamByName(String teamName) {
+    final team = findTeamByName(teamName);
+    if (team != null) {
+      selectTeam(team);
+    }
+  }
 }
