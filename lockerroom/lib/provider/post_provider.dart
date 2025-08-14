@@ -94,10 +94,6 @@ class PostProvider extends ChangeNotifier {
         return;
       }
 
-      final authorProfileImageUrl = await profileProvider.getProfileImageUrl(
-        authorId,
-      );
-
       // 이미지 목록 준비
       List<File> imagesToUpload = imageFiles.isNotEmpty
           ? imageFiles
@@ -129,7 +125,6 @@ class PostProvider extends ChangeNotifier {
       final postData = {
         'authorId': authorId,
         'authorName': authorName,
-        'authorProfileImageUrl': authorProfileImageUrl,
         'imageUrls': imageUrls,
         'caption': captionController.text,
         'createdAt': FieldValue.serverTimestamp(),
