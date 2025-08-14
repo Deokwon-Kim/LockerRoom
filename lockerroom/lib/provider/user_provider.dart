@@ -14,6 +14,7 @@ class UserProvider extends ChangeNotifier {
   User? _currentUser;
   String? _nickname;
   String? _email;
+  String? _favoriteTeam;
 
   // Firestore users/{uid} 실시간 구독용
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userSub;
@@ -26,6 +27,7 @@ class UserProvider extends ChangeNotifier {
   User? get currentUser => _currentUser;
   String? get nickname => _nickname;
   String? get email => _email;
+  String? get favoriteTeam => _favoriteTeam;
 
   // 로딩 상태 설정
   void setLoading(bool loading) {
@@ -69,6 +71,7 @@ class UserProvider extends ChangeNotifier {
           // 우선순위: Firestore 값 -> FirebaseAuth 값
           _nickname = (data['username'] as String?) ?? _auth.currentUser?.displayName;
           _email = (data['email'] as String?) ?? _auth.currentUser?.email;
+          _favoriteTeam = data['favoriteTeam'] as String?;
           notifyListeners();
         }
       },
@@ -84,6 +87,18 @@ class UserProvider extends ChangeNotifier {
     _listeningUserId = null;
   }
 
+  // 사용자 데이터 완전 초기화
+  void clearUserData() {
+    _currentUser = null;
+    _nickname = null;
+    _email = null;
+    _favoriteTeam = null;
+    _errorMessage = null;
+    _isSignUpSuccess = false;
+    _isLoading = false;
+    notifyListeners();
+  }
+
   // 사용자 정보 새로고침
   Future<void> refreshUserInfo() async {
     if (_auth.currentUser != null) {
@@ -92,6 +107,25 @@ class UserProvider extends ChangeNotifier {
       _nickname = _currentUser!.displayName;
       _email = _currentUser!.email;
       notifyListeners();
+    }
+  }
+
+  // Firebase Auth 토큰 강제 갱신
+  Future<void> refreshAuthToken() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        // 토큰 강제 갱신
+        await user.getIdToken(true);
+        print('Firebase Auth 토큰 갱신 완료');
+        
+        // 사용자 정보도 다시 로드
+        await user.reload();
+        _currentUser = _auth.currentUser;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Firebase Auth 토큰 갱신 실패: $e');
     }
   }
 
