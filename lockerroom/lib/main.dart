@@ -65,17 +65,17 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.hasData) {
           print('AuthWrapper - Current User: ${snapshot.data?.uid}');
           // 사용자 정보를 UserProvider에 초기화하고 프로필 스트림 구독 시작
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
             final user = snapshot.data!;
-            context.read<UserProvider>().initializeUser();
-            context.read<UserProvider>().startListeningUserDoc(user.uid);
-            context.read<ProfileProvider>().startListening(user.uid);
+            final userProvider = context.read<UserProvider>();
+            userProvider.initializeUser();
+            userProvider.startListeningUserDoc(user.uid);
           });
         } else {
-          // 비인증 상태에서는 스트림 구독 해제
+          // 비인증 상태에서는 스트림 구독 해제 및 사용자 정보 초기화
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            context.read<ProfileProvider>().stopListening();
             context.read<UserProvider>().stopListeningUserDoc();
+            context.read<UserProvider>().clearUserData();
           });
         }
 
