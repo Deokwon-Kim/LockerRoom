@@ -50,147 +50,156 @@ class Mypage extends StatelessWidget {
             icon: Icon(Icons.menu_rounded, color: BLACK),
           ),
         ],
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: WHITE,
       ),
       body: Padding(
         padding: const EdgeInsets.only(top: 20.0, left: 20.0, right: 20.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      userName,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    Text(
-                      userEmail,
-                      style: TextStyle(
-                        color: GRAYSCALE_LABEL_500,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                // 사용자 프로필 이미지
-                if (profileProvider.isLoading)
-                  const CircularProgressIndicator()
-                else
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundImage: profileProvider.profileImageUrl != null
-                        ? NetworkImage(profileProvider.profileImageUrl!)
-                        : null,
-                    child: profileProvider.profileImageUrl == null
-                        ? const Icon(Icons.person, size: 50)
-                        : null,
-                  ),
-                SizedBox(height: 20),
-              ],
+            // 사용자 프로필 이미지
+            if (profileProvider.isLoading)
+              const CircularProgressIndicator()
+            else
+              CircleAvatar(
+                radius: 50,
+                backgroundImage: profileProvider.profileImageUrl != null
+                    ? NetworkImage(profileProvider.profileImageUrl!)
+                    : null,
+                child: profileProvider.profileImageUrl == null
+                    ? const Icon(Icons.person, size: 50)
+                    : null,
+              ),
+            SizedBox(height: 10),
+            Text(
+              userName,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
 
+            Text(
+              userEmail,
+              style: TextStyle(
+                color: GRAYSCALE_LABEL_500,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 5),
             Row(
               children: [
-                ElevatedButton(
-                  onPressed: () {
-                    profileProvider.updateProfilePickture();
-                  },
-                  child: Text('프로필 수정'),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      profileProvider.updateProfilePickture();
+                    },
+                    child: Container(
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: GRAYSCALE_LABEL_300,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '프로필 수정',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
+
                 SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () async {
-                    // 팀 변경 다이얼로그
-                    final teamProvider = context.read<TeamProvider>();
-                    final teams = teamProvider.getTeam('team');
-                    final selected = await showDialog<String>(
-                      context: context,
-                      builder: (ctx) {
-                        return AlertDialog(
-                          backgroundColor: BACKGROUND_COLOR,
-                          title: Text('응원팀 변경'),
-                          content: SizedBox(
-                            width: double.maxFinite,
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: teams.length,
-                              itemBuilder: (context, index) {
-                                final t = teams[index];
-                                return ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: t.color,
-                                    radius: 8,
-                                  ),
-                                  title: Text(t.name),
-                                  onTap: () => Navigator.pop(ctx, t.name),
-                                );
-                              },
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      // 팀 변경 다이얼로그
+                      final teamProvider = context.read<TeamProvider>();
+                      final teams = teamProvider.getTeam('team');
+                      final selected = await showDialog<String>(
+                        context: context,
+                        builder: (ctx) {
+                          return AlertDialog(
+                            backgroundColor: BACKGROUND_COLOR,
+                            title: Text('응원팀 변경'),
+                            content: SizedBox(
+                              width: double.maxFinite,
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: teams.length,
+                                itemBuilder: (context, index) {
+                                  final t = teams[index];
+                                  return ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: t.color,
+                                      radius: 8,
+                                    ),
+                                    title: Text(t.name),
+                                    onTap: () => Navigator.pop(ctx, t.name),
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx),
-                              child: Text('취소'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: Text('취소'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                      if (selected != null) {
+                        // 로컬 선택 반영
+                        teamProvider.selectTeamByName(selected);
+                        // 서버 반영
+                        final uid = FirebaseAuth.instance.currentUser?.uid;
+                        if (uid != null) {
+                          await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(uid)
+                              .set({
+                                'favoriteTeam': selected,
+                              }, SetOptions(merge: true));
+
+                          context.read<BottomTabBarProvider>().setIndex(
+                            0,
+                          ); // 피드 탭으로 이동
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => BottomTabBar(),
                             ),
-                          ],
-                        );
-                      },
-                    );
-                    if (selected != null) {
-                      // 로컬 선택 반영
-                      teamProvider.selectTeamByName(selected);
-                      // 서버 반영
-                      final uid = FirebaseAuth.instance.currentUser?.uid;
-                      if (uid != null) {
-                        await FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(uid)
-                            .set({
-                              'favoriteTeam': selected,
-                            }, SetOptions(merge: true));
+                            (route) => false,
+                          );
 
-                        context.read<BottomTabBarProvider>().setIndex(
-                          0,
-                        ); // 피드 탭으로 이동
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BottomTabBar(),
-                          ),
-                          (route) => false,
-                        );
-
-                        toastification.show(
-                          context: context,
-                          type: ToastificationType.success,
-                          alignment: Alignment.bottomCenter,
-                          autoCloseDuration: Duration(seconds: 2),
-                          title: Text('변경 팀: ${selected}'),
-                        );
+                          toastification.show(
+                            context: context,
+                            type: ToastificationType.success,
+                            alignment: Alignment.bottomCenter,
+                            autoCloseDuration: Duration(seconds: 2),
+                            title: Text('변경 팀: ${selected}'),
+                          );
+                        }
                       }
-                    }
-                  },
-                  child: Text('팀 변경'),
-                ),
-                SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: () async {
-                    await userProvider.signOut();
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      'signIn',
-                      (route) => false,
-                    );
-                  },
-                  child: Text('로그아웃'),
+                    },
+                    child: Container(
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: GRAYSCALE_LABEL_300,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '팀 변경',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
