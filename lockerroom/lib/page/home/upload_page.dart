@@ -16,9 +16,17 @@ class UploadPage extends StatelessWidget {
     final postProvider = Provider.of<PostProvider>(context, listen: false);
     final teamProvider = Provider.of<TeamProvider>(context, listen: false);
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final profileProvider = context.watch<ProfileProvider>();
+    final profileProvider = Provider.of<ProfileProvider>(context);
     final userName =
         userProvider.nickname ?? userProvider.currentUser?.displayName ?? '사용자';
+
+    // 현재 사용자의 프로필 이미지 로드
+    if (userProvider.currentUser != null &&
+        profileProvider.profileImageUrl == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        profileProvider.loadProfileImage();
+      });
+    }
 
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
@@ -47,13 +55,18 @@ class UploadPage extends StatelessWidget {
                   profileProvider.isLoading
                       ? const CircularProgressIndicator()
                       : CircleAvatar(
-                          radius: 50,
+                          radius: 30,
                           backgroundImage:
                               profileProvider.profileImageUrl != null
                               ? NetworkImage(profileProvider.profileImageUrl!)
                               : null,
                           child: profileProvider.profileImageUrl == null
-                              ? const Icon(Icons.person, size: 50)
+                              ? const Icon(Icons.person, size: 30)
+                              : null,
+                          onBackgroundImageError: profileProvider.profileImageUrl != null
+                              ? (exception, stackTrace) {
+                                  print('Profile image load error: $exception');
+                                }
                               : null,
                         ),
                   SizedBox(width: 12),
