@@ -1,11 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
-import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
+import 'package:lockerroom/provider/team_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
-import 'package:toastification/toastification.dart';
 
 class Mypage extends StatelessWidget {
   const Mypage({super.key});
@@ -18,7 +18,7 @@ class Mypage extends StatelessWidget {
     final userEmail =
         userProvider.email ?? userProvider.currentUser?.email ?? '정보없음';
     final profileProvider = Provider.of<ProfileProvider>(context);
-    final user = FirebaseAuth.instance.currentUser;
+    // final user = FirebaseAuth.instance.currentUser; // 미사용
 
     // 디버깅용 출력
     print('UserProvider - nickname: ${userProvider.nickname}');
@@ -101,6 +101,61 @@ class Mypage extends StatelessWidget {
                     profileProvider.updateProfilePickture();
                   },
                   child: Text('프로필 수정'),
+                ),
+                SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: () async {
+                    // 팀 변경 다이얼로그
+                    final teamProvider = context.read<TeamProvider>();
+                    final teams = teamProvider.getTeam('team');
+                    final selected = await showDialog<String>(
+                      context: context,
+                      builder: (ctx) {
+                        return AlertDialog(
+                          title: Text('응원팀 변경'),
+                          content: SizedBox(
+                            width: double.maxFinite,
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: teams.length,
+                              itemBuilder: (context, index) {
+                                final t = teams[index];
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: t.color,
+                                    radius: 8,
+                                  ),
+                                  title: Text(t.name),
+                                  onTap: () => Navigator.pop(ctx, t.name),
+                                );
+                              },
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: Text('취소'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                    if (selected != null) {
+                      // 로컬 선택 반영
+                      teamProvider.selectTeamByName(selected);
+                      // 서버 반영
+                      final uid = FirebaseAuth.instance.currentUser?.uid;
+                      if (uid != null) {
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(uid)
+                            .set({
+                              'favoriteTeam': selected,
+                            }, SetOptions(merge: true));
+                      }
+                    }
+                  },
+                  child: Text('팀 변경'),
                 ),
                 SizedBox(width: 10),
                 ElevatedButton(
