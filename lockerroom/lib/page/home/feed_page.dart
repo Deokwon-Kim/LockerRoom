@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -6,19 +7,35 @@ import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-class FeedPage extends StatelessWidget {
+class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final teamProvider = Provider.of<TeamProvider>(context, listen: false);
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    
-    // 사용자 인증 상태 디버그
-    print('FeedPage - 사용자 인증 상태: ${userProvider.currentUser != null}');
-    print('FeedPage - 사용자 ID: ${userProvider.currentUser?.uid}');
-    print('FeedPage - 사용자 이름: ${userProvider.nickname ?? userProvider.currentUser?.displayName}');
+  State<FeedPage> createState() => _FeedPageState();
+}
 
+class _FeedPageState extends State<FeedPage> {
+  bool _didRefreshTokenOnce = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 첫 프레임 이후 1회만 토큰 갱신 시도
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final userProvider = context.read<UserProvider>();
+      if (userProvider.currentUser != null && !_didRefreshTokenOnce) {
+        _didRefreshTokenOnce = true;
+        await userProvider.refreshAuthToken();
+        if (kDebugMode) {
+          debugPrint('FeedPage: token refreshed once');
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final teamProvider = context.watch<TeamProvider>();
     return Scaffold(
       appBar: AppBar(
         title: Text('피드', style: TextStyle(color: WHITE, fontSize: 15)),
@@ -55,7 +72,7 @@ class FeedPage extends StatelessWidget {
             separatorBuilder: (context, index) => SizedBox(height: 20),
             itemBuilder: (context, index) {
               final data = docs[index].data() as Map<String, dynamic>;
-              return _buildPostItem(data);
+              return _buildPostItem(data, context: context);
             },
           );
         },
@@ -63,7 +80,7 @@ class FeedPage extends StatelessWidget {
     );
   }
 
-  Widget _buildPostItem(Map<String, dynamic> post) {
+  Widget _buildPostItem(Map<String, dynamic> post, {BuildContext? context}) {
     // 시간 변환: Firestore Timestamp을 DateTime으로
     DateTime? createdAt;
     if (post['createdAt'] != null) {
@@ -93,6 +110,20 @@ class FeedPage extends StatelessWidget {
                       : null,
                   child: post['authorProfileImageUrl'] == null
                       ? Icon(Icons.person)
+                      : null,
+                  onBackgroundImageError: post['authorProfileImageUrl'] != null
+                      ? (exception, stackTrace) {
+                          print('Profile image load error: $exception');
+
+                          // 403 에러 특별 처리
+                          if (exception.toString().contains('403') ||
+                              exception.toString().contains('Forbidden')) {
+                            print(
+                              '403 Forbidden error for profile image: ${post['authorProfileImageUrl']}',
+                            );
+                          }
+                          // 프로필 이미지 로드 실패 시 디폴트 아이콘을 표시
+                        }
                       : null,
                 ),
                 SizedBox(width: 12),
@@ -133,7 +164,7 @@ class FeedPage extends StatelessWidget {
             // 이미지들 - 에러 처리 추가
             if (post['imageUrls'] != null &&
                 (post['imageUrls'] as List).isNotEmpty)
-              _buildImages(post['imageUrls'] as List<dynamic>)
+              _buildImages(post['imageUrls'] as List<dynamic>, context!)
             else
               Container(
                 height: 100,
@@ -175,7 +206,7 @@ class FeedPage extends StatelessWidget {
     );
   }
 
-  Widget _buildImages(List<dynamic> imageUrls) {
+  Widget _buildImages(List<dynamic> imageUrls, BuildContext context) {
     try {
       if (imageUrls.length == 1) {
         // 단일 이미지
@@ -204,7 +235,29 @@ class FeedPage extends StatelessWidget {
               );
             },
             errorBuilder: (context, error, stackTrace) {
-              print('Image load error: $error');
+              final userProvider = Provider.of<UserProvider>(
+                context,
+                listen: false,
+              );
+              if (kDebugMode) {
+                debugPrint('Image load error: $error');
+              }
+
+              // 403 에러 특별 처리
+              String errorMessage = '이미지 로드 오류';
+              if (error.toString().contains('403') ||
+                  error.toString().contains('Forbidden')) {
+                errorMessage = '이미지 접근 권한 없음 (로그인 확인 필요)';
+                if (kDebugMode) {
+                  debugPrint(
+                    '403 Forbidden error detected for image: ${imageUrls.first}',
+                  );
+                  debugPrint(
+                    'User auth state: ${userProvider.currentUser != null}',
+                  );
+                }
+              }
+
               return Container(
                 height: 200,
                 width: double.infinity,
@@ -215,7 +268,11 @@ class FeedPage extends StatelessWidget {
                     children: [
                       Icon(Icons.error_outline, color: Colors.red, size: 40),
                       SizedBox(height: 8),
-                      Text('이미지 로드 오류', style: TextStyle(color: Colors.red)),
+                      Text(
+                        errorMessage,
+                        style: TextStyle(color: Colors.red, fontSize: 12),
+                        textAlign: TextAlign.center,
+                      ),
                     ],
                   ),
                 ),
@@ -258,7 +315,11 @@ class FeedPage extends StatelessWidget {
                       );
                     },
                     errorBuilder: (context, error, stackTrace) {
-                      print('Image load error at index $imageIndex: $error');
+                      if (kDebugMode) {
+                        debugPrint(
+                          'Image load error at index $imageIndex: $error',
+                        );
+                      }
                       return Container(
                         height: 200,
                         width: 150,
@@ -280,7 +341,9 @@ class FeedPage extends StatelessWidget {
         );
       }
     } catch (e) {
-      print('Error building images: $e');
+      if (kDebugMode) {
+        debugPrint('Error building images: $e');
+      }
       return Container(
         height: 100,
         width: double.infinity,

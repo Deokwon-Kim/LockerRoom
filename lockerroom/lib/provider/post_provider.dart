@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:provider/provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
-import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path/path.dart' as path;
@@ -73,10 +72,7 @@ class PostProvider extends ChangeNotifier {
     try {
       // 작성자 정보 가져오기
       final userProvider = Provider.of<UserProvider>(context, listen: false);
-      final profileProvider = Provider.of<ProfileProvider>(
-        context,
-        listen: false,
-      );
+      // ProfileProvider는 업로드 로직에서 직접 사용하지 않으므로 제거
       final authorId = userProvider.currentUser?.uid ?? 'unknown_user';
       final authorName =
           userProvider.nickname ??
@@ -94,6 +90,24 @@ class PostProvider extends ChangeNotifier {
         return;
       }
 
+      // 작성자 프로필 이미지 URL 가져오기
+      _uploadStatus = '사용자 정보를 불러오는 중...';
+      notifyListeners();
+
+      String? authorProfileImageUrl;
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(authorId)
+            .get();
+        if (doc.exists) {
+          authorProfileImageUrl = doc.data()?['profileImage'] as String?;
+        }
+      } catch (e) {
+        print('프로필 이미지 URL 가져오기 실패: $e');
+        // 프로필 이미지 로드 실패에도 게시글 업로드는 계속
+      }
+
       // 이미지 목록 준비
       List<File> imagesToUpload = imageFiles.isNotEmpty
           ? imageFiles
@@ -104,15 +118,20 @@ class PostProvider extends ChangeNotifier {
       notifyListeners();
 
       List<String> imageUrls = [];
+      List<String> imageStoragePaths = [];
       for (int i = 0; i < imagesToUpload.length; i++) {
         final file = imagesToUpload[i];
-        final fileName = path.basename(file.path);
-        final ref = FirebaseStorage.instance.ref('posts/$authorId/$fileName');
+        final originalName = path.basename(file.path);
+        final uniqueName =
+            '${DateTime.now().millisecondsSinceEpoch}_${i}_$originalName';
+        final storagePath = 'posts/$authorId/$uniqueName';
+        final ref = FirebaseStorage.instance.ref(storagePath);
 
         final uploadTask = ref.putFile(file);
         final snapshot = await uploadTask;
         final downloadUrl = await snapshot.ref.getDownloadURL();
         imageUrls.add(downloadUrl);
+        imageStoragePaths.add(storagePath);
 
         _uploadStatus = '${i + 1}/${imagesToUpload.length}개의 이미지 업로드 완료';
         notifyListeners();
@@ -125,7 +144,9 @@ class PostProvider extends ChangeNotifier {
       final postData = {
         'authorId': authorId,
         'authorName': authorName,
+        'authorProfileImageUrl': authorProfileImageUrl,
         'imageUrls': imageUrls,
+        'imageStoragePaths': imageStoragePaths,
         'caption': captionController.text,
         'createdAt': FieldValue.serverTimestamp(),
       };
