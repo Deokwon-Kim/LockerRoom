@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/components/theme_tile.dart';
 import 'package:lockerroom/const/color.dart';
@@ -55,12 +57,30 @@ class TeamSelectPage extends StatelessWidget {
             onTap: selectedTeam == null
                 ? null
                 : () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const BottomTabBar(),
-                      ),
-                    );
+                    final uid = FirebaseAuth.instance.currentUser?.uid;
+                    if (uid != null) {
+                      FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(uid)
+                          .set({
+                            'favoriteTeam': selectedTeam.name,
+                          }, SetOptions(merge: true))
+                          .then((_) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const BottomTabBar(),
+                              ),
+                            );
+                          });
+                    } else {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BottomTabBar(),
+                        ),
+                      );
+                    }
                   },
             child: Padding(
               padding: const EdgeInsets.all(10.0),
