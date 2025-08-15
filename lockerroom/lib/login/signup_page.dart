@@ -409,34 +409,20 @@ class _SignupPageState extends State<SignupPage> {
     // final shouldFixButtonToBottom = !_hasAnyText && !_isKeyboardVisible;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFFFF),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        scrolledUnderElevation: 0,
-        title: Text(
-          '회원가입',
-          style: TextStyle(
-            color: GRAYSCALE_LABEL_950,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
+      backgroundColor: BACKGROUND_COLOR,
       body: SafeArea(
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Expanded(
                 child: SingleChildScrollView(
                   controller: _scrollController,
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const SizedBox(height: 40.0),
-                      const SizedBox(height: 40.0),
+                      Image.asset('assets/images/applogo/app_logo.png'),
                       _buildTextField(
                         '닉네임',
                         _nicknameController,
@@ -484,7 +470,6 @@ class _SignupPageState extends State<SignupPage> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20.0),
                       SizedBox(
                         width: double.infinity,
                         height: 48.0,
@@ -544,7 +529,7 @@ class _SignupPageState extends State<SignupPage> {
                                   : null,
                               style: ElevatedButton.styleFrom(
                                 overlayColor: Colors.transparent,
-                                backgroundColor: Eagles,
+                                backgroundColor: BUTTON,
                                 disabledBackgroundColor: GRAYSCALE_LABEL_300,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8.0),
@@ -574,7 +559,7 @@ class _SignupPageState extends State<SignupPage> {
                           },
                         ),
                       ),
-                      const SizedBox(height: 10.0),
+                      const SizedBox(height: 20.0),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -601,7 +586,7 @@ class _SignupPageState extends State<SignupPage> {
                             child: const Text(
                               '로그인',
                               style: TextStyle(
-                                color: BLUE_SECONDARY_600,
+                                color: Eagles,
                                 fontSize: 15.0,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -656,7 +641,7 @@ class _SignupPageState extends State<SignupPage> {
             ),
           ),
           child: TextFormField(
-            cursorColor: ORANGE_PRIMARY_500,
+            cursorColor: BUTTON,
             controller: controller,
             focusNode: focusNode,
             obscureText: isPassword,
