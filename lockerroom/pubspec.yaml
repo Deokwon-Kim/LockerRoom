@@ -73,6 +73,7 @@ flutter:
     - assets/images/
     - assets/images/logo/
     - assets/images/symbol/
+    - assets/images/applogo/
     - assets/schedules/
     - assets/icons/
 
