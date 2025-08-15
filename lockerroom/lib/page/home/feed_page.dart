@@ -15,9 +15,33 @@ class FeedPage extends StatefulWidget {
 }
 
 class _FeedPageState extends State<FeedPage> {
+  // 현재 구독 중인 사용자 ID 목록
+  final Set<String> _subscribedUserIds = <String>{};
+  // UserProvider 참조 저장
+  UserProvider? _userProvider;
+
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // UserProvider 참조 저장
+    _userProvider = Provider.of<UserProvider>(context, listen: false);
+  }
+
+  @override
+  void dispose() {
+    // 모든 프로필 이미지 구독 해제
+    if (_userProvider != null) {
+      for (final userId in _subscribedUserIds) {
+        _userProvider!.stopListeningUserProfile(userId);
+      }
+    }
+    _subscribedUserIds.clear();
+    super.dispose();
   }
 
   @override
@@ -78,6 +102,15 @@ class _FeedPageState extends State<FeedPage> {
       }
     }
 
+    // 작성자 ID 가져오기
+    final authorId = post['authorId'] as String?;
+
+    // UserProvider를 통해 실시간 프로필 이미지 구독
+    if (authorId != null && _userProvider != null) {
+      _userProvider!.startListeningUserProfile(authorId);
+      _subscribedUserIds.add(authorId);
+    }
+
     return Card(
       color: Colors.white,
       elevation: 2,
@@ -90,28 +123,42 @@ class _FeedPageState extends State<FeedPage> {
             // 작성자 정보
             Row(
               children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundImage: post['authorProfileImageUrl'] != null
-                      ? NetworkImage(post['authorProfileImageUrl'])
-                      : null,
-                  child: post['authorProfileImageUrl'] == null
-                      ? Icon(Icons.person)
-                      : null,
-                  onBackgroundImageError: post['authorProfileImageUrl'] != null
-                      ? (exception, stackTrace) {
-                          print('Profile image load error: $exception');
+                Consumer<UserProvider>(
+                  builder: (context, userProvider, child) {
+                    // 실시간 프로필 이미지 가져오기
+                    String? profileImageUrl;
+                    if (authorId != null) {
+                      profileImageUrl = userProvider.getUserProfileImage(
+                        authorId,
+                      );
+                    }
+                    // 실시간 이미지가 없으면 게시물에 저장된 이미지 사용
+                    profileImageUrl ??= post['authorProfileImageUrl'];
 
-                          // 403 에러 특별 처리
-                          if (exception.toString().contains('403') ||
-                              exception.toString().contains('Forbidden')) {
-                            print(
-                              '403 Forbidden error for profile image: ${post['authorProfileImageUrl']}',
-                            );
-                          }
-                          // 프로필 이미지 로드 실패 시 디폴트 아이콘을 표시
-                        }
-                      : null,
+                    return CircleAvatar(
+                      radius: 20,
+                      backgroundImage: profileImageUrl != null
+                          ? NetworkImage(profileImageUrl)
+                          : null,
+                      child: profileImageUrl == null
+                          ? Icon(Icons.person)
+                          : null,
+                      onBackgroundImageError: profileImageUrl != null
+                          ? (exception, stackTrace) {
+                              print('Profile image load error: $exception');
+
+                              // 403 에러 특별 처리
+                              if (exception.toString().contains('403') ||
+                                  exception.toString().contains('Forbidden')) {
+                                print(
+                                  '403 Forbidden error for profile image: $profileImageUrl',
+                                );
+                              }
+                              // 프로필 이미지 로드 실패 시 디폴트 아이콘을 표시
+                            }
+                          : null,
+                    );
+                  },
                 ),
                 SizedBox(width: 12),
                 Expanded(

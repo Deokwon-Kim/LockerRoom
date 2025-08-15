@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 
 class ProfileProvider extends ChangeNotifier {
   String? _profileImageUrl;
@@ -45,7 +47,7 @@ class ProfileProvider extends ChangeNotifier {
   }
 
   // 프로필 사진 업로드
-  Future<void> updateProfilePickture() async {
+  Future<void> updateProfilePickture(BuildContext context) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -76,6 +78,15 @@ class ProfileProvider extends ChangeNotifier {
       });
 
       _profileImageUrl = imageUrl;
+
+      // UserProvider의 프로필 이미지 캐시도 업데이트
+      try {
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        // UserProvider의 내부 메서드를 통해 캐시 업데이트
+        userProvider.startListeningUserProfile(uid);
+      } catch (e) {
+        debugPrint('UserProvider 업데이트 실패: $e');
+      }
     } catch (e) {
       print('프로필 사진 업데이트 실패: $e');
     } finally {

@@ -20,6 +20,9 @@ class UserProvider extends ChangeNotifier {
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userSub;
   String? _listeningUserId;
 
+  // 사용자별 프로필 이미지 캐시 (실시간 업데이트용)
+  final Map<String, String?> _userProfileImages = {};
+
   // 게터
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -28,6 +31,54 @@ class UserProvider extends ChangeNotifier {
   String? get nickname => _nickname;
   String? get email => _email;
   String? get favoriteTeam => _favoriteTeam;
+
+  // 특정 사용자의 프로필 이미지 가져오기
+  String? getUserProfileImage(String userId) {
+    return _userProfileImages[userId];
+  }
+
+  // 사용자 프로필 이미지 실시간 구독 시작
+  void startListeningUserProfile(String userId) {
+    if (_userProfileImages.containsKey(userId)) return; // 이미 구독 중이면 스킵
+
+    _firestore
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .listen(
+          (doc) {
+            if (doc.exists) {
+              final profileImage = doc.data()?['profileImage'] as String?;
+              _userProfileImages[userId] = profileImage;
+              // 위젯 트리 잠금 문제를 방지하기 위해 다음 프레임에서 notifyListeners 호출
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                notifyListeners();
+              });
+            }
+          },
+          onError: (e) {
+            debugPrint('User profile image listen error for $userId: $e');
+          },
+        );
+  }
+
+  // 사용자 프로필 이미지 구독 해제
+  void stopListeningUserProfile(String userId) {
+    _userProfileImages.remove(userId);
+    // 위젯 트리 잠금 문제를 방지하기 위해 다음 프레임에서 notifyListeners 호출
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  // 모든 프로필 이미지 구독 해제
+  void clearAllProfileImages() {
+    _userProfileImages.clear();
+    // 위젯 트리 잠금 문제를 방지하기 위해 다음 프레임에서 notifyListeners 호출
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
 
   // 로딩 상태 설정
   void setLoading(bool loading) {
@@ -217,6 +268,7 @@ class UserProvider extends ChangeNotifier {
   @override
   void dispose() {
     stopListeningUserDoc();
+    clearAllProfileImages();
     super.dispose();
   }
 }

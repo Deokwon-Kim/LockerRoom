@@ -90,7 +90,7 @@ class Mypage extends StatelessWidget {
                 Expanded(
                   child: GestureDetector(
                     onTap: () {
-                      profileProvider.updateProfilePickture();
+                      profileProvider.updateProfilePickture(context);
                     },
                     child: Container(
                       height: 40,
