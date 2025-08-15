@@ -141,7 +141,10 @@ class _SchedulePageState extends State<SchedulePage> {
                             height: 150,
                             decoration: BoxDecoration(
                               color: WHITE,
-                              border: Border.all(color: selectedTeam.color),
+                              border: Border.all(
+                                color: selectedTeam.color,
+                                width: 1.5,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Padding(
