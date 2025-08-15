@@ -50,7 +50,10 @@ class _FeedPageState extends State<FeedPage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Image.asset('assets/images/applogo/app_logo.png', height: 100),
+        title: Padding(
+          padding: const EdgeInsets.only(top: 20.0),
+          child: Image.asset('assets/images/applogo/app_logo.png', height: 100),
+        ),
         centerTitle: true,
         backgroundColor: BACKGROUND_COLOR,
         scrolledUnderElevation: 0,
