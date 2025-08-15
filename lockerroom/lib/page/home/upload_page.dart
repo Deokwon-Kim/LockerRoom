@@ -63,7 +63,8 @@ class UploadPage extends StatelessWidget {
                           child: profileProvider.profileImageUrl == null
                               ? const Icon(Icons.person, size: 30)
                               : null,
-                          onBackgroundImageError: profileProvider.profileImageUrl != null
+                          onBackgroundImageError:
+                              profileProvider.profileImageUrl != null
                               ? (exception, stackTrace) {
                                   print('Profile image load error: $exception');
                                 }
