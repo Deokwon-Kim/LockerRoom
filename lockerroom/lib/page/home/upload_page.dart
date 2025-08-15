@@ -31,6 +31,7 @@ class UploadPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
           '새로운 게시물',
           style: TextStyle(

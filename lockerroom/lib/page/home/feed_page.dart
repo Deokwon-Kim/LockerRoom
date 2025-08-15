@@ -49,8 +49,11 @@ class _FeedPageState extends State<FeedPage> {
     final teamProvider = context.watch<TeamProvider>();
     return Scaffold(
       appBar: AppBar(
-        title: Text('피드', style: TextStyle(color: WHITE, fontSize: 15)),
-        backgroundColor: teamProvider.selectedTeam?.color,
+        automaticallyImplyLeading: false,
+        title: Image.asset('assets/images/applogo/app_logo.png', height: 100),
+        centerTitle: true,
+        backgroundColor: BACKGROUND_COLOR,
+        scrolledUnderElevation: 0,
       ),
       backgroundColor: BACKGROUND_COLOR,
       body: StreamBuilder<QuerySnapshot>(

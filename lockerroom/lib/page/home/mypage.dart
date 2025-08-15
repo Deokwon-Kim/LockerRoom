@@ -35,6 +35,7 @@ class Mypage extends StatelessWidget {
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
           '프로필',
           style: TextStyle(
