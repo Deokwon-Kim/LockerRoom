@@ -82,12 +82,27 @@ class _FeedPageState extends State<FeedPage> {
   }
 }
 
-// 🔹 개별 포스트 위젯
+// 개별 포스트 위젯
 class PostWidget extends StatelessWidget {
   final PostModel post;
   final FeedProvider feedProvider;
 
   const PostWidget({required this.post, required this.feedProvider, super.key});
+
+  String timeAgo(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inSeconds < 60) {
+      return '${difference.inSeconds}s 전';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}분 전';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}시간 전';
+    } else {
+      return '${difference.inDays}일 전';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,6 +124,7 @@ class PostWidget extends StatelessWidget {
               final user = UserModel.fromDoc(userSnapshot.data!);
               return ListTile(
                 leading: CircleAvatar(
+                  backgroundColor: GRAYSCALE_LABEL_400,
                   backgroundImage:
                       user.profileImageUrl != null &&
                           user.profileImageUrl!.isNotEmpty
@@ -117,12 +133,24 @@ class PostWidget extends StatelessWidget {
                   child:
                       user.profileImageUrl == null ||
                           user.profileImageUrl!.isEmpty
-                      ? const Icon(Icons.person)
+                      ? const Icon(Icons.person, color: BLACK)
                       : null,
                 ),
-                title: Text(
-                  user.username ?? 'Unknown',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.username ?? 'Unknown',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      timeAgo(post.createdAt),
+                      style: TextStyle(
+                        color: GRAYSCALE_LABEL_600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -137,40 +165,37 @@ class PostWidget extends StatelessWidget {
 
           // 이미지/영상 슬라이드
           if (post.mediaUrls.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(left: 70.0),
-              child: SizedBox(
-                height: 200,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: post.mediaUrls.length,
-                  itemBuilder: (_, i) {
-                    final url = post.mediaUrls[i];
-                    return Container(
-                      margin: const EdgeInsets.only(left: 8, right: 8),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: url.endsWith('.mp4')
-                            ? Center(child: Text('비디오 미리보기'))
-                            : Image.network(
-                                url,
-                                height: 200,
-                                width: 150,
-                                fit: BoxFit.cover,
-                                loadingBuilder:
-                                    (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return const Center(
-                                        child: CircularProgressIndicator(
-                                          color: BUTTON,
-                                        ),
-                                      );
-                                    },
-                              ),
-                      ),
-                    );
-                  },
-                ),
+            SizedBox(
+              height: 200,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: post.mediaUrls.length,
+                itemBuilder: (_, i) {
+                  final url = post.mediaUrls[i];
+                  return Container(
+                    margin: const EdgeInsets.only(left: 5, right: 5),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: url.endsWith('.mp4')
+                          ? Center(child: Text('비디오 미리보기'))
+                          : Image.network(
+                              url,
+                              height: 200,
+                              width: 150,
+                              fit: BoxFit.cover,
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                      child: CircularProgressIndicator(
+                                        color: BUTTON,
+                                      ),
+                                    );
+                                  },
+                            ),
+                    ),
+                  );
+                },
               ),
             ),
 
