@@ -99,29 +99,12 @@ class _LoginPageState extends State<LoginPage> {
             ),
             child: IntrinsicHeight(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '나만 알고 있던,\n알려주고 싶은',
-                    style: GoogleFonts.inter(
-                      color: GRAYSCALE_LABEL_900,
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    '마이웨이',
-                    style: GoogleFonts.inter(
-                      color: BLUE_SECONDARY_700,
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 20),
+                  Image.asset('assets/images/applogo/app_logo.png'),
                   TextFormField(
                     controller: _emailController,
-                    cursorColor: ORANGE_PRIMARY_600,
+                    cursorColor: BUTTON,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                       labelText: '이메일',
@@ -139,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                   SizedBox(height: 10),
                   TextFormField(
                     controller: _passwordController,
-                    cursorColor: ORANGE_PRIMARY_500,
+                    cursorColor: BUTTON,
                     obscureText: true,
                     decoration: InputDecoration(
                       labelText: '비밀번호',

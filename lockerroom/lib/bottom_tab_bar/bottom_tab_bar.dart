@@ -7,6 +7,7 @@ import 'package:lockerroom/page/home/home_page.dart';
 import 'package:lockerroom/page/home/mypage.dart';
 import 'package:lockerroom/page/home/upload_page.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/widgets/svg_icon.dart';
 import 'package:provider/provider.dart';
 
 class BottomTabBar extends StatefulWidget {
@@ -44,6 +45,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
+            height: 70,
             decoration: BoxDecoration(
               boxShadow: [
                 BoxShadow(
@@ -67,10 +69,19 @@ class _BottomTabBarState extends State<BottomTabBar> {
                 selectedItemColor: BUTTON,
                 unselectedItemColor: GRAYSCALE_LABEL_500,
                 backgroundColor: WHITE,
+                elevation: 0,
+                selectedFontSize: 0,
+                unselectedFontSize: 0,
+                iconSize: 25,
                 items: [
                   BottomNavigationBarItem(
-                    icon: _buildTabIcon(0, Icons.home_outlined, Icons.home),
-                    label: '홈',
+                    icon: _buildSvgTabIcon(
+                      0,
+                      AppIcons.home,
+                      AppIcons.homeFill,
+                      0,
+                    ),
+                    label: '',
                   ),
                   BottomNavigationBarItem(
                     icon: _buildTabIcon(
@@ -78,15 +89,11 @@ class _BottomTabBarState extends State<BottomTabBar> {
                       CupertinoIcons.search,
                       CupertinoIcons.search,
                     ),
-                    label: '게시물',
+                    label: '',
                   ),
                   BottomNavigationBarItem(
-                    icon: _buildTabIcon(
-                      2,
-                      CupertinoIcons.add_circled,
-                      CupertinoIcons.add_circled_solid,
-                    ),
-                    label: '업로드',
+                    icon: _buildSvgTabIcon(2, AppIcons.add, AppIcons.add, 2),
+                    label: '',
                   ),
                   BottomNavigationBarItem(
                     icon: _buildTabIcon(
@@ -94,11 +101,16 @@ class _BottomTabBarState extends State<BottomTabBar> {
                       Icons.storefront_outlined,
                       Icons.storefront_rounded,
                     ),
-                    label: '중고마켓',
+                    label: '',
                   ),
                   BottomNavigationBarItem(
-                    icon: _buildTabIcon(4, Icons.person_outline, Icons.person),
-                    label: '프로필',
+                    icon: _buildSvgTabIcon(
+                      4,
+                      AppIcons.person,
+                      AppIcons.personFill,
+                      4,
+                    ),
+                    label: '',
                   ),
                 ],
               ),
@@ -116,10 +128,29 @@ class _BottomTabBarState extends State<BottomTabBar> {
   ) {
     bool isSelected = _selectedIndex == index;
     return Padding(
-      padding: const EdgeInsets.only(top: 5),
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
       child: Icon(
         isSelected ? selectedIcon : unselectedIcon,
         size: 25,
+        color: isSelected ? BUTTON : Colors.grey,
+      ),
+    );
+  }
+
+  // SVG 아이콘 사용 메서드
+  Widget _buildSvgTabIcon(
+    int index,
+    String unselectedSvgPath,
+    String selectedSvgPath,
+    int selectedIndex,
+  ) {
+    bool isSelected = selectedIndex == index;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 8), // 상하 패딩 조절
+      child: SvgIcon(
+        assetPath: isSelected ? selectedSvgPath : unselectedSvgPath,
+        width: 25,
+        height: 25,
         color: isSelected ? BUTTON : Colors.grey,
       ),
     );

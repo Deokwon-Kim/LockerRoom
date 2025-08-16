@@ -21,7 +21,11 @@ class ProfileProvider with ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    final ref = _storage.ref().child('profiles/${user.uid}.jpg');
+    final ref = _storage
+        .ref()
+        .child('profiles')
+        .child(user.uid)
+        .child('${user.uid}.jpg');
 
     await ref.putFile(File(pickedFile.path));
     final url = await ref.getDownloadURL();

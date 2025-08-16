@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/login/login_page.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 
 class Mypage extends StatelessWidget {
@@ -10,7 +12,11 @@ class Mypage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final profileProvider = Provider.of<ProfileProvider>(context);
-
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userName =
+        userProvider.nickname ?? userProvider.currentUser?.displayName ?? '사용자';
+    final email =
+        userProvider.email ?? userProvider.currentUser?.email ?? '이메일';
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
@@ -38,6 +44,19 @@ class Mypage extends StatelessWidget {
                     child: Icon(Icons.person, size: 50, color: BLACK),
                   ),
             const SizedBox(height: 16),
+            Text(
+              userName,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              email,
+              style: TextStyle(
+                color: GRAYSCALE_LABEL_500,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.only(left: 20.0, right: 20.0),
               child: GestureDetector(
@@ -58,7 +77,7 @@ class Mypage extends StatelessWidget {
                   ),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: GRAYSCALE_LABEL_400,
+                    color: GRAYSCALE_LABEL_300,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -67,6 +86,18 @@ class Mypage extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                userProvider.signOut();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginPage()),
+                  (route) => false,
+                );
+              },
+
+              child: Text('로그아웃'),
             ),
           ],
         ),

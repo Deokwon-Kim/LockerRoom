@@ -410,18 +410,6 @@ class _SignupPageState extends State<SignupPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFFFFF),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        scrolledUnderElevation: 0,
-        title: Text(
-          '회원가입',
-          style: TextStyle(
-            color: GRAYSCALE_LABEL_950,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
       body: SafeArea(
         bottom: false,
         child: Padding(
@@ -432,11 +420,10 @@ class _SignupPageState extends State<SignupPage> {
                 child: SingleChildScrollView(
                   controller: _scrollController,
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    // mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const SizedBox(height: 40.0),
-                      const SizedBox(height: 40.0),
+                      Image.asset('assets/images/applogo/app_logo.png'),
                       _buildTextField(
                         '닉네임',
                         _nicknameController,
@@ -656,7 +643,7 @@ class _SignupPageState extends State<SignupPage> {
             ),
           ),
           child: TextFormField(
-            cursorColor: ORANGE_PRIMARY_500,
+            cursorColor: BUTTON,
             controller: controller,
             focusNode: focusNode,
             obscureText: isPassword,

@@ -7,7 +7,6 @@ class PostModel {
   final String userId;
   final DateTime createdAt;
   final int likesCount;
-  final String profileImageUrl;
 
   PostModel({
     required this.id,
@@ -16,7 +15,6 @@ class PostModel {
     required this.userId,
     required this.createdAt,
     required this.likesCount,
-    required this.profileImageUrl,
   });
 
   factory PostModel.fromDoc(DocumentSnapshot doc) {
@@ -28,7 +26,6 @@ class PostModel {
       userId: data['userId'] ?? "",
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       likesCount: data['likesCount'] ?? 0,
-      profileImageUrl: data['profileImageUrl'] ?? '',
     );
   }
 }

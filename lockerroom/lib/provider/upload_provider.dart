@@ -45,10 +45,12 @@ class UploadProvider extends ChangeNotifier {
 
       await FirebaseFirestore.instance.collection('posts').add({
         'userName': currnetUser.displayName,
+        'userId': currnetUser.uid,
         'text': text,
         'mediaUrls': mediaUrls,
         'createdAt': FieldValue.serverTimestamp(),
         'likesCount': 0,
+        'profileImageUrl': currnetUser.photoURL ?? '',
       });
 
       _mediaFiles.clear();
