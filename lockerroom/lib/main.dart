@@ -7,7 +7,10 @@ import 'package:lockerroom/firebase_options.dart';
 import 'package:lockerroom/login/login_page.dart';
 import 'package:lockerroom/login/signup_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
+import 'package:lockerroom/provider/feed_provider.dart';
+import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -19,6 +22,9 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (context) => TeamProvider()),
         ChangeNotifierProvider(create: (context) => UserProvider()),
+        ChangeNotifierProvider(create: (context) => UploadProvider()),
+        ChangeNotifierProvider(create: (context) => FeedProvider()),
+        ChangeNotifierProvider(create: (context) => ProfileProvider()),
       ],
       child: const MyApp(),
     ),
