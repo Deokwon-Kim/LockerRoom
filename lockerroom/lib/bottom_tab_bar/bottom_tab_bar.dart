@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/home/after_market.dart';
-import 'package:lockerroom/page/home/feed_page.dart';
+import 'package:lockerroom/page/home/feed_page2.dart';
 import 'package:lockerroom/page/home/home_page.dart';
 import 'package:lockerroom/page/home/mypage.dart';
 import 'package:lockerroom/page/home/upload_page.dart';

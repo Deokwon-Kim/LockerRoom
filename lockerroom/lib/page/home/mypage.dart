@@ -3,7 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/login/login_page.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
-import 'package:lockerroom/provider/user_provider.dart';
+import 'package:lockerroom/provider/user_provider2.dart';
 import 'package:provider/provider.dart';
 
 class Mypage extends StatelessWidget {

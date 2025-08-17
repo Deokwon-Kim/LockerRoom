@@ -11,7 +11,7 @@ import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
-import 'package:lockerroom/provider/user_provider.dart';
+import 'package:lockerroom/provider/user_provider2.dart';
 import 'package:provider/provider.dart';
 
 Future<void> main() async {

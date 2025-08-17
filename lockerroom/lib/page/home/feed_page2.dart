@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
-import 'package:lockerroom/model/post_model.dart';
+import 'package:lockerroom/model/post_model2.dart';
 import 'package:lockerroom/model/user_model.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:provider/provider.dart';

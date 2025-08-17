@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:lockerroom/model/post_model.dart';
+import 'package:lockerroom/model/post_model2.dart';
 
 class FeedProvider extends ChangeNotifier {
   final _postCollection = FirebaseFirestore.instance.collection('posts');
