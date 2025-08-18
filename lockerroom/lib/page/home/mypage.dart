@@ -1,3 +1,4 @@
+import 'package:contained_tab_bar_view/contained_tab_bar_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -170,97 +171,143 @@ class _MypageState extends State<Mypage> {
         backgroundColor: BACKGROUND_COLOR,
       ),
       body: Center(
-        child: Stack(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(
-                top: 20.0,
-                left: 20.0,
-                right: 20.0,
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircleAvatar(
-                    backgroundColor: GRAYSCALE_LABEL_300,
-                    radius: 50,
-                    backgroundImage: profileProvider.image != null
-                        ? FileImage(profileProvider.image!)
-                        : (profileProvider.imageUrl != null
-                              ? NetworkImage(profileProvider.imageUrl!)
-                              : null),
-                    child:
-                        (profileProvider.image == null &&
-                            profileProvider.imageUrl == null)
-                        ? Icon(
-                            Icons.person,
-                            size: 40,
-                            color: GRAYSCALE_LABEL_500,
-                          )
-                        : null,
+            Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(
+                    top: 20.0,
+                    left: 20.0,
+                    right: 20.0,
                   ),
-                  // 업로드 중일 때 진행률 표시
-                  if (profileProvider.isUploading)
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(153),
-                        shape: BoxShape.circle,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: GRAYSCALE_LABEL_300,
+                        radius: 50,
+                        backgroundImage: profileProvider.image != null
+                            ? FileImage(profileProvider.image!)
+                            : (profileProvider.imageUrl != null
+                                  ? NetworkImage(profileProvider.imageUrl!)
+                                  : null),
+                        child:
+                            (profileProvider.image == null &&
+                                profileProvider.imageUrl == null)
+                            ? Icon(
+                                Icons.person,
+                                size: 40,
+                                color: GRAYSCALE_LABEL_500,
+                              )
+                            : null,
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(
-                            value: profileProvider.uploadProgress,
-                            color: ORANGE_PRIMARY_500,
-                            strokeWidth: 3,
+                      // 업로드 중일 때 진행률 표시
+                      if (profileProvider.isUploading)
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withAlpha(153),
+                            shape: BoxShape.circle,
                           ),
-                          SizedBox(height: 8),
-                          Text(
-                            '${(profileProvider.uploadProgress * 100).toInt()}%',
-                            style: TextStyle(
-                              color: ORANGE_PRIMARY_500,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(
+                                value: profileProvider.uploadProgress,
+                                color: ORANGE_PRIMARY_500,
+                                strokeWidth: 3,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                '${(profileProvider.uploadProgress * 100).toInt()}%',
+                                style: TextStyle(
+                                  color: ORANGE_PRIMARY_500,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Positioned(
-              top: 60,
-              right: 0,
-              child: GestureDetector(
-                onTap: profileProvider.isUploading
-                    ? null // 업로드 중일 때 비활성화
-                    : () async {
-                        _showProfileImageOptions(
-                          context,
-                          profileProvider,
-                          user,
-                        );
-                      },
-                child: Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: profileProvider.isUploading
-                        ? Colors.grey[400] // 업로드 중일 때 회색
-                        : Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.edit,
-                    size: 20,
-                    color: profileProvider.isUploading
-                        ? Colors.grey[600]
-                        : Colors.black,
+                        ),
+                    ],
                   ),
                 ),
+                Positioned(
+                  top: 60,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: profileProvider.isUploading
+                        ? null // 업로드 중일 때 비활성화
+                        : () async {
+                            _showProfileImageOptions(
+                              context,
+                              profileProvider,
+                              user,
+                            );
+                          },
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: profileProvider.isUploading
+                            ? Colors.grey[400] // 업로드 중일 때 회색
+                            : Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.edit,
+                        size: 20,
+                        color: profileProvider.isUploading
+                            ? Colors.grey[600]
+                            : Colors.black,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            Text(
+              userName,
+              style: TextStyle(
+                color: BLACK,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 5),
+            Text(
+              email,
+              style: TextStyle(
+                color: GRAYSCALE_LABEL_500,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              height: 400,
+              child: ContainedTabBarView(
+                tabs: [
+                  Text('게시글', style: TextStyle(color: BLACK)),
+                  Text('댓글', style: TextStyle(color: BLACK)),
+                ],
+                tabBarProperties: TabBarProperties(
+                  indicatorColor: BUTTON,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicatorWeight: 3.0,
+                  unselectedLabelColor: GRAYSCALE_LABEL_500,
+                ),
+                views: [
+                  Container(color: Colors.blue),
+                  Container(color: Colors.deepOrange),
+                ],
+
+                onChange: (index) => print(index),
               ),
             ),
           ],
