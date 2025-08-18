@@ -18,17 +18,6 @@ class BottomTabBar extends StatefulWidget {
 }
 
 class _BottomTabBarState extends State<BottomTabBar> {
-  final List<Widget> _pages = [
-    Consumer<TeamProvider>(
-      builder: (context, teamProvider, _) => HomePage(
-        teamModel: teamProvider.selectedTeam ?? teamProvider.getTeam('team')[0],
-      ),
-    ),
-    FeedPage(),
-    UploadPage(),
-    AfterMarket(),
-    Mypage(),
-  ];
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
@@ -39,8 +28,27 @@ class _BottomTabBarState extends State<BottomTabBar> {
 
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      Consumer<TeamProvider>(
+        builder: (context, teamProvider, _) => HomePage(
+          teamModel:
+              teamProvider.selectedTeam ?? teamProvider.getTeam('team')[0],
+        ),
+      ),
+      FeedPage(),
+      UploadPage(
+        onUploaded: () {
+          setState(() {
+            _selectedIndex = 1; // 업로드 후 Feed 탭으로 이동
+          });
+        },
+      ),
+      AfterMarket(),
+      Mypage(),
+    ];
+
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: pages[_selectedIndex],
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -79,7 +87,6 @@ class _BottomTabBarState extends State<BottomTabBar> {
                       0,
                       AppIcons.home,
                       AppIcons.homeFill,
-                      0,
                     ),
                     label: '',
                   ),
@@ -92,7 +99,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
                     label: '',
                   ),
                   BottomNavigationBarItem(
-                    icon: _buildSvgTabIcon(2, AppIcons.add, AppIcons.add, 2),
+                    icon: _buildSvgTabIcon(2, AppIcons.add, AppIcons.add),
                     label: '',
                   ),
                   BottomNavigationBarItem(
@@ -108,7 +115,6 @@ class _BottomTabBarState extends State<BottomTabBar> {
                       4,
                       AppIcons.person,
                       AppIcons.personFill,
-                      4,
                     ),
                     label: '',
                   ),
@@ -142,9 +148,8 @@ class _BottomTabBarState extends State<BottomTabBar> {
     int index,
     String unselectedSvgPath,
     String selectedSvgPath,
-    int selectedIndex,
   ) {
-    bool isSelected = selectedIndex == index;
+    bool isSelected = _selectedIndex == index;
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 8), // 상하 패딩 조절
       child: SvgIcon(
