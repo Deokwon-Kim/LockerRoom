@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fade_shimmer/fade_shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
@@ -50,8 +51,11 @@ class _FeedPageState extends State<FeedPage> {
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData)
-            return const Center(
-              child: CircularProgressIndicator(color: BUTTON, strokeWidth: 2),
+            return FadeShimmer(
+              width: 150,
+              height: 8,
+              radius: 4,
+              fadeTheme: FadeTheme.light,
             );
 
           final posts = snapshot.data!.docs
@@ -213,8 +217,11 @@ class PostWidget extends StatelessWidget {
                                         if (loadingProgress == null)
                                           return child;
                                         return const Center(
-                                          child: CircularProgressIndicator(
-                                            color: BUTTON,
+                                          child: Padding(
+                                            padding: EdgeInsets.only(right: 8),
+                                            child: CircularProgressIndicator(
+                                              color: BUTTON,
+                                            ),
                                           ),
                                         );
                                       },

@@ -1,9 +1,7 @@
 import 'package:contained_tab_bar_view/contained_tab_bar_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:lockerroom/const/color.dart';
-import 'package:lockerroom/login/login_page.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
