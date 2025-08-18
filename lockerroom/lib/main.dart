@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -76,8 +77,43 @@ class AuthWrapper extends StatelessWidget {
         } else if (snapshot.hasError) {
           return const Center(child: Text('에러가 발생하였습니다.'));
         } else if (snapshot.hasData) {
-          // return const BottomTabBar();
-          return const TeamSelectPage();
+          final user = snapshot.data!;
+          return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            future: FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .get(),
+            builder: (context, userSnap) {
+              if (userSnap.connectionState == ConnectionState.waiting) {
+                return const Center(
+                    child: CircularProgressIndicator(color: Eagles));
+              }
+              if (userSnap.hasError) {
+                return const Center(child: Text('유저 정보를 불러오지 못했습니다.'));
+              }
+
+              final data = userSnap.data?.data() ?? {};
+              final savedTeamName = data['team'] as String?;
+
+              if (savedTeamName != null && savedTeamName.isNotEmpty) {
+                // Provider에 선택 팀 반영 (TeamModel 매핑)
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  final teamProvider =
+                      Provider.of<TeamProvider>(context, listen: false);
+                  // 문자열 상태도 유지
+                  teamProvider.setTeam(savedTeamName);
+                  // TeamModel 찾아서 선택
+                  final list = teamProvider.getTeam('team');
+                  final match =
+                      list.firstWhere((t) => t.name == savedTeamName, orElse: () => list.first);
+                  teamProvider.selectTeam(match);
+                });
+                return const BottomTabBar();
+              } else {
+                return const TeamSelectPage();
+              }
+            },
+          );
         } else {
           return const LoginPage();
         }
