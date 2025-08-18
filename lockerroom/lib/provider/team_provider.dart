@@ -1,8 +1,24 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/team_model.dart';
 
-class TeamProvider extends ChangeNotifier {
+class TeamProvider with ChangeNotifier {
+  String? _team;
+
+  String? get team => _team;
+
+  Future<void> loadTeam(String userId) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+    if (doc.exists && doc.data()?['team'] != null) {
+      _team = doc['team'];
+    }
+    notifyListeners();
+  }
+
   final Map<String, List<TeamModel>> _teamList = {
     'team': [
       TeamModel(
@@ -83,23 +99,8 @@ class TeamProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  TeamModel? findTeamByName(String teamName) {
-    for (final entry in _teamList.values) {
-      try {
-        final matched = entry.firstWhere(
-          (t) => t.name == teamName,
-          orElse: () => entry.isNotEmpty ? entry.first : entry.first,
-        );
-        if (matched.name == teamName) return matched;
-      } catch (_) {}
-    }
-    return null;
-  }
-
-  void selectTeamByName(String teamName) {
-    final team = findTeamByName(teamName);
-    if (team != null) {
-      selectTeam(team);
-    }
+  Future<void> setTeam(String team) async {
+    _team = team;
+    notifyListeners();
   }
 }
