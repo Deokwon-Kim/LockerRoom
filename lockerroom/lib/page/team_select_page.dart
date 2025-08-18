@@ -1,12 +1,39 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/components/theme_tile.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 
-class TeamSelectPage extends StatelessWidget {
+class TeamSelectPage extends StatefulWidget {
   const TeamSelectPage({super.key});
+
+  @override
+  State<TeamSelectPage> createState() => _TeamSelectPageState();
+}
+
+class _TeamSelectPageState extends State<TeamSelectPage> {
+  void _selectTeam(BuildContext context, String teamName) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userId = userProvider.currentUser?.uid;
+
+    if (userId != null) {
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'team': teamName,
+      }, SetOptions(merge: true));
+    }
+
+    // Provider 업데이트
+    await Provider.of<TeamProvider>(context, listen: false).setTeam(teamName);
+
+    // 메인 페이지로 이동
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => BottomTabBar()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,12 +82,9 @@ class TeamSelectPage extends StatelessWidget {
             onTap: selectedTeam == null
                 ? null
                 : () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const BottomTabBar(),
-                      ),
-                    );
+                    if (selectedTeam != null) {
+                      _selectTeam(context, selectedTeam.name);
+                    }
                   },
             child: Padding(
               padding: const EdgeInsets.all(10.0),
