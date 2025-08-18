@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/team_select_page.dart';
-import 'package:lockerroom/provider/user_provider2.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
