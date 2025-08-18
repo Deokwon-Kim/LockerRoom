@@ -23,6 +23,7 @@ class _FeedPageState extends State<FeedPage> {
     if (widget.post != null) {
       return Scaffold(
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           title: Image.asset('assets/images/applogo/app_logo.png', height: 100),
           centerTitle: true,
           backgroundColor: BACKGROUND_COLOR,
