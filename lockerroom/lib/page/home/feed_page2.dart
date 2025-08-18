@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model2.dart';
 import 'package:lockerroom/model/user_model.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
+import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:provider/provider.dart';
 
 class FeedPage extends StatefulWidget {
@@ -18,6 +20,9 @@ class _FeedPageState extends State<FeedPage> {
   @override
   Widget build(BuildContext context) {
     final feedProvider = Provider.of<FeedProvider>(context, listen: false);
+    final profile = Provider.of<ProfileProvider>(context, listen: false);
+    final user = FirebaseAuth.instance.currentUser;
+    final image = profile.loadProfileImage;
 
     // 단일 포스트 모드
     if (widget.post != null) {
@@ -41,6 +46,7 @@ class _FeedPageState extends State<FeedPage> {
         ),
         centerTitle: true,
         backgroundColor: BACKGROUND_COLOR,
+        scrolledUnderElevation: 0,
       ),
       backgroundColor: BACKGROUND_COLOR,
       body: StreamBuilder<QuerySnapshot>(
@@ -106,110 +112,122 @@ class PostWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: WHITE,
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 작성자 + 프로필
-          StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('users')
-                .doc(post.userId)
-                .snapshots(),
-            builder: (context, userSnapshot) {
-              if (!userSnapshot.hasData)
-                return const ListTile(title: Text('로딩중...'));
-              final user = UserModel.fromDoc(userSnapshot.data!);
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: GRAYSCALE_LABEL_400,
-                  backgroundImage:
-                      user.profileImageUrl != null &&
-                          user.profileImageUrl!.isNotEmpty
-                      ? NetworkImage(user.profileImageUrl!)
-                      : null,
-                  child:
-                      user.profileImageUrl == null ||
-                          user.profileImageUrl!.isEmpty
-                      ? const Icon(Icons.person, color: BLACK)
-                      : null,
-                ),
-                title: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.username ?? 'Unknown',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      timeAgo(post.createdAt),
-                      style: TextStyle(
-                        color: GRAYSCALE_LABEL_600,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+    return Padding(
+      padding: const EdgeInsets.only(left: 15, right: 15, bottom: 15),
+      child: Card(
+        color: WHITE,
 
-          // 본문
-          Padding(
-            padding: const EdgeInsets.only(left: 70.0),
-            child: Text(post.text),
-          ),
-          const SizedBox(height: 8),
-
-          // 이미지/영상 슬라이드
-          if (post.mediaUrls.isNotEmpty)
-            SizedBox(
-              height: 200,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: post.mediaUrls.length,
-                itemBuilder: (_, i) {
-                  final url = post.mediaUrls[i];
-                  return Container(
-                    margin: const EdgeInsets.only(left: 5, right: 5),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: url.endsWith('.mp4')
-                          ? Center(child: Text('비디오 미리보기'))
-                          : Image.network(
-                              url,
-                              height: 200,
-                              width: 150,
-                              fit: BoxFit.cover,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return const Center(
-                                      child: CircularProgressIndicator(
-                                        color: BUTTON,
-                                      ),
-                                    );
-                                  },
-                            ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-          // 좋아요 버튼
-          Row(
+        child: Padding(
+          padding: const EdgeInsets.all(15.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              IconButton(
-                onPressed: () => feedProvider.toggleLike(post),
-                icon: Icon(Icons.favorite_border),
+              // 작성자 + 프로필
+              Row(
+                children: [
+                  StreamBuilder<String?>(
+                    stream: context.read<ProfileProvider>().loadProfileImage(
+                      post.userId,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircleAvatar(
+                          radius: 20,
+                          backgroundColor: GRAYSCALE_LABEL_300,
+                        );
+                      }
+                      if (!snapshot.hasData || snapshot.data == null) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(30),
+                          child: const Icon(Icons.person, size: 20),
+                        );
+                      }
+                      return CircleAvatar(
+                        radius: 20,
+                        backgroundImage: NetworkImage(snapshot.data!),
+                      );
+                    },
+                  ),
+                  SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        post.userName,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        timeAgo(post.createdAt),
+                        style: TextStyle(
+                          color: GRAYSCALE_LABEL_500,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              Text('${post.likesCount}'),
+              const SizedBox(height: 8),
+              // 본문
+              Text(post.text),
+              const SizedBox(height: 8),
+
+              // 이미지/영상 슬라이드
+              if (post.mediaUrls.isNotEmpty)
+                SizedBox(
+                  height: 200,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: post.mediaUrls.length,
+                    itemBuilder: (_, i) {
+                      final url = post.mediaUrls[i];
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: url.endsWith('.mp4')
+                            ? Center(child: Text('비디오 미리보기'))
+                            : Image.network(
+                                url,
+                                height: 200,
+                                width: 150,
+                                fit: BoxFit.cover,
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const Center(
+                                        child: CircularProgressIndicator(
+                                          color: BUTTON,
+                                        ),
+                                      );
+                                    },
+                              ),
+                      );
+                    },
+                  ),
+                ),
+              // 좋아요 버튼
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => feedProvider.toggleLike(post),
+                    icon: Icon(Icons.favorite_border),
+                  ),
+                  Text('${post.likesCount}'),
+                ],
+              ),
+              Text(
+                '${post.mediaUrls.length}개의 이미지',
+                style: TextStyle(
+                  color: GRAYSCALE_LABEL_500,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
