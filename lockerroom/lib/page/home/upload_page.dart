@@ -23,10 +23,9 @@ class UploadPage extends StatelessWidget {
     final profileProvider = context.read<ProfileProvider>();
 
     // 현재 사용자의 프로필 이미지 로드
-    if (userProvider.currentUser != null &&
-        profileProvider.profileImageUrl == null) {
+    if (userProvider.currentUser != null && profileProvider.imageUrl == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        profileProvider.loadProfileImage();
+        profileProvider.loadProfileImage;
       });
     }
 
@@ -52,11 +51,11 @@ class UploadPage extends StatelessWidget {
                     ? CircularProgressIndicator(color: BUTTON, strokeWidth: 2)
                     : CircleAvatar(
                         radius: 25,
-                        backgroundImage: profileProvider.profileImageUrl != null
-                            ? NetworkImage(profileProvider.profileImageUrl!)
+                        backgroundImage: profileProvider.imageUrl != null
+                            ? NetworkImage(profileProvider.imageUrl!)
                             : null,
                         backgroundColor: GRAYSCALE_LABEL_300,
-                        child: profileProvider.profileImageUrl == null
+                        child: profileProvider.imageUrl == null
                             ? Icon(Icons.person, color: BLACK, size: 25)
                             : null,
                       ),
