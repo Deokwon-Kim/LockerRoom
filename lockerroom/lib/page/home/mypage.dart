@@ -299,7 +299,7 @@ class _MypageState extends State<Mypage> {
             SizedBox(height: 10),
             Container(
               width: double.infinity,
-              height: 400,
+              height: 390,
               child: ContainedTabBarView(
                 tabs: [
                   Text('게시글', style: TextStyle(color: BLACK)),

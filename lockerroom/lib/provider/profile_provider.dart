@@ -92,12 +92,23 @@ class ProfileProvider extends ChangeNotifier {
     }
   }
 
-  Stream<String?> loadProfileImage(String userId) {
+  Stream<String?> liveloadProfileImage(String userId) {
     return FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
         .snapshots()
         .map((doc) => doc.data()?['profileImage'] as String?);
+  }
+
+  Future<void> loadProfileImage(String userId) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+    if (doc.exists) {
+      _imageUrl = doc.data()?['profileImage'];
+      notifyListeners();
+    }
   }
 
   Future<void> deleteProfileImage(String userId) async {

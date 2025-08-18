@@ -125,9 +125,9 @@ class PostWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   StreamBuilder<String?>(
-                    stream: context.read<ProfileProvider>().loadProfileImage(
-                      post.userId,
-                    ),
+                    stream: context
+                        .read<ProfileProvider>()
+                        .liveloadProfileImage(post.userId),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return CircleAvatar(
@@ -197,7 +197,7 @@ class PostWidget extends StatelessWidget {
                           child: url.endsWith('.mp4')
                               ? Container(
                                   width: inSingle
-                                      ? double.infinity
+                                      ? 290
                                       : 150, // 단일: 화면 전체, 여러장: 150
                                   height: 200,
                                   color: Colors.black12,
@@ -207,7 +207,7 @@ class PostWidget extends StatelessWidget {
                                   url,
                                   height: 200,
                                   width: inSingle
-                                      ? 300
+                                      ? 290
                                       : 150, // 단일: 화면 전체, 여러장: 150
                                   fit: inSingle
                                       ? BoxFit.cover
