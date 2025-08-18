@@ -285,6 +285,17 @@ class _MypageState extends State<Mypage> {
                 fontWeight: FontWeight.w500,
               ),
             ),
+            ElevatedButton(
+              onPressed: () {
+                userProvider.signOut();
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  'signIn',
+                  (route) => false,
+                );
+              },
+              child: Text('로그아웃'),
+            ),
             SizedBox(height: 10),
             Container(
               width: double.infinity,
