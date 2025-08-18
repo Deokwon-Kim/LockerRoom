@@ -11,8 +11,9 @@ import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
-import 'package:lockerroom/provider/user_provider2.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:toastification/toastification.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,14 +38,16 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
-      home: const AuthWrapper(),
-      routes: {
-        'signUp': (context) => const SignupPage(),
-        'signIn': (context) => const LoginPage(),
-      },
+    return ToastificationWrapper(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Flutter Demo',
+        home: const AuthWrapper(),
+        routes: {
+          'signUp': (context) => const SignupPage(),
+          'signIn': (context) => const LoginPage(),
+        },
+      ),
     );
   }
 }
