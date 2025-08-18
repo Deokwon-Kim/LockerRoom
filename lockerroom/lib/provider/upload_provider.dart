@@ -24,10 +24,20 @@ class UploadProvider extends ChangeNotifier {
     }
   }
 
+  // 개별 미디어 제거
+  void removeMediaAt(int index) {
+    if (index >= 0 && index < _mediaFiles.length) {
+      _mediaFiles.removeAt(index);
+      notifyListeners();
+    }
+  }
+
   // 업로드
-  Future<void> uploadPost(String text) async {
+  Future<bool> uploadPost(String text) async {
     final currnetUser = FirebaseAuth.instance.currentUser;
-    if (currnetUser == null || _mediaFiles.isEmpty) return;
+    if (currnetUser == null) return false;
+    if (text.trim().isEmpty) return false;
+    if (_mediaFiles.isEmpty) return false;
 
     _isUploading = true;
     notifyListeners();
@@ -54,11 +64,14 @@ class UploadProvider extends ChangeNotifier {
       });
 
       _mediaFiles.clear();
+      _isUploading = false;
+      notifyListeners();
+      return true;
     } catch (e) {
       debugPrint('업로드 에러: $e');
+      _isUploading = false;
+      notifyListeners();
+      return false;
     }
-
-    _isUploading = false;
-    notifyListeners();
   }
 }
