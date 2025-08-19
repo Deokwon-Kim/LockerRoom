@@ -7,6 +7,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
 import 'package:lockerroom/login/login_page.dart';
 import 'package:lockerroom/login/signup_page.dart';
+import 'package:lockerroom/page/setting/setting_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -47,6 +48,7 @@ class MyApp extends StatelessWidget {
         routes: {
           'signUp': (context) => const SignupPage(),
           'signIn': (context) => const LoginPage(),
+          'setting': (context) => const SettingPage(),
         },
       ),
     );
@@ -86,7 +88,8 @@ class AuthWrapper extends StatelessWidget {
             builder: (context, userSnap) {
               if (userSnap.connectionState == ConnectionState.waiting) {
                 return const Center(
-                    child: CircularProgressIndicator(color: Eagles));
+                  child: CircularProgressIndicator(color: Eagles),
+                );
               }
               if (userSnap.hasError) {
                 return const Center(child: Text('유저 정보를 불러오지 못했습니다.'));
@@ -98,14 +101,18 @@ class AuthWrapper extends StatelessWidget {
               if (savedTeamName != null && savedTeamName.isNotEmpty) {
                 // Provider에 선택 팀 반영 (TeamModel 매핑)
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  final teamProvider =
-                      Provider.of<TeamProvider>(context, listen: false);
+                  final teamProvider = Provider.of<TeamProvider>(
+                    context,
+                    listen: false,
+                  );
                   // 문자열 상태도 유지
                   teamProvider.setTeam(savedTeamName);
                   // TeamModel 찾아서 선택
                   final list = teamProvider.getTeam('team');
-                  final match =
-                      list.firstWhere((t) => t.name == savedTeamName, orElse: () => list.first);
+                  final match = list.firstWhere(
+                    (t) => t.name == savedTeamName,
+                    orElse: () => list.first,
+                  );
                   teamProvider.selectTeam(match);
                 });
                 return const BottomTabBar();
