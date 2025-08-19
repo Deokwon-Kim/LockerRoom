@@ -24,13 +24,28 @@ class HomePage extends StatelessWidget {
               padding: const EdgeInsets.only(left: 20.0),
               child: Image.asset(selectedTeam.symbolPath),
             ),
-            title: Text(
-              selectedTeam.name,
-              style: TextStyle(
-                color: WHITE,
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-              ),
+            title: Stack(
+              children: [
+                // 테두리
+                Text(
+                  selectedTeam.name,
+                  style: TextStyle(
+                    fontSize: 17,
+                    foreground: Paint()
+                      ..style = PaintingStyle.stroke
+                      ..strokeWidth = 2
+                      ..color = Colors.red,
+                  ),
+                ),
+                Text(
+                  selectedTeam.name,
+                  style: TextStyle(
+                    color: WHITE,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
             actions: [
               IconButton(

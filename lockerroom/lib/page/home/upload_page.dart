@@ -83,13 +83,13 @@ class _UploadPageState extends State<UploadPage> {
                           ),
                         )
                       : CircleAvatar(
-                          radius: 20,
+                          radius: 25,
                           backgroundImage: profileProvider.imageUrl != null
                               ? NetworkImage(profileProvider.imageUrl!)
                               : null,
                           backgroundColor: GRAYSCALE_LABEL_300,
                           child: profileProvider.imageUrl == null
-                              ? const Icon(Icons.person, color: BLACK, size: 20)
+                              ? const Icon(Icons.person, color: BLACK, size: 25)
                               : null,
                         ),
                   const SizedBox(width: 12),
@@ -125,7 +125,11 @@ class _UploadPageState extends State<UploadPage> {
                   minLines: 3,
                   onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
-                    hintText: '내용을 입력해주세요 (필수)',
+                    hintText: '새로운 소식이 있나요? (필수)',
+                    hintStyle: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
                     border: InputBorder.none,
                   ),
                 ),
@@ -178,12 +182,12 @@ class _UploadPageState extends State<UploadPage> {
                                     decoration: BoxDecoration(
                                       color: Colors.black.withAlpha(160),
                                       shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white,
-                                        width: 1,
-                                      ),
                                     ),
-                                    child: Icon(Icons.close),
+                                    child: Icon(
+                                      Icons.close,
+                                      color: WHITE,
+                                      size: 13,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -204,7 +208,10 @@ class _UploadPageState extends State<UploadPage> {
                     ? null
                     : uploadProvider.pickMultipleMedia,
                 icon: const Icon(Icons.add_photo_alternate_outlined),
-                label: const Text('미디어 선택'),
+                label: const Text(
+                  '미디어 선택',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: BUTTON,
                   side: const BorderSide(color: BUTTON),

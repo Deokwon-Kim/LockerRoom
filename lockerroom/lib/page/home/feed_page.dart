@@ -144,6 +144,7 @@ class PostWidget extends StatelessWidget {
                       }
                       return CircleAvatar(
                         radius: 20,
+                        backgroundColor: GRAYSCALE_LABEL_300,
                         backgroundImage: NetworkImage(snapshot.data!),
                       );
                     },
@@ -217,9 +218,10 @@ class PostWidget extends StatelessWidget {
                                       (context, child, loadingProgress) {
                                         if (loadingProgress == null)
                                           return child;
-                                        return const Center(
-                                          child: Padding(
-                                            padding: EdgeInsets.only(right: 8),
+                                        return SizedBox(
+                                          height: 200,
+                                          width: inSingle ? 290 : 150,
+                                          child: const Center(
                                             child: CircularProgressIndicator(
                                               color: BUTTON,
                                             ),
