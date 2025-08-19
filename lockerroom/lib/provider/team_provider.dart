@@ -99,6 +99,16 @@ class TeamProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // 팀 이름으로 TeamModel 찾기
+  TeamModel? findTeamByName(String name) {
+    final teams = _teamList['team'] ?? [];
+    try {
+      return teams.firstWhere((t) => t.name == name);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> setTeam(String team) async {
     _team = team;
     notifyListeners();
