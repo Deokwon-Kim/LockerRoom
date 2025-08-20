@@ -99,7 +99,7 @@ class HomePage extends StatelessWidget {
                     }
 
                     final schedules = snapshot.data ?? [];
-                    final teamName = selectedTeam.name;
+                    final teamName = selectedTeam.symplename;
                     final now = DateTime.now();
 
                     // 선택 한 팀의 미래 경기만 필터링 하고 정렬
