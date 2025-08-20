@@ -23,16 +23,16 @@ void main(List<String> args) async {
   };
 
   final Map<String, String> teamMap = {
-    '두산': '두산베어스',
-    '삼성': '삼성라이온즈',
-    '롯데': '롯데자이언츠',
-    'KIA': '기아타이거즈',
-    'LG': 'LG트윈스',
-    'SSG': 'SSG랜더스',
-    '한화': '한화이글스',
-    '키움': '키움히어로즈',
-    'NC': 'NC다이노스',
-    'KT': 'KT위즈',
+    '두산': '두산',
+    '삼성': '삼성',
+    '롯데': '롯데',
+    'KIA': '기아',
+    'LG': 'LG',
+    'SSG': 'SSG',
+    '한화': '한화',
+    '키움': '키움',
+    'NC': 'NC',
+    'KT': 'KT',
   };
 
   List<String> lines;
