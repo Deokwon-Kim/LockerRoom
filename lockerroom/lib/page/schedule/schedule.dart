@@ -95,7 +95,7 @@ class _SchedulePageState extends State<SchedulePage> {
                       return const Center(child: Text('일정 로드 실패'));
                     }
                     final schedules = snapshot.data ?? [];
-                    final teamName = selectedTeam.name;
+                    final teamName = selectedTeam.symplename;
                     final teamSchedules = schedules
                         .where(
                           (s) =>
@@ -120,7 +120,7 @@ class _SchedulePageState extends State<SchedulePage> {
                       for (final t in context.read<TeamProvider>().getTeam(
                         'team',
                       ))
-                        t.name: t,
+                        t.symplename: t,
                     };
 
                     return ListView.builder(
