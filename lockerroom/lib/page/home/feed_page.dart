@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fade_shimmer/fade_shimmer.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
@@ -239,9 +240,26 @@ class PostWidget extends StatelessWidget {
                 children: [
                   IconButton(
                     onPressed: () => feedProvider.toggleLike(post),
-                    icon: Icon(Icons.favorite_border),
+                    icon: Icon(
+                      (FirebaseAuth.instance.currentUser?.uid != null &&
+                              post.likedBy.contains(
+                                FirebaseAuth.instance.currentUser!.uid,
+                              ))
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      color:
+                          (FirebaseAuth.instance.currentUser?.uid != null &&
+                              post.likedBy.contains(
+                                FirebaseAuth.instance.currentUser!.uid,
+                              ))
+                          ? Colors.red
+                          : null,
+                    ),
                   ),
-                  Text('${post.likesCount}'),
+                  Transform.translate(
+                    offset: Offset(-10, 0),
+                    child: Text('${post.likesCount}'),
+                  ),
                 ],
               ),
               Text(

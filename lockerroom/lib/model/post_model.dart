@@ -8,6 +8,7 @@ class PostModel {
   final DateTime createdAt;
   final int likesCount;
   final String userName;
+  final List<String> likedBy;
 
   PostModel({
     required this.id,
@@ -17,6 +18,7 @@ class PostModel {
     required this.createdAt,
     required this.likesCount,
     required this.userName,
+    required this.likedBy,
   });
 
   factory PostModel.fromDoc(DocumentSnapshot doc) {
@@ -29,6 +31,7 @@ class PostModel {
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       likesCount: data['likesCount'] ?? 0,
       userName: data['userName'] ?? '사용자',
+      likedBy: List<String>.from(data['likedBy'] ?? const []),
     );
   }
 }
