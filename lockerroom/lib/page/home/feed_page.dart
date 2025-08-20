@@ -260,6 +260,10 @@ class PostWidget extends StatelessWidget {
                     offset: Offset(-10, 0),
                     child: Text('${post.likesCount}'),
                   ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.chat_bubble_outline_rounded),
+                  ),
                 ],
               ),
               Text(
