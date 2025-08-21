@@ -28,7 +28,9 @@ class PostModel {
       text: data['text'] ?? "",
       mediaUrls: List<String>.from(data['mediaUrls'] ?? []),
       userId: data['userId'] ?? "",
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      createdAt: data['createdAt'] == null
+          ? DateTime.now()
+          : (data['createdAt'] as Timestamp).toDate(),
       likesCount: data['likesCount'] ?? 0,
       userName: data['userName'] ?? '사용자',
       likedBy: List<String>.from(data['likedBy'] ?? const []),
