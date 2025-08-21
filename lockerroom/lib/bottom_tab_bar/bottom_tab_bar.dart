@@ -33,6 +33,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
         builder: (context, teamProvider, _) => HomePage(
           teamModel:
               teamProvider.selectedTeam ?? teamProvider.getTeam('team')[0],
+          onTabTab: (i) => setState(() => _selectedIndex = i),
         ),
       ),
       FeedPage(),
@@ -83,11 +84,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
                 iconSize: 25,
                 items: [
                   BottomNavigationBarItem(
-                    icon: _buildSvgTabIcon(
-                      0,
-                      AppIcons.home,
-                      AppIcons.homeFill,
-                    ),
+                    icon: _buildSvgTabIcon(0, AppIcons.home, AppIcons.homeFill),
                     label: '',
                   ),
                   BottomNavigationBarItem(
