@@ -23,6 +23,13 @@ class _UploadPageState extends State<UploadPage> {
   void initState() {
     super.initState();
     _captionController = TextEditingController();
+    // 첫 프레임 이후 프로필 이미지 로드 시도
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<UserProvider>().currentUser;
+      if (user != null) {
+        context.read<ProfileProvider>().loadProfileImage(user.uid);
+      }
+    });
   }
 
   @override
@@ -38,14 +45,9 @@ class _UploadPageState extends State<UploadPage> {
     final userName =
         userProvider.nickname ?? userProvider.currentUser?.displayName ?? '사용자';
     final teamProvider = context.read<TeamProvider>();
-    final profileProvider = context.read<ProfileProvider>();
+    final profileProvider = context.watch<ProfileProvider>();
 
-    // 프로필 이미지 로드 (지연)
-    if (userProvider.currentUser != null && profileProvider.imageUrl == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        profileProvider.loadProfileImage;
-      });
-    }
+    // build 중 불필요한 호출 방지: initState에서 처리함
 
     final themeColor = teamProvider.selectedTeam?.color ?? BUTTON;
     final hasCaption = _captionController.text.trim().isNotEmpty;
