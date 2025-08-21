@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fade_shimmer/fade_shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
@@ -262,7 +263,7 @@ class PostWidget extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () {},
-                    icon: Icon(Icons.chat_bubble_outline_rounded),
+                    icon: Icon(CupertinoIcons.chat_bubble),
                   ),
                 ],
               ),
