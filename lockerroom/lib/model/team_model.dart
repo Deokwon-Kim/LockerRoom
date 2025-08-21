@@ -6,6 +6,8 @@ class TeamModel {
   final String logoPath;
   final String symbolPath;
   final Color color;
+  final String youtubeName;
+  final String youtubeUrl;
 
   TeamModel({
     required this.name,
@@ -13,5 +15,7 @@ class TeamModel {
     required this.logoPath,
     required this.symbolPath,
     required this.color,
+    required this.youtubeName,
+    required this.youtubeUrl,
   });
 }

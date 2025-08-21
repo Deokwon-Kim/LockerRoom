@@ -26,6 +26,8 @@ class TeamProvider with ChangeNotifier {
         symplename: '두산',
         logoPath: 'assets/images/logo/doosan_logo.png',
         symbolPath: 'assets/images/symbol/newlogo2.png',
+        youtubeName: 'BEARS TV',
+        youtubeUrl: 'https://www.youtube.com/@bearstv1982',
         color: Doosan,
       ),
       TeamModel(
@@ -33,6 +35,8 @@ class TeamProvider with ChangeNotifier {
         symplename: '삼성',
         logoPath: 'assets/images/logo/samsung_logo.png',
         symbolPath: 'assets/images/symbol/samsung_symbol.png',
+        youtubeName: 'LIONS TV',
+        youtubeUrl: 'https://www.youtube.com/@lionstv1982',
         color: Samsung,
       ),
       TeamModel(
@@ -40,6 +44,8 @@ class TeamProvider with ChangeNotifier {
         symplename: '롯데',
         logoPath: 'assets/images/logo/lotte_logo.png',
         symbolPath: 'assets/images/symbol/lotte_symbol.png',
+        youtubeName: '자이언츠 TV',
+        youtubeUrl: 'https://www.youtube.com/@giantstv',
         color: Lotte,
       ),
       TeamModel(
@@ -47,6 +53,8 @@ class TeamProvider with ChangeNotifier {
         symplename: '기아',
         logoPath: 'assets/images/logo/kia_logo.png',
         symbolPath: 'assets/images/symbol/kia_symbol.png',
+        youtubeName: '갸티비',
+        youtubeUrl: 'https://www.youtube.com/@kiatigerstv',
         color: Kia,
       ),
       TeamModel(
@@ -54,6 +62,8 @@ class TeamProvider with ChangeNotifier {
         symplename: 'LG',
         logoPath: 'assets/images/logo/lg_logo.png',
         symbolPath: 'assets/images/symbol/lg_symbol.png',
+        youtubeName: 'LGTWINSTV',
+        youtubeUrl: 'https://www.youtube.com/@LGTwinsTV',
         color: LG,
       ),
       TeamModel(
@@ -61,6 +71,8 @@ class TeamProvider with ChangeNotifier {
         symplename: 'SSG',
         logoPath: 'assets/images/logo/ssg_logo.png',
         symbolPath: 'assets/images/symbol/landers_symbol.png',
+        youtubeName: '쓱튜브',
+        youtubeUrl: 'https://www.youtube.com/@SSGLANDERS',
         color: Landers,
       ),
       TeamModel(
@@ -68,6 +80,8 @@ class TeamProvider with ChangeNotifier {
         symplename: '한화',
         logoPath: 'assets/images/logo/hanwha_logo.png',
         symbolPath: 'assets/images/symbol/hanwha_symbol.png',
+        youtubeName: 'Eagles TV',
+        youtubeUrl: 'https://www.youtube.com/@HanwhaEagles_official',
         color: Eagles,
       ),
       TeamModel(
@@ -75,6 +89,8 @@ class TeamProvider with ChangeNotifier {
         symplename: '키움',
         logoPath: 'assets/images/logo/kiwoom_logo.png',
         symbolPath: 'assets/images/symbol/kiwoom_symbol.png',
+        youtubeName: '큠튜브',
+        youtubeUrl: 'https://www.youtube.com/@heroesbaseballclub',
         color: KIWOOM,
       ),
 
@@ -83,6 +99,8 @@ class TeamProvider with ChangeNotifier {
         symplename: 'NC',
         logoPath: 'assets/images/logo/nc_logo.png',
         symbolPath: 'assets/images/symbol/nc_symbol.png',
+        youtubeName: '엔튜브',
+        youtubeUrl: 'https://www.youtube.com/@ncdinos',
         color: NC,
       ),
 
@@ -91,6 +109,8 @@ class TeamProvider with ChangeNotifier {
         symplename: 'KT',
         logoPath: 'assets/images/logo/kt_logo.png',
         symbolPath: 'assets/images/symbol/kt_symbol.png',
+        youtubeName: 'kt wiz - 위즈TV',
+        youtubeUrl: 'https://www.youtube.com/@ktwiztv',
         color: KT,
       ),
     ],
