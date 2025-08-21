@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -18,18 +19,12 @@ class UploadPage extends StatefulWidget {
 
 class _UploadPageState extends State<UploadPage> {
   late final TextEditingController _captionController;
+  bool _requestedProfileLoad = false;
 
   @override
   void initState() {
     super.initState();
     _captionController = TextEditingController();
-    // 첫 프레임 이후 프로필 이미지 로드 시도
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = context.read<UserProvider>().currentUser;
-      if (user != null) {
-        context.read<ProfileProvider>().loadProfileImage(user.uid);
-      }
-    });
   }
 
   @override
@@ -46,8 +41,17 @@ class _UploadPageState extends State<UploadPage> {
         userProvider.nickname ?? userProvider.currentUser?.displayName ?? '사용자';
     final teamProvider = context.read<TeamProvider>();
     final profileProvider = context.watch<ProfileProvider>();
+    final authUser = FirebaseAuth.instance.currentUser;
 
-    // build 중 불필요한 호출 방지: initState에서 처리함
+    // 프로필 이미지가 없고, 아직 요청하지 않았고, 로그인되어 있으면 로드
+    if (authUser != null &&
+        profileProvider.imageUrl == null &&
+        !_requestedProfileLoad) {
+      _requestedProfileLoad = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<ProfileProvider>().loadProfileImage(authUser.uid);
+      });
+    }
 
     final themeColor = teamProvider.selectedTeam?.color ?? BUTTON;
     final hasCaption = _captionController.text.trim().isNotEmpty;
@@ -75,25 +79,42 @@ class _UploadPageState extends State<UploadPage> {
               // 헤더: 프로필 + 이름
               Row(
                 children: [
-                  profileProvider.isLoading
-                      ? const SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: BUTTON,
-                          ),
-                        )
-                      : CircleAvatar(
+                  if (authUser != null)
+                    StreamBuilder<String?>(
+                      stream: context
+                          .read<ProfileProvider>()
+                          .liveloadProfileImage(authUser.uid),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: BUTTON,
+                            ),
+                          );
+                        }
+                        final url = snapshot.data;
+                        return CircleAvatar(
                           radius: 25,
-                          backgroundImage: profileProvider.imageUrl != null
-                              ? NetworkImage(profileProvider.imageUrl!)
+                          backgroundImage: url != null
+                              ? NetworkImage(url)
                               : null,
                           backgroundColor: GRAYSCALE_LABEL_300,
-                          child: profileProvider.imageUrl == null
+                          child: url == null
                               ? const Icon(Icons.person, color: BLACK, size: 25)
                               : null,
-                        ),
+                        );
+                      },
+                    )
+                  else
+                    const CircleAvatar(
+                      radius: 25,
+                      backgroundColor: GRAYSCALE_LABEL_300,
+                      child: Icon(Icons.person, color: BLACK, size: 25),
+                    ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
