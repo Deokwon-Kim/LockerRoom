@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/page/schedule/schedule.dart';
+import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatelessWidget {
   final TeamModel teamModel;
-  const HomePage({super.key, required this.teamModel});
+  final void Function(int) onTabTab;
+  const HomePage({super.key, required this.teamModel, required this.onTabTab});
 
   @override
   Widget build(BuildContext context) {
@@ -187,6 +189,137 @@ class HomePage extends StatelessWidget {
                           ),
                         ),
                       ],
+                    );
+                  },
+                ),
+                SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '최신게시물',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => onTabTab(1),
+                      child: Text(
+                        '모든 게시물 보기 >',
+                        style: TextStyle(color: GRAYSCALE_LABEL_500),
+                      ),
+                    ),
+                  ],
+                ),
+                Consumer<FeedProvider>(
+                  builder: (context, feedProvider, child) {
+                    final posts = feedProvider.posts;
+                    if (posts.isEmpty) return Text('최근 게시물이 존재하지 않습니다');
+                    return SizedBox(
+                      height: 245,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: posts.length,
+                        itemBuilder: (context, index) {
+                          final post = posts[index];
+                          return Container(
+                            width: 240,
+                            margin: const EdgeInsets.only(right: 12),
+                            child: Card(
+                              color: WHITE,
+                              child: Padding(
+                                padding: EdgeInsets.all(15.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (post.mediaUrls.isNotEmpty)
+                                      SizedBox(
+                                        height: 150,
+                                        child: ListView.builder(
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: post.mediaUrls.length,
+                                          itemBuilder: (_, i) {
+                                            final url = post.mediaUrls[i];
+                                            final inSingle =
+                                                post.mediaUrls.length == 1;
+
+                                            return Padding(
+                                              padding: EdgeInsets.only(
+                                                left: inSingle ? 0 : 0,
+                                                right: inSingle ? 0 : 8,
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child: url.endsWith('.mp4')
+                                                    ? Container(
+                                                        width: inSingle
+                                                            ? 100
+                                                            : 50,
+                                                        height: 150,
+                                                      )
+                                                    : Image.network(
+                                                        url,
+                                                        height: 150,
+                                                        width: inSingle
+                                                            ? 200
+                                                            : 150,
+                                                        fit: inSingle
+                                                            ? BoxFit.cover
+                                                            : BoxFit.cover,
+                                                        loadingBuilder:
+                                                            (
+                                                              context,
+                                                              child,
+                                                              loadingProgress,
+                                                            ) {
+                                                              if (loadingProgress ==
+                                                                  null)
+                                                                return child;
+                                                              return SizedBox(
+                                                                height: 150,
+                                                                width: inSingle
+                                                                    ? 200
+                                                                    : 150,
+                                                                child: const Center(
+                                                                  child: CircularProgressIndicator(
+                                                                    color:
+                                                                        BUTTON,
+                                                                  ),
+                                                                ),
+                                                              );
+                                                            },
+                                                      ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    SizedBox(height: 10),
+                                    Text(
+                                      post.text,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    SizedBox(height: 3),
+                                    Text(
+                                      post.userName,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: GRAYSCALE_LABEL_400,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     );
                   },
                 ),

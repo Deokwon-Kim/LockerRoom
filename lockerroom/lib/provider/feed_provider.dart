@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
@@ -5,6 +7,21 @@ import 'package:lockerroom/model/post_model.dart';
 
 class FeedProvider extends ChangeNotifier {
   final _postCollection = FirebaseFirestore.instance.collection('posts');
+  List<PostModel> _posts = [];
+  List<PostModel> get posts => _posts;
+
+  StreamSubscription? _sub;
+
+  FeedProvider() {
+    _sub = _postCollection
+        .orderBy('createdAt', descending: true)
+        .limit(5)
+        .snapshots()
+        .listen((snap) {
+          _posts = snap.docs.map((doc) => PostModel.fromDoc(doc)).toList();
+          notifyListeners();
+        });
+  }
 
   Stream<List<PostModel>> get postsStream {
     return _postCollection
