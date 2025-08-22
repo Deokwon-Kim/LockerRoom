@@ -164,6 +164,7 @@ class _MypageState extends State<Mypage> {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final userName =
         userProvider.nickname ?? userProvider.currentUser?.displayName ?? '사용자';
+    final selectedTeam = Provider.of<TeamProvider>(context).selectedTeam;
     // final email =
     //     userProvider.email ?? userProvider.currentUser?.email ?? '이메일';
     final user = FirebaseAuth.instance.currentUser;
@@ -172,18 +173,22 @@ class _MypageState extends State<Mypage> {
       appBar: AppBar(
         title: Text(
           '프로필',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: WHITE,
+          ),
         ),
         actions: [
           IconButton(
             onPressed: () {
               Navigator.pushNamed(context, 'setting');
             },
-            icon: Icon(Icons.menu),
+            icon: Icon(Icons.menu, color: WHITE),
           ),
         ],
         centerTitle: true,
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: selectedTeam?.color,
       ),
       body: Center(
         child: Column(
@@ -345,7 +350,8 @@ class _MypageState extends State<Mypage> {
                               height: 44,
                               child: ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: BUTTON,
+                                  backgroundColor:
+                                      teamProvider.selectedTeam?.color,
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),

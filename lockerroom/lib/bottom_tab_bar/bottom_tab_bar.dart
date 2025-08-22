@@ -28,6 +28,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
 
   @override
   Widget build(BuildContext context) {
+    final teamProvider = Provider.of<TeamProvider>(context, listen: false);
     final pages = [
       Consumer<TeamProvider>(
         builder: (context, teamProvider, _) => HomePage(
@@ -77,7 +78,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
                 currentIndex: _selectedIndex,
                 onTap: _onItemTapped,
                 type: BottomNavigationBarType.fixed,
-                selectedItemColor: BUTTON,
+                selectedItemColor: teamProvider.selectedTeam?.color,
                 unselectedItemColor: GRAYSCALE_LABEL_500,
                 backgroundColor: WHITE,
                 elevation: 0,
@@ -137,7 +138,9 @@ class _BottomTabBarState extends State<BottomTabBar> {
       child: Icon(
         isSelected ? selectedIcon : unselectedIcon,
         size: 25,
-        color: isSelected ? BUTTON : Colors.grey,
+        color: isSelected
+            ? context.watch<TeamProvider>().selectedTeam?.color
+            : Colors.grey,
       ),
     );
   }
@@ -155,7 +158,9 @@ class _BottomTabBarState extends State<BottomTabBar> {
         assetPath: isSelected ? selectedSvgPath : unselectedSvgPath,
         width: 25,
         height: 25,
-        color: isSelected ? BUTTON : Colors.grey,
+        color: isSelected
+            ? context.watch<TeamProvider>().selectedTeam?.color
+            : Colors.grey,
       ),
     );
   }
