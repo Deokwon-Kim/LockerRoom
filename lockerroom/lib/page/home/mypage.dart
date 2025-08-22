@@ -2,6 +2,7 @@ import 'package:contained_tab_bar_view/contained_tab_bar_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/my_post/mypost.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -397,7 +398,7 @@ class _MypageState extends State<Mypage> {
             SizedBox(height: 10),
             Container(
               width: double.infinity,
-              height: 390,
+              height: 500,
               child: ContainedTabBarView(
                 tabs: [
                   Text('게시글', style: TextStyle(color: BLACK)),
@@ -410,7 +411,7 @@ class _MypageState extends State<Mypage> {
                   unselectedLabelColor: GRAYSCALE_LABEL_500,
                 ),
                 views: [
-                  Container(color: Colors.blue),
+                  MypostPage(),
                   Container(color: Colors.deepOrange),
                 ],
 
