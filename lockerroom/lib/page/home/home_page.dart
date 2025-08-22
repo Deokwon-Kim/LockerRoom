@@ -392,15 +392,12 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ),
                             );
-                            // return ListTile(
-                            //   leading: Image.network(video.thumbnailUrl),
-                            //   title: Text(video.title),
-                            // );
                           },
                         ),
                       );
                     },
                   ),
+                  SizedBox(height: 20),
                 ],
               ),
             ),
