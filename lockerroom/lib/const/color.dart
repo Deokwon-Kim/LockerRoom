@@ -7,7 +7,7 @@ const Doosan = Color(0xff181928);
 const Landers = Color(0xffCE0E2D);
 
 // 한화 이글스
-const Eagles = Color(0xffFC4E00);
+const Eagles = Color(0xff07111F);
 
 // 키움 히어로즈
 const KIWOOM = Color(0xff570514);
