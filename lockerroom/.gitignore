@@ -49,3 +49,6 @@ android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 lib/firebase_options.dart
 firebase.json
+
+# Youtube API 키 
+youtube_key.env
