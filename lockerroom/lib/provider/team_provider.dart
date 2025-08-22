@@ -28,6 +28,7 @@ class TeamProvider with ChangeNotifier {
         symbolPath: 'assets/images/symbol/newlogo2.png',
         youtubeName: 'BEARS TV',
         youtubeUrl: 'https://www.youtube.com/@bearstv1982',
+        channelId: 'UCsebzRfMhwYfjeBIxNX1brg',
         color: Doosan,
       ),
       TeamModel(
@@ -37,6 +38,7 @@ class TeamProvider with ChangeNotifier {
         symbolPath: 'assets/images/symbol/samsung_symbol.png',
         youtubeName: 'LIONS TV',
         youtubeUrl: 'https://www.youtube.com/@lionstv1982',
+        channelId: 'UCMWAku3a3h65QpLm63Jf2pw',
         color: Samsung,
       ),
       TeamModel(
@@ -46,6 +48,7 @@ class TeamProvider with ChangeNotifier {
         symbolPath: 'assets/images/symbol/lotte_symbol.png',
         youtubeName: '자이언츠 TV',
         youtubeUrl: 'https://www.youtube.com/@giantstv',
+        channelId: 'UCAZQZdSY5_YrziMPqXi-Zfw',
         color: Lotte,
       ),
       TeamModel(
@@ -55,6 +58,7 @@ class TeamProvider with ChangeNotifier {
         symbolPath: 'assets/images/symbol/kia_symbol.png',
         youtubeName: '갸티비',
         youtubeUrl: 'https://www.youtube.com/@kiatigerstv',
+        channelId: 'UCKp8knO8a6tSI1oaLjfd9XA',
         color: Kia,
       ),
       TeamModel(
@@ -64,6 +68,7 @@ class TeamProvider with ChangeNotifier {
         symbolPath: 'assets/images/symbol/lg_symbol.png',
         youtubeName: 'LGTWINSTV',
         youtubeUrl: 'https://www.youtube.com/@LGTwinsTV',
+        channelId: 'UCL6QZZxb-HR4hCh_eFAnQWA',
         color: LG,
       ),
       TeamModel(
@@ -73,6 +78,7 @@ class TeamProvider with ChangeNotifier {
         symbolPath: 'assets/images/symbol/landers_symbol.png',
         youtubeName: '쓱튜브',
         youtubeUrl: 'https://www.youtube.com/@SSGLANDERS',
+        channelId: 'UCt8iRtgjVqm5rJHNl1TUojg',
         color: Landers,
       ),
       TeamModel(
@@ -82,6 +88,7 @@ class TeamProvider with ChangeNotifier {
         symbolPath: 'assets/images/symbol/hanwha_symbol.png',
         youtubeName: 'Eagles TV',
         youtubeUrl: 'https://www.youtube.com/@HanwhaEagles_official',
+        channelId: 'UCdq4Ji3772xudYRUatdzRrg',
         color: Eagles,
       ),
       TeamModel(
@@ -91,6 +98,7 @@ class TeamProvider with ChangeNotifier {
         symbolPath: 'assets/images/symbol/kiwoom_symbol.png',
         youtubeName: '큠튜브',
         youtubeUrl: 'https://www.youtube.com/@heroesbaseballclub',
+        channelId: 'UC_MA8-XEaVmvyayPzG66IKg',
         color: KIWOOM,
       ),
 
@@ -101,6 +109,7 @@ class TeamProvider with ChangeNotifier {
         symbolPath: 'assets/images/symbol/nc_symbol.png',
         youtubeName: '엔튜브',
         youtubeUrl: 'https://www.youtube.com/@ncdinos',
+        channelId: 'UC8_FRgynMX8wlGsU6Jh3zKg',
         color: NC,
       ),
 
@@ -111,6 +120,7 @@ class TeamProvider with ChangeNotifier {
         symbolPath: 'assets/images/symbol/kt_symbol.png',
         youtubeName: 'kt wiz - 위즈TV',
         youtubeUrl: 'https://www.youtube.com/@ktwiztv',
+        channelId: 'UCvScyjGkBUx2CJDMNAi9Twg',
         color: KT,
       ),
     ],

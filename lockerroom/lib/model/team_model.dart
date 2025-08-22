@@ -8,6 +8,7 @@ class TeamModel {
   final Color color;
   final String youtubeName;
   final String youtubeUrl;
+  final String channelId;
 
   TeamModel({
     required this.name,
@@ -17,5 +18,6 @@ class TeamModel {
     required this.color,
     required this.youtubeName,
     required this.youtubeUrl,
+    required this.channelId,
   });
 }
