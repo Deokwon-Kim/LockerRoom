@@ -7,6 +7,7 @@ import 'package:lockerroom/page/home/home_page.dart';
 import 'package:lockerroom/page/home/mypage.dart';
 import 'package:lockerroom/page/home/upload_page.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/widgets/svg_icon.dart';
 import 'package:provider/provider.dart';
 
@@ -19,6 +20,41 @@ class BottomTabBar extends StatefulWidget {
 
 class _BottomTabBarState extends State<BottomTabBar> {
   int _selectedIndex = 0;
+  late TeamProvider _teamProvider;
+  TeamModel? _previousSelectedTeam;
+
+  @override
+  void initState() {
+    super.initState();
+    // Delay provider access until after first frame to ensure context is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _teamProvider = context.read<TeamProvider>();
+      _previousSelectedTeam = _teamProvider.selectedTeam;
+      _teamProvider.addListener(_handleTeamProviderChange);
+    });
+  }
+
+  void _handleTeamProviderChange() {
+    final TeamModel? currentTeam = _teamProvider.selectedTeam;
+    if (currentTeam != _previousSelectedTeam) {
+      _previousSelectedTeam = currentTeam;
+      if (mounted) {
+        setState(() {
+          _selectedIndex = 0; // 팀 변경 시 홈 탭으로 이동
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    // Remove listener if it was registered
+    try {
+      _teamProvider.removeListener(_handleTeamProviderChange);
+    } catch (_) {}
+    super.dispose();
+  }
 
   void _onItemTapped(int index) {
     setState(() {
