@@ -9,6 +9,7 @@ import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/video_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   final TeamModel teamModel;
@@ -353,7 +354,12 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          launchUrl(
+                            Uri.parse(selectedTeam.youtubeUrl),
+                            mode: LaunchMode.externalApplication,
+                          );
+                        },
                         child: Text(
                           '더보기 >',
                           style: TextStyle(
@@ -386,9 +392,19 @@ class _HomePageState extends State<HomePage> {
                               margin: const EdgeInsets.only(right: 12),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: Image.network(
-                                  video.thumbnailUrl,
-                                  fit: BoxFit.cover,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    final youtubeUrl =
+                                        'https://www.youtube.com/watch?v=${video.id}';
+                                    launchUrl(
+                                      Uri.parse(youtubeUrl),
+                                      mode: LaunchMode.externalApplication,
+                                    );
+                                  },
+                                  child: Image.network(
+                                    video.thumbnailUrl,
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                               ),
                             );
