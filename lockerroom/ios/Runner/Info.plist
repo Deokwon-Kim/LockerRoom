@@ -45,5 +45,12 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>youtube</string>
+		<string>youtube-staging</string>
+		<string>https</string>
+		<string>http</string>
+	</array>
 </dict>
 </plist>
