@@ -34,6 +34,8 @@ class _BottomTabBarState extends State<BottomTabBar> {
           teamModel:
               teamProvider.selectedTeam ?? teamProvider.getTeam('team')[0],
           onTabTab: (i) => setState(() => _selectedIndex = i),
+          selectedTeam:
+              teamProvider.selectedTeam ?? teamProvider.getTeam('team')[0],
         ),
       ),
       FeedPage(),
