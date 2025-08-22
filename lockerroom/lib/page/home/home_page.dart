@@ -33,6 +33,7 @@ class _HomePageState extends State<HomePage> {
     final apiKey = dotenv.env['YOUTUBE_API_KEY'] ?? '';
     if (_lastFetchedTeam?.name == team.name) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<VideoProvider>().fetchTeamVideos(team, apiKey);
     });
     _lastFetchedTeam = team;
