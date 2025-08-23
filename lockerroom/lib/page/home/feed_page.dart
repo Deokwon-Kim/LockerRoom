@@ -5,9 +5,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
+import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:toastification/toastification.dart';
 
 class FeedPage extends StatefulWidget {
   final PostModel? post; // nullable로 변경
@@ -113,6 +115,7 @@ class PostWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     return Padding(
       padding: const EdgeInsets.only(left: 15, right: 15, bottom: 15),
       child: Card(
@@ -172,7 +175,45 @@ class PostWidget extends StatelessWidget {
                     ],
                   ),
                   Spacer(),
-                  IconButton(onPressed: () {}, icon: Icon(Icons.more_horiz)),
+                  currentUserId != null && post.userId == currentUserId
+                      ? PopupMenuTheme(
+                          data: PopupMenuThemeData(color: BACKGROUND_COLOR),
+                          child: PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_horiz),
+                            onSelected: (value) async {
+                              if (value == 'delete') {
+                                // 삭제 확인 다이얼로그 추가
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => ConfirmationDialog(
+                                    title: '삭제 확인',
+                                    content: '게시글을 삭제 하시겠습니까?',
+                                    onConfirm: () async {
+                                      await feedProvider.deletePost(post.id);
+                                      toastification.show(
+                                        context: context,
+                                        type: ToastificationType.success,
+                                        alignment: Alignment.bottomCenter,
+                                        autoCloseDuration: Duration(seconds: 2),
+                                        title: Text('게시물을 삭제했습니다'),
+                                      );
+                                    },
+                                  ),
+                                );
+                              }
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text(
+                                  '삭제하기',
+                                  style: TextStyle(color: RED_DANGER_TEXT_50),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : SizedBox.shrink(),
                 ],
               ),
               const SizedBox(height: 8),
