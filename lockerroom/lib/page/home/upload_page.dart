@@ -80,32 +80,16 @@ class _UploadPageState extends State<UploadPage> {
               Row(
                 children: [
                   if (authUser != null)
-                    StreamBuilder<String?>(
-                      stream: context
-                          .read<ProfileProvider>()
-                          .liveloadProfileImage(authUser.uid),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const SizedBox(
-                            width: 40,
-                            height: 40,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: BUTTON,
-                            ),
-                          );
-                        }
-                        final url = snapshot.data;
+                    Consumer<ProfileProvider>(
+                      builder: (context, profileProvider, child) {
+                        profileProvider.subscribeMyProfileImage(authUser.uid);
+                        final url = profileProvider.myProfileImage;
                         return CircleAvatar(
                           radius: 25,
                           backgroundImage: url != null
                               ? NetworkImage(url)
                               : null,
-                          backgroundColor: GRAYSCALE_LABEL_300,
-                          child: url == null
-                              ? const Icon(Icons.person, color: BLACK, size: 25)
-                              : null,
+                          child: url == null ? const Icon(Icons.person) : null,
                         );
                       },
                     )
