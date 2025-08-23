@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
 import 'package:lockerroom/model/user_model.dart';
 
 class UserProvider extends ChangeNotifier {
@@ -15,14 +14,6 @@ class UserProvider extends ChangeNotifier {
   User? _currentUser;
   String? _nickname;
   String? _email;
-  String? _favoriteTeam;
-
-  // Firestore users/{uid} 실시간 구독용
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userSub;
-  String? _listeningUserId;
-
-  // 사용자별 프로필 이미지 캐시 (실시간 업데이트용)
-  final Map<String, String?> _userProfileImages = {};
 
   // 게터
   bool get isLoading => _isLoading;
@@ -31,55 +22,6 @@ class UserProvider extends ChangeNotifier {
   User? get currentUser => _currentUser;
   String? get nickname => _nickname;
   String? get email => _email;
-  String? get favoriteTeam => _favoriteTeam;
-
-  // 특정 사용자의 프로필 이미지 가져오기
-  String? getUserProfileImage(String userId) {
-    return _userProfileImages[userId];
-  }
-
-  // 사용자 프로필 이미지 실시간 구독 시작
-  void startListeningUserProfile(String userId) {
-    if (_userProfileImages.containsKey(userId)) return; // 이미 구독 중이면 스킵
-
-    _firestore
-        .collection('users')
-        .doc(userId)
-        .snapshots()
-        .listen(
-          (doc) {
-            if (doc.exists) {
-              final profileImage = doc.data()?['profileImage'] as String?;
-              _userProfileImages[userId] = profileImage;
-              // 위젯 트리 잠금 문제를 방지하기 위해 다음 프레임에서 notifyListeners 호출
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                notifyListeners();
-              });
-            }
-          },
-          onError: (e) {
-            debugPrint('User profile image listen error for $userId: $e');
-          },
-        );
-  }
-
-  // 사용자 프로필 이미지 구독 해제
-  void stopListeningUserProfile(String userId) {
-    _userProfileImages.remove(userId);
-    // 위젯 트리 잠금 문제를 방지하기 위해 다음 프레임에서 notifyListeners 호출
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
-  }
-
-  // 모든 프로필 이미지 구독 해제
-  void clearAllProfileImages() {
-    _userProfileImages.clear();
-    // 위젯 트리 잠금 문제를 방지하기 위해 다음 프레임에서 notifyListeners 호출
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
-  }
 
   // 로딩 상태 설정
   void setLoading(bool loading) {
@@ -96,95 +38,6 @@ class UserProvider extends ChangeNotifier {
   void setSignUpSuccess(bool success) {
     _isSignUpSuccess = success;
     notifyListeners();
-  }
-
-  // 사용자 정보 초기화
-  void initializeUser() {
-    _currentUser = _auth.currentUser;
-    if (_currentUser != null) {
-      _nickname = _currentUser!.displayName;
-      _email = _currentUser!.email;
-    } else {
-      _nickname = null;
-      _email = null;
-    }
-    notifyListeners();
-  }
-
-  // Firestore users/{uid} 문서를 실시간으로 구독하여 닉네임/이메일 동기화
-  void startListeningUserDoc(String userId) {
-    if (_listeningUserId == userId && _userSub != null) return;
-    stopListeningUserDoc();
-    _listeningUserId = userId;
-    _userSub = _firestore
-        .collection('users')
-        .doc(userId)
-        .snapshots()
-        .listen(
-          (doc) {
-            final data = doc.data();
-            if (data != null) {
-              // 우선순위: Firestore 값 -> FirebaseAuth 값
-              _nickname =
-                  (data['username'] as String?) ??
-                  _auth.currentUser?.displayName;
-              _email = (data['email'] as String?) ?? _auth.currentUser?.email;
-              _favoriteTeam = data['favoriteTeam'] as String?;
-              notifyListeners();
-            }
-          },
-          onError: (e) {
-            debugPrint('UserProvider Firestore listen error: $e');
-          },
-        );
-  }
-
-  void stopListeningUserDoc() {
-    _userSub?.cancel();
-    _userSub = null;
-    _listeningUserId = null;
-  }
-
-  // 사용자 데이터 완전 초기화
-  void clearUserData() {
-    _currentUser = null;
-    _nickname = null;
-    _email = null;
-    _favoriteTeam = null;
-    _errorMessage = null;
-    _isSignUpSuccess = false;
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  // 사용자 정보 새로고침
-  Future<void> refreshUserInfo() async {
-    if (_auth.currentUser != null) {
-      await _auth.currentUser!.reload();
-      _currentUser = _auth.currentUser;
-      _nickname = _currentUser!.displayName;
-      _email = _currentUser!.email;
-      notifyListeners();
-    }
-  }
-
-  // Firebase Auth 토큰 강제 갱신
-  Future<void> refreshAuthToken() async {
-    try {
-      final user = _auth.currentUser;
-      if (user != null) {
-        // 토큰 강제 갱신
-        await user.getIdToken(true);
-        print('Firebase Auth 토큰 갱신 완료');
-
-        // 사용자 정보도 다시 로드
-        await user.reload();
-        _currentUser = _auth.currentUser;
-        notifyListeners();
-      }
-    } catch (e) {
-      print('Firebase Auth 토큰 갱신 실패: $e');
-    }
   }
 
   // 회원가입 함수

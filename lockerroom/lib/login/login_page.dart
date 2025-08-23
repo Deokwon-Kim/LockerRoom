@@ -4,8 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/const/custome_button.dart';
 import 'package:lockerroom/page/team_select_page.dart';
-import 'package:lockerroom/provider/user_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
 class LoginPage extends StatefulWidget {
@@ -45,8 +43,6 @@ class _LoginPageState extends State<LoginPage> {
 
   // 로그인 함수
   Future<void> _signIn() async {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-
     try {
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
@@ -55,13 +51,6 @@ class _LoginPageState extends State<LoginPage> {
           );
 
       debugPrint('로그인 성공: ${userCredential.user}');
-
-      // UserProvider 업데이트
-      userProvider.initializeUser();
-      if (userCredential.user != null) {
-        userProvider.startListeningUserDoc(userCredential.user!.uid);
-      }
-
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const TeamSelectPage()),

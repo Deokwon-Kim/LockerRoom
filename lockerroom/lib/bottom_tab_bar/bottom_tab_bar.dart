@@ -57,7 +57,9 @@ class _BottomTabBarState extends State<BottomTabBar> {
   }
 
   void _onItemTapped(int index) {
-    context.read<BottomTabBarProvider>().setIndex(index);
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
@@ -165,9 +167,8 @@ class _BottomTabBarState extends State<BottomTabBar> {
     int index,
     IconData unselectedIcon,
     IconData selectedIcon,
-    int selectedIndex,
   ) {
-    bool isSelected = selectedIndex == index;
+    bool isSelected = _selectedIndex == index;
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 8),
       child: Icon(
