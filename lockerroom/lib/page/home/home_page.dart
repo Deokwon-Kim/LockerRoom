@@ -21,7 +21,7 @@ class HomePage extends StatelessWidget {
           appBar: AppBar(
             backgroundColor: selectedTeam.color,
             leading: Padding(
-              padding: const EdgeInsets.all(10.0),
+              padding: const EdgeInsets.only(left: 20.0),
               child: Image.asset(selectedTeam.symbolPath),
             ),
             title: Text(
@@ -134,7 +134,7 @@ class HomePage extends StatelessWidget {
                                 style: TextStyle(
                                   color: WHITE,
                                   fontSize: 18,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                               if (nextGame != null) ...[
@@ -145,7 +145,7 @@ class HomePage extends StatelessWidget {
                                       style: TextStyle(
                                         color: WHITE,
                                         fontSize: 15,
-                                        fontWeight: FontWeight.w500,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                     SizedBox(width: 5),
@@ -162,7 +162,7 @@ class HomePage extends StatelessWidget {
                                       style: TextStyle(
                                         color: WHITE,
                                         fontSize: 15,
-                                        fontWeight: FontWeight.w500,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],
