@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 class ProfileProvider extends ChangeNotifier {
+  final _userCollection = FirebaseFirestore.instance.collection('users');
   File? _image;
   String? _imageUrl;
   bool _isUploading = false;
@@ -92,13 +94,67 @@ class ProfileProvider extends ChangeNotifier {
     }
   }
 
-  Stream<String?> liveloadProfileImage(String userId) {
-    return FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .snapshots()
-        .map((doc) => doc.data()?['profileImage'] as String?);
+  // 로그인 한 유저 전용 프로필
+  String? _myProfileImage;
+  String? get myProfileImage => _myProfileImage;
+  StreamSubscription? _myProfileSub;
+
+  // 여러 유저 프로필 캐싱
+  final Map<String, String?> _userProfiles = {};
+  Map<String, String?> get userProfiles => _userProfiles;
+
+  final Map<String, StreamSubscription> _subscriptions = {};
+
+  // 로그인한 유저 프로필 구독
+  void subscribeMyProfileImage(String userId) {
+    _myProfileSub?.cancel();
+    _myProfileSub = _userCollection.doc(userId).snapshots().listen((doc) {
+      _myProfileImage = doc.data()?['profileImage'] as String?;
+      notifyListeners();
+    });
   }
+
+  // 특정 유저 프로필 구독(피드 전용)
+  void subscribeUserProfile(String userId) {
+    if (_subscriptions.containsKey(userId)) return; // 이미 구독 중이면 무시
+
+    final sub = _userCollection.doc(userId).snapshots().listen((doc) {
+      _userProfiles[userId] = doc.data()?['profileImage'] as String?;
+      notifyListeners();
+    });
+
+    _subscriptions[userId] = sub;
+  }
+
+  // 특정 유저 구독 해제
+  void unsubscribeUserProfile(String userId) {
+    _subscriptions[userId]?.cancel();
+    _subscriptions.remove(userId);
+    _userProfiles.remove(userId);
+    notifyListeners();
+  }
+
+  // 전체 구독 정리
+  void cancelAllSubscriptions() {
+    _myProfileSub?.cancel();
+    _subscriptions.forEach((_, sub) => sub.cancel());
+    _subscriptions.clear();
+    _userProfiles.clear();
+  }
+
+  @override
+  void dispose() {
+    cancelAllSubscriptions();
+    super.dispose();
+  }
+
+  // Stream<String?> liveloadProfileImage(String userId) {
+  //   return FirebaseFirestore.instance
+  //       .collection('users')
+  //       .doc(userId)
+  //       .snapshots()
+  //       .map((doc) => doc.data()?['profileImage'] as String?);
+  // }
 
   Future<void> loadProfileImage(String userId) async {
     final doc = await FirebaseFirestore.instance
