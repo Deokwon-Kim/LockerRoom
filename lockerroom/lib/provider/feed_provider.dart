@@ -7,30 +7,62 @@ import 'package:lockerroom/model/post_model.dart';
 
 class FeedProvider extends ChangeNotifier {
   final _postCollection = FirebaseFirestore.instance.collection('posts');
+  // --- 전체 피드 ---
+  List<PostModel> _postsStream = [];
+  List<PostModel> get postsStream => _postsStream;
+  StreamSubscription? _sub;
+  bool isLoading = true;
+
+  // 전체 피드 구독
+  void postStream(String userId) {
+    _sub?.cancel();
+    _sub = _postCollection
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .listen(
+          (snap) {
+            _postsStream = snap.docs
+                .map((doc) => PostModel.fromDoc(doc))
+                .toList();
+            isLoading = false;
+            notifyListeners();
+          },
+          onError: (e) {
+            print('Firestore error: $e');
+            isLoading = false;
+            notifyListeners();
+          },
+        );
+  }
+
+  // --- 최근 5개 피드 ---
   List<PostModel> _posts = [];
   List<PostModel> get posts => _posts;
-
-  StreamSubscription? _sub;
+  StreamSubscription? _subB;
 
   FeedProvider() {
-    _sub = _postCollection
+    _subB?.cancel();
+    _subB = _postCollection
         .orderBy('createdAt', descending: true)
         .limit(5)
         .snapshots()
         .listen((snap) {
           _posts = snap.docs.map((doc) => PostModel.fromDoc(doc)).toList();
+          isLoading = false;
           notifyListeners();
         });
   }
 
-  Stream<List<PostModel>> get postsStream {
-    return _postCollection
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map(
-          (snapshot) =>
-              snapshot.docs.map((doc) => PostModel.fromDoc(doc)).toList(),
-        );
+  void cancelSubscription() {
+    _sub?.cancel();
+    _subB?.cancel();
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    _subB?.cancel();
+    super.dispose();
   }
 
   Future<void> toggleLike(PostModel post) async {
