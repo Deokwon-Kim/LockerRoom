@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fade_shimmer/fade_shimmer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -22,69 +20,43 @@ class FeedPage extends StatefulWidget {
 
 class _FeedPageState extends State<FeedPage> {
   @override
+  void initState() {
+    super.initState();
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final feedProvider = context.read<FeedProvider>();
+
+    feedProvider.postStream(uid);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final feedProvider = Provider.of<FeedProvider>(context, listen: false);
-    // 단일 포스트 모드
-    if (widget.post != null) {
-      return Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          title: Image.asset('assets/images/applogo/app_logo.png', height: 100),
-          centerTitle: true,
-          backgroundColor: BACKGROUND_COLOR,
-        ),
-        backgroundColor: BACKGROUND_COLOR,
-        body: PostWidget(post: widget.post!, feedProvider: feedProvider),
-      );
-    }
-
-    // 전체 피드 모드
     return Scaffold(
-      appBar: AppBar(
-        title: Padding(
-          padding: const EdgeInsets.only(top: 10.0),
-          child: Image.asset('assets/images/applogo/app_logo.png', height: 100),
-        ),
-        centerTitle: true,
-        backgroundColor: BACKGROUND_COLOR,
-        scrolledUnderElevation: 0,
-      ),
       backgroundColor: BACKGROUND_COLOR,
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('posts')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData)
-            return FadeShimmer(
-              width: 150,
-              height: 8,
-              radius: 4,
-              fadeTheme: FadeTheme.light,
-            );
-
-          final posts = snapshot.data!.docs
-              .map((doc) => PostModel.fromDoc(doc))
-              .toList();
-
-          if (posts.isEmpty) {
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: Image.asset('assets/images/applogo/app_logo.png', height: 100),
+        centerTitle: true,
+        scrolledUnderElevation: 0,
+        backgroundColor: BACKGROUND_COLOR,
+      ),
+      body: Consumer<FeedProvider>(
+        builder: (context, feedProvider, child) {
+          final allPosts = feedProvider.postsStream;
+          if (feedProvider.isLoading) {
+            return Center(child: CircularProgressIndicator(color: BUTTON));
+          }
+          if (allPosts.isEmpty) {
             return Center(
               child: Text(
-                '게시물이 없습니다.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: GRAYSCALE_LABEL_500,
-                  fontWeight: FontWeight.bold,
-                ),
+                '게시물이 없습니다',
+                style: TextStyle(color: GRAYSCALE_LABEL_500),
               ),
             );
           }
           return ListView.builder(
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
-              return PostWidget(post: posts[index], feedProvider: feedProvider);
-            },
+            itemCount: allPosts.length,
+            itemBuilder: (context, index) =>
+                PostWidget(post: allPosts[index], feedProvider: feedProvider),
           );
         },
       ),
