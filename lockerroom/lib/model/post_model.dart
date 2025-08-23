@@ -1,38 +1,39 @@
-import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PostModel {
-  final List<File> images; // 여러 이미지 지원
-  final String caption;
-  final String authorName; // 작성자 이름
-  final ImageProvider? authorProfileImage; // 작성자 프로필 이미지
-  final DateTime createdAt; // 작성 시간
+  final String id;
+  final String text;
+  final List<String> mediaUrls;
+  final String userId;
+  final DateTime createdAt;
+  final int likesCount;
+  final String userName;
+  final List<String> likedBy;
 
   PostModel({
-    required this.images,
-    required this.caption,
-    required this.authorName,
-    this.authorProfileImage,
-    DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    required this.id,
+    required this.text,
+    required this.mediaUrls,
+    required this.userId,
+    required this.createdAt,
+    required this.likesCount,
+    required this.userName,
+    required this.likedBy,
+  });
 
-  // 하위 호환성을 위한 생성자
-  PostModel.singleImage({
-    required File image,
-    required this.caption,
-    required this.authorName,
-    this.authorProfileImage,
-    DateTime? createdAt,
-  }) : images = [image], createdAt = createdAt ?? DateTime.now();
-
-  // 첫 번째 이미지를 반환하는 getter (하위 호환성)
-  File get image {
-    if (images.isEmpty) {
-      throw StateError('No images available in this post');
-    }
-    return images.first;
+  factory PostModel.fromDoc(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return PostModel(
+      id: doc.id,
+      text: data['text'] ?? "",
+      mediaUrls: List<String>.from(data['mediaUrls'] ?? []),
+      userId: data['userId'] ?? "",
+      createdAt: data['createdAt'] == null
+          ? DateTime.now()
+          : (data['createdAt'] as Timestamp).toDate(),
+      likesCount: data['likesCount'] ?? 0,
+      userName: data['userName'] ?? '사용자',
+      likedBy: List<String>.from(data['likedBy'] ?? const []),
+    );
   }
-  
-  // 이미지가 있는지 확인하는 getter
-  bool get hasImages => images.isNotEmpty;
 }

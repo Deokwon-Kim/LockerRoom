@@ -4,72 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
-import 'package:lockerroom/page/home/feed_detail_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
-class FeedPage extends StatefulWidget {
-  final PostModel? post; // nullable로 변경
-  const FeedPage({this.post, super.key});
-
-  @override
-  State<FeedPage> createState() => _FeedPageState();
-}
-
-class _FeedPageState extends State<FeedPage> {
-  @override
-  void initState() {
-    super.initState();
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-    final feedProvider = context.read<FeedProvider>();
-
-    feedProvider.postStream(uid);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Image.asset('assets/images/applogo/app_logo.png', height: 100),
-        centerTitle: true,
-        scrolledUnderElevation: 0,
-        backgroundColor: BACKGROUND_COLOR,
-      ),
-      body: Consumer<FeedProvider>(
-        builder: (context, feedProvider, child) {
-          final allPosts = feedProvider.postsStream;
-          if (feedProvider.isLoading) {
-            return Center(child: CircularProgressIndicator(color: BUTTON));
-          }
-          if (allPosts.isEmpty) {
-            return Center(
-              child: Text(
-                '게시물이 없습니다',
-                style: TextStyle(color: GRAYSCALE_LABEL_500),
-              ),
-            );
-          }
-          return ListView.builder(
-            itemCount: allPosts.length,
-            itemBuilder: (context, index) =>
-                PostWidget(post: allPosts[index], feedProvider: feedProvider),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// 개별 포스트 위젯
-class PostWidget extends StatelessWidget {
+class FeedDetailPage extends StatelessWidget {
   final PostModel post;
-  final FeedProvider feedProvider;
-
-  const PostWidget({required this.post, required this.feedProvider, super.key});
+  const FeedDetailPage({super.key, required this.post});
 
   String timeAgo(DateTime date) {
     final now = DateTime.now();
@@ -88,19 +30,23 @@ class PostWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final feedProvider = Provider.of<FeedProvider>(context, listen: false);
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => FeedDetailPage(post: post)),
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.only(left: 15, right: 15, bottom: 15),
+    final TextEditingController _commentsController = TextEditingController();
+    return Scaffold(
+      backgroundColor: BACKGROUND_COLOR,
+      appBar: AppBar(
+        backgroundColor: BACKGROUND_COLOR,
+        title: Padding(
+          padding: const EdgeInsets.only(top: 10.0),
+          child: Image.asset('assets/images/applogo/app_logo.png', height: 100),
+        ),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.only(left: 15.0, right: 15.0, bottom: 15.0),
         child: Card(
           color: WHITE,
-
           child: Padding(
             padding: const EdgeInsets.all(15.0),
             child: Column(
@@ -174,7 +120,7 @@ class PostWidget extends StatelessWidget {
                                           autoCloseDuration: Duration(
                                             seconds: 2,
                                           ),
-                                          title: Text('게시물을 삭제했습니다'),
+                                          title: Text('게시물을 삭제했습니다.'),
                                         );
                                       },
                                     ),
@@ -200,7 +146,7 @@ class PostWidget extends StatelessWidget {
                 Text(post.text),
                 const SizedBox(height: 8),
 
-                // 이미지/영상 슬라이드
+                // 이미지/ 영상 슬라이드
                 if (post.mediaUrls.isNotEmpty)
                   SizedBox(
                     height: 200,
@@ -220,9 +166,7 @@ class PostWidget extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                             child: url.endsWith('.mp4')
                                 ? Container(
-                                    width: inSingle
-                                        ? 290
-                                        : 150, // 단일: 화면 전체, 여러장: 150
+                                    width: inSingle ? 290 : 150,
                                     height: 200,
                                     color: Colors.black12,
                                     child: Center(child: Text('비디오 미리보기')),
@@ -230,13 +174,8 @@ class PostWidget extends StatelessWidget {
                                 : Image.network(
                                     url,
                                     height: 200,
-                                    width: inSingle
-                                        ? 290
-                                        : 150, // 단일: 화면 전체, 여러장: 150
-                                    fit: inSingle
-                                        ? BoxFit.cover
-                                        : BoxFit
-                                              .cover, // 단일은 contain, 여러장 cover
+                                    width: inSingle ? 290 : 150,
+                                    fit: inSingle ? BoxFit.cover : BoxFit.cover,
                                     loadingBuilder:
                                         (context, child, loadingProgress) {
                                           if (loadingProgress == null)
@@ -257,7 +196,7 @@ class PostWidget extends StatelessWidget {
                       },
                     ),
                   ),
-                // 좋아요 버튼
+                // 좋아요, 댓글버튼
                 Row(
                   children: [
                     IconButton(
@@ -295,6 +234,58 @@ class PostWidget extends StatelessWidget {
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
+                ),
+                Spacer(),
+                Row(
+                  children: [
+                    Consumer<ProfileProvider>(
+                      builder: (context, profileProvider, child) {
+                        profileProvider.subscribeUserProfile(post.userId);
+
+                        final url = profileProvider.userProfiles[post.userId];
+                        return CircleAvatar(
+                          radius: 20,
+                          backgroundImage: url != null
+                              ? NetworkImage(url)
+                              : null,
+                          backgroundColor: GRAYSCALE_LABEL_300,
+                          child: url == null
+                              ? const Icon(
+                                  Icons.person,
+                                  color: Colors.black,
+                                  size: 20,
+                                )
+                              : null,
+                        );
+                      },
+                    ),
+                    SizedBox(width: 10),
+                    SizedBox(
+                      width: 240,
+                      height: 35,
+                      child: TextFormField(
+                        controller: _commentsController,
+                        cursorColor: BUTTON,
+                        cursorHeight: 15,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          labelText: '댓글을 입력해주세요',
+                          labelStyle: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 13,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

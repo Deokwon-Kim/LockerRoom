@@ -16,7 +16,7 @@ class ConfirmationDialog extends StatelessWidget {
     required this.onConfirm,
     this.cancelText,
     this.confirmText,
-    this.confirmColor = ORANGE_PRIMARY_500,
+    this.confirmColor = BUTTON,
   });
 
   @override
@@ -79,10 +79,7 @@ class ConfirmationDialog extends StatelessWidget {
                   Navigator.pop(context);
                   onConfirm();
                 },
-                child: Text(
-                  confirmText ?? '네',
-                  style: TextStyle(color: GRAYSCALE_LABEL_950),
-                ),
+                child: Text(confirmText ?? '네', style: TextStyle(color: WHITE)),
               ),
             ),
           ],

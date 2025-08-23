@@ -110,7 +110,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
             child: IntrinsicHeight(
               child: Column(
-                // mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Image.asset('assets/images/applogo/app_logo.png'),
@@ -134,7 +133,7 @@ class _LoginPageState extends State<LoginPage> {
                   SizedBox(height: 10),
                   TextFormField(
                     controller: _passwordController,
-                    cursorColor: ORANGE_PRIMARY_500,
+                    cursorColor: BUTTON,
                     obscureText: true,
                     decoration: InputDecoration(
                       labelText: '비밀번호',

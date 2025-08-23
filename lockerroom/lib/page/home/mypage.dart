@@ -1,208 +1,422 @@
+import 'package:contained_tab_bar_view/contained_tab_bar_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
-import 'package:lockerroom/provider/bottom_tab_bar_provider.dart';
+import 'package:lockerroom/my_post/mypost.dart';
+import 'package:lockerroom/page/alert/diallog.dart';
+import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
-import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
-class Mypage extends StatelessWidget {
+class Mypage extends StatefulWidget {
   const Mypage({super.key});
 
   @override
+  State<Mypage> createState() => _MypageState();
+}
+
+class _MypageState extends State<Mypage> {
+  @override
+  void initState() {
+    super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // 프로필 이미지 로드
+      Future.microtask(
+        () => Provider.of<ProfileProvider>(
+          context,
+          listen: false,
+        ).loadProfileImage(user.uid),
+      );
+      // 팀 정보 로드
+      Future.microtask(
+        () => Provider.of<TeamProvider>(
+          context,
+          listen: false,
+        ).loadTeam(user.uid),
+      );
+    }
+  }
+
+  void _showProfileImageOptions(
+    BuildContext context,
+    ProfileProvider profileProvider,
+    User? user,
+  ) {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      backgroundColor: GRAYSCALE_LABEL_50,
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        // Consumer를 사용하여 실시간으로 profileProvider 상태를 반영
+        return Consumer<ProfileProvider>(
+          builder: (context, provider, child) {
+            return Container(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '프로필 사진 편집',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 20),
+                  ListTile(
+                    leading: Icon(
+                      Icons.photo_library,
+                      color: ORANGE_PRIMARY_500,
+                    ),
+                    title: Text('사진 선택'),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      try {
+                        await provider.pickImage();
+                        if (user != null && provider.image != null) {
+                          await provider.uploadImage(user.uid);
+                          toastification.show(
+                            context: context,
+                            type: ToastificationType.success,
+                            alignment: Alignment.bottomCenter,
+                            autoCloseDuration: const Duration(seconds: 2),
+                            title: Text('프로필 사진을 업로드했습니다'),
+                          );
+                        }
+                      } catch (e) {
+                        toastification.show(
+                          context: context,
+                          type: ToastificationType.error,
+                          alignment: Alignment.bottomCenter,
+                          autoCloseDuration: const Duration(seconds: 2),
+                          title: Text('업로드 실패: $e'),
+                        );
+                      }
+                    },
+                  ),
+                  // 실시간으로 imageUrl 상태를 확인
+                  if (provider.imageUrl != null &&
+                      provider.imageUrl!.isNotEmpty)
+                    ListTile(
+                      leading: Icon(Icons.delete, color: Colors.red),
+                      title: Text('사진 삭제'),
+                      onTap: () async {
+                        Navigator.pop(context);
+                        // 삭제 확인 대화상자
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext dialogContext) {
+                            return ConfirmationDialog(
+                              title: '프로필 사진 삭제',
+                              content: '프로필 사진을 삭제하시겠습니까?',
+                              cancelText: '취소',
+                              confirmText: '삭제',
+                              confirmColor: Colors.red,
+                              onConfirm: () async {
+                                try {
+                                  await provider.deleteProfileImage(user!.uid);
+                                  toastification.show(
+                                    context: context,
+                                    type: ToastificationType.success,
+                                    alignment: Alignment.bottomCenter,
+                                    autoCloseDuration: const Duration(
+                                      seconds: 2,
+                                    ),
+                                    title: Text('프로필 사진을 삭제했습니다'),
+                                  );
+                                } catch (e) {
+                                  toastification.show(
+                                    context: context,
+                                    type: ToastificationType.error,
+                                    alignment: Alignment.bottomCenter,
+                                    autoCloseDuration: const Duration(
+                                      seconds: 2,
+                                    ),
+                                    title: Text('삭제 실패: $e'),
+                                  );
+                                }
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ListTile(
+                    leading: Icon(Icons.cancel, color: GRAYSCALE_LABEL_500),
+                    title: Text('취소'),
+                    onTap: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
+    final profileProvider = Provider.of<ProfileProvider>(context);
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
     final userName =
         userProvider.nickname ?? userProvider.currentUser?.displayName ?? '사용자';
-    final userEmail =
-        userProvider.email ?? userProvider.currentUser?.email ?? '정보없음';
-    final profileProvider = Provider.of<ProfileProvider>(context);
-    // final user = FirebaseAuth.instance.currentUser; // 미사용
-
-    // 디버깅용 출력
-    print('UserProvider - nickname: ${userProvider.nickname}');
-    print('UserProvider - currentUser: ${userProvider.currentUser?.uid}');
-    print(
-      'UserProvider - displayName: ${userProvider.currentUser?.displayName}',
-    );
-    print('UserProvider - email: ${userProvider.currentUser?.email}');
-    print('Final userName: $userName');
-
+    final selectedTeam = Provider.of<TeamProvider>(context).selectedTeam;
+    // final email =
+    //     userProvider.email ?? userProvider.currentUser?.email ?? '이메일';
+    final user = FirebaseAuth.instance.currentUser;
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         title: Text(
           '프로필',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
-            color: BLACK,
+            color: WHITE,
           ),
         ),
-        centerTitle: true,
         actions: [
           IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.menu_rounded, color: BLACK),
+            onPressed: () {
+              Navigator.pushNamed(context, 'setting');
+            },
+            icon: Icon(Icons.menu, color: WHITE),
           ),
         ],
-        backgroundColor: WHITE,
+        centerTitle: true,
+        backgroundColor: selectedTeam?.color,
       ),
-      body: Padding(
-        padding: const EdgeInsets.only(top: 20.0, left: 20.0, right: 20.0),
+      body: Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 사용자 프로필 이미지
-            if (profileProvider.isLoading)
-              const CircularProgressIndicator()
-            else
-              CircleAvatar(
-                radius: 50,
-                backgroundImage: profileProvider.profileImageUrl != null
-                    ? NetworkImage(profileProvider.profileImageUrl!)
-                    : null,
-                child: profileProvider.profileImageUrl == null
-                    ? const Icon(Icons.person, size: 50)
-                    : null,
-              ),
-            SizedBox(height: 10),
-            Text(
-              userName,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-
-            Text(
-              userEmail,
-              style: TextStyle(
-                color: GRAYSCALE_LABEL_500,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            SizedBox(height: 5),
             Row(
               children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      profileProvider.updateProfilePickture(context);
-                    },
-                    child: Container(
-                      height: 40,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: GRAYSCALE_LABEL_300,
-                        borderRadius: BorderRadius.circular(8),
+                Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        top: 20.0,
+                        left: 20.0,
+                        right: 20.0,
                       ),
-                      child: Text(
-                        '프로필 수정',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: GRAYSCALE_LABEL_300,
+                            radius: 50,
+                            backgroundImage: profileProvider.image != null
+                                ? FileImage(profileProvider.image!)
+                                : (profileProvider.imageUrl != null
+                                      ? NetworkImage(profileProvider.imageUrl!)
+                                      : null),
+                            child:
+                                (profileProvider.image == null &&
+                                    profileProvider.imageUrl == null)
+                                ? Icon(
+                                    Icons.person,
+                                    size: 40,
+                                    color: GRAYSCALE_LABEL_500,
+                                  )
+                                : null,
+                          ),
+                          // 업로드 중일 때 진행률 표시
+                          if (profileProvider.isUploading)
+                            Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withAlpha(153),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircularProgressIndicator(
+                                    value: profileProvider.uploadProgress,
+                                    color: ORANGE_PRIMARY_500,
+                                    strokeWidth: 3,
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    '${(profileProvider.uploadProgress * 100).toInt()}%',
+                                    style: TextStyle(
+                                      color: ORANGE_PRIMARY_500,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      top: 60,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: profileProvider.isUploading
+                            ? null // 업로드 중일 때 비활성화
+                            : () async {
+                                _showProfileImageOptions(
+                                  context,
+                                  profileProvider,
+                                  user,
+                                );
+                              },
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: profileProvider.isUploading
+                                ? Colors.grey[400] // 업로드 중일 때 회색
+                                : Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.edit,
+                            size: 20,
+                            color: profileProvider.isUploading
+                                ? Colors.grey[600]
+                                : Colors.black,
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-
                 SizedBox(width: 10),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () async {
-                      // 팀 변경 다이얼로그
-                      final teamProvider = context.read<TeamProvider>();
-                      final teams = teamProvider.getTeam('team');
-                      final selected = await showDialog<String>(
-                        context: context,
-                        builder: (ctx) {
-                          return AlertDialog(
-                            backgroundColor: BACKGROUND_COLOR,
-                            title: Text('응원팀 변경'),
-                            content: SizedBox(
-                              width: double.maxFinite,
-                              child: ListView.builder(
-                                shrinkWrap: true,
-                                itemCount: teams.length,
-                                itemBuilder: (context, index) {
-                                  final t = teams[index];
-                                  return ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundColor: t.color,
-                                      radius: 8,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      userName,
+                      style: TextStyle(
+                        color: BLACK,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Consumer<TeamProvider>(
+                      builder: (context, teamProvider, _) {
+                        final teamName = teamProvider.team ?? '팀 미선택';
+                        final teamModel = teamProvider.findTeamByName(teamName);
+                        final teamColor =
+                            teamModel?.color ?? GRAYSCALE_LABEL_300;
+                        final logoPath = teamModel?.logoPath;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (logoPath != null)
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Image.asset(
+                                    logoPath,
+                                    width: 28,
+                                    height: 28,
+                                    fit: BoxFit.contain,
+                                  ),
+                                  SizedBox(width: 10),
+                                  Text(
+                                    teamName,
+                                    style: TextStyle(
+                                      color: teamColor,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    title: Text(t.name),
-                                    onTap: () => Navigator.pop(ctx, t.name),
+                                  ),
+                                ],
+                              )
+                            else
+                              Text(
+                                '응원팀: ' + teamName,
+                                style: TextStyle(
+                                  color: BLACK,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            SizedBox(height: 10),
+                            SizedBox(
+                              width: 160,
+                              height: 44,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      teamProvider.selectedTeam?.color,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  elevation: 2,
+                                ),
+                                icon: Icon(Icons.swap_horiz),
+                                label: Text(
+                                  '팀 변경',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                onPressed: () async {
+                                  final changed = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          TeamSelectPage(isChanging: true),
+                                    ),
                                   );
+                                  if (changed is String && mounted) {
+                                    toastification.show(
+                                      context: context,
+                                      type: ToastificationType.success,
+                                      alignment: Alignment.bottomCenter,
+                                      autoCloseDuration: const Duration(
+                                        seconds: 2,
+                                      ),
+                                      title: Text('팀이 변경되었습니다: ' + changed),
+                                    );
+                                  }
                                 },
                               ),
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: Text('취소'),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                      if (selected != null) {
-                        // 로컬 선택 반영
-                        teamProvider.selectTeamByName(selected);
-                        // 서버 반영
-                        final uid = FirebaseAuth.instance.currentUser?.uid;
-                        if (uid != null) {
-                          await FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(uid)
-                              .set({
-                                'favoriteTeam': selected,
-                              }, SetOptions(merge: true));
-
-                          context.read<BottomTabBarProvider>().setIndex(
-                            0,
-                          ); // 피드 탭으로 이동
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => BottomTabBar(),
-                            ),
-                            (route) => false,
-                          );
-
-                          toastification.show(
-                            context: context,
-                            type: ToastificationType.success,
-                            alignment: Alignment.bottomCenter,
-                            autoCloseDuration: Duration(seconds: 2),
-                            title: Text('변경 팀: ${selected}'),
-                          );
-                        }
-                      }
-                    },
-                    child: Container(
-                      height: 40,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: GRAYSCALE_LABEL_300,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '팀 변경',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                          ],
+                        );
+                      },
                     ),
-                  ),
+                  ],
                 ),
               ],
+            ),
+
+            SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              height: 500,
+              child: ContainedTabBarView(
+                tabs: [
+                  Text('게시글', style: TextStyle(color: BLACK)),
+                  Text('댓글', style: TextStyle(color: BLACK)),
+                ],
+                tabBarProperties: TabBarProperties(
+                  indicatorColor: BUTTON,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicatorWeight: 3.0,
+                  unselectedLabelColor: GRAYSCALE_LABEL_500,
+                ),
+                views: [
+                  MypostPage(),
+                  Container(color: Colors.deepOrange),
+                ],
+
+                onChange: (index) => print(index),
+              ),
             ),
           ],
         ),

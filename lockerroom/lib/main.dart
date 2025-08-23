@@ -1,32 +1,40 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/login/login_page.dart';
 import 'package:lockerroom/login/signup_page.dart';
+import 'package:lockerroom/page/setting/setting_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
-import 'package:lockerroom/provider/bottom_tab_bar_provider.dart';
-import 'package:lockerroom/provider/post_provider.dart';
+import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
+import 'package:lockerroom/provider/video_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: 'lib/api_key/youtube_key.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => TeamProvider()),
         ChangeNotifierProvider(create: (context) => UserProvider()),
-        ChangeNotifierProvider(create: (context) => PostProvider()),
-        ChangeNotifierProvider(create: (context) => BottomTabBarProvider()),
+        ChangeNotifierProvider(create: (context) => UploadProvider()),
+        ChangeNotifierProvider(create: (context) => FeedProvider()),
         ChangeNotifierProvider(create: (context) => ProfileProvider()),
+        ChangeNotifierProvider(create: (context) => VideoProvider()),
       ],
       child: const MyApp(),
     ),
@@ -47,6 +55,7 @@ class MyApp extends StatelessWidget {
         routes: {
           'signUp': (context) => const SignupPage(),
           'signIn': (context) => const LoginPage(),
+          'setting': (context) => const SettingPage(),
         },
       ),
     );
@@ -66,18 +75,9 @@ class AuthWrapper extends StatelessWidget {
         print('AuthWrapper - HasError: ${snapshot.hasError}');
         if (snapshot.hasData) {
           print('AuthWrapper - Current User: ${snapshot.data?.uid}');
-          // 사용자 정보를 UserProvider에 초기화하고 프로필 스트림 구독 시작
-          WidgetsBinding.instance.addPostFrameCallback((_) async {
-            final user = snapshot.data!;
-            final userProvider = context.read<UserProvider>();
-            userProvider.initializeUser();
-            userProvider.startListeningUserDoc(user.uid);
-          });
-        } else {
-          // 비인증 상태에서는 스트림 구독 해제 및 사용자 정보 초기화
+          //사용자 정보를 UserProvider에 로드
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            context.read<UserProvider>().stopListeningUserDoc();
-            context.read<UserProvider>().clearUserData();
+            Provider.of<UserProvider>(context, listen: false).loadNickname();
           });
         }
 
@@ -86,25 +86,42 @@ class AuthWrapper extends StatelessWidget {
         } else if (snapshot.hasError) {
           return const Center(child: Text('에러가 발생하였습니다.'));
         } else if (snapshot.hasData) {
-          final uid = snapshot.data!.uid;
-          // 사용자 문서를 조회해 선호팀 여부에 따라 초기 라우팅 분기
+          final user = snapshot.data!;
           return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
             future: FirebaseFirestore.instance
                 .collection('users')
-                .doc(uid)
+                .doc(user.uid)
                 .get(),
-            builder: (context, userDocSnap) {
-              if (userDocSnap.connectionState == ConnectionState.waiting) {
+            builder: (context, userSnap) {
+              if (userSnap.connectionState == ConnectionState.waiting) {
                 return const Center(
                   child: CircularProgressIndicator(color: Eagles),
                 );
               }
-              final data = userDocSnap.data?.data();
-              final favoriteTeam = data != null
-                  ? data['favoriteTeam'] as String?
-                  : null;
-              if (favoriteTeam != null && favoriteTeam.isNotEmpty) {
-                // 선호팀이 있으면 바로 하단탭으로
+              if (userSnap.hasError) {
+                return const Center(child: Text('유저 정보를 불러오지 못했습니다.'));
+              }
+
+              final data = userSnap.data?.data() ?? {};
+              final savedTeamName = data['team'] as String?;
+
+              if (savedTeamName != null && savedTeamName.isNotEmpty) {
+                // Provider에 선택 팀 반영 (TeamModel 매핑)
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  final teamProvider = Provider.of<TeamProvider>(
+                    context,
+                    listen: false,
+                  );
+                  // 문자열 상태도 유지
+                  teamProvider.setTeam(savedTeamName);
+                  // TeamModel 찾아서 선택
+                  final list = teamProvider.getTeam('team');
+                  final match = list.firstWhere(
+                    (t) => t.name == savedTeamName,
+                    orElse: () => list.first,
+                  );
+                  teamProvider.selectTeam(match);
+                });
                 return const BottomTabBar();
               } else {
                 return const TeamSelectPage();

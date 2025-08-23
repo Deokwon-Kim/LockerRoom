@@ -409,7 +409,7 @@ class _SignupPageState extends State<SignupPage> {
     // final shouldFixButtonToBottom = !_hasAnyText && !_isKeyboardVisible;
 
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: const Color(0xFFFFFFFF),
       body: SafeArea(
         bottom: false,
         child: Padding(
@@ -421,6 +421,8 @@ class _SignupPageState extends State<SignupPage> {
                 child: SingleChildScrollView(
                   controller: _scrollController,
                   child: Column(
+                    // mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Image.asset('assets/images/applogo/app_logo.png'),
                       _buildTextField(

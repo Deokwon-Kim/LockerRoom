@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:lockerroom/model/user_model.dart';
@@ -252,11 +253,15 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   Future<void> signOut() async {
     await FirebaseAuth.instance.signOut();
 
-    // 구독 해제 및 사용자 관련 모든 상태 초기화
-    stopListeningUserDoc();
+    // 사용자 관련 모든 상태 초기화
     _currentUser = null;
     _nickname = null;
     _email = null;
@@ -265,10 +270,159 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  @override
-  void dispose() {
-    stopListeningUserDoc();
-    clearAllProfileImages();
-    super.dispose();
+  Future<void> loadNickname() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+    _nickname = doc.data()?['username'];
+    _email = doc.data()?['email'];
+    notifyListeners();
+  }
+
+  Future<void> updateNickname(String newNickname) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      'username': newNickname,
+    });
+
+    await FirebaseAuth.instance.currentUser?.updateDisplayName(newNickname);
+    await FirebaseAuth.instance.currentUser?.reload();
+
+    _currentUser = FirebaseAuth.instance.currentUser;
+
+    _nickname = newNickname;
+    notifyListeners(); // 갱신 알림
+  }
+
+  // 일반 이메일 계정 회원탈퇴
+  Future<void> deleteEmailAccount(String password) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw FirebaseAuthException(
+          code: 'no-user',
+          message: '사용자가 로그인 되어 있지 않습니다.',
+        );
+      }
+
+      final email = user.email;
+      if (email == null) {
+        throw FirebaseAuthException(
+          code: 'no-email',
+          message: '사용자의 이메일이 없습니다.',
+        );
+      }
+
+      // 1. 재인증
+      AuthCredential credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
+
+      // 2. 사용자 데이터 삭제
+      await _deleteUserData(user.uid);
+
+      // 3. Firebase Auth에서 사용자 삭제
+      await user.delete();
+
+      clearUserData();
+    } on FirebaseAuthException catch (e) {
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // 사용자 데이터 삭제 (공통 메서드)
+  Future<void> _deleteUserData(String uid) async {
+    try {
+      // 1. Firestore에서 사용자 기본 정보 삭제
+      await _firestore.collection('users').doc(uid).delete();
+
+      // 2. 사용자의 산책 기록 삭제
+      await _firestore.collection('trackingResult').doc(uid).delete();
+
+      // 3. Firebase Storage에서 사용자 파일 삭제
+      // 사용자별 폴더 구조: users/{uid}/
+      try {
+        final storageRef = FirebaseStorage.instance.ref().child('users/$uid');
+        final listResult = await storageRef.listAll();
+
+        // 하위 폴더들 삭제
+        for (final prefix in listResult.prefixes) {
+          await _deleteStorageFolder(prefix);
+        }
+
+        // 직접 파일들 삭제
+        for (final item in listResult.items) {
+          await item.delete();
+        }
+      } catch (e) {
+        print('Storage 삭제 중 오류: $e');
+        // Storage 삭제 실패는 치명적이지 않으므로 계속 진행
+      }
+
+      // 4. 기타 사용자 관련 컬렉션이 있다면 여기서 삭제
+      // 예: 사용자 설정, 즐겨찾기 등
+    } catch (e) {
+      print('사용자 데이터 삭제 중 오류: $e');
+      throw FirebaseException(
+        plugin: 'firestore',
+        message: '사용자 데이터 삭제에 실패했습니다.',
+        code: 'data-deletion-failed',
+      );
+    }
+  }
+
+  // Storage 폴더 재귀적 삭제
+  Future<void> _deleteStorageFolder(Reference folderRef) async {
+    try {
+      final listResult = await folderRef.listAll();
+
+      // 하위 폴더들 재귀적 삭제
+      for (final prefix in listResult.prefixes) {
+        await _deleteStorageFolder(prefix);
+      }
+
+      // 파일들 삭제
+      for (final item in listResult.items) {
+        await item.delete();
+      }
+    } catch (e) {
+      print('Storage 폴더 삭제 중 오류: $e');
+    }
+  }
+
+  // 계정 삭제 후 상태 초기화를 위한 메서드
+  void clearUserData() {
+    _currentUser = null;
+    _nickname = null;
+    _email = null;
+    notifyListeners();
+  }
+
+  Future<void> updateDisplayName(String newName) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await user.updateDisplayName(newName);
+        await user.reload();
+        _currentUser = FirebaseAuth.instance.currentUser;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('이름 변경 실패');
+    }
   }
 }

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,13 +9,63 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 
-class TeamSelectPage extends StatelessWidget {
-  const TeamSelectPage({super.key});
+class TeamSelectPage extends StatefulWidget {
+  final bool isChanging;
+  const TeamSelectPage({super.key, this.isChanging = false});
+
+  @override
+  State<TeamSelectPage> createState() => _TeamSelectPageState();
+}
+
+class _TeamSelectPageState extends State<TeamSelectPage> {
+  void _selectTeam(BuildContext context, String teamName) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('로그인 상태를 확인할 수 없습니다.')));
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'team': teamName,
+      }, SetOptions(merge: true));
+
+      // Provider 업데이트
+      await Provider.of<TeamProvider>(context, listen: false).setTeam(teamName);
+
+      if (widget.isChanging) {
+        Navigator.pop(context, teamName);
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => BottomTabBar()),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('팀 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final teamProvider = Provider.of<TeamProvider>(context).getTeam('team');
-    final selectedTeam = context.watch<TeamProvider>().selectedTeam;
+    final teamState = context.watch<TeamProvider>();
+    final selectedTeam = teamState.selectedTeam;
+
+    // 팀 변경 모드일 때 저장된 팀을 초기 선택으로 지정
+    if (widget.isChanging && selectedTeam == null && teamState.team != null) {
+      final initial = teamState.findTeamByName(teamState.team!);
+      if (initial != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          context.read<TeamProvider>().selectTeam(initial);
+        });
+      }
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -53,52 +105,29 @@ class TeamSelectPage extends StatelessWidget {
               },
             ),
           ),
-          GestureDetector(
-            onTap: selectedTeam == null
-                ? null
-                : () {
-                    final uid = FirebaseAuth.instance.currentUser?.uid;
-                    if (uid != null) {
-                      FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(uid)
-                          .set({
-                            'favoriteTeam': selectedTeam.name,
-                          }, SetOptions(merge: true))
-                          .then((_) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const BottomTabBar(),
-                              ),
-                            );
-                          });
-                    } else {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const BottomTabBar(),
-                        ),
-                      );
-                    }
-                  },
-            child: Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Container(
-                alignment: Alignment.center,
-                width: double.infinity,
-                height: 58,
-                decoration: BoxDecoration(
-                  color: selectedTeam == null ? Colors.grey : BUTTON,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '선택완료',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
+          Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 58,
+              child: ElevatedButton.icon(
+                onPressed: selectedTeam == null
+                    ? null
+                    : () {
+                        _selectTeam(context, selectedTeam.name);
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: selectedTeam == null ? Colors.grey : BUTTON,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  elevation: 2,
+                ),
+                icon: Icon(widget.isChanging ? Icons.swap_horiz : Icons.check),
+                label: Text(
+                  widget.isChanging ? '변경하기' : '선택완료',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
