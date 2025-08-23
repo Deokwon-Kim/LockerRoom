@@ -32,6 +32,7 @@ class FeedDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final feedProvider = Provider.of<FeedProvider>(context, listen: false);
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final TextEditingController _commentsController = TextEditingController();
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
@@ -237,6 +238,62 @@ class FeedDetailPage extends StatelessWidget {
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
+                ),
+                Spacer(),
+                Row(
+                  children: [
+                    StreamBuilder<String?>(
+                      stream: context
+                          .read<ProfileProvider>()
+                          .liveloadProfileImage(post.userId),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircleAvatar(
+                            radius: 20,
+                            backgroundColor: GRAYSCALE_LABEL_300,
+                          );
+                        }
+                        if (!snapshot.hasData || snapshot.data == null) {
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(30),
+                            child: const Icon(Icons.person, size: 30),
+                          );
+                        }
+                        return CircleAvatar(
+                          radius: 20,
+                          backgroundColor: GRAYSCALE_LABEL_300,
+                          backgroundImage: NetworkImage(snapshot.data!),
+                        );
+                      },
+                    ),
+                    SizedBox(width: 10),
+                    SizedBox(
+                      width: 240,
+                      height: 35,
+                      child: TextFormField(
+                        controller: _commentsController,
+                        cursorColor: BUTTON,
+                        cursorHeight: 15,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          labelText: '댓글을 입력해주세요',
+                          labelStyle: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 13,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
