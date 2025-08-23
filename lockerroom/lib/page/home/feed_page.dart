@@ -110,28 +110,24 @@ class PostWidget extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    StreamBuilder<String?>(
-                      stream: context
-                          .read<ProfileProvider>()
-                          .liveloadProfileImage(post.userId),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return CircleAvatar(
-                            radius: 20,
-                            backgroundColor: GRAYSCALE_LABEL_300,
-                          );
-                        }
-                        if (!snapshot.hasData || snapshot.data == null) {
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(30),
-                            child: const Icon(Icons.person, size: 20),
-                          );
-                        }
+                    Consumer<ProfileProvider>(
+                      builder: (context, profileProvider, child) {
+                        profileProvider.subscribeUserProfile(post.userId);
+
+                        final url = profileProvider.userProfiles[post.userId];
                         return CircleAvatar(
-                          radius: 20,
+                          radius: 25,
+                          backgroundImage: url != null
+                              ? NetworkImage(url)
+                              : null,
                           backgroundColor: GRAYSCALE_LABEL_300,
-                          backgroundImage: NetworkImage(snapshot.data!),
+                          child: url == null
+                              ? const Icon(
+                                  Icons.person,
+                                  color: Colors.black,
+                                  size: 25,
+                                )
+                              : null,
                         );
                       },
                     ),
