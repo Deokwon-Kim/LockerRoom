@@ -61,4 +61,23 @@ class FeedProvider extends ChangeNotifier {
       tx.update(postRef, {'likedBy': likedByList, 'likesCount': newLikes});
     });
   }
+
+  // 현재 로그인 한 유저에 게시물만 불러오기
+  Stream<List<PostModel>> listenMyPosts() {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return const Stream.empty();
+    return _postCollection
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => PostModel.fromDoc(doc)).toList(),
+        );
+  }
+
+  // 현재 로그인 한 유저 게시물 삭제
+  Future<void> deletePost(String postId) async {
+    await _postCollection.doc(postId).delete();
+  }
 }
