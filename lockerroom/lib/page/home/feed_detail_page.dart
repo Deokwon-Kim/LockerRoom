@@ -421,10 +421,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                               color: BUTTON,
                               borderRadius: BorderRadius.circular(50),
                             ),
-                            child: Icon(
-                              CupertinoIcons.paperplane_fill,
-                              color: WHITE,
-                            ),
+                            child: Icon(Icons.send, color: WHITE),
                           ),
                         ),
                       ],
