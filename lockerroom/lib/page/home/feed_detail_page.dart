@@ -2,16 +2,41 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
+import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
-class FeedDetailPage extends StatelessWidget {
+class FeedDetailPage extends StatefulWidget {
   final PostModel post;
   const FeedDetailPage({super.key, required this.post});
+
+  @override
+  State<FeedDetailPage> createState() => _FeedDetailPageState();
+}
+
+class _FeedDetailPageState extends State<FeedDetailPage> {
+  final TextEditingController _commentsController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // postId별 구독 시작
+    context.read<CommentProvider>().subscribeComments(widget.post.id);
+    // 작성자 프로필은 빌드 외부에서 1회만 구독
+    context.read<ProfileProvider>().subscribeUserProfile(widget.post.userId);
+  }
+
+  @override
+  void dispose() {
+    context.read<CommentProvider>().cancelSubscription(widget.post.id);
+    _commentsController.dispose();
+    super.dispose();
+  }
 
   String timeAgo(DateTime date) {
     final now = DateTime.now();
@@ -32,7 +57,7 @@ class FeedDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final feedProvider = Provider.of<FeedProvider>(context, listen: false);
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final TextEditingController _commentsController = TextEditingController();
+
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
@@ -45,7 +70,7 @@ class FeedDetailPage extends StatelessWidget {
         scrolledUnderElevation: 0,
       ),
       body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
+        behavior: HitTestBehavior.deferToChild,
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
           child: Padding(
@@ -67,10 +92,8 @@ class FeedDetailPage extends StatelessWidget {
                       children: [
                         Consumer<ProfileProvider>(
                           builder: (context, profileProvider, child) {
-                            profileProvider.subscribeUserProfile(post.userId);
-
-                            final url =
-                                profileProvider.userProfiles[post.userId];
+                            final url = profileProvider
+                                .userProfiles[widget.post.userId];
                             return CircleAvatar(
                               radius: 25,
                               backgroundImage: url != null
@@ -92,14 +115,14 @@ class FeedDetailPage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              post.userName,
+                              widget.post.userName,
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                             Text(
-                              timeAgo(post.createdAt),
+                              timeAgo(widget.post.createdAt),
                               style: TextStyle(
                                 color: GRAYSCALE_LABEL_500,
                                 fontSize: 13,
@@ -108,7 +131,8 @@ class FeedDetailPage extends StatelessWidget {
                           ],
                         ),
                         Spacer(),
-                        currentUserId != null && post.userId == currentUserId
+                        currentUserId != null &&
+                                widget.post.userId == currentUserId
                             ? PopupMenuTheme(
                                 data: PopupMenuThemeData(
                                   color: BACKGROUND_COLOR,
@@ -126,7 +150,7 @@ class FeedDetailPage extends StatelessWidget {
                                               content: '게시글을 삭제 하시겠습니까?',
                                               onConfirm: () async {
                                                 await feedProvider.deletePost(
-                                                  post.id,
+                                                  widget.post.id,
                                                 );
                                                 toastification.show(
                                                   context: context,
@@ -162,19 +186,19 @@ class FeedDetailPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     // 본문
-                    Text(post.text),
+                    Text(widget.post.text),
                     const SizedBox(height: 8),
 
                     // 이미지/ 영상 슬라이드
-                    if (post.mediaUrls.isNotEmpty)
+                    if (widget.post.mediaUrls.isNotEmpty)
                       SizedBox(
                         height: 200,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: post.mediaUrls.length,
+                          itemCount: widget.post.mediaUrls.length,
                           itemBuilder: (_, i) {
-                            final url = post.mediaUrls[i];
-                            final inSingle = post.mediaUrls.length == 1;
+                            final url = widget.post.mediaUrls[i];
+                            final inSingle = widget.post.mediaUrls.length == 1;
 
                             return Padding(
                               padding: EdgeInsets.only(
@@ -222,10 +246,10 @@ class FeedDetailPage extends StatelessWidget {
                     Row(
                       children: [
                         IconButton(
-                          onPressed: () => feedProvider.toggleLike(post),
+                          onPressed: () => feedProvider.toggleLike(widget.post),
                           icon: Icon(
                             (FirebaseAuth.instance.currentUser?.uid != null &&
-                                    post.likedBy.contains(
+                                    widget.post.likedBy.contains(
                                       FirebaseAuth.instance.currentUser!.uid,
                                     ))
                                 ? Icons.favorite
@@ -233,7 +257,7 @@ class FeedDetailPage extends StatelessWidget {
                             color:
                                 (FirebaseAuth.instance.currentUser?.uid !=
                                         null &&
-                                    post.likedBy.contains(
+                                    widget.post.likedBy.contains(
                                       FirebaseAuth.instance.currentUser!.uid,
                                     ))
                                 ? Colors.red
@@ -242,7 +266,7 @@ class FeedDetailPage extends StatelessWidget {
                         ),
                         Transform.translate(
                           offset: Offset(-10, 0),
-                          child: Text('${post.likesCount}'),
+                          child: Text('${widget.post.likesCount}'),
                         ),
                         IconButton(
                           onPressed: () {},
@@ -251,12 +275,58 @@ class FeedDetailPage extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      '${post.mediaUrls.length}개의 이미지',
+                      '${widget.post.mediaUrls.length}개의 이미지',
                       style: TextStyle(
                         color: GRAYSCALE_LABEL_500,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
+                    ),
+                    Consumer<CommentProvider>(
+                      builder: (context, commentProvider, child) {
+                        final comments = commentProvider.getComments(
+                          widget.post.id,
+                        );
+                        if (comments.isEmpty) {
+                          return Center(child: Text('댓글이 없습니다.'));
+                        }
+
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: comments.length,
+                          itemBuilder: (context, index) {
+                            final c = comments[index];
+                            final liked =
+                                currentUserId != null &&
+                                (c.likesCount! > 0); // 단순 표시
+                            return ListTile(
+                              title: Text(c.userName),
+                              subtitle: Text(c.text),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text('${c.likesCount}'),
+                                  IconButton(
+                                    onPressed: currentUserId != null
+                                        ? () => commentProvider.toggleLike(
+                                            c,
+                                            currentUserId,
+                                          )
+                                        : null,
+                                    icon: Icon(
+                                      liked
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: liked ? Colors.red : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
                     ),
                     SizedBox(height: 230),
                     Row(
@@ -323,7 +393,25 @@ class FeedDetailPage extends StatelessWidget {
                         ),
                         SizedBox(width: 10),
                         GestureDetector(
-                          onTap: () {},
+                          onTap: () async {
+                            final text = _commentsController.text.trim();
+                            if (text.isEmpty) return;
+                            final user = FirebaseAuth.instance.currentUser!;
+                            final comment = CommentModel(
+                              id: '', // Firestore에서 자동생성
+                              postId: widget.post.id,
+                              userId: user.uid,
+                              userName: user.displayName ?? '익명',
+                              text: text,
+                              createdAt: DateTime.now(),
+                              likesCount: 0,
+                            );
+                            await context.read<CommentProvider>().addComment(
+                              widget.post.id,
+                              comment,
+                            );
+                            _commentsController.clear();
+                          },
                           child: Container(
                             padding: EdgeInsets.symmetric(
                               vertical: 8,
