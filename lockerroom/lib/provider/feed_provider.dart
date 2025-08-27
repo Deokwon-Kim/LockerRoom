@@ -2,14 +2,21 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
+// import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/post_model.dart';
 
 class FeedProvider extends ChangeNotifier {
   final _postCollection = FirebaseFirestore.instance.collection('posts');
+  final _commentCollection = FirebaseFirestore.instance.collection('comments');
   // --- 전체 피드 ---
   List<PostModel> _postsStream = [];
   List<PostModel> get postsStream => _postsStream;
+  // 필터의 기준이 되는 전체 스냅샷 원본 목록
+  List<PostModel> _allPosts = [];
+  String _query = '';
+
   StreamSubscription? _sub;
   bool isLoading = true;
 
@@ -21,9 +28,8 @@ class FeedProvider extends ChangeNotifier {
         .snapshots()
         .listen(
           (snap) {
-            _postsStream = snap.docs
-                .map((doc) => PostModel.fromDoc(doc))
-                .toList();
+            _allPosts = snap.docs.map((doc) => PostModel.fromDoc(doc)).toList();
+            _applyFilter();
             isLoading = false;
             notifyListeners();
           },
@@ -33,6 +39,22 @@ class FeedProvider extends ChangeNotifier {
             notifyListeners();
           },
         );
+  }
+
+  void setQuery(String query) {
+    _query = query.toLowerCase();
+    _applyFilter();
+  }
+
+  void _applyFilter() {
+    if (_query.isEmpty) {
+      _postsStream = List<PostModel>.from(_allPosts);
+    } else {
+      _postsStream = _allPosts
+          .where((post) => post.text.toLowerCase().contains(_query))
+          .toList();
+    }
+    notifyListeners();
   }
 
   // --- 최근 5개 피드 ---
@@ -108,8 +130,34 @@ class FeedProvider extends ChangeNotifier {
         );
   }
 
-  // 현재 로그인 한 유저 게시물 삭제
-  Future<void> deletePost(String postId) async {
-    await _postCollection.doc(postId).delete();
+  // 게시글 삭제 시 해당 게시글의 모든 댓글도 함께 삭제
+  Future<void> deletePost(PostModel post) async {
+    for (final url in post.mediaUrls)
+      await FirebaseStorage.instance.refFromURL(url).delete();
+    final firestore = FirebaseFirestore.instance;
+    final postRef = _postCollection.doc(post.id);
+
+    // 해당 게시글의 댓글 모두 조회
+    final commentsSnap = await _commentCollection
+        .where('postId', isEqualTo: post.id)
+        .get();
+
+    // Firestore batch로 일괄 삭제 (500개 제한 고려)
+    WriteBatch batch = firestore.batch();
+    batch.delete(postRef);
+
+    int ops = 1;
+    for (final doc in commentsSnap.docs) {
+      batch.delete(doc.reference);
+      ops++;
+      if (ops >= 450) {
+        // 여유를 두고 커밋
+        await batch.commit();
+        batch = firestore.batch();
+        ops = 0;
+      }
+    }
+
+    await batch.commit();
   }
 }

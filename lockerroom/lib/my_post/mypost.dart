@@ -151,7 +151,7 @@ class MyPostWidget extends StatelessWidget {
                                     title: '삭제 확인',
                                     content: '게시글을 삭제 하시겠습니까?',
                                     onConfirm: () async {
-                                      await feedProvider.deletePost(post.id);
+                                      await feedProvider.deletePost(post);
                                       toastification.show(
                                         context: context,
                                         type: ToastificationType.success,

@@ -12,7 +12,8 @@ import 'package:lockerroom/widgets/svg_icon.dart';
 import 'package:provider/provider.dart';
 
 class BottomTabBar extends StatefulWidget {
-  const BottomTabBar({super.key});
+  final int initialIndex;
+  const BottomTabBar({super.key, this.initialIndex = 0});
 
   @override
   State<BottomTabBar> createState() => _BottomTabBarState();
@@ -26,6 +27,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialIndex;
     // Delay provider access until after first frame to ensure context is ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

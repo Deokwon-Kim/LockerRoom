@@ -47,7 +47,11 @@ class UploadProvider extends ChangeNotifier {
       for (var file in _mediaFiles) {
         final fileName =
             "${DateTime.now().millisecondsSinceEpoch}_${currnetUser.uid}";
-        final ref = FirebaseStorage.instance.ref().child('posts/$fileName');
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('posts')
+            .child(currnetUser.uid)
+            .child(fileName);
         await ref.putFile(File(file.path));
         final url = await ref.getDownloadURL();
         mediaUrls.add(url);
