@@ -5,6 +5,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/page/home/feed_detail_page.dart';
+import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:provider/provider.dart';
@@ -65,11 +66,18 @@ class _FeedPageState extends State<FeedPage> {
 }
 
 // 개별 포스트 위젯
-class PostWidget extends StatelessWidget {
+class PostWidget extends StatefulWidget {
   final PostModel post;
   final FeedProvider feedProvider;
 
   const PostWidget({required this.post, required this.feedProvider, super.key});
+
+  @override
+  State<PostWidget> createState() => _PostWidgetState();
+}
+
+class _PostWidgetState extends State<PostWidget> {
+  late final CommentProvider _commentProvider;
 
   String timeAgo(DateTime date) {
     final now = DateTime.now();
@@ -87,13 +95,28 @@ class PostWidget extends StatelessWidget {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _commentProvider = context.read<CommentProvider>();
+    _commentProvider.subscribeComments(widget.post.id);
+  }
+
+  @override
+  void dispose() {
+    _commentProvider.cancelSubscription(widget.post.id);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => FeedDetailPage(post: post)),
+          MaterialPageRoute(
+            builder: (context) => FeedDetailPage(post: widget.post),
+          ),
         );
       },
       child: Padding(
@@ -112,9 +135,12 @@ class PostWidget extends StatelessWidget {
                   children: [
                     Consumer<ProfileProvider>(
                       builder: (context, profileProvider, child) {
-                        profileProvider.subscribeUserProfile(post.userId);
+                        profileProvider.subscribeUserProfile(
+                          widget.post.userId,
+                        );
 
-                        final url = profileProvider.userProfiles[post.userId];
+                        final url =
+                            profileProvider.userProfiles[widget.post.userId];
                         return CircleAvatar(
                           radius: 25,
                           backgroundImage: url != null
@@ -136,14 +162,14 @@ class PostWidget extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          post.userName,
+                          widget.post.userName,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         Text(
-                          timeAgo(post.createdAt),
+                          timeAgo(widget.post.createdAt),
                           style: TextStyle(
                             color: GRAYSCALE_LABEL_500,
                             fontSize: 13,
@@ -152,7 +178,7 @@ class PostWidget extends StatelessWidget {
                       ],
                     ),
                     Spacer(),
-                    currentUserId != null && post.userId == currentUserId
+                    currentUserId != null && widget.post.userId == currentUserId
                         ? PopupMenuTheme(
                             data: PopupMenuThemeData(color: BACKGROUND_COLOR),
                             child: PopupMenuButton<String>(
@@ -166,7 +192,9 @@ class PostWidget extends StatelessWidget {
                                       title: '삭제 확인',
                                       content: '게시글을 삭제 하시겠습니까?',
                                       onConfirm: () async {
-                                        await feedProvider.deletePost(post.id);
+                                        await widget.feedProvider.deletePost(
+                                          widget.post.id,
+                                        );
                                         toastification.show(
                                           context: context,
                                           type: ToastificationType.success,
@@ -197,19 +225,19 @@ class PostWidget extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 // 본문
-                Text(post.text),
+                Text(widget.post.text),
                 const SizedBox(height: 8),
 
                 // 이미지/영상 슬라이드
-                if (post.mediaUrls.isNotEmpty)
+                if (widget.post.mediaUrls.isNotEmpty)
                   SizedBox(
                     height: 200,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      itemCount: post.mediaUrls.length,
+                      itemCount: widget.post.mediaUrls.length,
                       itemBuilder: (_, i) {
-                        final url = post.mediaUrls[i];
-                        final inSingle = post.mediaUrls.length == 1;
+                        final url = widget.post.mediaUrls[i];
+                        final inSingle = widget.post.mediaUrls.length == 1;
 
                         return Padding(
                           padding: EdgeInsets.only(
@@ -261,17 +289,18 @@ class PostWidget extends StatelessWidget {
                 Row(
                   children: [
                     IconButton(
-                      onPressed: () => feedProvider.toggleLike(post),
+                      onPressed: () =>
+                          widget.feedProvider.toggleLike(widget.post),
                       icon: Icon(
                         (FirebaseAuth.instance.currentUser?.uid != null &&
-                                post.likedBy.contains(
+                                widget.post.likedBy.contains(
                                   FirebaseAuth.instance.currentUser!.uid,
                                 ))
                             ? Icons.favorite
                             : Icons.favorite_border,
                         color:
                             (FirebaseAuth.instance.currentUser?.uid != null &&
-                                post.likedBy.contains(
+                                widget.post.likedBy.contains(
                                   FirebaseAuth.instance.currentUser!.uid,
                                 ))
                             ? Colors.red
@@ -280,16 +309,31 @@ class PostWidget extends StatelessWidget {
                     ),
                     Transform.translate(
                       offset: Offset(-10, 0),
-                      child: Text('${post.likesCount}'),
+                      child: Text('${widget.post.likesCount}'),
                     ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: Icon(CupertinoIcons.chat_bubble),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {},
+                          icon: Icon(CupertinoIcons.chat_bubble),
+                        ),
+                        Consumer<CommentProvider>(
+                          builder: (context, commentProvider, child) {
+                            final comment = commentProvider.getComments(
+                              widget.post.id,
+                            );
+                            return Transform.translate(
+                              offset: Offset(-5, 0),
+                              child: Text('${comment.length}'),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
                 Text(
-                  '${post.mediaUrls.length}개의 이미지',
+                  '${widget.post.mediaUrls.length}개의 이미지',
                   style: TextStyle(
                     color: GRAYSCALE_LABEL_500,
                     fontSize: 13,
