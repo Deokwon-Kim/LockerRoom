@@ -13,6 +13,10 @@ class FeedProvider extends ChangeNotifier {
   // --- 전체 피드 ---
   List<PostModel> _postsStream = [];
   List<PostModel> get postsStream => _postsStream;
+  // 필터의 기준이 되는 전체 스냅샷 원본 목록
+  List<PostModel> _allPosts = [];
+  String _query = '';
+
   StreamSubscription? _sub;
   bool isLoading = true;
 
@@ -24,9 +28,8 @@ class FeedProvider extends ChangeNotifier {
         .snapshots()
         .listen(
           (snap) {
-            _postsStream = snap.docs
-                .map((doc) => PostModel.fromDoc(doc))
-                .toList();
+            _allPosts = snap.docs.map((doc) => PostModel.fromDoc(doc)).toList();
+            _applyFilter();
             isLoading = false;
             notifyListeners();
           },
@@ -36,6 +39,22 @@ class FeedProvider extends ChangeNotifier {
             notifyListeners();
           },
         );
+  }
+
+  void setQuery(String query) {
+    _query = query.toLowerCase();
+    _applyFilter();
+  }
+
+  void _applyFilter() {
+    if (_query.isEmpty) {
+      _postsStream = List<PostModel>.from(_allPosts);
+    } else {
+      _postsStream = _allPosts
+          .where((post) => post.text.toLowerCase().contains(_query))
+          .toList();
+    }
+    notifyListeners();
   }
 
   // --- 최근 5개 피드 ---
