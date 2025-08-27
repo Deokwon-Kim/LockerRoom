@@ -5,6 +5,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
+import 'package:lockerroom/page/home/feed_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -21,19 +22,22 @@ class FeedDetailPage extends StatefulWidget {
 
 class _FeedDetailPageState extends State<FeedDetailPage> {
   final TextEditingController _commentsController = TextEditingController();
+  late final CommentProvider _commentProvider;
 
   @override
   void initState() {
     super.initState();
+    // Provider 참조를 보관해 두고 사용 (dispose에서 context 조회 방지)
+    _commentProvider = context.read<CommentProvider>();
     // postId별 구독 시작
-    context.read<CommentProvider>().subscribeComments(widget.post.id);
+    _commentProvider.subscribeComments(widget.post.id);
     // 작성자 프로필은 빌드 외부에서 1회만 구독
     context.read<ProfileProvider>().subscribeUserProfile(widget.post.userId);
   }
 
   @override
   void dispose() {
-    context.read<CommentProvider>().cancelSubscription(widget.post.id);
+    _commentProvider.cancelSubscription(widget.post.id);
     _commentsController.dispose();
     super.dispose();
   }
@@ -57,6 +61,8 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
   Widget build(BuildContext context) {
     final feedProvider = Provider.of<FeedProvider>(context, listen: false);
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    // Ensure provider is in the tree; actual values are read via Consumers below.
+    Provider.of<CommentProvider>(context, listen: false);
 
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
@@ -151,6 +157,14 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                               onConfirm: () async {
                                                 await feedProvider.deletePost(
                                                   widget.post.id,
+                                                );
+                                                Navigator.pushAndRemoveUntil(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        FeedPage(),
+                                                  ),
+                                                  (route) => false,
                                                 );
                                                 toastification.show(
                                                   context: context,
@@ -268,9 +282,24 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                           offset: Offset(-10, 0),
                           child: Text('${widget.post.likesCount}'),
                         ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: Icon(CupertinoIcons.chat_bubble),
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: () {},
+                              icon: Icon(CupertinoIcons.chat_bubble),
+                            ),
+                            Consumer<CommentProvider>(
+                              builder: (context, cp, _) {
+                                final count = cp
+                                    .getComments(widget.post.id)
+                                    .length;
+                                return Transform.translate(
+                                  offset: Offset(-5, 0),
+                                  child: Text('$count'),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -282,6 +311,14 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
+                    SizedBox(height: 10),
+                    Consumer<CommentProvider>(
+                      builder: (context, cp, _) {
+                        final count = cp.getComments(widget.post.id).length;
+                        return Text('$count개의 댓글');
+                      },
+                    ),
+                    SizedBox(height: 10),
                     Consumer<CommentProvider>(
                       builder: (context, commentProvider, child) {
                         final comments = commentProvider.getComments(
@@ -294,31 +331,90 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                         return ListView.builder(
                           shrinkWrap: true,
                           physics: NeverScrollableScrollPhysics(),
+
                           itemCount: comments.length,
                           itemBuilder: (context, index) {
                             final c = comments[index];
                             final liked =
                                 currentUserId != null &&
                                 (c.likesCount! > 0); // 단순 표시
-                            return ListTile(
-                              title: Text(c.userName),
-                              subtitle: Text(c.text),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
+                            return Container(
+                              decoration: BoxDecoration(
+                                border: BorderDirectional(
+                                  bottom: BorderSide(
+                                    color: GRAYSCALE_LABEL_300,
+                                    width: 1,
+                                  ),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('${c.likesCount}'),
-                                  IconButton(
-                                    onPressed: currentUserId != null
-                                        ? () => commentProvider.toggleLike(
-                                            c,
-                                            currentUserId,
-                                          )
-                                        : null,
-                                    icon: Icon(
-                                      liked
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      color: liked ? Colors.red : null,
+                                  Row(
+                                    children: [
+                                      Consumer<ProfileProvider>(
+                                        builder:
+                                            (context, profileProvider, child) {
+                                              profileProvider
+                                                  .subscribeUserProfile(
+                                                    c.userId,
+                                                  );
+
+                                              final url = profileProvider
+                                                  .userProfiles[c.userId];
+                                              return CircleAvatar(
+                                                radius: 15,
+                                                backgroundImage: url != null
+                                                    ? NetworkImage(url)
+                                                    : null,
+                                                backgroundColor:
+                                                    GRAYSCALE_LABEL_300,
+                                                child: url == null
+                                                    ? const Icon(
+                                                        Icons.person,
+                                                        color: Colors.black,
+                                                        size: 20,
+                                                      )
+                                                    : null,
+                                              );
+                                            },
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        c.userName,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(width: 60),
+                                      IconButton(
+                                        onPressed: currentUserId != null
+                                            ? () => commentProvider.toggleLike(
+                                                c,
+                                                currentUserId,
+                                              )
+                                            : null,
+                                        icon: Icon(
+                                          liked
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          color: liked ? Colors.red : null,
+                                          size: 20,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 40.0),
+                                    child: Transform.translate(
+                                      offset: Offset(0, -10),
+                                      child: Text(
+                                        c.text,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -357,12 +453,11 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                             controller: _commentsController,
                             cursorColor: BUTTON,
                             cursorHeight: 18,
-                            keyboardType: TextInputType.text,
-
                             minLines: 1,
                             maxLines: 3,
-                            autocorrect: false,
-                            enableSuggestions: false,
+                            keyboardType: TextInputType.multiline,
+                            textInputAction: TextInputAction.newline,
+                            enableIMEPersonalizedLearning: true,
                             style: TextStyle(decoration: TextDecoration.none),
                             decoration: InputDecoration(
                               isDense: true,
