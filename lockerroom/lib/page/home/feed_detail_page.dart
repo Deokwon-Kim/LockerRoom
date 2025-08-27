@@ -1,11 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
-import 'package:lockerroom/page/home/feed_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -162,7 +162,9 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                                   context,
                                                   MaterialPageRoute(
                                                     builder: (context) =>
-                                                        FeedPage(),
+                                                        const BottomTabBar(
+                                                          initialIndex: 1,
+                                                        ),
                                                   ),
                                                   (route) => false,
                                                 );
