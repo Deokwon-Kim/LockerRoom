@@ -82,7 +82,7 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Eagles));
+          return const Center(child: CircularProgressIndicator(color: BUTTON));
         } else if (snapshot.hasError) {
           return const Center(child: Text('에러가 발생하였습니다.'));
         } else if (snapshot.hasData) {
@@ -95,7 +95,7 @@ class AuthWrapper extends StatelessWidget {
             builder: (context, userSnap) {
               if (userSnap.connectionState == ConnectionState.waiting) {
                 return const Center(
-                  child: CircularProgressIndicator(color: Eagles),
+                  child: CircularProgressIndicator(color: BUTTON),
                 );
               }
               if (userSnap.hasError) {
