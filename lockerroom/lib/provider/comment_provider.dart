@@ -28,6 +28,7 @@ class CommentProvider with ChangeNotifier {
 
   Future<void> addComment(String postId, CommentModel comment) async {
     await _commentsCollection.add({...comment.toMap(), 'postId': postId});
+    notifyListeners();
   }
 
   Future<void> toggleLike(CommentModel comment, String userId) async {
