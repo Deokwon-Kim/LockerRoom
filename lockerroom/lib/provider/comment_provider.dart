@@ -50,6 +50,10 @@ class CommentProvider with ChangeNotifier {
     _subs[postId]?.cancel();
   }
 
+  Future<void> deleteComment(CommentModel comment) async {
+    await _commentsCollection.doc(comment.id).delete();
+  }
+
   @override
   void dispose() {
     _subs.values.forEach((sub) => sub.cancel());
