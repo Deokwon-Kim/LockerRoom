@@ -29,6 +29,9 @@ class _FeedPageState extends State<FeedPage> {
     feedProvider.postStream(uid);
   }
 
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,27 +42,93 @@ class _FeedPageState extends State<FeedPage> {
         centerTitle: true,
         scrolledUnderElevation: 0,
         backgroundColor: BACKGROUND_COLOR,
+        actions: [
+          IconButton(
+            onPressed: () {
+              setState(() {
+                if (_isSearching) {
+                  // 검색 종료 시 검색어 초기화
+                  Provider.of<FeedProvider>(
+                    context,
+                    listen: false,
+                  ).setQuery('');
+                }
+                _isSearching = !_isSearching;
+              });
+            },
+            icon: Icon(
+              _isSearching ? Icons.close : Icons.search,
+              color: BUTTON,
+            ),
+          ),
+        ],
       ),
-      body: Consumer<FeedProvider>(
-        builder: (context, feedProvider, child) {
-          final allPosts = feedProvider.postsStream;
-          if (feedProvider.isLoading) {
-            return Center(child: CircularProgressIndicator(color: BUTTON));
-          }
-          if (allPosts.isEmpty) {
-            return Center(
-              child: Text(
-                '게시물이 없습니다',
-                style: TextStyle(color: GRAYSCALE_LABEL_500),
+      body: Column(
+        children: [
+          if (_isSearching)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(15, 10, 15, 10),
+              child: TextFormField(
+                controller: _searchController,
+                cursorColor: BUTTON,
+                cursorHeight: 18,
+                minLines: 1,
+                maxLines: 3,
+                keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
+                enableIMEPersonalizedLearning: true,
+                style: TextStyle(decoration: TextDecoration.none),
+                onChanged: (value) => Provider.of<FeedProvider>(
+                  context,
+                  listen: false,
+                ).setQuery(value),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
+                  ),
+                  labelText: '검색어를 입력해주세요',
+                  labelStyle: TextStyle(color: Colors.grey, fontSize: 13),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                  ),
+                ),
               ),
-            );
-          }
-          return ListView.builder(
-            itemCount: allPosts.length,
-            itemBuilder: (context, index) =>
-                PostWidget(post: allPosts[index], feedProvider: feedProvider),
-          );
-        },
+            ),
+          Expanded(
+            child: Consumer<FeedProvider>(
+              builder: (context, feedProvider, child) {
+                final allPosts = feedProvider.postsStream;
+                if (feedProvider.isLoading) {
+                  return Center(
+                    child: CircularProgressIndicator(color: BUTTON),
+                  );
+                }
+                if (allPosts.isEmpty) {
+                  return Center(
+                    child: Text(
+                      '게시물이 없습니다',
+                      style: TextStyle(color: GRAYSCALE_LABEL_500),
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  itemCount: allPosts.length,
+                  itemBuilder: (context, index) => PostWidget(
+                    post: allPosts[index],
+                    feedProvider: feedProvider,
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
