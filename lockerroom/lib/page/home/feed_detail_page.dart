@@ -14,7 +14,8 @@ import 'package:toastification/toastification.dart';
 
 class FeedDetailPage extends StatefulWidget {
   final PostModel post;
-  const FeedDetailPage({super.key, required this.post});
+  final CommentModel? comment;
+  const FeedDetailPage({super.key, required this.post, this.comment});
 
   @override
   State<FeedDetailPage> createState() => _FeedDetailPageState();
@@ -156,7 +157,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                               content: '게시글을 삭제 하시겠습니까?',
                                               onConfirm: () async {
                                                 await feedProvider.deletePost(
-                                                  widget.post.id,
+                                                  widget.post,
                                                 );
                                                 Navigator.pushAndRemoveUntil(
                                                   context,
@@ -317,7 +318,10 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     Consumer<CommentProvider>(
                       builder: (context, cp, _) {
                         final count = cp.getComments(widget.post.id).length;
-                        return Text('$count개의 댓글');
+                        return Text(
+                          '$count개의 댓글',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        );
                       },
                     ),
                     SizedBox(height: 10),
@@ -388,7 +392,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      SizedBox(width: 60),
+                                      SizedBox(width: 20),
                                       IconButton(
                                         onPressed: currentUserId != null
                                             ? () => commentProvider.toggleLike(
@@ -404,6 +408,43 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                           size: 20,
                                         ),
                                       ),
+                                      Text('${c.likesCount}'),
+                                      SizedBox(width: 5),
+                                      if (currentUserId != null &&
+                                          c.userId == currentUserId)
+                                        PopupMenuTheme(
+                                          data: PopupMenuThemeData(
+                                            color: BACKGROUND_COLOR,
+                                          ),
+                                          child: PopupMenuButton<String>(
+                                            icon: Icon(Icons.more_horiz),
+                                            onSelected: (value) async {
+                                              showDialog(
+                                                context: context,
+                                                builder: (context) =>
+                                                    ConfirmationDialog(
+                                                      title: '댓글 삭제',
+                                                      content: '댓글을 삭제 하시겠습니까?',
+                                                      onConfirm: () async {
+                                                        await commentProvider
+                                                            .deleteComment(c);
+                                                      },
+                                                    ),
+                                              );
+                                            },
+                                            itemBuilder: (context) => const [
+                                              PopupMenuItem(
+                                                value: 'delete',
+                                                child: Text(
+                                                  '삭제하기',
+                                                  style: TextStyle(
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                     ],
                                   ),
                                   Padding(

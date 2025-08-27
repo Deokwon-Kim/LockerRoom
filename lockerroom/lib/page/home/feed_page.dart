@@ -193,7 +193,7 @@ class _PostWidgetState extends State<PostWidget> {
                                       content: '게시글을 삭제 하시겠습니까?',
                                       onConfirm: () async {
                                         await widget.feedProvider.deletePost(
-                                          widget.post.id,
+                                          widget.post,
                                         );
                                         toastification.show(
                                           context: context,
@@ -314,7 +314,15 @@ class _PostWidgetState extends State<PostWidget> {
                     Row(
                       children: [
                         IconButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    FeedDetailPage(post: widget.post),
+                              ),
+                            );
+                          },
                           icon: Icon(CupertinoIcons.chat_bubble),
                         ),
                         Consumer<CommentProvider>(
