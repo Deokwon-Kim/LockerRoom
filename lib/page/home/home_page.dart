@@ -272,7 +272,7 @@ class _HomePageState extends State<HomePage> {
                                                   borderRadius:
                                                       BorderRadius.circular(8),
                                                   child: url.endsWith('.mp4')
-                                                      ? Container(
+                                                      ? SizedBox(
                                                           width: inSingle
                                                               ? 100
                                                               : 50,
@@ -294,8 +294,9 @@ class _HomePageState extends State<HomePage> {
                                                                 loadingProgress,
                                                               ) {
                                                                 if (loadingProgress ==
-                                                                    null)
+                                                                    null) {
                                                                   return child;
+                                                                }
                                                                 return SizedBox(
                                                                   height: 150,
                                                                   width:
