@@ -299,60 +299,71 @@ class _PostWidgetState extends State<PostWidget> {
 
                 // 이미지/영상 슬라이드
                 if (widget.post.mediaUrls.isNotEmpty)
-                  SizedBox(
-                    height: 200,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: widget.post.mediaUrls.length,
-                      itemBuilder: (_, i) {
-                        final url = widget.post.mediaUrls[i];
-                        final inSingle = widget.post.mediaUrls.length == 1;
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final bool inSingle = widget.post.mediaUrls.length == 1;
+                      final double availableWidth = constraints.maxWidth;
+                      // 리스트 높이와 각 아이템 너비를 화면/가용 폭 기준으로 계산
+                      final double listHeight = (availableWidth * 0.55).clamp(
+                        160.0,
+                        320.0,
+                      );
+                      final double itemWidth = inSingle
+                          ? availableWidth
+                          : (availableWidth * 0.48).clamp(
+                              140.0,
+                              availableWidth,
+                            );
 
-                        return Padding(
-                          padding: EdgeInsets.only(
-                            left: inSingle ? 0 : 0,
-                            right: inSingle ? 0 : 8,
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: url.endsWith('.mp4')
-                                ? Container(
-                                    width: inSingle
-                                        ? 290
-                                        : 150, // 단일: 화면 전체, 여러장: 150
-                                    height: 200,
-                                    color: Colors.black12,
-                                    child: Center(child: Text('비디오 미리보기')),
-                                  )
-                                : Image.network(
-                                    url,
-                                    height: 200,
-                                    width: inSingle
-                                        ? 290
-                                        : 150, // 단일: 화면 전체, 여러장: 150
-                                    fit: inSingle
-                                        ? BoxFit.cover
-                                        : BoxFit
-                                              .cover, // 단일은 contain, 여러장 cover
-                                    loadingBuilder:
-                                        (context, child, loadingProgress) {
-                                          if (loadingProgress == null)
-                                            return child;
-                                          return SizedBox(
-                                            height: 200,
-                                            width: inSingle ? 290 : 150,
-                                            child: const Center(
-                                              child: CircularProgressIndicator(
-                                                color: BUTTON,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                  ),
-                          ),
-                        );
-                      },
-                    ),
+                      return SizedBox(
+                        height: listHeight,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: widget.post.mediaUrls.length,
+                          itemBuilder: (_, i) {
+                            final url = widget.post.mediaUrls[i];
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                left: 0,
+                                right: inSingle ? 0 : 8,
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: url.endsWith('.mp4')
+                                    ? Container(
+                                        width: itemWidth,
+                                        height: listHeight,
+                                        color: Colors.black12,
+                                        child: Center(child: Text('비디오 미리보기')),
+                                      )
+                                    : Image.network(
+                                        url,
+                                        height: listHeight,
+                                        width: itemWidth,
+                                        fit: BoxFit.cover,
+                                        loadingBuilder:
+                                            (context, child, loadingProgress) {
+                                              if (loadingProgress == null) {
+                                                return child;
+                                              }
+                                              return SizedBox(
+                                                height: listHeight,
+                                                width: itemWidth,
+                                                child: const Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        color: BUTTON,
+                                                      ),
+                                                ),
+                                              );
+                                            },
+                                      ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
                   ),
                 // 좋아요 버튼
                 Row(
