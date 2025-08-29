@@ -16,7 +16,7 @@ class UploadProvider extends ChangeNotifier {
 
   // 다중 이미지/ 영상 선택
   Future<void> pickMultipleMedia() async {
-    final List<XFile>? pickedFiles = await _picker.pickMultipleMedia();
+    final List<XFile> pickedFiles = await _picker.pickMultipleMedia();
 
     if (pickedFiles != null && pickedFiles.isNotEmpty) {
       _mediaFiles = pickedFiles;
