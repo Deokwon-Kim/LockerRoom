@@ -36,10 +36,22 @@ class ThemeTile extends StatelessWidget {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: SizedBox(
-                    width: 110,
-                    height: 110,
-                    child: Image.asset(teamModel.logoPath),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final double size =
+                          constraints.biggest.shortestSide; // 정사각형 내부 한변 기준
+                      final double logoSize = size * 1; // 내부 여백 고려한 비율
+                      return Center(
+                        child: SizedBox(
+                          width: logoSize,
+                          height: logoSize,
+                          child: Image.asset(
+                            teamModel.logoPath,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
