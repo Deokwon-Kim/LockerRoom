@@ -12,7 +12,7 @@ class ProfileProvider extends ChangeNotifier {
   File? _image;
   String? _imageUrl;
   bool _isUploading = false;
-  bool _isLoading = false;
+  final bool _isLoading = false;
   double _uploadProgress = 0.0;
 
   File? get image => _image;
