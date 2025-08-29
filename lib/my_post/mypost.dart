@@ -210,8 +210,9 @@ class MyPostWidget extends StatelessWidget {
                                   fit: BoxFit.cover,
                                   loadingBuilder:
                                       (context, child, loadingProgress) {
-                                        if (loadingProgress == null)
+                                        if (loadingProgress == null) {
                                           return child;
+                                        }
                                         return SizedBox(
                                           width: inSingle ? 290 : 150,
                                           height: 200,
