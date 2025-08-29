@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/team_model.dart';
@@ -159,70 +158,85 @@ class _SchedulePageState extends State<SchedulePage> {
                                     ),
                                   ),
                                   const Spacer(),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      if (awayTeamModel != null)
-                                        Flexible(
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                s.awayTeam,
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                              SizedBox(width: 8),
-                                              Flexible(
-                                                child: AspectRatio(
-                                                  aspectRatio: 1.0,
-                                                  child: Image.asset(
-                                                    awayTeamModel.logoPath,
-                                                    fit: BoxFit.contain,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                                  LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final double availableWidth =
+                                          constraints.maxWidth;
+                                      final double logoSize =
+                                          availableWidth *
+                                          0.20; // 화면 너비 기반 비례 크기
+                                      final double clampedLogo = logoSize.clamp(
+                                        28.0,
+                                        64.0,
+                                      );
 
-                                      const SizedBox(width: 12),
-                                      const Text(
-                                        'vs',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      if (homeTeamModel != null)
-                                        Flexible(
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Flexible(
-                                                child: AspectRatio(
-                                                  aspectRatio: 1.0,
-                                                  child: Image.asset(
-                                                    homeTeamModel.logoPath,
-                                                    fit: BoxFit.contain,
+                                      return Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          if (awayTeamModel != null)
+                                            Flexible(
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    s.awayTeam,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 13,
+                                                    ),
                                                   ),
-                                                ),
+                                                  SizedBox(width: 8),
+                                                  SizedBox(
+                                                    width: clampedLogo,
+                                                    height: clampedLogo,
+                                                    child: Image.asset(
+                                                      awayTeamModel.logoPath,
+                                                      fit: BoxFit.contain,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              SizedBox(width: 10),
-                                              Text(
-                                                s.homeTeam,
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                            ],
+                                            ),
+
+                                          const SizedBox(width: 12),
+                                          const Text(
+                                            'vs',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                    ],
+                                          const SizedBox(width: 12),
+                                          if (homeTeamModel != null)
+                                            Flexible(
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  SizedBox(
+                                                    width: clampedLogo,
+                                                    height: clampedLogo,
+                                                    child: Image.asset(
+                                                      homeTeamModel.logoPath,
+                                                      fit: BoxFit.contain,
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 10),
+                                                  Text(
+                                                    s.homeTeam,
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 13,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                        ],
+                                      );
+                                    },
                                   ),
                                   const Spacer(),
                                 ],
