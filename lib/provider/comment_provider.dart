@@ -7,8 +7,8 @@ import 'package:lockerroom/model/comment_model.dart';
 class CommentProvider with ChangeNotifier {
   final _commentsCollection = FirebaseFirestore.instance.collection('comments');
 
-  Map<String, List<CommentModel>> _postComments = {};
-  Map<String, StreamSubscription> _subs = {};
+  final Map<String, List<CommentModel>> _postComments = {};
+  final Map<String, StreamSubscription> _subs = {};
 
   List<CommentModel> getComments(String postId) => _postComments[postId] ?? [];
 
@@ -56,7 +56,9 @@ class CommentProvider with ChangeNotifier {
 
   @override
   void dispose() {
-    _subs.values.forEach((sub) => sub.cancel());
+    for (var sub in _subs.values) {
+      sub.cancel();
+    }
     super.dispose();
   }
 }
