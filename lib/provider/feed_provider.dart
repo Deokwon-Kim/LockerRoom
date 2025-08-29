@@ -114,6 +114,7 @@ class FeedProvider extends ChangeNotifier {
 
       tx.update(postRef, {'likedBy': likedByList, 'likesCount': newLikes});
     });
+    notifyListeners();
   }
 
   // 현재 로그인 한 유저에 게시물만 불러오기
@@ -132,8 +133,9 @@ class FeedProvider extends ChangeNotifier {
 
   // 게시글 삭제 시 해당 게시글의 모든 댓글도 함께 삭제
   Future<void> deletePost(PostModel post) async {
-    for (final url in post.mediaUrls)
+    for (final url in post.mediaUrls) {
       await FirebaseStorage.instance.refFromURL(url).delete();
+    }
     final firestore = FirebaseFirestore.instance;
     final postRef = _postCollection.doc(post.id);
 
