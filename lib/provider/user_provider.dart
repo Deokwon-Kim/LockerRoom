@@ -189,7 +189,7 @@ class UserProvider extends ChangeNotifier {
       await user.delete();
 
       clearUserData();
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException {
       rethrow;
     } finally {
       _isLoading = false;
