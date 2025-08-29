@@ -338,7 +338,7 @@ class _MypageState extends State<Mypage> {
                               )
                             else
                               Text(
-                                '응원팀: ' + teamName,
+                                '응원팀: $teamName',
                                 style: TextStyle(
                                   color: BLACK,
                                   fontSize: 14,
@@ -380,7 +380,7 @@ class _MypageState extends State<Mypage> {
                                       autoCloseDuration: const Duration(
                                         seconds: 2,
                                       ),
-                                      title: Text('팀이 변경되었습니다: ' + changed),
+                                      title: Text('팀이 변경되었습니다: $changed'),
                                     );
                                   }
                                 },
@@ -396,26 +396,29 @@ class _MypageState extends State<Mypage> {
             ),
 
             SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              height: 500,
-              child: ContainedTabBarView(
-                tabs: [
-                  Text('게시글', style: TextStyle(color: BLACK)),
-                  Text('댓글', style: TextStyle(color: BLACK)),
-                ],
-                tabBarProperties: TabBarProperties(
-                  indicatorColor: BUTTON,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicatorWeight: 3.0,
-                  unselectedLabelColor: GRAYSCALE_LABEL_500,
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: WHITE,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                views: [
-                  MypostPage(),
-                  Container(color: Colors.deepOrange),
-                ],
-
-                onChange: (index) => print(index),
+                child: ContainedTabBarView(
+                  tabs: [
+                    Text('게시글', style: TextStyle(color: BLACK)),
+                    Text('댓글', style: TextStyle(color: BLACK)),
+                  ],
+                  tabBarProperties: TabBarProperties(
+                    indicatorColor: selectedTeam?.color,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicatorWeight: 3.0,
+                    unselectedLabelColor: GRAYSCALE_LABEL_500,
+                  ),
+                  views: [
+                    MypostPage(),
+                    Container(color: Colors.deepOrange),
+                  ],
+                  onChange: (index) => print(index),
+                ),
               ),
             ),
           ],
