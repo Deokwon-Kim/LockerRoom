@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
@@ -208,103 +209,139 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
 
                     // 이미지/ 영상 슬라이드
                     if (widget.post.mediaUrls.isNotEmpty)
-                      SizedBox(
-                        height: 200,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: widget.post.mediaUrls.length,
-                          itemBuilder: (_, i) {
-                            final url = widget.post.mediaUrls[i];
-                            final inSingle = widget.post.mediaUrls.length == 1;
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final bool inSingle =
+                              widget.post.mediaUrls.length == 1;
+                          final double availableWidth = constraints.maxWidth;
+                          // 리스트 높이와 각 아이템 너비를 화면/가용 폭 기준으로 계산
+                          final double listHeight = (availableWidth * 0.55)
+                              .clamp(160.0, 320.0);
+                          final double itemWidth = inSingle
+                              ? availableWidth
+                              : (availableWidth * 0.48).clamp(
+                                  140.0,
+                                  availableWidth,
+                                );
 
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                left: inSingle ? 0 : 0,
-                                right: inSingle ? 0 : 8,
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: url.endsWith('.mp4')
-                                    ? Container(
-                                        width: inSingle ? 290 : 150,
-                                        height: 200,
-                                        color: Colors.black12,
-                                        child: Center(child: Text('비디오 미리보기')),
-                                      )
-                                    : Image.network(
-                                        url,
-                                        height: 200,
-                                        width: inSingle ? 290 : 150,
-                                        fit: inSingle
-                                            ? BoxFit.cover
-                                            : BoxFit.cover,
-                                        loadingBuilder:
-                                            (context, child, loadingProgress) {
-                                              if (loadingProgress == null)
-                                                return child;
-                                              return SizedBox(
-                                                height: 200,
-                                                width: inSingle ? 290 : 150,
-                                                child: const Center(
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                        color: BUTTON,
-                                                      ),
-                                                ),
-                                              );
-                                            },
-                                      ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    // 좋아요, 댓글버튼
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => feedProvider.toggleLike(widget.post),
-                          icon: Icon(
-                            (FirebaseAuth.instance.currentUser?.uid != null &&
-                                    widget.post.likedBy.contains(
-                                      FirebaseAuth.instance.currentUser!.uid,
-                                    ))
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            color:
-                                (FirebaseAuth.instance.currentUser?.uid !=
-                                        null &&
-                                    widget.post.likedBy.contains(
-                                      FirebaseAuth.instance.currentUser!.uid,
-                                    ))
-                                ? Colors.red
-                                : null,
-                          ),
-                        ),
-                        Transform.translate(
-                          offset: Offset(-10, 0),
-                          child: Text('${widget.post.likesCount}'),
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: () {},
-                              icon: Icon(CupertinoIcons.chat_bubble),
-                            ),
-                            Consumer<CommentProvider>(
-                              builder: (context, cp, _) {
-                                final count = cp
-                                    .getComments(widget.post.id)
-                                    .length;
-                                return Transform.translate(
-                                  offset: Offset(-5, 0),
-                                  child: Text('$count'),
+                          return SizedBox(
+                            height: listHeight,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: widget.post.mediaUrls.length,
+                              itemBuilder: (_, i) {
+                                final url = widget.post.mediaUrls[i];
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                    left: 0,
+                                    right: inSingle ? 0 : 8,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: url.endsWith('.mp4')
+                                        ? Container(
+                                            width: itemWidth,
+                                            height: listHeight,
+                                            color: Colors.black12,
+                                            child: Center(
+                                              child: Text('비디오 미리보기'),
+                                            ),
+                                          )
+                                        : Image.network(
+                                            url,
+                                            height: listHeight,
+                                            width: itemWidth,
+                                            fit: BoxFit.cover,
+                                            loadingBuilder:
+                                                (
+                                                  context,
+                                                  child,
+                                                  loadingProgress,
+                                                ) {
+                                                  if (loadingProgress == null) {
+                                                    return child;
+                                                  }
+                                                  return SizedBox(
+                                                    height: listHeight,
+                                                    width: itemWidth,
+                                                    child: const Center(
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                            color: BUTTON,
+                                                          ),
+                                                    ),
+                                                  );
+                                                },
+                                          ),
+                                  ),
                                 );
                               },
                             ),
+                          );
+                        },
+                      ),
+                    // 좋아요, 댓글버튼 (실시간 반영)
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('posts')
+                          .doc(widget.post.id)
+                          .snapshots(),
+                      builder: (context, snap) {
+                        final currentUserId =
+                            FirebaseAuth.instance.currentUser?.uid;
+                        // 스냅샷 데이터가 준비되지 않은 경우 기존 값 사용
+                        List<String> likedBy = widget.post.likedBy;
+                        int likesCount = widget.post.likesCount;
+                        if (snap.hasData && snap.data!.exists) {
+                          final data =
+                              snap.data!.data() as Map<String, dynamic>;
+                          likedBy = List<String>.from(
+                            data['likedBy'] ?? const [],
+                          );
+                          likesCount = (data['likesCount'] ?? 0) as int;
+                        }
+                        final bool isLiked =
+                            currentUserId != null &&
+                            likedBy.contains(currentUserId);
+
+                        return Row(
+                          children: [
+                            IconButton(
+                              onPressed: () =>
+                                  feedProvider.toggleLike(widget.post),
+                              icon: Icon(
+                                isLiked
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
+                                color: isLiked ? Colors.red : null,
+                              ),
+                            ),
+                            Transform.translate(
+                              offset: Offset(-10, 0),
+                              child: Text('$likesCount'),
+                            ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  onPressed: () {},
+                                  icon: Icon(CupertinoIcons.chat_bubble),
+                                ),
+                                Consumer<CommentProvider>(
+                                  builder: (context, cp, _) {
+                                    final count = cp
+                                        .getComments(widget.post.id)
+                                        .length;
+                                    return Transform.translate(
+                                      offset: Offset(-5, 0),
+                                      child: Text('$count'),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ],
-                        ),
-                      ],
+                        );
+                      },
                     ),
                     Text(
                       '${widget.post.mediaUrls.length}개의 이미지',
