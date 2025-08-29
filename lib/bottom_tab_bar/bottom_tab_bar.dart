@@ -95,7 +95,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            height: 70,
+            padding: EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
               boxShadow: [
                 BoxShadow(
