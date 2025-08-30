@@ -18,7 +18,7 @@ class UploadProvider extends ChangeNotifier {
   Future<void> pickMultipleMedia() async {
     final List<XFile> pickedFiles = await _picker.pickMultipleMedia();
 
-    if (pickedFiles.isNotEmpty) {
+    if (pickedFiles != null && pickedFiles.isNotEmpty) {
       _mediaFiles = pickedFiles;
       notifyListeners();
     }
