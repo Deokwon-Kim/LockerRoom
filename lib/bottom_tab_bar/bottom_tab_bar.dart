@@ -80,8 +80,13 @@ class _BottomTabBarState extends State<BottomTabBar> {
       FeedPage(),
       UploadPage(
         onUploaded: () {
-          setState(() {
-            _selectedIndex = 1; // 업로드 후 Feed 탭으로 이동
+          // UI 상태 충돌을 방지하기 위해 지연 실행
+          Future.delayed(Duration(milliseconds: 100), () {
+            if (mounted) {
+              setState(() {
+                _selectedIndex = 1; // 업로드 후 Feed 탭으로 이동
+              });
+            }
           });
         },
       ),
