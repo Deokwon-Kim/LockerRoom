@@ -52,5 +52,11 @@
 		<string>https</string>
 		<string>http</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>이 앱은 사진과 동영상을 촬영하기 위해 카메라에 접근합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>이 앱은 게시물에 업로드할 사진과 동영상을 선택하기 위해 사진 라이브러리에 접근합니다.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>이 앱은 동영상 녹화 시 오디오를 녹음하기 위해 마이크에 접근합니다.</string>
 </dict>
 </plist>
