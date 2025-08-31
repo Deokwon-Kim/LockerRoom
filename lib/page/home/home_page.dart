@@ -8,6 +8,8 @@ import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/video_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
+import 'package:lockerroom/utils/media_utils.dart';
+import 'package:lockerroom/widgets/network_video_thumbnail.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -262,6 +264,11 @@ class _HomePageState extends State<HomePage> {
                                               final url = post.mediaUrls[i];
                                               final inSingle =
                                                   post.mediaUrls.length == 1;
+                                              final isVideo =
+                                                  MediaUtils.isVideoFromPost(
+                                                    post,
+                                                    i,
+                                                  );
 
                                               return Padding(
                                                 padding: EdgeInsets.only(
@@ -271,8 +278,9 @@ class _HomePageState extends State<HomePage> {
                                                 child: ClipRRect(
                                                   borderRadius:
                                                       BorderRadius.circular(8),
-                                                  child: url.endsWith('.mp4')
-                                                      ? SizedBox(
+                                                  child: isVideo
+                                                      ? NetworkVideoThumbnail(
+                                                          videoUrl: url,
                                                           width: inSingle
                                                               ? 100
                                                               : 50,

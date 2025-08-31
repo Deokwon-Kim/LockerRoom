@@ -161,16 +161,98 @@ class _UploadPageState extends State<UploadPage> {
                       separatorBuilder: (_, __) => const SizedBox(width: 8),
                       itemBuilder: (context, index) {
                         final file = uploadProvider.mediaFiles[index];
+                        final isVideo = uploadProvider.isVideoFile(file);
+                        final thumbnailPath = uploadProvider.videoThumbnails[file.path];
+                        
                         return Stack(
                           clipBehavior: Clip.none,
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(10),
-                              child: Image.file(
-                                File(file.path),
-                                width: 110,
-                                height: 110,
-                                fit: BoxFit.cover,
+                              child: Stack(
+                                children: [
+                                  // 이미지 또는 동영상 썸네일 표시
+                                  if (isVideo && thumbnailPath != null)
+                                    Image.file(
+                                      File(thumbnailPath),
+                                      width: 110,
+                                      height: 110,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          width: 110,
+                                          height: 110,
+                                          color: Colors.grey[300],
+                                          child: const Icon(
+                                            Icons.video_file,
+                                            size: 40,
+                                            color: Colors.grey,
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  else if (isVideo)
+                                    Container(
+                                      width: 110,
+                                      height: 110,
+                                      color: Colors.grey[300],
+                                      child: const Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.video_file,
+                                            size: 30,
+                                            color: Colors.grey,
+                                          ),
+                                          Text(
+                                            '썸네일\n생성중...',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  else
+                                    Image.file(
+                                      File(file.path),
+                                      width: 110,
+                                      height: 110,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          width: 110,
+                                          height: 110,
+                                          color: Colors.grey[300],
+                                          child: const Icon(
+                                            Icons.error,
+                                            size: 40,
+                                            color: Colors.grey,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  // 동영상 아이콘 오버레이
+                                  if (isVideo)
+                                    Positioned(
+                                      bottom: 4,
+                                      right: 4,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.7),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: const Icon(
+                                          Icons.play_arrow,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                             Positioned(

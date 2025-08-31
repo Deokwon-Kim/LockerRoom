@@ -10,6 +10,8 @@ import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
+import 'package:lockerroom/utils/media_utils.dart';
+import 'package:lockerroom/widgets/network_video_thumbnail.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -231,6 +233,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                               itemCount: widget.post.mediaUrls.length,
                               itemBuilder: (_, i) {
                                 final url = widget.post.mediaUrls[i];
+                                final isVideo = MediaUtils.isVideoFromPost(widget.post, i);
                                 return Padding(
                                   padding: EdgeInsets.only(
                                     left: 0,
@@ -238,14 +241,12 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                   ),
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
-                                    child: url.endsWith('.mp4')
-                                        ? Container(
+                                    child: isVideo
+                                        ? NetworkVideoThumbnail(
+                                            videoUrl: url,
                                             width: itemWidth,
                                             height: listHeight,
-                                            color: Colors.black12,
-                                            child: Center(
-                                              child: Text('비디오 미리보기'),
-                                            ),
+                                            fit: BoxFit.cover,
                                           )
                                         : Image.network(
                                             url,
@@ -343,13 +344,37 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                         );
                       },
                     ),
-                    Text(
-                      '${widget.post.mediaUrls.length}개의 이미지',
-                      style: TextStyle(
-                        color: GRAYSCALE_LABEL_500,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    Builder(
+                      builder: (context) {
+                        int videoCount = 0;
+                        int imageCount = 0;
+                        
+                        for (int i = 0; i < widget.post.mediaUrls.length; i++) {
+                          if (MediaUtils.isVideoFromPost(widget.post, i)) {
+                            videoCount++;
+                          } else {
+                            imageCount++;
+                          }
+                        }
+                        
+                        String mediaText;
+                        if (videoCount > 0 && imageCount > 0) {
+                          mediaText = '이미지 $imageCount개, 동영상 $videoCount개';
+                        } else if (videoCount > 0) {
+                          mediaText = '$videoCount개의 동영상';
+                        } else {
+                          mediaText = '$imageCount개의 이미지';
+                        }
+                        
+                        return Text(
+                          mediaText,
+                          style: TextStyle(
+                            color: GRAYSCALE_LABEL_500,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      },
                     ),
                     SizedBox(height: 10),
                     Consumer<CommentProvider>(
