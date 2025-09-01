@@ -9,7 +9,7 @@ import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
-import 'package:lockerroom/widgets/network_video_thumbnail.dart';
+import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -333,11 +333,14 @@ class _PostWidgetState extends State<PostWidget> {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: isVideo
-                                    ? NetworkVideoThumbnail(
+                                    ? NetworkVideoPlayer(
                                         videoUrl: url,
                                         width: itemWidth,
                                         height: listHeight,
                                         fit: BoxFit.cover,
+                                        autoPlay: true,
+                                        muted: true,
+                                        showControls: false,
                                       )
                                     : Image.network(
                                         url,

@@ -9,7 +9,7 @@ import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/video_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
 import 'package:lockerroom/utils/media_utils.dart';
-import 'package:lockerroom/widgets/network_video_thumbnail.dart';
+import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -279,12 +279,16 @@ class _HomePageState extends State<HomePage> {
                                                   borderRadius:
                                                       BorderRadius.circular(8),
                                                   child: isVideo
-                                                      ? NetworkVideoThumbnail(
+                                                      ? NetworkVideoPlayer(
                                                           videoUrl: url,
                                                           width: inSingle
-                                                              ? 100
-                                                              : 50,
+                                                              ? 200
+                                                              : 150,
                                                           height: 150,
+                                                          fit: BoxFit.cover,
+                                                          autoPlay: true,
+                                                          muted: true,
+                                                          showControls: false,
                                                         )
                                                       : Image.network(
                                                           url,
