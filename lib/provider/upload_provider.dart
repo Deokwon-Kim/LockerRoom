@@ -1,144 +1,156 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_compress/video_compress.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
-import 'package:path_provider/path_provider.dart';
 
 class UploadProvider extends ChangeNotifier {
-  final ImagePicker _picker = ImagePicker();
-  List<XFile> _mediaFiles = [];
-  Map<String, String> _videoThumbnails = {}; // 동영상 파일 경로 -> 썸네일 경로
+  List<File> _images = [];
+  File? _video;
+  Uint8List? _videoThumbnail = Uint8List(0);
+
+  double _uploadProgress = 0.0;
   bool _isUploading = false;
 
-  List<XFile> get mediaFiles => _mediaFiles;
-  Map<String, String> get videoThumbnails => _videoThumbnails;
+  List<File> get images => _images;
+  File? get video => _video;
+  Uint8List? get videoThumbnail => _videoThumbnail;
+  double get uploadProgress => _uploadProgress;
   bool get isUploading => _isUploading;
-  
-  // 파일이 비디오인지 확인
-  bool isVideoFile(XFile file) {
-    final extension = file.path.toLowerCase().split('.').last;
-    return ['mp4', 'mov', 'avi', 'mkv', '3gp', 'webm', 'flv'].contains(extension);
+
+  void setImages(List<File> newImages) {
+    _images = newImages;
+    notifyListeners();
   }
-  
-  // 비디오 썸네일 생성
-  Future<String?> generateVideoThumbnail(XFile videoFile) async {
+
+  void setVideo(File? videoFile) {
+    _video = videoFile;
+    _generateThumbnail();
+    notifyListeners();
+  }
+
+  void clearAll() {
+    _images = [];
+    _video = null;
+    _videoThumbnail = null;
+    _uploadProgress = 0.0;
+    _isUploading = false;
+    notifyListeners();
+  }
+
+  Future<void> pickImages() async {
+    final pickedImages = await ImagePicker().pickMultiImage();
+    if (pickedImages != null) {
+      setImages(pickedImages.map((e) => File(e.path)).toList());
+    }
+  }
+
+  Future<void> pickVideo() async {
+    final pickedVideo = await ImagePicker().pickVideo(
+      source: ImageSource.gallery,
+    );
+    if (pickedVideo != null) {
+      final compressedVideo = await _compressVideo(File(pickedVideo.path));
+      setVideo(compressedVideo);
+    }
+  }
+
+  Future<File> _compressVideo(File file) async {
+    final info = await VideoCompress.compressVideo(
+      file.path,
+      quality: VideoQuality.MediumQuality,
+      deleteOrigin: false,
+    );
+    return File(info!.path!);
+  }
+
+  Future<void> _generateThumbnail() async {
+    if (_video == null) return;
     try {
-      final thumbnailPath = await VideoThumbnail.thumbnailFile(
-        video: videoFile.path,
-        thumbnailPath: (await getTemporaryDirectory()).path,
-        imageFormat: ImageFormat.JPEG,
-        maxHeight: 300,
+      final data = await VideoThumbnail.thumbnailData(
+        video: _video!.path,
+        imageFormat: ImageFormat.PNG,
+        maxHeight: 120,
         quality: 75,
       );
-      return thumbnailPath;
+      _videoThumbnail = data;
     } catch (e) {
-      debugPrint('썸네일 생성 에러: $e');
-      return null;
+      _videoThumbnail = null;
     }
+    notifyListeners();
   }
 
-  // 다중 이미지/ 영상 선택
-  Future<void> pickMultipleMedia() async {
-    try {
-      final List<XFile> pickedFiles = await _picker.pickMultipleMedia();
-
-      if (pickedFiles.isNotEmpty) {
-        _mediaFiles = pickedFiles;
-        notifyListeners();
-        
-        // 동영상 파일들의 썸네일 생성
-        for (var file in pickedFiles) {
-          if (isVideoFile(file)) {
-            final thumbnailPath = await generateVideoThumbnail(file);
-            if (thumbnailPath != null) {
-              _videoThumbnails[file.path] = thumbnailPath;
-            }
-          }
-        }
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('미디어 선택 에러: $e');
-    }
-  }
-
-  // 개별 미디어 제거
-  void removeMediaAt(int index) {
-    if (index >= 0 && index < _mediaFiles.length) {
-      final removedFile = _mediaFiles[index];
-      _mediaFiles.removeAt(index);
-      
-      // 동영상 썸네일도 제거
-      if (_videoThumbnails.containsKey(removedFile.path)) {
-        _videoThumbnails.remove(removedFile.path);
-      }
-      
-      notifyListeners();
-    }
-  }
-
-  // 업로드
-  Future<bool> uploadPost(String text) async {
-    final currnetUser = FirebaseAuth.instance.currentUser;
-    if (currnetUser == null) return false;
-    if (text.trim().isEmpty) return false;
-    if (_mediaFiles.isEmpty) return false;
+  Future<void> uploadAndSavePost({
+    required String userId,
+    required String userName,
+    String? content,
+  }) async {
+    if (_images.isEmpty && _video == null) return;
 
     _isUploading = true;
+    _uploadProgress = 0.0;
     notifyListeners();
 
-    try {
-      List<String> mediaUrls = [];
-      for (var file in _mediaFiles) {
-        final fileName =
-            "${DateTime.now().millisecondsSinceEpoch}_${currnetUser.uid}";
-        final ref = FirebaseStorage.instance
-            .ref()
-            .child('posts')
-            .child(currnetUser.uid)
-            .child(fileName);
-        await ref.putFile(File(file.path));
-        final url = await ref.getDownloadURL();
-        mediaUrls.add(url);
-      }
+    List<String> mediaUrls = [];
+    int totalCount = _images.length + (_video != null ? 1 : 0);
+    int uploadedCount = 0;
 
-      // 미디어 타입 정보 생성
-      List<Map<String, dynamic>> mediaInfo = [];
-      for (int i = 0; i < _mediaFiles.length; i++) {
-        final file = _mediaFiles[i];
-        final isVideo = isVideoFile(file);
-        mediaInfo.add({
-          'url': mediaUrls[i],
-          'type': isVideo ? 'video' : 'image',
-          'filename': file.name,
-        });
-      }
-
-      await FirebaseFirestore.instance.collection('posts').add({
-        'userName': currnetUser.displayName,
-        'userId': currnetUser.uid,
-        'text': text,
-        'mediaUrls': mediaUrls, // 기존 호환성을 위해 유지
-        'mediaInfo': mediaInfo, // 새로운 상세 정보
-        'createdAt': FieldValue.serverTimestamp(),
-        'likesCount': 0,
-        'profileImageUrl': currnetUser.photoURL ?? '',
-      });
-
-      _mediaFiles.clear();
-      _videoThumbnails.clear(); // 썸네일 캐시도 정리
-      _isUploading = false;
+    // 이미지 업로드
+    for (var img in _images) {
+      final url = await _uploadFileWithRetry(img, 'images');
+      mediaUrls.add(url);
+      uploadedCount++;
+      _uploadProgress = uploadedCount / totalCount;
       notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('업로드 에러: $e');
-      _isUploading = false;
-      notifyListeners();
-      return false;
     }
+
+    // 동영상 업로드
+    if (_video != null) {
+      final url = await _uploadFileWithRetry(_video!, 'videos');
+      mediaUrls.add(url);
+      uploadedCount++;
+      _uploadProgress = uploadedCount / totalCount;
+      notifyListeners();
+    }
+
+    // Firestore에 Post 저장
+    await FirebaseFirestore.instance.collection('posts').add({
+      'userId': userId,
+      'userName': userName,
+      'content': content ?? '',
+      'mediaUrls': mediaUrls,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    _isUploading = false;
+    _uploadProgress = 1.0;
+    notifyListeners();
+
+    // 완료 후 초기화
+    clearAll();
+  }
+
+  Future<String> _uploadFileWithRetry(
+    File file,
+    String folder, {
+    int retries = 3,
+  }) async {
+    for (int attempt = 0; attempt < retries; attempt++) {
+      try {
+        final ref = FirebaseStorage.instance.ref().child(
+          '$folder/${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}',
+        );
+        final task = ref.putFile(file);
+        await task;
+        return await ref.getDownloadURL();
+      } catch (e) {
+        if (attempt == retries - 1) rethrow;
+      }
+    }
+    throw Exception('업로드 실패: ${file.path}');
   }
 }
