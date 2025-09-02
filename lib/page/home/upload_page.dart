@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/rendering.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -36,6 +38,10 @@ class _UploadPageState extends State<UploadPage> {
   @override
   Widget build(BuildContext context) {
     final uploadProvider = context.watch<UploadProvider>();
+    final hasCaption = _captionController.text.trim().isNotEmpty;
+    final hasMedia =
+        uploadProvider.images.isNotEmpty || uploadProvider.video != null;
+    final canUpload = hasCaption && hasMedia && !uploadProvider.isUploading;
     final userProvider = context.read<UserProvider>();
     final userName =
         userProvider.nickname ?? userProvider.currentUser?.displayName ?? '사용자';
@@ -49,17 +55,15 @@ class _UploadPageState extends State<UploadPage> {
         !_requestedProfileLoad) {
       _requestedProfileLoad = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         context.read<ProfileProvider>().loadProfileImage(authUser.uid);
       });
     }
 
     final themeColor = teamProvider.selectedTeam?.color ?? BUTTON;
-    final hasCaption = _captionController.text.trim().isNotEmpty;
-    final hasMedia = uploadProvider.mediaFiles.isNotEmpty;
-    final canUpload = hasCaption && hasMedia && !uploadProvider.isUploading;
-    uploadProvider.mediaFiles.isNotEmpty && !uploadProvider.isUploading;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
         title: const Text(
@@ -70,295 +74,353 @@ class _UploadPageState extends State<UploadPage> {
         backgroundColor: BACKGROUND_COLOR,
         elevation: 0,
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 헤더: 프로필 + 이름
-              Row(
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.translucent,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (authUser != null)
-                    Consumer<ProfileProvider>(
-                      builder: (context, profileProvider, child) {
-                        profileProvider.subscribeMyProfileImage(authUser.uid);
-                        final url = profileProvider.myProfileImage;
-                        return CircleAvatar(
+                  Row(
+                    children: [
+                      if (authUser != null)
+                        Consumer<ProfileProvider>(
+                          builder: (context, profileProvider, child) {
+                            profileProvider.subscribeMyProfileImage(
+                              authUser.uid,
+                            );
+                            final url = profileProvider.myProfileImage;
+                            return CircleAvatar(
+                              radius: 25,
+                              backgroundImage: url != null
+                                  ? NetworkImage(url)
+                                  : null,
+                              child: url == null
+                                  ? const Icon(Icons.person)
+                                  : null,
+                            );
+                          },
+                        )
+                      else
+                        const CircleAvatar(
                           radius: 25,
-                          backgroundImage: url != null
-                              ? NetworkImage(url)
-                              : null,
-                          child: url == null ? const Icon(Icons.person) : null,
-                        );
-                      },
-                    )
-                  else
-                    const CircleAvatar(
-                      radius: 25,
-                      backgroundColor: GRAYSCALE_LABEL_300,
-                      child: Icon(Icons.person, color: BLACK, size: 25),
-                    ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      userName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                          backgroundColor: GRAYSCALE_LABEL_300,
+                          child: Icon(Icons.person, color: BLACK, size: 25),
+                        ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          userName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      overflow: TextOverflow.ellipsis,
+                    ],
+                  ),
+                  SizedBox(height: 10),
+
+                  // 업로드 진행 상태 표시
+                  if (uploadProvider.isUploading)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: LinearProgressIndicator(
+                        value: uploadProvider.uploadProgress,
+                        backgroundColor: Colors.grey[300],
+                        color: BUTTON,
+                      ),
+                    ),
+
+                  // 캡션 입력 박스
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: GRAYSCALE_LABEL_200),
+                    ),
+
+                    child: TextField(
+                      controller: _captionController,
+                      cursorColor: themeColor,
+                      maxLines: null,
+                      minLines: 3,
+                      onChanged: (_) => setState(() {}),
+                      decoration: const InputDecoration(
+                        hintText: '새로운 소식이 있나요? (필수)',
+                        hintStyle: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+
+                  // 글자 수 카운터
+                  Padding(
+                    padding: const EdgeInsets.only(right: 24, top: 4),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '${_captionController.text.length}/500',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // 미디어 미리보기 그리드/가로 스크롤
+                  // 스크롤 없이 전부 보이게
+                  if (hasMedia)
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: GRAYSCALE_LABEL_200),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        child: SizedBox(
+                          height: 120, // 1줄 높이까지만 보이게 (적당히 조정 가능)
+                          child: GridView.builder(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: 6,
+                                  mainAxisSpacing: 6,
+                                ),
+                            itemCount:
+                                uploadProvider.images.length +
+                                (uploadProvider.video != null ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index < uploadProvider.images.length) {
+                                return _buildMediaItem(
+                                  uploadProvider.images[index],
+                                  isVideo: false,
+                                  provider: uploadProvider,
+                                );
+                              } else {
+                                return _buildMediaItem(
+                                  uploadProvider.video!,
+                                  isVideo: true,
+                                  provider: uploadProvider,
+                                  thumbnail: uploadProvider.videoThumbnail,
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  SizedBox(height: 10),
+                  // 미디어 선택 버튼
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 12.0,
+                    ),
+                    child: OutlinedButton.icon(
+                      onPressed: uploadProvider.isUploading
+                          ? null
+                          : () async {
+                              await uploadProvider.pickImages();
+                            },
+                      icon: const Icon(Icons.add_photo_alternate_outlined),
+                      label: const Text(
+                        '사진 추가',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: BUTTON,
+                        side: const BorderSide(color: BUTTON),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 12.0,
+                    ),
+                    child: OutlinedButton.icon(
+                      onPressed: uploadProvider.isUploading
+                          ? null
+                          : () async {
+                              await uploadProvider.pickVideo();
+                            },
+                      icon: const Icon(Icons.add_photo_alternate_outlined),
+                      label: const Text(
+                        '동영상 추가',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: BUTTON,
+                        side: const BorderSide(color: BUTTON),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // 업로드 버튼
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: canUpload
+                            ? () async {
+                                await uploadProvider.uploadAndSavePost(
+                                  userId:
+                                      FirebaseAuth.instance.currentUser!.uid,
+                                  userName: userName,
+                                  content: _captionController.text,
+                                );
+                                _captionController.clear();
+                                widget.onUploaded?.call();
+                              }
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: themeColor,
+                          disabledBackgroundColor: GRAYSCALE_LABEL_300,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: uploadProvider.isUploading
+                            ? const SizedBox(
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: WHITE,
+                                ),
+                              )
+                            : const Text(
+                                '업로드',
+                                style: TextStyle(
+                                  color: WHITE,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-
-              // 캡션 입력 박스
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: GRAYSCALE_LABEL_200),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: TextField(
-                  controller: _captionController,
-                  cursorColor: themeColor,
-                  maxLines: null,
-                  minLines: 3,
-                  onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                    hintText: '새로운 소식이 있나요? (필수)',
-                    hintStyle: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // 미디어 미리보기 그리드/가로 스크롤
-              if (uploadProvider.mediaFiles.isNotEmpty)
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: GRAYSCALE_LABEL_200),
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  child: SizedBox(
-                    height: 110,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: uploadProvider.mediaFiles.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final file = uploadProvider.mediaFiles[index];
-                        final isVideo = uploadProvider.isVideoFile(file);
-                        final thumbnailPath = uploadProvider.videoThumbnails[file.path];
-                        
-                        return Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Stack(
-                                children: [
-                                  // 이미지 또는 동영상 썸네일 표시
-                                  if (isVideo && thumbnailPath != null)
-                                    Image.file(
-                                      File(thumbnailPath),
-                                      width: 110,
-                                      height: 110,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          width: 110,
-                                          height: 110,
-                                          color: Colors.grey[300],
-                                          child: const Icon(
-                                            Icons.video_file,
-                                            size: 40,
-                                            color: Colors.grey,
-                                          ),
-                                        );
-                                      },
-                                    )
-                                  else if (isVideo)
-                                    Container(
-                                      width: 110,
-                                      height: 110,
-                                      color: Colors.grey[300],
-                                      child: const Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.video_file,
-                                            size: 30,
-                                            color: Colors.grey,
-                                          ),
-                                          Text(
-                                            '썸네일\n생성중...',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  else
-                                    Image.file(
-                                      File(file.path),
-                                      width: 110,
-                                      height: 110,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          width: 110,
-                                          height: 110,
-                                          color: Colors.grey[300],
-                                          child: const Icon(
-                                            Icons.error,
-                                            size: 40,
-                                            color: Colors.grey,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  // 동영상 아이콘 오버레이
-                                  if (isVideo)
-                                    Positioned(
-                                      bottom: 4,
-                                      right: 4,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.7),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: const Icon(
-                                          Icons.play_arrow,
-                                          color: Colors.white,
-                                          size: 16,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            Positioned(
-                              top: -6,
-                              right: -6,
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () {
-                                    uploadProvider.removeMediaAt(index);
-                                  },
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withAlpha(160),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.close,
-                                      color: WHITE,
-                                      size: 13,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
-
-              if (uploadProvider.mediaFiles.isNotEmpty)
-                const SizedBox(height: 8),
-
-              // 미디어 선택 버튼
-              OutlinedButton.icon(
-                onPressed: uploadProvider.isUploading
-                    ? null
-                    : uploadProvider.pickMultipleMedia,
-                icon: const Icon(Icons.add_photo_alternate_outlined),
-                label: const Text(
-                  '미디어 선택',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: BUTTON,
-                  side: const BorderSide(color: BUTTON),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-
-              const Spacer(),
-
-              // 업로드 버튼
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: canUpload
-                      ? () async {
-                          final ok = await uploadProvider.uploadPost(
-                            _captionController.text,
-                          );
-                          if (ok) {
-                            _captionController.clear();
-                            widget.onUploaded?.call();
-                          }
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: themeColor,
-                    disabledBackgroundColor: GRAYSCALE_LABEL_300,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: uploadProvider.isUploading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: WHITE,
-                          ),
-                        )
-                      : const Text(
-                          '업로드',
-                          style: TextStyle(
-                            color: WHITE,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildMediaItem(
+    File file, {
+    required bool isVideo,
+    Uint8List? thumbnail,
+    required UploadProvider provider,
+  }) {
+    Widget mediaContent;
+
+    if (isVideo) {
+      if (thumbnail != null && thumbnail.isNotEmpty) {
+        mediaContent = Image.memory(
+          thumbnail,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              color: Colors.grey[300],
+              child: Center(
+                child: Icon(Icons.videocam, color: Colors.white, size: 20),
+              ),
+            );
+          },
+        );
+      } else {
+        mediaContent = Container(
+          color: Colors.grey[300],
+          width: double.infinity,
+          height: double.infinity,
+          child: Center(
+            child: Icon(Icons.videocam, color: Colors.white, size: 20),
+          ),
+        );
+      }
+    } else {
+      mediaContent = Image.file(
+        file,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+
+    return Stack(
+      children: [
+        ClipRRect(borderRadius: BorderRadius.circular(10), child: mediaContent),
+        if (isVideo)
+          Positioned(
+            bottom: 4,
+            right: 4,
+            child: Icon(Icons.play_circle, color: Colors.white, size: 20),
+          ),
+        Positioned(
+          top: 4,
+          right: 4,
+          child: InkWell(
+            onTap: () {
+              if (isVideo) {
+                provider.setVideo(null);
+              } else {
+                final updated = List<File>.from(provider.images)..remove(file);
+                provider.setImages(updated);
+              }
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(4),
+              child: Icon(Icons.close, color: Colors.white, size: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    // 헤더: 프로필 + 이름
   }
 }
