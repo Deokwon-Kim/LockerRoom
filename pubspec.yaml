@@ -53,6 +53,9 @@ dependencies:
   video_compress: ^3.1.4
   video_thumbnail: ^0.5.6
   path_provider: ^2.1.5
+  video_player: ^2.10.0
+  visibility_detector: ^0.4.0+2
+
 
 dev_dependencies:
   flutter_test:

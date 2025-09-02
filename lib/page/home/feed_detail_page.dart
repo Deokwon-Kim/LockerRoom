@@ -11,7 +11,7 @@ import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
-import 'package:lockerroom/widgets/network_video_thumbnail.dart';
+import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -162,16 +162,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                                 await feedProvider.deletePost(
                                                   widget.post,
                                                 );
-                                                Navigator.pushAndRemoveUntil(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        const BottomTabBar(
-                                                          initialIndex: 1,
-                                                        ),
-                                                  ),
-                                                  (route) => false,
-                                                );
+                                                if (!mounted) return;
                                                 toastification.show(
                                                   context: context,
                                                   type: ToastificationType
@@ -182,6 +173,17 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                                     seconds: 2,
                                                   ),
                                                   title: Text('게시물을 삭제했습니다.'),
+                                                );
+                                                if (!mounted) return;
+                                                Navigator.pushAndRemoveUntil(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        const BottomTabBar(
+                                                          initialIndex: 1,
+                                                        ),
+                                                  ),
+                                                  (route) => false,
                                                 );
                                               },
                                             ),
@@ -233,7 +235,10 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                               itemCount: widget.post.mediaUrls.length,
                               itemBuilder: (_, i) {
                                 final url = widget.post.mediaUrls[i];
-                                final isVideo = MediaUtils.isVideoFromPost(widget.post, i);
+                                final isVideo = MediaUtils.isVideoFromPost(
+                                  widget.post,
+                                  i,
+                                );
                                 return Padding(
                                   padding: EdgeInsets.only(
                                     left: 0,
@@ -242,11 +247,14 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
                                     child: isVideo
-                                        ? NetworkVideoThumbnail(
+                                        ? NetworkVideoPlayer(
                                             videoUrl: url,
                                             width: itemWidth,
                                             height: listHeight,
                                             fit: BoxFit.cover,
+                                            autoPlay: true,
+                                            muted: true,
+                                            showControls: false,
                                           )
                                         : Image.network(
                                             url,
@@ -348,7 +356,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                       builder: (context) {
                         int videoCount = 0;
                         int imageCount = 0;
-                        
+
                         for (int i = 0; i < widget.post.mediaUrls.length; i++) {
                           if (MediaUtils.isVideoFromPost(widget.post, i)) {
                             videoCount++;
@@ -356,7 +364,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                             imageCount++;
                           }
                         }
-                        
+
                         String mediaText;
                         if (videoCount > 0 && imageCount > 0) {
                           mediaText = '이미지 $imageCount개, 동영상 $videoCount개';
@@ -365,7 +373,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                         } else {
                           mediaText = '$imageCount개의 이미지';
                         }
-                        
+
                         return Text(
                           mediaText,
                           style: TextStyle(
@@ -490,6 +498,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                                       onConfirm: () async {
                                                         await commentProvider
                                                             .deleteComment(c);
+                                                        if (!mounted) return;
                                                       },
                                                     ),
                                               );
@@ -610,6 +619,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                               widget.post.id,
                               comment,
                             );
+                            if (!mounted) return;
                             _commentsController.clear();
                           },
                           child: Container(
