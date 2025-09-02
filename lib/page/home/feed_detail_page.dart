@@ -162,16 +162,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                                 await feedProvider.deletePost(
                                                   widget.post,
                                                 );
-                                                Navigator.pushAndRemoveUntil(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        const BottomTabBar(
-                                                          initialIndex: 1,
-                                                        ),
-                                                  ),
-                                                  (route) => false,
-                                                );
+                                                if (!mounted) return;
                                                 toastification.show(
                                                   context: context,
                                                   type: ToastificationType
@@ -182,6 +173,17 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                                     seconds: 2,
                                                   ),
                                                   title: Text('게시물을 삭제했습니다.'),
+                                                );
+                                                if (!mounted) return;
+                                                Navigator.pushAndRemoveUntil(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        const BottomTabBar(
+                                                          initialIndex: 1,
+                                                        ),
+                                                  ),
+                                                  (route) => false,
                                                 );
                                               },
                                             ),
@@ -496,6 +498,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                                       onConfirm: () async {
                                                         await commentProvider
                                                             .deleteComment(c);
+                                                        if (!mounted) return;
                                                       },
                                                     ),
                                               );
@@ -616,6 +619,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                               widget.post.id,
                               comment,
                             );
+                            if (!mounted) return;
                             _commentsController.clear();
                           },
                           child: Container(
