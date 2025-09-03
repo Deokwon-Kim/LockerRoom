@@ -25,15 +25,15 @@ class PostModel {
 
   factory PostModel.fromDoc(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+
     // mediaInfo 파싱 (기존 데이터와 호환성 유지)
     List<Map<String, dynamic>>? mediaInfo;
     if (data['mediaInfo'] != null) {
       mediaInfo = List<Map<String, dynamic>>.from(
-        data['mediaInfo'].map((item) => Map<String, dynamic>.from(item))
+        data['mediaInfo'].map((item) => Map<String, dynamic>.from(item)),
       );
     }
-    
+
     return PostModel(
       id: doc.id,
       text: data['text'] ?? "",
