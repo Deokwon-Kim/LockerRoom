@@ -10,6 +10,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 
 class UploadProvider extends ChangeNotifier {
   List<File> _images = [];
+  File? _camera;
   File? _video;
   Uint8List? _videoThumbnail = Uint8List(0);
 
@@ -17,6 +18,7 @@ class UploadProvider extends ChangeNotifier {
   bool _isUploading = false;
 
   List<File> get images => _images;
+  File? get camera => _camera;
   File? get video => _video;
   Uint8List? get videoThumbnail => _videoThumbnail;
   double get uploadProgress => _uploadProgress;
@@ -33,18 +35,34 @@ class UploadProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setCamera(File? cameraFile) {
+    _camera = cameraFile;
+    notifyListeners();
+  }
+
   void clearAll() {
     _images = [];
     _video = null;
+    _camera = null;
     _videoThumbnail = null;
     _uploadProgress = 0.0;
     _isUploading = false;
     notifyListeners();
   }
 
+  Future<void> pickCamera() async {
+    final pickedCamera = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+    );
+    if (pickedCamera != null) {
+      _camera = File(pickedCamera.path);
+      notifyListeners();
+    }
+  }
+
   Future<void> pickImages() async {
     final pickedImages = await ImagePicker().pickMultiImage();
-    if (pickedImages != null) {
+    if (pickedImages.isNotEmpty) {
       setImages(pickedImages.map((e) => File(e.path)).toList());
     }
   }
@@ -87,16 +105,17 @@ class UploadProvider extends ChangeNotifier {
   Future<void> uploadAndSavePost({
     required String userId,
     required String userName,
-    String? content,
+    required String text,
   }) async {
-    if (_images.isEmpty && _video == null) return;
+    if (_images.isEmpty && _video == null && _camera == null) return;
 
     _isUploading = true;
     _uploadProgress = 0.0;
     notifyListeners();
 
     List<String> mediaUrls = [];
-    int totalCount = _images.length + (_video != null ? 1 : 0);
+    int totalCount =
+        _images.length + (_video != null ? 1 : 0) + (_camera != null ? 1 : 0);
     int uploadedCount = 0;
 
     // 이미지 업로드
@@ -117,11 +136,20 @@ class UploadProvider extends ChangeNotifier {
       notifyListeners();
     }
 
+    // 카메라 이미지 업로드
+    if (_camera != null) {
+      final url = await _uploadFileWithRetry(_camera!, 'images');
+      mediaUrls.add(url);
+      uploadedCount++;
+      _uploadProgress = uploadedCount / totalCount;
+      notifyListeners();
+    }
+
     // Firestore에 Post 저장
     await FirebaseFirestore.instance.collection('posts').add({
       'userId': userId,
       'userName': userName,
-      'content': content ?? '',
+      'text': text,
       'mediaUrls': mediaUrls,
       'createdAt': FieldValue.serverTimestamp(),
     });
