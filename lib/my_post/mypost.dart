@@ -6,6 +6,8 @@ import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
+import 'package:lockerroom/utils/media_utils.dart';
+import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -182,52 +184,74 @@ class MyPostWidget extends StatelessWidget {
               // 본문
               Text(post.text),
               const SizedBox(height: 8),
-              // 이미지/영상
+              // 이미지/영상 슬라이드
               if (post.mediaUrls.isNotEmpty)
-                SizedBox(
-                  height: 200,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: post.mediaUrls.length,
-                    itemBuilder: (_, i) {
-                      final url = post.mediaUrls[i];
-                      final inSingle = post.mediaUrls.length == 1;
-                      return Padding(
-                        padding: EdgeInsets.only(right: inSingle ? 0 : 8),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: url.endsWith('.mp4')
-                              ? Container(
-                                  width: inSingle ? 290 : 150,
-                                  height: 200,
-                                  color: Colors.black12,
-                                  child: const Center(child: Text('비디오 미리보기')),
-                                )
-                              : Image.network(
-                                  url,
-                                  width: inSingle ? 290 : 150,
-                                  height: 200,
-                                  fit: BoxFit.cover,
-                                  loadingBuilder:
-                                      (context, child, loadingProgress) {
-                                        if (loadingProgress == null) {
-                                          return child;
-                                        }
-                                        return SizedBox(
-                                          width: inSingle ? 290 : 150,
-                                          height: 200,
-                                          child: const Center(
-                                            child: CircularProgressIndicator(
-                                              color: BUTTON,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                ),
-                        ),
-                      );
-                    },
-                  ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final bool inSingle = post.mediaUrls.length == 1;
+                    final double availableWidth = constraints.maxWidth;
+                    // 리스트 높이와 각 아이템 너비를 화면/가용 폭 기준으로 계산
+                    final double listHeight = (availableWidth * 0.55).clamp(
+                      160.0,
+                      320.0,
+                    );
+                    final double itemWidth = inSingle
+                        ? availableWidth
+                        : (availableWidth * 0.48).clamp(140.0, availableWidth);
+
+                    return SizedBox(
+                      height: listHeight,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: post.mediaUrls.length,
+                        itemBuilder: (_, i) {
+                          final url = post.mediaUrls[i];
+                          final isVideo = MediaUtils.isVideoFromPost(post, i);
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              left: 0,
+                              right: inSingle ? 0 : 8,
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: isVideo
+                                  ? NetworkVideoPlayer(
+                                      videoUrl: url,
+                                      width: itemWidth,
+                                      height: listHeight,
+                                      fit: BoxFit.cover,
+                                      autoPlay: true,
+                                      muted: true,
+                                      showControls: false,
+                                    )
+                                  : Image.network(
+                                      url,
+                                      height: listHeight,
+                                      width: itemWidth,
+                                      fit: BoxFit.cover,
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                            if (loadingProgress == null) {
+                                              return child;
+                                            }
+                                            return SizedBox(
+                                              height: listHeight,
+                                              width: itemWidth,
+                                              child: const Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: BUTTON,
+                                                    ),
+                                              ),
+                                            );
+                                          },
+                                    ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
               const SizedBox(height: 8),
               // 좋아요 + 댓글
