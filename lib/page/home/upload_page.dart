@@ -40,7 +40,9 @@ class _UploadPageState extends State<UploadPage> {
     final uploadProvider = context.watch<UploadProvider>();
     final hasCaption = _captionController.text.trim().isNotEmpty;
     final hasMedia =
-        uploadProvider.images.isNotEmpty || uploadProvider.video != null;
+        uploadProvider.images.isNotEmpty ||
+        uploadProvider.video != null ||
+        uploadProvider.camera != null;
     final canUpload = hasCaption && hasMedia && !uploadProvider.isUploading;
     final userProvider = context.read<UserProvider>();
     final userName =
@@ -210,7 +212,8 @@ class _UploadPageState extends State<UploadPage> {
                                 ),
                             itemCount:
                                 uploadProvider.images.length +
-                                (uploadProvider.video != null ? 1 : 0),
+                                (uploadProvider.video != null ? 1 : 0) +
+                                (uploadProvider.camera != null ? 1 : 0),
                             itemBuilder: (context, index) {
                               if (index < uploadProvider.images.length) {
                                 return _buildMediaItem(
@@ -218,12 +221,21 @@ class _UploadPageState extends State<UploadPage> {
                                   isVideo: false,
                                   provider: uploadProvider,
                                 );
-                              } else {
+                              } else if (index <
+                                  uploadProvider.images.length +
+                                      (uploadProvider.video != null ? 1 : 0)) {
                                 return _buildMediaItem(
                                   uploadProvider.video!,
                                   isVideo: true,
                                   provider: uploadProvider,
                                   thumbnail: uploadProvider.videoThumbnail,
+                                );
+                              } else {
+                                return _buildMediaItem(
+                                  uploadProvider.camera!,
+                                  isVideo: false,
+                                  provider: uploadProvider,
+                                  isCamera: true,
                                 );
                               }
                             },
@@ -231,62 +243,83 @@ class _UploadPageState extends State<UploadPage> {
                         ),
                       ),
                     ),
-
-                  SizedBox(height: 10),
                   // 미디어 선택 버튼
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 12.0,
-                    ),
-                    child: OutlinedButton.icon(
-                      onPressed: uploadProvider.isUploading
-                          ? null
-                          : () async {
-                              await uploadProvider.pickImages();
-                            },
-                      icon: const Icon(Icons.add_photo_alternate_outlined),
-                      label: const Text(
-                        '사진 추가',
-                        style: TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BUTTON,
-                        side: const BorderSide(color: BUTTON),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                  Transform.translate(
+                    offset: Offset(5, -30),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: uploadProvider.isUploading
+                              ? null
+                              : uploadProvider.pickCamera,
+                          icon: Icon(Icons.camera_alt_rounded),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
+                        IconButton(
+                          onPressed: uploadProvider.isUploading
+                              ? null
+                              : uploadProvider.pickImages,
+                          icon: Icon(Icons.photo_library_sharp),
+                        ),
+                        IconButton(
+                          onPressed: uploadProvider.isUploading
+                              ? null
+                              : uploadProvider.pickVideo,
+                          icon: Icon(Icons.movie_rounded),
+                        ),
+                      ],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 12.0,
-                    ),
-                    child: OutlinedButton.icon(
-                      onPressed: uploadProvider.isUploading
-                          ? null
-                          : () async {
-                              await uploadProvider.pickVideo();
-                            },
-                      icon: const Icon(Icons.add_photo_alternate_outlined),
-                      label: const Text(
-                        '동영상 추가',
-                        style: TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BUTTON,
-                        side: const BorderSide(color: BUTTON),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-                  ),
+                  // Padding(
+                  //   padding: const EdgeInsets.symmetric(
+                  //     horizontal: 16.0,
+                  //     vertical: 12.0,
+                  //   ),
+                  //   child: OutlinedButton.icon(
+                  //     onPressed: uploadProvider.isUploading
+                  //         ? null
+                  //         : uploadProvider.pickImages,
+                  //     icon: const Icon(Icons.add_photo_alternate_outlined),
+                  //     label: const Text(
+                  //       '사진 추가',
+                  //       style: TextStyle(fontWeight: FontWeight.w500),
+                  //     ),
+                  //     style: OutlinedButton.styleFrom(
+                  //       foregroundColor: BUTTON,
+                  //       side: const BorderSide(color: BUTTON),
+                  //       shape: RoundedRectangleBorder(
+                  //         borderRadius: BorderRadius.circular(10),
+                  //       ),
+                  //       padding: const EdgeInsets.symmetric(vertical: 12),
+                  //     ),
+                  //   ),
+                  // ),
 
+                  // Padding(
+                  //   padding: const EdgeInsets.symmetric(
+                  //     horizontal: 16.0,
+                  //     vertical: 12.0,
+                  //   ),
+                  //   child: OutlinedButton.icon(
+                  //     onPressed: uploadProvider.isUploading
+                  //         ? null
+                  //         : () async {
+                  //             await uploadProvider.pickVideo();
+                  //           },
+                  //     icon: const Icon(Icons.add_photo_alternate_outlined),
+                  //     label: const Text(
+                  //       '동영상 추가',
+                  //       style: TextStyle(fontWeight: FontWeight.w500),
+                  //     ),
+                  //     style: OutlinedButton.styleFrom(
+                  //       foregroundColor: BUTTON,
+                  //       side: const BorderSide(color: BUTTON),
+                  //       shape: RoundedRectangleBorder(
+                  //         borderRadius: BorderRadius.circular(10),
+                  //       ),
+                  //       padding: const EdgeInsets.symmetric(vertical: 12),
+                  //     ),
+                  //   ),
+                  // ),
                   const SizedBox(height: 16),
 
                   // 업로드 버튼
@@ -302,7 +335,7 @@ class _UploadPageState extends State<UploadPage> {
                                   userId:
                                       FirebaseAuth.instance.currentUser!.uid,
                                   userName: userName,
-                                  content: _captionController.text,
+                                  text: _captionController.text,
                                 );
                                 _captionController.clear();
                                 widget.onUploaded?.call();
@@ -349,6 +382,7 @@ class _UploadPageState extends State<UploadPage> {
     required bool isVideo,
     Uint8List? thumbnail,
     required UploadProvider provider,
+    bool isCamera = false,
   }) {
     Widget mediaContent;
 
@@ -403,6 +437,8 @@ class _UploadPageState extends State<UploadPage> {
             onTap: () {
               if (isVideo) {
                 provider.setVideo(null);
+              } else if (isCamera) {
+                provider.setCamera(null);
               } else {
                 final updated = List<File>.from(provider.images)..remove(file);
                 provider.setImages(updated);
