@@ -243,56 +243,32 @@ class _UploadPageState extends State<UploadPage> {
                         ),
                       ),
                     ),
+
                   // 미디어 선택 버튼
-                  Transform.translate(
-                    offset: Offset(5, -30),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: uploadProvider.isUploading
-                              ? null
-                              : uploadProvider.pickCamera,
-                          icon: Icon(Icons.camera_alt_rounded),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 12.0,
+                    ),
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        pickImageBottomSheet(context, uploadProvider);
+                      },
+                      icon: const Icon(Icons.perm_media),
+                      label: const Text(
+                        '미디어 추가',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: BUTTON,
+                        side: const BorderSide(color: BUTTON),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        IconButton(
-                          onPressed: uploadProvider.isUploading
-                              ? null
-                              : uploadProvider.pickImages,
-                          icon: Icon(Icons.photo_library_sharp),
-                        ),
-                        IconButton(
-                          onPressed: uploadProvider.isUploading
-                              ? null
-                              : uploadProvider.pickVideo,
-                          icon: Icon(Icons.movie_rounded),
-                        ),
-                      ],
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
                     ),
                   ),
-                  // Padding(
-                  //   padding: const EdgeInsets.symmetric(
-                  //     horizontal: 16.0,
-                  //     vertical: 12.0,
-                  //   ),
-                  //   child: OutlinedButton.icon(
-                  //     onPressed: uploadProvider.isUploading
-                  //         ? null
-                  //         : uploadProvider.pickImages,
-                  //     icon: const Icon(Icons.add_photo_alternate_outlined),
-                  //     label: const Text(
-                  //       '사진 추가',
-                  //       style: TextStyle(fontWeight: FontWeight.w500),
-                  //     ),
-                  //     style: OutlinedButton.styleFrom(
-                  //       foregroundColor: BUTTON,
-                  //       side: const BorderSide(color: BUTTON),
-                  //       shape: RoundedRectangleBorder(
-                  //         borderRadius: BorderRadius.circular(10),
-                  //       ),
-                  //       padding: const EdgeInsets.symmetric(vertical: 12),
-                  //     ),
-                  //   ),
-                  // ),
 
                   // Padding(
                   //   padding: const EdgeInsets.symmetric(
@@ -374,6 +350,134 @@ class _UploadPageState extends State<UploadPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Future<dynamic> pickImageBottomSheet(
+    BuildContext context,
+    UploadProvider uploadProvider,
+  ) {
+    return showModalBottomSheet(
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: GRAYSCALE_LABEL_50,
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: GRAYSCALE_LABEL_200,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Icon(Icons.perm_media, color: BUTTON),
+                    SizedBox(width: 8),
+                    Text(
+                      '미디어 추가',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: BLACK,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+                Container(height: 1, color: GRAYSCALE_LABEL_200),
+                SizedBox(height: 8),
+
+                ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor: BUTTON.withOpacity(0.1),
+                    child: Icon(Icons.camera_alt_rounded, color: BUTTON),
+                  ),
+                  title: Text(
+                    '사진 촬영',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text('카메라로 바로 촬영합니다.'),
+                  onTap: () async {
+                    if (uploadProvider.isUploading) return;
+                    await uploadProvider.pickCamera();
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor: BUTTON.withOpacity(0.1),
+                    child: Icon(Icons.photo, color: BUTTON),
+                  ),
+                  title: Text(
+                    '사진 선택',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text('여러 장 선택할 수 있어요.'),
+                  onTap: () async {
+                    if (uploadProvider.isUploading) return;
+                    await uploadProvider.pickImages();
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor: BUTTON.withOpacity(0.1),
+                    child: Icon(Icons.movie, color: BUTTON),
+                  ),
+                  title: Text(
+                    '동영상 선택',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text('길면 자동으로 압축해요.'),
+                  onTap: () async {
+                    if (uploadProvider.isUploading) return;
+                    await uploadProvider.pickVideo();
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                ),
+                SizedBox(height: 4),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      '닫기',
+                      style: TextStyle(color: GRAYSCALE_LABEL_500),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
