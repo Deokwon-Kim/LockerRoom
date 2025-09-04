@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/const/priceFormatter.dart';
@@ -7,7 +8,8 @@ import 'package:lockerroom/provider/market_upload_provider.dart';
 import 'package:provider/provider.dart';
 
 class AfterMarketUploadPage extends StatefulWidget {
-  const AfterMarketUploadPage({super.key});
+  final VoidCallback? onUploaded;
+  const AfterMarketUploadPage({super.key, this.onUploaded});
 
   @override
   State<AfterMarketUploadPage> createState() => _AfterMarketUploadPageState();
@@ -36,6 +38,8 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
         marketUploadProvider.camera != null;
     final canUpload =
         hasCaption && hasPrice && hasImage && !marketUploadProvider.isUploading;
+    final userId = FirebaseAuth.instance.currentUser!.uid;
+    final userName = FirebaseAuth.instance.currentUser!.displayName;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -231,24 +235,54 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
                   ),
                 ),
                 SizedBox(height: 40),
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    width: double.infinity,
-                    height: 58,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: BUTTON,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '등록하기',
-                      style: TextStyle(
-                        color: WHITE,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                // 등록하기 버튼
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: canUpload
+                        ? () async {
+                            await marketUploadProvider.uploadAndSavePost(
+                              userId: userId,
+                              userName: userName!,
+                              title: _captionController.text,
+                              price: _priceController.text,
+                              description: _descriptionController.text,
+                              type: selectedValue,
+                            );
+                            _captionController.clear();
+                            _priceController.clear();
+                            _descriptionController.clear();
+                            widget.onUploaded?.call();
+
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: BUTTON,
+                      disabledBackgroundColor: GRAYSCALE_LABEL_300,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
+                    child: marketUploadProvider.isUploading
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: WHITE,
+                            ),
+                          )
+                        : const Text(
+                            '업로드',
+                            style: TextStyle(
+                              color: WHITE,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ],
