@@ -10,6 +10,7 @@ class MarketUploadProvider extends ChangeNotifier {
   File? _camera;
   double _uploadProgress = 0.0;
   bool _isUploading = false;
+  static const int maxImages = 10;
 
   List<File> get images => _images;
   File? get camera => _camera;
@@ -35,6 +36,9 @@ class MarketUploadProvider extends ChangeNotifier {
   }
 
   Future<void> pickCamera() async {
+    // 현재 개수(기존 이미지 + 카메라 1) 가 한도에 도달하면 무시
+    final currentCount = _images.length + (_camera != null ? 1 : 0);
+    if (currentCount >= maxImages) return;
     final pickedCamera = await ImagePicker().pickImage(
       source: ImageSource.camera,
     );
@@ -47,7 +51,15 @@ class MarketUploadProvider extends ChangeNotifier {
   Future<void> pickImages() async {
     final pickedImages = await ImagePicker().pickMultiImage();
     if (pickedImages.isNotEmpty) {
-      setImages(pickedImages.map((e) => File(e.path)).toList());
+      // 남은 슬롯 계산
+      final currentCount = _images.length + (_camera != null ? 1 : 0);
+      final remaining = maxImages - currentCount;
+      if (remaining <= 0) return;
+      final filesToAdd = pickedImages
+          .take(remaining)
+          .map((e) => File(e.path))
+          .toList();
+      setImages([..._images, ...filesToAdd]);
     }
   }
 
