@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/const/priceFormatter.dart';
+import 'package:lockerroom/provider/market_upload_provider.dart';
+import 'package:provider/provider.dart';
 
 class AfterMarketUploadPage extends StatefulWidget {
   const AfterMarketUploadPage({super.key});
@@ -21,6 +23,11 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
 
   @override
   Widget build(BuildContext context) {
+    final marketUploadProvider = Provider.of<MarketUploadProvider>(
+      context,
+      listen: false,
+    );
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: BACKGROUND_COLOR,
@@ -42,7 +49,9 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 GestureDetector(
-                  onTap: () {},
+                  onTap: () {
+                    pickImageBottomSheet(context, marketUploadProvider);
+                  },
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
@@ -192,6 +201,115 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Future<dynamic> pickImageBottomSheet(
+    BuildContext context,
+    MarketUploadProvider marketUploadProvider,
+  ) {
+    return showModalBottomSheet(
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: GRAYSCALE_LABEL_50,
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: GRAYSCALE_LABEL_200,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Icon(Icons.perm_media, color: BUTTON),
+                    SizedBox(width: 8),
+                    Text(
+                      '미디어 추가',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: BLACK,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12),
+                Container(height: 1, color: GRAYSCALE_LABEL_200),
+                SizedBox(height: 8),
+
+                ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor: BUTTON.withOpacity(0.1),
+                    child: Icon(Icons.camera_alt_rounded, color: BUTTON),
+                  ),
+                  title: Text(
+                    '사진 촬영',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text('카메라로 바로 촬영합니다.'),
+                  onTap: () async {
+                    if (marketUploadProvider.isUploading) return;
+                    await marketUploadProvider.pickCamera();
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor: BUTTON.withOpacity(0.1),
+                    child: Icon(Icons.photo, color: BUTTON),
+                  ),
+                  title: Text(
+                    '사진 선택',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text('여러 장 선택할 수 있어요.'),
+                  onTap: () async {
+                    if (marketUploadProvider.isUploading) return;
+                    await marketUploadProvider.pickImages();
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                ),
+                SizedBox(height: 4),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      '닫기',
+                      style: TextStyle(color: GRAYSCALE_LABEL_500),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
