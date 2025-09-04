@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/const/priceFormatter.dart';
@@ -25,8 +27,15 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
   Widget build(BuildContext context) {
     final marketUploadProvider = Provider.of<MarketUploadProvider>(
       context,
-      listen: false,
+      listen: true,
     );
+    final hasCaption = _captionController.text.trim().isNotEmpty;
+    final hasPrice = _priceController.text.trim().isNotEmpty;
+    final hasImage =
+        marketUploadProvider.images.isNotEmpty ||
+        marketUploadProvider.camera != null;
+    final canUpload =
+        hasCaption && hasPrice && hasImage && !marketUploadProvider.isUploading;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -48,22 +57,68 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GestureDetector(
-                  onTap: () {
-                    pickImageBottomSheet(context, marketUploadProvider);
-                  },
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: WHITE,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: GRAYSCALE_LABEL_500),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        pickImageBottomSheet(context, marketUploadProvider);
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: WHITE,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: GRAYSCALE_LABEL_500),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(Icons.camera_alt),
+                            Text('${marketUploadProvider.images.length}/10'),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: Column(
-                      children: [Icon(Icons.camera_alt), Text('0/10')],
-                    ),
-                  ),
+                    // 이미지 미리보기
+                    if (hasImage)
+                      Expanded(
+                        child: SizedBox(
+                          height: 70,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount:
+                                marketUploadProvider.images.length +
+                                (marketUploadProvider.camera != null ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index < marketUploadProvider.images.length) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(left: 8.0),
+                                  child: _buildImageItem(
+                                    marketUploadProvider.images[index],
+                                    isImage: true,
+                                    marketUploadProvider: marketUploadProvider,
+                                  ),
+                                );
+                              } else {
+                                return Padding(
+                                  padding: const EdgeInsets.only(left: 8.0),
+                                  child: _buildImageItem(
+                                    marketUploadProvider.camera!,
+                                    isCamera: true,
+                                    isImage: true,
+                                    marketUploadProvider: marketUploadProvider,
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
+
                 SizedBox(height: 20),
                 Text(
                   '제목',
@@ -310,6 +365,69 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildImageItem(
+    File file, {
+    required bool isImage,
+    required MarketUploadProvider marketUploadProvider,
+    bool isCamera = false,
+  }) {
+    Widget imageContent;
+
+    if (isImage) {
+      imageContent = Image.file(
+        file,
+        fit: BoxFit.cover,
+        cacheWidth: 300,
+        cacheHeight: 300,
+        filterQuality: FilterQuality.low,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    } else {
+      imageContent = Container(
+        color: Colors.grey[300],
+        width: double.infinity,
+        height: double.infinity,
+        child: Center(child: Icon(Icons.image, color: Colors.white, size: 20)),
+      );
+    }
+    return SizedBox(
+      width: 90,
+      height: 90,
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: imageContent,
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: InkWell(
+              onTap: () {
+                if (isCamera) {
+                  marketUploadProvider.setCamera(null);
+                } else {
+                  final updated = List<File>.from(marketUploadProvider.images)
+                    ..remove(file);
+                  marketUploadProvider.setImages(updated);
+                }
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(4),
+                child: Icon(Icons.close, color: WHITE, size: 14),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
