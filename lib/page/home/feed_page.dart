@@ -324,7 +324,10 @@ class _PostWidgetState extends State<PostWidget> {
                           itemCount: widget.post.mediaUrls.length,
                           itemBuilder: (_, i) {
                             final url = widget.post.mediaUrls[i];
-                            final isVideo = MediaUtils.isVideoFromPost(widget.post, i);
+                            final isVideo = MediaUtils.isVideoFromPost(
+                              widget.post,
+                              i,
+                            );
                             return Padding(
                               padding: EdgeInsets.only(
                                 left: 0,
@@ -430,7 +433,7 @@ class _PostWidgetState extends State<PostWidget> {
                   builder: (context) {
                     int videoCount = 0;
                     int imageCount = 0;
-                    
+
                     for (int i = 0; i < widget.post.mediaUrls.length; i++) {
                       if (MediaUtils.isVideoFromPost(widget.post, i)) {
                         videoCount++;
@@ -438,7 +441,7 @@ class _PostWidgetState extends State<PostWidget> {
                         imageCount++;
                       }
                     }
-                    
+
                     String mediaText;
                     if (videoCount > 0 && imageCount > 0) {
                       mediaText = '이미지 $imageCount개, 동영상 $videoCount개';
@@ -447,7 +450,7 @@ class _PostWidgetState extends State<PostWidget> {
                     } else {
                       mediaText = '$imageCount개의 이미지';
                     }
-                    
+
                     return Text(
                       mediaText,
                       style: TextStyle(

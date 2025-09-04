@@ -162,19 +162,8 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                                 await feedProvider.deletePost(
                                                   widget.post,
                                                 );
-                                                if (!mounted) return;
-                                                toastification.show(
-                                                  context: context,
-                                                  type: ToastificationType
-                                                      .success,
-                                                  alignment:
-                                                      Alignment.bottomCenter,
-                                                  autoCloseDuration: Duration(
-                                                    seconds: 2,
-                                                  ),
-                                                  title: Text('게시물을 삭제했습니다.'),
-                                                );
-                                                if (!mounted) return;
+
+                                                // 바로 네비게이션 (토스트 제거)
                                                 Navigator.pushAndRemoveUntil(
                                                   context,
                                                   MaterialPageRoute(
