@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MarketPostModel {
+  final String documentId;
   final String userId;
   final String userName;
   final String title;
@@ -11,6 +12,7 @@ class MarketPostModel {
   final DateTime createdAt;
 
   MarketPostModel({
+    required this.documentId,
     required this.userId,
     required this.userName,
     required this.title,
@@ -42,6 +44,7 @@ class MarketPostModel {
     }
 
     return MarketPostModel(
+      documentId: doc.id,
       userId: data['userId'] ?? '',
       userName: data['userName'] ?? '',
       title: data['title'] ?? '',
