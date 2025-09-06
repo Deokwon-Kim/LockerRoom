@@ -271,26 +271,43 @@ class _MarketPostsWidgetState extends State<MarketPostWidget> {
                     child: PopupMenuButton<String>(
                       icon: Icon(Icons.more_vert_rounded),
                       onSelected: (value) async {
-                        // 삭제 확인 다이얼로그
-                        showDialog(
-                          context: context,
-                          builder: (context) => ConfirmationDialog(
-                            title: '게시글 삭제',
-                            content: '게시글을 삭제 하시겠습니까?',
-                            onConfirm: () async {
-                              await widget.merketFeed.deletePost(
-                                widget.marketPost,
-                              );
-                            },
-                          ),
-                        );
-                        toastification.show(
-                          context: context,
-                          type: ToastificationType.success,
-                          alignment: Alignment.bottomCenter,
-                          autoCloseDuration: Duration(seconds: 2),
-                          title: Text('게시물을 삭제했습니다'),
-                        );
+                        if (value == 'delete') {
+                          // 삭제 확인 다이얼로그
+                          showDialog(
+                            context: context,
+                            builder: (context) => ConfirmationDialog(
+                              title: '게시글 삭제',
+                              content: '게시글을 삭제 하시겠습니까?',
+                              onConfirm: () async {
+                                try {
+                                  // 삭제 실행
+                                  await widget.merketFeed.deletePost(
+                                    widget.marketPost,
+                                  );
+
+                                  // 성공 토스트
+                                  toastification.show(
+                                    context: context,
+                                    type: ToastificationType.success,
+                                    alignment: Alignment.bottomCenter,
+                                    autoCloseDuration: Duration(seconds: 2),
+                                    title: Text('게시물을 삭제했습니다'),
+                                  );
+                                } catch (e) {
+                                  print('Delete error: $e');
+                                  // 에러 토스트
+                                  toastification.show(
+                                    context: context,
+                                    type: ToastificationType.error,
+                                    alignment: Alignment.bottomCenter,
+                                    autoCloseDuration: Duration(seconds: 2),
+                                    title: Text('삭제 중 오류가 발생했습니다'),
+                                  );
+                                }
+                              },
+                            ),
+                          );
+                        }
                       },
                       itemBuilder: (context) => const [
                         PopupMenuItem(
