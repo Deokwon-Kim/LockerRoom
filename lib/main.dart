@@ -12,6 +12,7 @@ import 'package:lockerroom/page/setting/setting_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
+import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/market_upload_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -37,6 +38,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => VideoProvider()),
         ChangeNotifierProvider(create: (context) => CommentProvider()),
         ChangeNotifierProvider(create: (context) => MarketUploadProvider()),
+        ChangeNotifierProvider(create: (context) => MarketFeedProvider()),
       ],
       child: const MyApp(),
     ),
