@@ -204,7 +204,14 @@ class _MarketPostsWidgetState extends State<MarketPostWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final isOwner =
+        currentUserId != null && widget.marketPost.userId == currentUserId;
+
+    print('MarketPostWidget Debug - currentUserId: $currentUserId');
+    print('MarketPostWidget Debug - post.userId: ${widget.marketPost.userId}');
+    print('MarketPostWidget Debug - isOwner: $isOwner');
+
     return GestureDetector(
       onTap: () {},
       child: Padding(
@@ -258,46 +265,44 @@ class _MarketPostsWidgetState extends State<MarketPostWidget> {
                   ],
                 ),
                 Spacer(),
-                currentUserId != null &&
-                        widget.marketPost.userId == currentUserId
-                    ? PopupMenuTheme(
-                        data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-                        child: PopupMenuButton<String>(
-                          icon: Icon(Icons.more_vert_rounded),
-                          onSelected: (value) async {
-                            // 삭제 확인 다이얼로그
-                            showDialog(
-                              context: context,
-                              builder: (context) => ConfirmationDialog(
-                                title: '게시글 삭제',
-                                content: '게시글을 삭제 하시겠습니까?',
-                                onConfirm: () async {
-                                  await widget.merketFeed.deletePost(
-                                    widget.marketPost,
-                                  );
-                                },
-                              ),
-                            );
-                            toastification.show(
-                              context: context,
-                              type: ToastificationType.success,
-                              alignment: Alignment.bottomCenter,
-                              autoCloseDuration: Duration(seconds: 2),
-                              title: Text('게시물을 삭제했습니다'),
-                            );
-                          },
-                          itemBuilder: (context) => const [
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Text(
-                                '삭제',
-                                style: TextStyle(color: RED_DANGER_TEXT_50),
-                              ),
-                            ),
-                          ],
+                if (isOwner)
+                  PopupMenuTheme(
+                    data: PopupMenuThemeData(color: BACKGROUND_COLOR),
+                    child: PopupMenuButton<String>(
+                      icon: Icon(Icons.more_vert_rounded),
+                      onSelected: (value) async {
+                        // 삭제 확인 다이얼로그
+                        showDialog(
+                          context: context,
+                          builder: (context) => ConfirmationDialog(
+                            title: '게시글 삭제',
+                            content: '게시글을 삭제 하시겠습니까?',
+                            onConfirm: () async {
+                              await widget.merketFeed.deletePost(
+                                widget.marketPost,
+                              );
+                            },
+                          ),
+                        );
+                        toastification.show(
+                          context: context,
+                          type: ToastificationType.success,
+                          alignment: Alignment.bottomCenter,
+                          autoCloseDuration: Duration(seconds: 2),
+                          title: Text('게시물을 삭제했습니다'),
+                        );
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            '삭제',
+                            style: TextStyle(color: RED_DANGER_TEXT_50),
+                          ),
                         ),
-                      )
-                    : SizedBox.shrink(),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ],
