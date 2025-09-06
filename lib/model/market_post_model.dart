@@ -42,7 +42,7 @@ class MarketPostModel {
     }
 
     return MarketPostModel(
-      userId: doc.id,
+      userId: data['userId'] ?? '',
       userName: data['userName'] ?? '',
       title: data['title'] ?? '',
       description: data['description'],
