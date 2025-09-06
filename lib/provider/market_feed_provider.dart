@@ -67,10 +67,35 @@ class MarketFeedProvider extends ChangeNotifier {
 
   // 게시글 삭제
   Future<void> deletePost(MarketPostModel marketPost) async {
-    for (final url in marketPost.imageUrls) {
-      await FirebaseStorage.instance.refFromURL(url).delete();
+    try {
+      print('Deleting post: ${marketPost.title}');
+
+      // 1. Firebase Storage에서 이미지들 삭제
+      for (final url in marketPost.imageUrls) {
+        try {
+          await FirebaseStorage.instance.refFromURL(url).delete();
+          print('Deleted image: $url');
+        } catch (e) {
+          print('Error deleting image $url: $e');
+          // 이미지 삭제 실패해도 계속 진행
+        }
+      }
+
+      // 2. Firestore에서 문서 삭제
+      await _marketPostCollection.doc(marketPost.documentId).delete();
+      print(
+        'Deleted post from Firestore with documentId: ${marketPost.documentId}',
+      );
+
+      // 3. 로컬 리스트에서도 제거
+      _allMarketPosts.removeWhere(
+        (post) => post.documentId == marketPost.documentId,
+      );
+      _applyFilter();
+      notifyListeners();
+    } catch (e) {
+      print('Error deleting post: $e');
+      rethrow; // 에러를 다시 던져서 UI에서 처리할 수 있도록
     }
-    final firestore = FirebaseFirestore.instance;
-    final marketPostRef = _marketPostCollection.doc(marketPost.userId);
   }
 }
