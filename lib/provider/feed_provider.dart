@@ -62,17 +62,25 @@ class FeedProvider extends ChangeNotifier {
   List<PostModel> get posts => _posts;
   StreamSubscription? _subB;
 
-  FeedProvider() {
+  FeedProvider();
+
+  void listenRecentPosts() {
     _subB?.cancel();
     _subB = _postCollection
         .orderBy('createdAt', descending: true)
         .limit(5)
         .snapshots()
-        .listen((snap) {
-          _posts = snap.docs.map((doc) => PostModel.fromDoc(doc)).toList();
-          isLoading = false;
-          notifyListeners();
-        });
+        .listen(
+          (snap) {
+            _posts = snap.docs.map((doc) => PostModel.fromDoc(doc)).toList();
+            isLoading = false;
+            notifyListeners();
+          },
+          onError: (e) {
+            isLoading = false;
+            notifyListeners();
+          },
+        );
   }
 
   void cancelSubscription() {
