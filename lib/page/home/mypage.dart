@@ -291,7 +291,7 @@ class _MypageState extends State<Mypage> {
                     ),
                   ],
                 ),
-                SizedBox(width: 10),
+                SizedBox(width: 20),
                 Padding(
                   padding: const EdgeInsets.only(top: 30.0),
                   child: Column(
