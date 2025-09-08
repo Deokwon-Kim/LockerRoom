@@ -291,106 +291,113 @@ class _MypageState extends State<Mypage> {
                     ),
                   ],
                 ),
-                SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      userName,
-                      style: TextStyle(
-                        color: BLACK,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                SizedBox(width: 20),
+                Padding(
+                  padding: const EdgeInsets.only(top: 30.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        userName,
+                        style: TextStyle(
+                          color: BLACK,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 5),
-                    Consumer<TeamProvider>(
-                      builder: (context, teamProvider, _) {
-                        final teamName = teamProvider.team ?? '팀 미선택';
-                        final teamModel = teamProvider.findTeamByName(teamName);
-                        final teamColor =
-                            teamModel?.color ?? GRAYSCALE_LABEL_300;
-                        final logoPath = teamModel?.logoPath;
+                      SizedBox(height: 5),
+                      Consumer<TeamProvider>(
+                        builder: (context, teamProvider, _) {
+                          final teamName = teamProvider.team ?? '팀 미선택';
+                          final teamModel = teamProvider.findTeamByName(
+                            teamName,
+                          );
+                          final teamColor =
+                              teamModel?.color ?? GRAYSCALE_LABEL_300;
+                          final logoPath = teamModel?.logoPath;
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (logoPath != null)
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Image.asset(
-                                    logoPath,
-                                    width: 28,
-                                    height: 28,
-                                    fit: BoxFit.contain,
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (logoPath != null)
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Image.asset(
+                                      logoPath,
+                                      width: 28,
+                                      height: 28,
+                                      fit: BoxFit.contain,
+                                    ),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      teamName,
+                                      style: TextStyle(
+                                        color: teamColor,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              else
+                                Text(
+                                  '응원팀: $teamName',
+                                  style: TextStyle(
+                                    color: BLACK,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                  SizedBox(width: 10),
-                                  Text(
-                                    teamName,
+                                ),
+                              SizedBox(height: 10),
+                              SizedBox(
+                                width: 160,
+                                height: 44,
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        teamProvider.selectedTeam?.color,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    elevation: 2,
+                                  ),
+                                  icon: Icon(Icons.swap_horiz),
+                                  label: Text(
+                                    '팀 변경',
                                     style: TextStyle(
-                                      color: teamColor,
-                                      fontSize: 15,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ],
-                              )
-                            else
-                              Text(
-                                '응원팀: $teamName',
-                                style: TextStyle(
-                                  color: BLACK,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            SizedBox(height: 10),
-                            SizedBox(
-                              width: 160,
-                              height: 44,
-                              child: ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      teamProvider.selectedTeam?.color,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  elevation: 2,
-                                ),
-                                icon: Icon(Icons.swap_horiz),
-                                label: Text(
-                                  '팀 변경',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                onPressed: () async {
-                                  final changed = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          TeamSelectPage(isChanging: true),
-                                    ),
-                                  );
-                                  if (changed is String && mounted) {
-                                    toastification.show(
-                                      context: context,
-                                      type: ToastificationType.success,
-                                      alignment: Alignment.bottomCenter,
-                                      autoCloseDuration: const Duration(
-                                        seconds: 2,
+                                  onPressed: () async {
+                                    final changed = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            TeamSelectPage(isChanging: true),
                                       ),
-                                      title: Text('팀이 변경되었습니다: $changed'),
                                     );
-                                  }
-                                },
+                                    if (changed is String && mounted) {
+                                      toastification.show(
+                                        context: context,
+                                        type: ToastificationType.success,
+                                        alignment: Alignment.bottomCenter,
+                                        autoCloseDuration: const Duration(
+                                          seconds: 2,
+                                        ),
+                                        title: Text('팀이 변경되었습니다: $changed'),
+                                      );
+                                    }
+                                  },
+                                ),
                               ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
