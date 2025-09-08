@@ -17,7 +17,6 @@ class CommentProvider with ChangeNotifier {
     _subs[postId] = _commentsCollection
         .where('postId', isEqualTo: postId)
         .orderBy('createdAt', descending: true)
-        .limit(30) // 초기 로드 수 제한으로 진입 시 부하 감소
         .snapshots()
         .listen((snap) {
           _postComments[postId] = snap.docs
