@@ -13,7 +13,6 @@ import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
-import 'package:toastification/toastification.dart';
 
 class FeedDetailPage extends StatefulWidget {
   final PostModel post;
@@ -159,11 +158,14 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                               title: '삭제 확인',
                                               content: '게시글을 삭제 하시겠습니까?',
                                               onConfirm: () async {
+                                                Navigator.of(context).pop();
+
                                                 await feedProvider.deletePost(
                                                   widget.post,
                                                 );
 
-                                                // 바로 네비게이션 (토스트 제거)
+                                                // 네비게이션 전환
+                                                if (!mounted) return;
                                                 Navigator.pushAndRemoveUntil(
                                                   context,
                                                   MaterialPageRoute(
@@ -174,6 +176,18 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                                   ),
                                                   (route) => false,
                                                 );
+
+                                                WidgetsBinding.instance
+                                                    .addPostFrameCallback((_) {
+                                                      if (!mounted) return;
+                                                      context
+                                                          .read<
+                                                            CommentProvider
+                                                          >()
+                                                          .cancelSubscription(
+                                                            widget.post.id,
+                                                          );
+                                                    });
                                               },
                                             ),
                                       );
