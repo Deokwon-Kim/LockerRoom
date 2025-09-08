@@ -31,6 +31,15 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   TeamModel? _lastFetchedTeam;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<FeedProvider>().listenRecentPosts();
+    });
+  }
+
   void _maybeFetchVideos(TeamModel team) {
     final apiKey = dotenv.env['YOUTUBE_API_KEY'] ?? '';
     if (_lastFetchedTeam?.name == team.name) return;
