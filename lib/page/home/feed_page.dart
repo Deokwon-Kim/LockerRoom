@@ -282,10 +282,20 @@ class _PostWidgetState extends State<PostWidget> {
                               },
                               itemBuilder: (context) => const [
                                 PopupMenuItem(
+                                  value: '신고',
+                                  child: Text(
+                                    '신고',
+                                    style: TextStyle(color: RED_DANGER_TEXT_50),
+                                  ),
+                                ),
+                                PopupMenuItem(
                                   value: 'delete',
                                   child: Text(
                                     '삭제하기',
-                                    style: TextStyle(color: RED_DANGER_TEXT_50),
+                                    style: TextStyle(
+                                      color: RED_DANGER_TEXT_50,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ],
