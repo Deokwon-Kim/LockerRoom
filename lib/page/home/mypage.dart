@@ -68,10 +68,7 @@ class _MypageState extends State<Mypage> {
                   ),
                   SizedBox(height: 20),
                   ListTile(
-                    leading: Icon(
-                      Icons.photo_library,
-                      color: ORANGE_PRIMARY_500,
-                    ),
+                    leading: Icon(Icons.photo_library, color: BUTTON),
                     title: Text('사진 선택'),
                     onTap: () async {
                       Navigator.pop(context);
@@ -239,14 +236,14 @@ class _MypageState extends State<Mypage> {
                                 children: [
                                   CircularProgressIndicator(
                                     value: profileProvider.uploadProgress,
-                                    color: ORANGE_PRIMARY_500,
+                                    color: BUTTON,
                                     strokeWidth: 3,
                                   ),
                                   SizedBox(height: 8),
                                   Text(
                                     '${(profileProvider.uploadProgress * 100).toInt()}%',
                                     style: TextStyle(
-                                      color: ORANGE_PRIMARY_500,
+                                      color: BUTTON,
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                     ),
