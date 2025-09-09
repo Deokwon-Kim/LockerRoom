@@ -65,6 +65,20 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
                   children: [
                     GestureDetector(
                       onTap: () {
+                        final currentCount =
+                            marketUploadProvider.images.length +
+                            (marketUploadProvider.camera != null ? 1 : 0);
+                        final remaining =
+                            MarketUploadProvider.maxImages - currentCount;
+                        if (remaining <= 0) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('이미지는 최대 10장까지 선택할 수 있어요.'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          return;
+                        }
                         pickImageBottomSheet(context, marketUploadProvider);
                       },
                       child: Container(
@@ -89,7 +103,7 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
                     if (hasImage)
                       Expanded(
                         child: SizedBox(
-                          height: 70,
+                          height: 80,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount:
@@ -219,11 +233,13 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
+                    color: WHITE,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.grey.shade400),
                   ),
                   child: DropdownButton<String>(
                     value: selectedValue,
+                    dropdownColor: WHITE,
                     items: options
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
@@ -306,6 +322,11 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext context) {
+        final currentCount =
+            marketUploadProvider.images.length +
+            (marketUploadProvider.camera != null ? 1 : 0);
+        final remaining = MarketUploadProvider.maxImages - currentCount;
+        final limitReached = remaining <= 0;
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -339,6 +360,16 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
                         color: BLACK,
                       ),
                     ),
+                    const Spacer(),
+                    Text(
+                      remaining > 0 ? '남은 ${remaining}장' : '최대 10장',
+                      style: TextStyle(
+                        color: remaining > 0
+                            ? GRAYSCALE_LABEL_500
+                            : RED_DANGER_TEXT_50,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
                 SizedBox(height: 12),
@@ -357,12 +388,16 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
                     '사진 촬영',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  subtitle: Text('카메라로 바로 촬영합니다.'),
-                  onTap: () async {
-                    if (marketUploadProvider.isUploading) return;
-                    await marketUploadProvider.pickCamera();
-                    if (context.mounted) Navigator.pop(context);
-                  },
+                  subtitle: Text(
+                    limitReached ? '최대 10장까지 선택 가능합니다.' : '카메라로 바로 촬영합니다.',
+                  ),
+                  onTap: limitReached
+                      ? null
+                      : () async {
+                          if (marketUploadProvider.isUploading) return;
+                          await marketUploadProvider.pickCamera();
+                          if (context.mounted) Navigator.pop(context);
+                        },
                 ),
                 ListTile(
                   shape: RoundedRectangleBorder(
@@ -376,12 +411,16 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
                     '사진 선택',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  subtitle: Text('여러 장 선택할 수 있어요.'),
-                  onTap: () async {
-                    if (marketUploadProvider.isUploading) return;
-                    await marketUploadProvider.pickImages();
-                    if (context.mounted) Navigator.pop(context);
-                  },
+                  subtitle: Text(
+                    limitReached ? '최대 10장까지 선택 가능합니다.' : '여러 장 선택할 수 있어요.',
+                  ),
+                  onTap: limitReached
+                      ? null
+                      : () async {
+                          if (marketUploadProvider.isUploading) return;
+                          await marketUploadProvider.pickImages();
+                          if (context.mounted) Navigator.pop(context);
+                        },
                 ),
                 SizedBox(height: 4),
                 TextButton(
@@ -414,28 +453,24 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
       imageContent = Image.file(
         file,
         fit: BoxFit.cover,
-        cacheWidth: 300,
-        cacheHeight: 300,
-        filterQuality: FilterQuality.low,
-        width: double.infinity,
-        height: double.infinity,
+        // cacheWidth: 300,
+        // cacheHeight: 300,
+        filterQuality: FilterQuality.medium,
       );
     } else {
       imageContent = Container(
         color: Colors.grey[300],
-        width: double.infinity,
-        height: double.infinity,
         child: Center(child: Icon(Icons.image, color: Colors.white, size: 20)),
       );
     }
     return SizedBox(
-      width: 90,
-      height: 90,
+      width: 80,
+      height: 80,
       child: Stack(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: imageContent,
+            child: AspectRatio(aspectRatio: 1, child: imageContent),
           ),
           Positioned(
             top: 4,
