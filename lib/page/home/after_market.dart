@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/market_post_model.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
+import 'package:lockerroom/page/home/after_market_detail_page.dart';
 import 'package:lockerroom/page/home/after_market_upload_page.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:provider/provider.dart';
@@ -208,12 +209,16 @@ class _MarketPostsWidgetState extends State<MarketPostWidget> {
     final isOwner =
         currentUserId != null && widget.marketPost.userId == currentUserId;
 
-    print('MarketPostWidget Debug - currentUserId: $currentUserId');
-    print('MarketPostWidget Debug - post.userId: ${widget.marketPost.userId}');
-    print('MarketPostWidget Debug - isOwner: $isOwner');
-
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                AfterMarketDetailPage(marketPost: widget.marketPost),
+          ),
+        );
+      },
       child: Padding(
         padding: const EdgeInsets.only(left: 5, right: 5, bottom: 15),
         child: Column(
