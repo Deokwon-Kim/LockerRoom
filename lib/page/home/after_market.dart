@@ -221,113 +221,147 @@ class _MarketPostsWidgetState extends State<MarketPostWidget> {
       },
       child: Padding(
         padding: const EdgeInsets.only(left: 5, right: 5, bottom: 15),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
+        child: Container(
+          decoration: BoxDecoration(
+            color: WHITE,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: GRAYSCALE_LABEL_200),
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
                   width: 100,
                   height: 100,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
                   child: widget.marketPost.imageUrls.isNotEmpty
-                      ? Image.network(widget.marketPost.imageUrls[0])
+                      ? Image.network(
+                          widget.marketPost.imageUrls[0],
+                          fit: BoxFit.cover,
+                        )
                       : Container(
-                          width: 100,
-                          height: 100,
                           color: Colors.grey[300],
-                          child: Icon(Icons.image_not_supported),
+                          child: const Icon(Icons.image_not_supported),
                         ),
                 ),
-                SizedBox(width: 20),
-                Column(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.marketPost.title,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          widget.marketPost.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (isOwner)
+                          PopupMenuTheme(
+                            data: const PopupMenuThemeData(
+                              color: BACKGROUND_COLOR,
+                            ),
+                            child: PopupMenuButton<String>(
+                              padding: EdgeInsets.zero,
+                              icon: const Icon(
+                                Icons.more_vert_rounded,
+                                size: 20,
+                              ),
+                              onSelected: (value) async {
+                                if (value == 'delete') {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => ConfirmationDialog(
+                                      title: '게시글 삭제',
+                                      content: '게시글을 삭제 하시겠습니까?',
+                                      onConfirm: () async {
+                                        try {
+                                          await widget.merketFeed.deletePost(
+                                            widget.marketPost,
+                                          );
+                                          toastification.show(
+                                            context: context,
+                                            type: ToastificationType.success,
+                                            alignment: Alignment.bottomCenter,
+                                            autoCloseDuration: const Duration(
+                                              seconds: 2,
+                                            ),
+                                            title: const Text('게시물을 삭제했습니다'),
+                                          );
+                                        } catch (e) {
+                                          print('Delete error: $e');
+                                          toastification.show(
+                                            context: context,
+                                            type: ToastificationType.error,
+                                            alignment: Alignment.bottomCenter,
+                                            autoCloseDuration: const Duration(
+                                              seconds: 2,
+                                            ),
+                                            title: const Text(
+                                              '삭제 중 오류가 발생했습니다',
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  );
+                                }
+                              },
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Text(
+                                    '삭제',
+                                    style: TextStyle(color: RED_DANGER_TEXT_50),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
-                    SizedBox(height: 5),
+                    const SizedBox(height: 6),
                     Text(
                       timeAgo(widget.marketPost.createdAt),
                       style: TextStyle(
                         color: GRAYSCALE_LABEL_500,
-                        fontSize: 13,
+                        fontSize: 12,
                       ),
                     ),
-                    SizedBox(height: 5),
-                    Text(
-                      '${widget.marketPost.price}원',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (widget.marketPost.type == '무료나눔')
+                          Text(
+                            '나눔',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        else
+                          Text(
+                            '${widget.marketPost.price}원',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),
-                Spacer(),
-                if (isOwner)
-                  PopupMenuTheme(
-                    data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-                    child: PopupMenuButton<String>(
-                      icon: Icon(Icons.more_vert_rounded),
-                      onSelected: (value) async {
-                        if (value == 'delete') {
-                          // 삭제 확인 다이얼로그
-                          showDialog(
-                            context: context,
-                            builder: (context) => ConfirmationDialog(
-                              title: '게시글 삭제',
-                              content: '게시글을 삭제 하시겠습니까?',
-                              onConfirm: () async {
-                                try {
-                                  // 삭제 실행
-                                  await widget.merketFeed.deletePost(
-                                    widget.marketPost,
-                                  );
-
-                                  // 성공 토스트
-                                  toastification.show(
-                                    context: context,
-                                    type: ToastificationType.success,
-                                    alignment: Alignment.bottomCenter,
-                                    autoCloseDuration: Duration(seconds: 2),
-                                    title: Text('게시물을 삭제했습니다'),
-                                  );
-                                } catch (e) {
-                                  print('Delete error: $e');
-                                  // 에러 토스트
-                                  toastification.show(
-                                    context: context,
-                                    type: ToastificationType.error,
-                                    alignment: Alignment.bottomCenter,
-                                    autoCloseDuration: Duration(seconds: 2),
-                                    title: Text('삭제 중 오류가 발생했습니다'),
-                                  );
-                                }
-                              },
-                            ),
-                          );
-                        }
-                      },
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(
-                            '삭제',
-                            style: TextStyle(color: RED_DANGER_TEXT_50),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
