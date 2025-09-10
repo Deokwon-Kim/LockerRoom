@@ -82,15 +82,13 @@ class MarketFeedProvider extends ChangeNotifier {
       }
 
       // 2. Firestore에서 문서 삭제
-      await _marketPostCollection.doc(marketPost.documentId).delete();
+      await _marketPostCollection.doc(marketPost.postId).delete();
       print(
-        'Deleted post from Firestore with documentId: ${marketPost.documentId}',
+        'Deleted post from Firestore with documentId: ${marketPost.postId}',
       );
 
       // 3. 로컬 리스트에서도 제거
-      _allMarketPosts.removeWhere(
-        (post) => post.documentId == marketPost.documentId,
-      );
+      _allMarketPosts.removeWhere((post) => post.postId == marketPost.postId);
       _applyFilter();
       notifyListeners();
     } catch (e) {
