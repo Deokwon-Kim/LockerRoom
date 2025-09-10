@@ -499,7 +499,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
         curve: Curves.easeOut,
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0),
+            padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 0),
             child: Row(
               children: [
                 Expanded(
@@ -533,6 +533,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                     ),
                   ),
                 ),
+                SizedBox(width: 10),
                 GestureDetector(
                   onTap: () async {
                     final text = _marketCommentController.text.trim();
