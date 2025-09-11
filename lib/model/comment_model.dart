@@ -6,6 +6,7 @@ class CommentModel {
   final String userId;
   final String userName;
   final String text;
+  final String reComments;
   final int? likesCount;
   final DateTime createdAt;
 
@@ -15,6 +16,7 @@ class CommentModel {
     required this.userId,
     required this.userName,
     required this.text,
+    required this.reComments,
     this.likesCount = 0,
     required this.createdAt,
   });
@@ -27,6 +29,7 @@ class CommentModel {
       userId: data['userId'] ?? '',
       userName: data['userName'] ?? '',
       text: data['text'] ?? '',
+      reComments: data['reComments'],
       likesCount: data['likesCount'] ?? 0,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
     );
@@ -38,6 +41,7 @@ class CommentModel {
       'userId': userId,
       'userName': userName,
       'text': text,
+      'reComments': reComments,
       'likesCount': likesCount,
       'createdAt': Timestamp.fromDate(createdAt),
     };
