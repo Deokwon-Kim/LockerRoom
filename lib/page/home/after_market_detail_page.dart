@@ -84,289 +84,6 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
     }
   }
 
-  Widget _buildCommentWithReplies(
-    CommentModel parentComment,
-    List<CommentModel> replies,
-    CommentProvider commentProvider,
-    String? currentUserId,
-  ) {
-    final liked = currentUserId != null && (parentComment.likesCount! > 0);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 부모 댓글
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Consumer<ProfileProvider>(
-                  builder: (context, profileProvider, child) {
-                    profileProvider.subscribeUserProfile(parentComment.userId);
-                    final url =
-                        profileProvider.userProfiles[parentComment.userId];
-                    return CircleAvatar(
-                      radius: 15,
-                      backgroundImage: url != null ? NetworkImage(url) : null,
-                      backgroundColor: GRAYSCALE_LABEL_300,
-                      child: url == null
-                          ? const Icon(
-                              Icons.person,
-                              color: Colors.black,
-                              size: 20,
-                            )
-                          : null,
-                    );
-                  },
-                ),
-                SizedBox(width: 10),
-                Text(
-                  parentComment.userName,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Spacer(),
-                IconButton(
-                  onPressed: currentUserId != null
-                      ? () => commentProvider.toggleLike(
-                          parentComment,
-                          currentUserId,
-                        )
-                      : null,
-                  icon: Icon(
-                    liked ? Icons.favorite : Icons.favorite_border,
-                    color: liked ? Colors.red : null,
-                    size: 20,
-                  ),
-                ),
-                Text('${parentComment.likesCount}'),
-                SizedBox(width: 5),
-                if (currentUserId != null &&
-                    parentComment.userId == currentUserId)
-                  PopupMenuTheme(
-                    data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-                    child: PopupMenuButton<String>(
-                      icon: Icon(Icons.more_horiz),
-                      onSelected: (value) async {
-                        showDialog(
-                          context: context,
-                          builder: (context) => ConfirmationDialog(
-                            title: '댓글 삭제',
-                            content: '댓글을 삭제 하시겠습니까?',
-                            onConfirm: () async {
-                              await commentProvider.deleteComment(
-                                parentComment,
-                              );
-                              if (!mounted) return;
-                            },
-                          ),
-                        );
-                      },
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(
-                            '삭제하기',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 40.0),
-              child: Transform.translate(
-                offset: Offset(0, -10),
-                child: Text(
-                  parentComment.text,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 0.0),
-              child: Transform.translate(
-                offset: Offset(0, -5),
-                child: Column(
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _replyParentId = parentComment.id;
-                          _replyToUserName = parentComment.userName;
-                        });
-                        _commentFocusNode.requestFocus();
-                      },
-                      child: Text(
-                        '답글달기',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: GRAYSCALE_LABEL_500,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    if (replies.isNotEmpty) ...[
-                      SizedBox(width: 10),
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _replyVisibility[parentComment.id] =
-                                !(_replyVisibility[parentComment.id] ?? true);
-                          });
-                        },
-                        child: Transform.translate(
-                          offset: Offset(15, -15),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                (_replyVisibility[parentComment.id] ?? true)
-                                    ? Icons.keyboard_arrow_down
-                                    : Icons.keyboard_arrow_right,
-                                size: 16,
-                                color: GRAYSCALE_LABEL_500,
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                (_replyVisibility[parentComment.id] ?? true)
-                                    ? '답글 숨기기'
-                                    : '답글${replies.length}개 보기',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: GRAYSCALE_LABEL_500,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-        // 답글들
-        if (replies.isNotEmpty && (_replyVisibility[parentComment.id] ?? true))
-          AnimatedContainer(
-            duration: Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            margin: EdgeInsets.only(left: 20),
-            child: Column(
-              children: replies
-                  .map(
-                    (reply) =>
-                        _buildReply(reply, commentProvider, currentUserId),
-                  )
-                  .toList(),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildReply(
-    CommentModel reply,
-    CommentProvider commentProvider,
-    String? currentUserId,
-  ) {
-    final liked = currentUserId != null && (reply.likesCount! > 0);
-
-    return Padding(
-      padding: const EdgeInsets.only(left: 10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Consumer<ProfileProvider>(
-                builder: (context, profileProvider, child) {
-                  profileProvider.subscribeUserProfile(reply.userId);
-                  final url = profileProvider.userProfiles[reply.userId];
-                  return CircleAvatar(
-                    radius: 12,
-                    backgroundImage: url != null ? NetworkImage(url) : null,
-                    backgroundColor: GRAYSCALE_LABEL_300,
-                    child: url == null
-                        ? const Icon(
-                            Icons.person,
-                            color: Colors.black,
-                            size: 16,
-                          )
-                        : null,
-                  );
-                },
-              ),
-              SizedBox(width: 8),
-              Text(
-                reply.userName,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              Spacer(),
-              IconButton(
-                onPressed: currentUserId != null
-                    ? () => commentProvider.toggleLike(reply, currentUserId)
-                    : null,
-                icon: Icon(
-                  liked ? Icons.favorite : Icons.favorite_border,
-                  color: liked ? Colors.red : null,
-                  size: 16,
-                ),
-              ),
-              Text('${reply.likesCount}', style: TextStyle(fontSize: 12)),
-              SizedBox(width: 5),
-              if (currentUserId != null && reply.userId == currentUserId)
-                PopupMenuTheme(
-                  data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-                  child: PopupMenuButton<String>(
-                    icon: Icon(Icons.more_horiz, size: 16),
-                    onSelected: (value) async {
-                      showDialog(
-                        context: context,
-                        builder: (context) => ConfirmationDialog(
-                          title: '답글 삭제',
-                          content: '답글을 삭제 하시겠습니까?',
-                          onConfirm: () async {
-                            await commentProvider.deleteComment(reply);
-                            if (!mounted) return;
-                          },
-                        ),
-                      );
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Text(
-                          '삭제하기',
-                          style: TextStyle(color: Colors.red, fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 32.0),
-            child: Transform.translate(
-              offset: Offset(0, -8),
-              child: Text(
-                reply.text,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400),
-              ),
-            ),
-          ),
-          SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -729,6 +446,292 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCommentWithReplies(
+    CommentModel parentComment,
+    List<CommentModel> replies,
+    CommentProvider commentProvider,
+    String? currentUserId,
+  ) {
+    final liked = currentUserId != null && (parentComment.likesCount! > 0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 부모 댓글
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Consumer<ProfileProvider>(
+                  builder: (context, profileProvider, child) {
+                    profileProvider.subscribeUserProfile(parentComment.userId);
+                    final url =
+                        profileProvider.userProfiles[parentComment.userId];
+                    return CircleAvatar(
+                      radius: 15,
+                      backgroundImage: url != null ? NetworkImage(url) : null,
+                      backgroundColor: GRAYSCALE_LABEL_300,
+                      child: url == null
+                          ? const Icon(
+                              Icons.person,
+                              color: Colors.black,
+                              size: 20,
+                            )
+                          : null,
+                    );
+                  },
+                ),
+                SizedBox(width: 10),
+                Text(
+                  parentComment.userName,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Spacer(),
+                IconButton(
+                  onPressed: currentUserId != null
+                      ? () => commentProvider.toggleLike(
+                          parentComment,
+                          currentUserId,
+                        )
+                      : null,
+                  icon: Icon(
+                    liked ? Icons.favorite : Icons.favorite_border,
+                    color: liked ? Colors.red : null,
+                    size: 20,
+                  ),
+                ),
+                Text('${parentComment.likesCount}'),
+                SizedBox(width: 5),
+                if (currentUserId != null &&
+                    parentComment.userId == currentUserId)
+                  PopupMenuTheme(
+                    data: PopupMenuThemeData(color: BACKGROUND_COLOR),
+                    child: PopupMenuButton<String>(
+                      icon: Icon(Icons.more_horiz),
+                      onSelected: (value) async {
+                        showDialog(
+                          context: context,
+                          builder: (context) => ConfirmationDialog(
+                            title: '댓글 삭제',
+                            content: '댓글을 삭제 하시겠습니까?',
+                            onConfirm: () async {
+                              await commentProvider.deleteComment(
+                                parentComment,
+                              );
+                              if (!mounted) return;
+                            },
+                          ),
+                        );
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            '삭제하기',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 40.0),
+              child: Transform.translate(
+                offset: Offset(0, -10),
+                child: Text(
+                  parentComment.text,
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 0.0),
+              child: Transform.translate(
+                offset: Offset(0, -5),
+                child: Column(
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _replyParentId = parentComment.id;
+                          _replyToUserName = parentComment.userName;
+                        });
+                        _commentFocusNode.requestFocus();
+                      },
+                      child: Text(
+                        '답글달기',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: GRAYSCALE_LABEL_500,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (replies.isNotEmpty) ...[
+                      SizedBox(width: 10),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _replyVisibility[parentComment.id] =
+                                !(_replyVisibility[parentComment.id] ?? true);
+                          });
+                        },
+                        child: Transform.translate(
+                          offset: Offset(15, -15),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                (_replyVisibility[parentComment.id] ?? true)
+                                    ? Icons.keyboard_arrow_down
+                                    : Icons.keyboard_arrow_right,
+                                size: 16,
+                                color: GRAYSCALE_LABEL_500,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                (_replyVisibility[parentComment.id] ?? true)
+                                    ? '답글 숨기기'
+                                    : '답글${replies.length}개 보기',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: GRAYSCALE_LABEL_500,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        // 답글들
+        if (replies.isNotEmpty && (_replyVisibility[parentComment.id] ?? true))
+          AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            margin: EdgeInsets.only(left: 20),
+            child: Transform.translate(
+              offset: Offset(0, -30),
+              child: Column(
+                children: replies
+                    .map(
+                      (reply) =>
+                          _buildReply(reply, commentProvider, currentUserId),
+                    )
+                    .toList(),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildReply(
+    CommentModel reply,
+    CommentProvider commentProvider,
+    String? currentUserId,
+  ) {
+    final liked = currentUserId != null && (reply.likesCount! > 0);
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 10.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Consumer<ProfileProvider>(
+                builder: (context, profileProvider, child) {
+                  profileProvider.subscribeUserProfile(reply.userId);
+                  final url = profileProvider.userProfiles[reply.userId];
+                  return CircleAvatar(
+                    radius: 12,
+                    backgroundImage: url != null ? NetworkImage(url) : null,
+                    backgroundColor: GRAYSCALE_LABEL_300,
+                    child: url == null
+                        ? const Icon(
+                            Icons.person,
+                            color: Colors.black,
+                            size: 16,
+                          )
+                        : null,
+                  );
+                },
+              ),
+              SizedBox(width: 8),
+              Text(
+                reply.userName,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              Spacer(),
+              IconButton(
+                onPressed: currentUserId != null
+                    ? () => commentProvider.toggleLike(reply, currentUserId)
+                    : null,
+                icon: Icon(
+                  liked ? Icons.favorite : Icons.favorite_border,
+                  color: liked ? Colors.red : null,
+                  size: 16,
+                ),
+              ),
+              Text('${reply.likesCount}', style: TextStyle(fontSize: 12)),
+              SizedBox(width: 5),
+              if (currentUserId != null && reply.userId == currentUserId)
+                PopupMenuTheme(
+                  data: PopupMenuThemeData(color: BACKGROUND_COLOR),
+                  child: PopupMenuButton<String>(
+                    icon: Icon(Icons.more_horiz, size: 16),
+                    onSelected: (value) async {
+                      showDialog(
+                        context: context,
+                        builder: (context) => ConfirmationDialog(
+                          title: '답글 삭제',
+                          content: '답글을 삭제 하시겠습니까?',
+                          onConfirm: () async {
+                            await commentProvider.deleteComment(reply);
+                            if (!mounted) return;
+                          },
+                        ),
+                      );
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text(
+                          '삭제하기',
+                          style: TextStyle(color: Colors.red, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 32.0),
+            child: Transform.translate(
+              offset: Offset(0, -8),
+              child: Text(
+                reply.text,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400),
+              ),
+            ),
+          ),
+          SizedBox(height: 8),
+        ],
       ),
     );
   }
