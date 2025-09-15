@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/user_provider.dart';
+import 'package:lockerroom/provider/comment_provider.dart';
+import 'package:lockerroom/provider/feed_provider.dart';
+import 'package:lockerroom/provider/market_feed_provider.dart';
+import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:provider/provider.dart';
 
 class SettingPage extends StatelessWidget {
@@ -255,6 +259,28 @@ class SettingPage extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () async {
+                          // 로그아웃 전에 모든 실시간 구독 해제
+                          try {
+                            context
+                                .read<CommentProvider>()
+                                .cancelAllSubscriptions();
+                          } catch (_) {}
+                          try {
+                            context
+                                .read<FeedProvider>()
+                                .cancelAllSubscriptions();
+                          } catch (_) {}
+                          try {
+                            context
+                                .read<MarketFeedProvider>()
+                                .cancelAllSubscriptions();
+                          } catch (_) {}
+                          try {
+                            context
+                                .read<ProfileProvider>()
+                                .cancelAllSubscriptions();
+                          } catch (_) {}
+
                           await userProvider.signOut();
                           Navigator.pushNamedAndRemoveUntil(
                             context,
