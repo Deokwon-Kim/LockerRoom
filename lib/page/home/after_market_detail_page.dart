@@ -520,7 +520,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                             title: '댓글 삭제',
                             content: '댓글을 삭제 하시겠습니까?',
                             onConfirm: () async {
-                              await commentProvider.deleteComment(
+                              await commentProvider.deleteCommentCascade(
                                 parentComment,
                               );
                               if (!mounted) return;
