@@ -611,7 +611,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                             title: '댓글 삭제',
                             content: '댓글을 삭제 하시겠습니까?',
                             onConfirm: () async {
-                              await commentProvider.deleteCommentCascade(c);
+                              await commentProvider.deleteComment(c);
                               if (!mounted) return;
                             },
                           ),
