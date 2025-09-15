@@ -124,14 +124,18 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> loadNickname() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final user = FirebaseAuth.instance.currentUser;
+    final uid = user?.uid;
     if (uid == null) return;
+
+    await user?.reload();
+    _currentUser = user;
 
     final doc = await FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
         .get();
-    _nickname = doc.data()?['username'];
+    _nickname = doc.data()?['username'] ?? _currentUser?.displayName;
     _email = doc.data()?['email'];
     notifyListeners();
   }

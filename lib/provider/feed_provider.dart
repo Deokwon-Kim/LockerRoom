@@ -88,6 +88,15 @@ class FeedProvider extends ChangeNotifier {
     _subB?.cancel();
   }
 
+  void cancelAllSubscriptions() {
+    _sub?.cancel();
+    _subB?.cancel();
+    _sub = null;
+    _subB = null;
+    _postsStream = [];
+    _allPosts = [];
+  }
+
   @override
   void dispose() {
     _sub?.cancel();

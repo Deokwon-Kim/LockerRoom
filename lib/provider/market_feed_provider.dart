@@ -65,6 +65,13 @@ class MarketFeedProvider extends ChangeNotifier {
     super.dispose();
   }
 
+  void cancelAllSubscriptions() {
+    _marketSub?.cancel();
+    _marketSub = null;
+    _marketPostsStream = [];
+    _allMarketPosts = [];
+  }
+
   // 게시글 삭제
   Future<void> deletePost(MarketPostModel marketPost) async {
     try {
