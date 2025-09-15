@@ -53,6 +53,31 @@ class CommentProvider with ChangeNotifier {
     await _commentsCollection.doc(comment.id).delete();
   }
 
+  Future<void> deleteCommentCascade(CommentModel comment) async {
+    // 부모 댓글이면 연결된 모든 답글까지 일괄 삭제
+    if (comment.reComments.isEmpty) {
+      final batch = FirebaseFirestore.instance.batch();
+
+      // 부모 댓글 문서
+      final parentRef = _commentsCollection.doc(comment.id);
+      batch.delete(parentRef);
+
+      // 자식 답글들 조회 후 배치 삭제
+      final repliesSnap = await _commentsCollection
+          .where('postId', isEqualTo: comment.postId)
+          .where('reComments', isEqualTo: comment.id)
+          .get();
+      for (final d in repliesSnap.docs) {
+        batch.delete(d.reference);
+      }
+
+      await batch.commit();
+    } else {
+      // 답글이면 단일 삭제
+      await deleteComment(comment);
+    }
+  }
+
   @override
   void dispose() {
     for (var sub in _subs.values) {
