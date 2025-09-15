@@ -3,6 +3,7 @@ import 'dart:ui';
 class TeamModel {
   final String name;
   final String symplename;
+  final String stadium;
   final String logoPath;
   final String symbolPath;
   final Color color;
@@ -13,6 +14,7 @@ class TeamModel {
   TeamModel({
     required this.name,
     required this.symplename,
+    required this.stadium,
     required this.logoPath,
     required this.symbolPath,
     required this.color,
