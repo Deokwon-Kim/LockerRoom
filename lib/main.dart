@@ -8,6 +8,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
 import 'package:lockerroom/login/login_page.dart';
 import 'package:lockerroom/login/signup_page.dart';
+import 'package:lockerroom/page/setting/nickname_change_page.dart';
 import 'package:lockerroom/page/setting/setting_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
@@ -60,6 +61,7 @@ class MyApp extends StatelessWidget {
           'signUp': (context) => const SignupPage(),
           'signIn': (context) => const LoginPage(),
           'setting': (context) => const SettingPage(),
+          'changeNickname': (context) => const NicknameChangePage(),
         },
       ),
     );
@@ -74,9 +76,6 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
-        print('AuthWrapper - ConnectionState: ${snapshot.connectionState}');
-        print('AuthWrapper - HasData: ${snapshot.hasData}');
-        print('AuthWrapper - HasError: ${snapshot.hasError}');
         if (snapshot.hasData) {
           print('AuthWrapper - Current User: ${snapshot.data?.uid}');
           //사용자 정보를 UserProvider에 로드
