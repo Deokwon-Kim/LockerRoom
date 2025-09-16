@@ -43,9 +43,12 @@ class _UploadPageState extends State<UploadPage> {
         uploadProvider.video != null ||
         uploadProvider.camera != null;
     final canUpload = hasCaption && hasMedia && !uploadProvider.isUploading;
-    final userProvider = context.read<UserProvider>();
+    final userProvider = context.watch<UserProvider>();
     final userName =
-        userProvider.nickname ?? userProvider.currentUser?.displayName ?? '사용자';
+        userProvider.nickname ??
+        userProvider.currentUser?.displayName ??
+        FirebaseAuth.instance.currentUser?.displayName ??
+        '';
     final teamProvider = context.read<TeamProvider>();
     final profileProvider = context.watch<ProfileProvider>();
     final authUser = FirebaseAuth.instance.currentUser;
