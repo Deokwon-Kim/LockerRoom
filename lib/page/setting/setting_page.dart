@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/main.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
@@ -282,9 +283,11 @@ class SettingPage extends StatelessWidget {
                           } catch (_) {}
 
                           await userProvider.signOut();
-                          Navigator.pushNamedAndRemoveUntil(
+                          Navigator.pushAndRemoveUntil(
                             context,
-                            'signIn',
+                            MaterialPageRoute(
+                              builder: (context) => const AuthWrapper(),
+                            ),
                             (route) => false,
                           );
                         },
