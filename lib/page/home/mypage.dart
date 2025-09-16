@@ -159,13 +159,14 @@ class _MypageState extends State<Mypage> {
   @override
   Widget build(BuildContext context) {
     final profileProvider = Provider.of<ProfileProvider>(context);
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final userProvider = Provider.of<UserProvider>(context);
     final userName =
         userProvider.nickname ?? userProvider.currentUser?.displayName ?? '사용자';
     final selectedTeam = Provider.of<TeamProvider>(context).selectedTeam;
     // final email =
     //     userProvider.email ?? userProvider.currentUser?.email ?? '이메일';
     final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
