@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/const/custome_button.dart';
 import 'package:toastification/toastification.dart';
@@ -51,10 +50,6 @@ class _LoginPageState extends State<LoginPage> {
           );
 
       debugPrint('로그인 성공: ${userCredential.user}');
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const BottomTabBar()),
-      );
     } on FirebaseAuthException catch (e) {
       print('FirebaseAuthException: ${e.code}');
       switch (e.code) {
