@@ -176,10 +176,12 @@ class _AfterMarketState extends State<AfterMarket> {
 class MarketPostWidget extends StatefulWidget {
   final MarketPostModel marketPost;
   final MarketFeedProvider merketFeed;
+  final VoidCallback? onTap;
 
   const MarketPostWidget({
     required this.marketPost,
     required this.merketFeed,
+    this.onTap,
     super.key,
   });
 
@@ -211,11 +213,16 @@ class _MarketPostsWidgetState extends State<MarketPostWidget> {
 
     return GestureDetector(
       onTap: () {
+        // 조회수 증가
+        context.read<MarketFeedProvider>().viewPost(widget.marketPost.postId);
+        widget.onTap?.call();
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                AfterMarketDetailPage(marketPost: widget.marketPost),
+            builder: (context) => AfterMarketDetailPage(
+              marketPost: widget.marketPost,
+              postId: widget.marketPost.postId,
+            ),
           ),
         );
       },
