@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/model/market_post_model.dart';
@@ -122,5 +123,35 @@ class MarketFeedProvider extends ChangeNotifier {
     } catch (e) {
       print('조회수 증가 실패: $e');
     }
+  }
+
+  Future<void> toggleLike(MarketPostModel marketPost) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final postRef = _marketPostCollection.doc(marketPost.postId);
+
+    await FirebaseFirestore.instance.runTransaction((tx) async {
+      final snap = await tx.get(postRef);
+      if (!snap.exists) return;
+
+      final data = snap.data() as Map<String, dynamic>;
+      final currentLikes = (data['likesCount'] ?? 0) as int;
+      final likedByList = List<String>.from(data['likedBy'] ?? const []);
+
+      final isLiked = likedByList.contains(uid);
+      if (isLiked) {
+        likedByList.remove(uid);
+      } else {
+        likedByList.add(uid);
+      }
+
+      final newLikes = isLiked
+          ? (currentLikes > 0 ? currentLikes - 1 : 0)
+          : currentLikes + 1;
+
+      tx.update(postRef, {'likedBy': likedByList, 'likesCount': newLikes});
+    });
+    notifyListeners();
   }
 }
