@@ -6,13 +6,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
-import 'package:lockerroom/login/login_page.dart';
-import 'package:lockerroom/login/signup_page.dart';
+import 'package:lockerroom/page/login/login_page.dart';
+import 'package:lockerroom/page/login/signup_page.dart';
 import 'package:lockerroom/page/setting/nickname_change_page.dart';
 import 'package:lockerroom/page/setting/setting_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
+import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/market_upload_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -40,6 +41,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => CommentProvider()),
         ChangeNotifierProvider(create: (context) => MarketUploadProvider()),
         ChangeNotifierProvider(create: (context) => MarketFeedProvider()),
+        ChangeNotifierProvider(create: (context) => IntutionRecordProvider()),
       ],
       child: const MyApp(),
     ),
