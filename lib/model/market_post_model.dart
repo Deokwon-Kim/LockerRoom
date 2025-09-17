@@ -11,6 +11,8 @@ class MarketPostModel {
   final String type;
   final int viewCount;
   final List<String> viewdBy;
+  final int likesCount;
+  final List<String> likedBy;
   final DateTime createdAt;
 
   MarketPostModel({
@@ -24,6 +26,8 @@ class MarketPostModel {
     required this.type,
     this.viewCount = 0,
     this.viewdBy = const [],
+    required this.likesCount,
+    required this.likedBy,
     required this.createdAt,
   });
 
@@ -38,6 +42,8 @@ class MarketPostModel {
     String? type,
     int? viewCount,
     List<String>? viewdBy,
+    int? likesCount,
+    List<String>? likedBy,
     DateTime? createdAt,
   }) {
     return MarketPostModel(
@@ -49,6 +55,8 @@ class MarketPostModel {
       price: price ?? this.price,
       type: type ?? this.type,
       createdAt: createdAt ?? this.createdAt,
+      likesCount: likesCount ?? this.likesCount,
+      likedBy: likedBy ?? this.likedBy,
     );
   }
 
@@ -83,6 +91,8 @@ class MarketPostModel {
       type: data['type'] ?? '',
       viewCount: data['viewCount'] ?? 0,
       viewdBy: List<String>.from(data['viewdBy'] ?? []),
+      likesCount: data['likesCount'] ?? 0,
+      likedBy: List<String>.from(data['likedBy'] ?? []),
       createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
