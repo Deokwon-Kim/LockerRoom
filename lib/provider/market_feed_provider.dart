@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/model/market_post_model.dart';
+import 'package:lockerroom/services/view_service.dart';
 
 class MarketFeedProvider extends ChangeNotifier {
   final _marketPostCollection = FirebaseFirestore.instance.collection(
@@ -101,6 +102,25 @@ class MarketFeedProvider extends ChangeNotifier {
     } catch (e) {
       print('Error deleting post: $e');
       rethrow; // 에러를 다시 던져서 UI에서 처리할 수 있도록
+    }
+  }
+
+  // 게시글 조회 시 조회수 증가
+  Future<void> viewPost(String postId) async {
+    try {
+      await ViewService.incrementViewCount(postId);
+      // 로컬 상태 업데이트
+      final postIndex = _allMarketPosts.indexWhere(
+        (post) => post.postId == postId,
+      );
+      if (postIndex != -1) {
+        _allMarketPosts[postIndex] = _allMarketPosts[postIndex].copyWith(
+          viewCount: _allMarketPosts[postIndex].viewCount + 1,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      print('조회수 증가 실패: $e');
     }
   }
 }
