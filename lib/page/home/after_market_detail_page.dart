@@ -10,6 +10,7 @@ import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:toastification/toastification.dart';
 
 class AfterMarketDetailPage extends StatefulWidget {
   final MarketPostModel marketPost;
@@ -104,7 +105,8 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    Provider.of<CommentProvider>(context, listen: false);
+    final isOwner =
+        currentUserId != null && widget.marketPost.userId == currentUserId;
     final marketFeedProvider = Provider.of<MarketFeedProvider>(context);
 
     return Scaffold(
@@ -133,7 +135,77 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
               );
             },
           ),
-          IconButton(onPressed: () {}, icon: Icon(Icons.more_vert_rounded)),
+
+          PopupMenuTheme(
+            data: PopupMenuThemeData(color: BACKGROUND_COLOR),
+            child: PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_outlined),
+              onSelected: (value) async {
+                if (value == 'delete' && isOwner) {
+                  // 삭제 확인 다이얼로그
+                  showDialog(
+                    context: context,
+                    builder: (context) => ConfirmationDialog(
+                      title: '삭제 확인',
+                      content: '게시글을 삭제 하시겠습니까?',
+                      onConfirm: () async {
+                        try {
+                          Navigator.of(context).pop();
+
+                          await marketFeedProvider.deletePost(
+                            widget.marketPost,
+                          );
+
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (!mounted) return;
+                            context.read<CommentProvider>().cancelSubscription(
+                              widget.marketPost.postId,
+                            );
+                          });
+                          toastification.show(
+                            context: context,
+                            type: ToastificationType.success,
+                            alignment: Alignment.bottomCenter,
+                            autoCloseDuration: const Duration(seconds: 2),
+                            title: const Text('게시물을 삭제했습니다'),
+                          );
+                        } catch (e) {
+                          print('게시물 삭제 실패: $e');
+                          toastification.show(
+                            context: context,
+                            type: ToastificationType.error,
+                            alignment: Alignment.bottomCenter,
+                            autoCloseDuration: const Duration(seconds: 2),
+                            title: const Text('삭제 중 오류가 발생했습니다'),
+                          );
+                        }
+                      },
+                    ),
+                  );
+                } else if (value == 'report') {
+                  toastification.show(
+                    context: context,
+                    type: ToastificationType.info,
+                    alignment: Alignment.bottomCenter,
+                    autoCloseDuration: const Duration(seconds: 2),
+                    title: const Text('신고가 접수되었습니다'),
+                  );
+                }
+              },
+              itemBuilder: (context) => [
+                if (isOwner)
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Text(
+                      '삭제하기',
+                      style: TextStyle(color: RED_DANGER_TEXT_50),
+                    ),
+                  )
+                else
+                  PopupMenuItem(value: 'report', child: Text('신고')),
+              ],
+            ),
+          ),
         ],
       ),
       body: GestureDetector(
