@@ -1,4 +1,5 @@
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
@@ -6,16 +7,19 @@ import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/market_post_model.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
+import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:provider/provider.dart';
 
 class AfterMarketDetailPage extends StatefulWidget {
   final MarketPostModel marketPost;
   final CommentModel? comment;
+  final String postId;
   const AfterMarketDetailPage({
     super.key,
     required this.marketPost,
     this.comment,
+    required this.postId,
   });
 
   @override
@@ -57,6 +61,11 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
           );
         });
       }
+
+      // 페이지 진입 시 조회수 증가
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<MarketFeedProvider>().viewPost(widget.postId);
+      });
     });
   }
 
@@ -82,6 +91,14 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
     } else {
       return '${difference.inDays}일 전';
     }
+  }
+
+  Stream<MarketPostModel> getPostStream(String postId) {
+    return FirebaseFirestore.instance
+        .collection('market_posts')
+        .doc(postId)
+        .snapshots()
+        .map((doc) => MarketPostModel.fromDoc(doc));
   }
 
   @override
@@ -220,14 +237,20 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                               ),
                             ),
                             Spacer(),
-                            Text(
-                              '조회수',
-                              style: TextStyle(color: GRAYSCALE_LABEL_500),
-                            ),
-                            SizedBox(width: 5),
-                            Text(
-                              '10',
-                              style: TextStyle(color: GRAYSCALE_LABEL_500),
+                            StreamBuilder(
+                              stream: getPostStream(widget.postId),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData)
+                                  return CircularProgressIndicator(
+                                    color: BUTTON,
+                                  );
+
+                                final post = snapshot.data!;
+                                return Text(
+                                  '조회수: ${post.viewCount}',
+                                  style: TextStyle(color: GRAYSCALE_LABEL_500),
+                                );
+                              },
                             ),
                             SizedBox(width: 5),
                             Text(
@@ -240,18 +263,13 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                               style: TextStyle(color: GRAYSCALE_LABEL_500),
                             ),
                             SizedBox(width: 5),
-                            Text(
-                              '댓글',
-                              style: TextStyle(color: GRAYSCALE_LABEL_500),
-                            ),
-                            SizedBox(width: 5),
                             Consumer<CommentProvider>(
                               builder: (context, commentProvider, child) {
                                 final comment = commentProvider.getComments(
                                   widget.marketPost.postId,
                                 );
                                 return Text(
-                                  '${comment.length}',
+                                  '댓글: ${comment.length}',
                                   style: TextStyle(color: GRAYSCALE_LABEL_500),
                                 );
                               },
