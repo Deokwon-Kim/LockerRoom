@@ -105,6 +105,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     Provider.of<CommentProvider>(context, listen: false);
+    final marketFeedProvider = Provider.of<MarketFeedProvider>(context);
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -118,9 +119,19 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.favorite_border_rounded),
+          StreamBuilder<MarketPostModel>(
+            stream: getPostStream(widget.postId),
+            builder: (context, snapshot) {
+              final post = snapshot.data ?? widget.marketPost;
+              final isLiked =
+                  FirebaseAuth.instance.currentUser?.uid != null &&
+                  post.likedBy.contains(FirebaseAuth.instance.currentUser!.uid);
+              return IconButton(
+                onPressed: () => marketFeedProvider.toggleLike(post),
+                icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border),
+                color: isLiked ? Colors.red : null,
+              );
+            },
           ),
           IconButton(onPressed: () {}, icon: Icon(Icons.more_vert_rounded)),
         ],
@@ -253,14 +264,19 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                               },
                             ),
                             SizedBox(width: 5),
-                            Text(
-                              '찜',
-                              style: TextStyle(color: GRAYSCALE_LABEL_500),
-                            ),
-                            SizedBox(width: 5),
-                            Text(
-                              '10',
-                              style: TextStyle(color: GRAYSCALE_LABEL_500),
+                            StreamBuilder(
+                              stream: getPostStream(widget.postId),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData)
+                                  return CircularProgressIndicator(
+                                    color: BUTTON,
+                                  );
+                                final post = snapshot.data!;
+                                return Text(
+                                  '찜: ${post.likesCount}',
+                                  style: TextStyle(color: GRAYSCALE_LABEL_500),
+                                );
+                              },
                             ),
                             SizedBox(width: 5),
                             Consumer<CommentProvider>(
