@@ -9,6 +9,8 @@ class MarketPostModel {
   final List<String> imageUrls;
   final String price;
   final String type;
+  final int viewCount;
+  final List<String> viewdBy;
   final DateTime createdAt;
 
   MarketPostModel({
@@ -20,8 +22,35 @@ class MarketPostModel {
     required this.imageUrls,
     required this.price,
     required this.type,
+    this.viewCount = 0,
+    this.viewdBy = const [],
     required this.createdAt,
   });
+
+  MarketPostModel copyWith({
+    String? postId,
+    String? userId,
+    String? userName,
+    String? title,
+    String? description,
+    List<String>? imageUrls,
+    String? price,
+    String? type,
+    int? viewCount,
+    List<String>? viewdBy,
+    DateTime? createdAt,
+  }) {
+    return MarketPostModel(
+      postId: postId ?? this.postId,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      title: title ?? this.title,
+      imageUrls: imageUrls ?? this.imageUrls,
+      price: price ?? this.price,
+      type: type ?? this.type,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 
   factory MarketPostModel.fromDoc(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -52,6 +81,8 @@ class MarketPostModel {
       imageUrls: imageUrls,
       price: data['price']?.toString() ?? '0',
       type: data['type'] ?? '',
+      viewCount: data['viewCount'] ?? 0,
+      viewdBy: List<String>.from(data['viewdBy'] ?? []),
       createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
