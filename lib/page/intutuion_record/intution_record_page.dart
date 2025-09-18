@@ -13,6 +13,53 @@ class IntutionRecordPage extends StatefulWidget {
 
 class _IntutionRecordPageState extends State<IntutionRecordPage> {
   final _formKey = GlobalKey<FormState>();
+  DateTime? selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedDate = DateTime.now();
+  }
+
+  Future<void> _selectedDate() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: selectedDate ?? DateTime.now(),
+      firstDate: DateTime(1982),
+      lastDate: DateTime(2026),
+      builder: (context, child) {
+        final base = Theme.of(context);
+        return Localizations.override(
+          context: context,
+          locale: const Locale('ko', 'KR'),
+
+          child: Theme(
+            data: base.copyWith(
+              datePickerTheme: DatePickerThemeData(
+                backgroundColor: BACKGROUND_COLOR,
+                headerBackgroundColor: BACKGROUND_COLOR,
+              ),
+              colorScheme: base.colorScheme.copyWith(
+                primary: BUTTON,
+                surface: BACKGROUND_COLOR,
+                onSurface: Colors.black,
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(foregroundColor: BUTTON),
+              ),
+            ),
+            child: child!,
+          ),
+        );
+      },
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        selectedDate = pickedDate;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +110,30 @@ class _IntutionRecordPageState extends State<IntutionRecordPage> {
                 key: _formKey,
                 child: ListView(
                   children: [
+                    Container(
+                      padding: EdgeInsets.all(10),
+                      alignment: Alignment.centerLeft,
+                      width: double.infinity,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: GRAYSCALE_LABEL_300),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            selectedDate != null
+                                ? '${selectedDate!.year}년 ${selectedDate!.month}월 ${selectedDate!.day}일'
+                                : '날짜 선택',
+                          ),
+                          IconButton(
+                            onPressed: _selectedDate,
+                            icon: Icon(Icons.date_range_outlined),
+                          ),
+                        ],
+                      ),
+                    ),
                     Card(
                       color: BACKGROUND_COLOR,
                       child: ListTile(
