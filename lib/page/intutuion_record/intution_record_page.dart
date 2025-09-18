@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/intution_record_provider.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -94,22 +95,45 @@ class _IntutionRecordPageState extends State<IntutionRecordPage> {
               ),
             );
           }
-
+          final teamProvider = context.watch<TeamProvider>();
           final g = intutionProvider.todayGame!;
           final isHome = g.homeTeam == intutionProvider.myTeamSymple;
+
+          final myTeamSymple = intutionProvider.myTeamSymple!;
+          final opponentSymple = isHome ? g.awayTeam : g.homeTeam;
+
+          final myTeamModel =
+              teamProvider.selectedTeam ??
+              teamProvider.findTeamByName(myTeamSymple);
+          final oppenentTeamModel = teamProvider.findTeamByName(opponentSymple);
 
           return Scaffold(
             backgroundColor: BACKGROUND_COLOR,
             appBar: AppBar(
-              title: Text('직관 기록'),
+              title: Text(
+                '직관 기록 추가',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
               backgroundColor: BACKGROUND_COLOR,
             ),
             body: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.only(
+                top: 20.0,
+                left: 16.0,
+                right: 16.0,
+              ),
               child: Form(
                 key: _formKey,
                 child: ListView(
                   children: [
+                    Text(
+                      '경기날짜',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 10),
                     Container(
                       padding: EdgeInsets.all(10),
                       alignment: Alignment.centerLeft,
@@ -134,49 +158,195 @@ class _IntutionRecordPageState extends State<IntutionRecordPage> {
                         ],
                       ),
                     ),
-                    Card(
-                      color: BACKGROUND_COLOR,
-                      child: ListTile(
-                        title: Text(
-                          '${intutionProvider.todayStr}'
-                          '${g.dateTimeKst.hour.toString().padLeft(2, '0')}:${g.dateTimeKst.minute.toString().padLeft(2, '0')}'
-                          '${g.stadium}',
-                        ),
-                        subtitle: Text('${g.awayTeam} VS ${g.homeTeam}'),
-                        trailing: Text(g.status),
+                    SizedBox(height: 20),
+                    Text(
+                      '경기정보',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Text('내 팀: ${isHome ? g.homeTeam : g.awayTeam}'),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 10),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 15,
+                      ),
+                      decoration: BoxDecoration(
+                        color: BACKGROUND_COLOR,
+                        border: Border.all(color: GRAYSCALE_LABEL_300),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+
+                      child: Column(
+                        children: [
+                          // Row(
+                          //   children: [
+                          //     Text(
+                          //       '야구장:',
+                          //       style: TextStyle(
+                          //         fontSize: 13,
+                          //         fontWeight: FontWeight.w500,
+                          //       ),
+                          //     ),
+                          //     Spacer(),
+                          //     Text(g.stadium),
+                          //   ],
+                          // ),
+                          // SizedBox(height: 10),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                children: [
+                                  Text(
+                                    '응원 팀',
+                                    style: TextStyle(
+                                      color: GRAYSCALE_LABEL_500,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Image.asset(
+                                    myTeamModel?.logoPath ??
+                                        'assets/images/applogo/app_logo.png',
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.contain,
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    g.homeTeam,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              Padding(
+                                padding: const EdgeInsets.only(top: 30.0),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'VS',
+                                      style: TextStyle(
+                                        fontSize: 50,
+                                        color: GRAYSCALE_LABEL_500,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(height: 10),
+                                    Text(
+                                      g.stadium,
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                children: [
+                                  Text(
+                                    '상대 팀',
+                                    style: TextStyle(
+                                      color: GRAYSCALE_LABEL_500,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Image.asset(
+                                    oppenentTeamModel?.logoPath ??
+                                        'assets/images/applogo/app_logo.png',
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.contain,
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    g.awayTeam,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      '스코어',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
                           child: TextFormField(
+                            cursorColor: BUTTON,
                             controller: intutionProvider.myScoreController,
                             keyboardType: TextInputType.number,
+
                             decoration: InputDecoration(
+                              focusColor: BUTTON,
                               labelText: '내 팀 스코어',
-                              hintText: '0~99',
+                              labelStyle: TextStyle(color: GRAYSCALE_LABEL_500),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: GRAYSCALE_LABEL_300,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: GRAYSCALE_LABEL_300,
+                                ),
+                              ),
                             ),
+
                             validator: intutionProvider.validateScore,
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        SizedBox(width: 15),
                         Expanded(
                           child: TextFormField(
+                            cursorColor: BUTTON,
                             controller: intutionProvider.oppScoreContreller,
                             keyboardType: TextInputType.number,
                             decoration: InputDecoration(
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: GRAYSCALE_LABEL_300,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: GRAYSCALE_LABEL_300,
+                                ),
+                              ),
                               labelText: '상대 스코어',
-                              hintText: '0~99',
+                              labelStyle: TextStyle(color: GRAYSCALE_LABEL_500),
                             ),
                             validator: intutionProvider.validateScore,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+
+                    const SizedBox(height: 40),
                     GestureDetector(
                       onTap: intutionProvider.saving
                           ? null
