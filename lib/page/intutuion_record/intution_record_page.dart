@@ -180,20 +180,6 @@ class _IntutionRecordPageState extends State<IntutionRecordPage> {
 
                       child: Column(
                         children: [
-                          // Row(
-                          //   children: [
-                          //     Text(
-                          //       '야구장:',
-                          //       style: TextStyle(
-                          //         fontSize: 13,
-                          //         fontWeight: FontWeight.w500,
-                          //       ),
-                          //     ),
-                          //     Spacer(),
-                          //     Text(g.stadium),
-                          //   ],
-                          // ),
-                          // SizedBox(height: 10),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
