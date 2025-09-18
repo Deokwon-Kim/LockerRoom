@@ -69,7 +69,7 @@ class _HomePageState extends State<HomePage> {
               selectedTeam.name,
               style: TextStyle(
                 color: WHITE,
-                fontSize: 17,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
