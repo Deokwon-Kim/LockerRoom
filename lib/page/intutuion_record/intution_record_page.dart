@@ -190,7 +190,7 @@ class _IntutionRecordPageState extends State<IntutionRecordPage> {
                                     style: TextStyle(
                                       color: GRAYSCALE_LABEL_500,
                                       fontSize: 13,
-                                      fontWeight: FontWeight.w500,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   SizedBox(height: 10),
@@ -227,7 +227,10 @@ class _IntutionRecordPageState extends State<IntutionRecordPage> {
                                     SizedBox(height: 10),
                                     Text(
                                       g.stadium,
-                                      style: TextStyle(fontSize: 14),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -239,7 +242,7 @@ class _IntutionRecordPageState extends State<IntutionRecordPage> {
                                     style: TextStyle(
                                       color: GRAYSCALE_LABEL_500,
                                       fontSize: 13,
-                                      fontWeight: FontWeight.w500,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   SizedBox(height: 10),
