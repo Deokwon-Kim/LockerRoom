@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/main.dart';
+import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
@@ -141,7 +142,7 @@ class SettingPage extends StatelessWidget {
               onTap: () {},
               child: Container(
                 width: double.infinity,
-                height: 309,
+                height: 368,
                 decoration: BoxDecoration(
                   color: GRAYSCALE_LABEL_50,
                   borderRadius: BorderRadius.circular(12),
@@ -167,6 +168,44 @@ class SettingPage extends StatelessWidget {
                             IconButton(
                               onPressed: () {
                                 Navigator.pushNamed(context, 'noticeList');
+                              },
+                              icon: Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: GRAYSCALE_LABEL_950,
+                                size: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => IntutionRecordListPage(),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '직관기록',
+                              style: TextStyle(
+                                color: GRAYSCALE_LABEL_950,
+                                fontSize: 16,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        IntutionRecordListPage(),
+                                  ),
+                                );
                               },
                               icon: Icon(
                                 Icons.arrow_forward_ios_rounded,
