@@ -92,9 +92,10 @@ class IntutionRecordProvider extends ChangeNotifier {
           .get();
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
-        final int? myScore = data['myScroe'] is int
+        // 오타 보정: myScore 키를 우선 사용하고, 문자열일 경우 파싱
+        final int? myScore = data['myScore'] is int
             ? data['myScore'] as int
-            : int.tryParse('${data['myScroe']}');
+            : int.tryParse('${data['myScore']}');
         final int? oppScore = data['opponentScore'] is int
             ? data['opponentScore'] as int
             : int.tryParse('${data['opponentScore']}');
@@ -105,6 +106,69 @@ class IntutionRecordProvider extends ChangeNotifier {
 
     _todayStr = today;
     _myTeamSymple = symple;
+    _todayGame = match;
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // 선택한 날짜로 경기 정보 갱신
+  Future<void> loadByDate(BuildContext context, DateTime date) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    // 응원팀 캐시 확인, 없으면 로드
+    final teamProvider = context.read<TeamProvider>();
+    if (teamProvider.team == null) {
+      await teamProvider.loadTeam(user.uid);
+    }
+
+    _myTeamSymple ??= (teamProvider.team == null
+        ? null
+        : _normalizeToCsvTeamName(context, teamProvider.team!));
+
+    final String dateStr = _yyyyMmDd(date);
+    ScheduleModel? match;
+
+    if (_myTeamSymple != null) {
+      final schedules = await ScheduleService().loadSchedules();
+      final inDay = schedules.where((s) => _yyyyMmDd(s.dateTimeKst) == dateStr);
+      final filtered = inDay.where(
+        (s) => s.homeTeam == _myTeamSymple || s.awayTeam == _myTeamSymple,
+      );
+      match = filtered.isNotEmpty ? filtered.first : null;
+    }
+
+    // 점수 입력값 초기화 후 기존 기록 프리필
+    myScoreController.clear();
+    oppScoreContreller.clear();
+    if (match != null) {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('attendances')
+          .doc(match.gameId)
+          .get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final int? myScore = data['myScore'] is int
+            ? data['myScore'] as int
+            : int.tryParse('${data['myScore']}');
+        final int? oppScore = data['opponentScore'] is int
+            ? data['opponentScore'] as int
+            : int.tryParse('${data['opponentScore']}');
+        if (myScore != null) myScoreController.text = myScore.toString();
+        if (oppScore != null) oppScoreContreller.text = oppScore.toString();
+      }
+    }
+
+    _todayStr = dateStr;
     _todayGame = match;
     _isLoading = false;
     notifyListeners();
@@ -154,7 +218,7 @@ class IntutionRecordProvider extends ChangeNotifier {
             'myScore': myScore,
             'opponentScore': oppScore,
             'createdAt': FieldValue.serverTimestamp(),
-            'updateAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
       return true;
     } catch (_) {
