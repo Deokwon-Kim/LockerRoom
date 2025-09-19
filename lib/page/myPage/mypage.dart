@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/my_post/mypost.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
+import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -410,7 +411,7 @@ class _MypageState extends State<Mypage> {
                 child: ContainedTabBarView(
                   tabs: [
                     Text('게시글', style: TextStyle(color: BLACK)),
-                    Text('댓글', style: TextStyle(color: BLACK)),
+                    Text('직관기록', style: TextStyle(color: BLACK)),
                   ],
                   tabBarProperties: TabBarProperties(
                     indicatorColor: selectedTeam?.color,
@@ -418,10 +419,7 @@ class _MypageState extends State<Mypage> {
                     indicatorWeight: 3.0,
                     unselectedLabelColor: GRAYSCALE_LABEL_500,
                   ),
-                  views: [
-                    MypostPage(),
-                    Container(color: Colors.deepOrange),
-                  ],
+                  views: [MypostPage(), IntutionRecordListPage()],
                   onChange: (index) => print(index),
                 ),
               ),
