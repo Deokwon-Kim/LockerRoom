@@ -7,7 +7,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
-import 'package:lockerroom/page/intutuion_record/intution_record_upload_page.dart';
 import 'package:lockerroom/page/login/login_page.dart';
 import 'package:lockerroom/page/login/signup_page.dart';
 import 'package:lockerroom/page/setting/nickname_change_page.dart';
@@ -15,6 +14,7 @@ import 'package:lockerroom/page/setting/setting_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
+import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/market_upload_provider.dart';
@@ -44,6 +44,9 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => MarketUploadProvider()),
         ChangeNotifierProvider(create: (context) => MarketFeedProvider()),
         ChangeNotifierProvider(create: (context) => IntutionRecordProvider()),
+        ChangeNotifierProvider(
+          create: (context) => IntutionRecordListProvider(),
+        ),
       ],
       child: const MyApp(),
     ),
@@ -66,7 +69,7 @@ class MyApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
-        home: const IntutionRecordUploadPage(),
+        home: const AuthWrapper(),
         routes: {
           'signUp': (context) => const SignupPage(),
           'signIn': (context) => const LoginPage(),
