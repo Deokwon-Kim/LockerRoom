@@ -15,12 +15,14 @@ class IntutionRecordProvider extends ChangeNotifier {
 
   ScheduleModel? _todayGame;
   String? _myTeamSymple;
+  String? _oppTeamSymple;
   String? _todayStr;
 
   bool get isLoding => _isLoading;
   bool get saving => _saving;
   ScheduleModel? get todayGame => _todayGame;
   String? get myTeamSymple => _myTeamSymple;
+  String? get oppTeamSymple => _oppTeamSymple;
   String? get todayStr => _todayStr;
 
   @override
@@ -34,7 +36,7 @@ class IntutionRecordProvider extends ChangeNotifier {
     final y = dt.year.toString().padLeft(4, '0');
     final m = dt.month.toString().padLeft(2, '0');
     final d = dt.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
+    return '$y.$m.$d';
   }
 
   String? _normalizeToCsvTeamName(BuildContext context, String saved) {
@@ -107,6 +109,9 @@ class IntutionRecordProvider extends ChangeNotifier {
     _todayStr = today;
     _myTeamSymple = symple;
     _todayGame = match;
+    _oppTeamSymple = (match != null && symple != null)
+        ? (match.homeTeam == symple ? match.awayTeam : match.homeTeam)
+        : null;
     _isLoading = false;
     notifyListeners();
   }
@@ -170,6 +175,13 @@ class IntutionRecordProvider extends ChangeNotifier {
 
     _todayStr = dateStr;
     _todayGame = match;
+    if (_myTeamSymple != null) {
+      _oppTeamSymple = (match != null)
+          ? (match.homeTeam == _myTeamSymple ? match.awayTeam : match.homeTeam)
+          : null;
+    } else {
+      _oppTeamSymple = null;
+    }
     _isLoading = false;
     notifyListeners();
   }
@@ -215,6 +227,7 @@ class IntutionRecordProvider extends ChangeNotifier {
             'homeTeam': g.homeTeam,
             'awayTeam': g.awayTeam,
             'myTeam': _myTeamSymple,
+            'oppTeam': _oppTeamSymple,
             'myScore': myScore,
             'opponentScore': oppScore,
             'createdAt': FieldValue.serverTimestamp(),
