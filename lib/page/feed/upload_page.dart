@@ -148,7 +148,7 @@ class _UploadPageState extends State<UploadPage> {
 
                   // 캡션 입력 박스
                   Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    // margin: const EdgeInsets.symmetric(horizontal: 16),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -173,26 +173,24 @@ class _UploadPageState extends State<UploadPage> {
                     ),
                   ),
 
-                  // 글자 수 카운터
-                  Padding(
-                    padding: const EdgeInsets.only(right: 24, top: 4),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        '${_captionController.text.length}/500',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ),
-                  ),
-
+                  // // 글자 수 카운터
+                  // Padding(
+                  //   padding: const EdgeInsets.only(right: 24, top: 4),
+                  //   child: Align(
+                  //     alignment: Alignment.centerRight,
+                  //     child: Text(
+                  //       '${_captionController.text.length}/500',
+                  //       style: TextStyle(fontSize: 12, color: Colors.grey),
+                  //     ),
+                  //   ),
+                  // ),
                   const SizedBox(height: 12),
 
                   // 미디어 미리보기 그리드/가로 스크롤
                   // 스크롤 없이 전부 보이게
                   if (hasMedia)
                     Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-
+                      // margin: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
@@ -248,10 +246,7 @@ class _UploadPageState extends State<UploadPage> {
 
                   // 미디어 선택 버튼
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 12.0,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12.0),
                     child: OutlinedButton.icon(
                       onPressed: () {
                         pickImageBottomSheet(context, uploadProvider);
@@ -272,78 +267,48 @@ class _UploadPageState extends State<UploadPage> {
                     ),
                   ),
 
-                  // Padding(
-                  //   padding: const EdgeInsets.symmetric(
-                  //     horizontal: 16.0,
-                  //     vertical: 12.0,
-                  //   ),
-                  //   child: OutlinedButton.icon(
-                  //     onPressed: uploadProvider.isUploading
-                  //         ? null
-                  //         : () async {
-                  //             await uploadProvider.pickVideo();
-                  //           },
-                  //     icon: const Icon(Icons.add_photo_alternate_outlined),
-                  //     label: const Text(
-                  //       '동영상 추가',
-                  //       style: TextStyle(fontWeight: FontWeight.w500),
-                  //     ),
-                  //     style: OutlinedButton.styleFrom(
-                  //       foregroundColor: BUTTON,
-                  //       side: const BorderSide(color: BUTTON),
-                  //       shape: RoundedRectangleBorder(
-                  //         borderRadius: BorderRadius.circular(10),
-                  //       ),
-                  //       padding: const EdgeInsets.symmetric(vertical: 12),
-                  //     ),
-                  //   ),
-                  // ),
                   const SizedBox(height: 16),
 
                   // 업로드 버튼
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: canUpload
-                            ? () async {
-                                await uploadProvider.uploadAndSavePost(
-                                  userId:
-                                      FirebaseAuth.instance.currentUser!.uid,
-                                  userName: userName,
-                                  text: _captionController.text,
-                                );
-                                _captionController.clear();
-                                widget.onUploaded?.call();
-                              }
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: themeColor,
-                          disabledBackgroundColor: GRAYSCALE_LABEL_300,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: canUpload
+                          ? () async {
+                              await uploadProvider.uploadAndSavePost(
+                                userId: FirebaseAuth.instance.currentUser!.uid,
+                                userName: userName,
+                                text: _captionController.text,
+                              );
+                              _captionController.clear();
+                              widget.onUploaded?.call();
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: themeColor,
+                        disabledBackgroundColor: GRAYSCALE_LABEL_300,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: uploadProvider.isUploading
-                            ? const SizedBox(
-                                height: 22,
-                                width: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  color: WHITE,
-                                ),
-                              )
-                            : const Text(
-                                '업로드',
-                                style: TextStyle(
-                                  color: WHITE,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
                       ),
+                      child: uploadProvider.isUploading
+                          ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: WHITE,
+                              ),
+                            )
+                          : const Text(
+                              '업로드',
+                              style: TextStyle(
+                                color: WHITE,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ],
