@@ -9,25 +9,25 @@ const Doosan = Color(0xff181928);
 const Landers = Color(0xffCE0E2D);
 
 // 한화 이글스
-const Eagles = Color(0xff07111F);
+const Eagles = Color(0xffEC500F);
 
 // 키움 히어로즈
 const KIWOOM = Color(0xff570514);
 
 // 삼성 라이온즈
-const Samsung = Color(0xff074CA1);
+const Samsung = Color(0xff004a88);
 
 // LG 트윈스
-const LG = Color(0xffC30452);
+const LG = Color(0xff9E0E31);
 
 // 롯데 자이언츠
-const Lotte = Color(0xff041E42);
+const Lotte = Color(0xff023255);
 
 // NC 다이노스
 const NC = Color(0xff315288);
 
 // 기아 타이거즈
-const Kia = Color(0xffEA0029);
+const Kia = Color(0xffBB1C22);
 
 // KT 위즈
 const KT = Color(0xff000000);
