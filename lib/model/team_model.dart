@@ -5,6 +5,7 @@ class TeamModel {
   final String symplename;
   final String stadium;
   final String logoPath;
+  final String calenderLogo;
   final String symbolPath;
   final Color color;
   final String youtubeName;
@@ -16,6 +17,7 @@ class TeamModel {
     required this.symplename,
     required this.stadium,
     required this.logoPath,
+    required this.calenderLogo,
     required this.symbolPath,
     required this.color,
     required this.youtubeName,
