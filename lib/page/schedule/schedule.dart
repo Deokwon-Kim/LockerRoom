@@ -192,7 +192,8 @@ class _SchedulePageState extends State<SchedulePage> {
                                                     width: clampedLogo,
                                                     height: clampedLogo,
                                                     child: Image.asset(
-                                                      awayTeamModel.logoPath,
+                                                      awayTeamModel
+                                                          .calenderLogo,
                                                       fit: BoxFit.contain,
                                                     ),
                                                   ),
@@ -218,7 +219,8 @@ class _SchedulePageState extends State<SchedulePage> {
                                                     width: clampedLogo,
                                                     height: clampedLogo,
                                                     child: Image.asset(
-                                                      homeTeamModel.logoPath,
+                                                      homeTeamModel
+                                                          .calenderLogo,
                                                       fit: BoxFit.contain,
                                                     ),
                                                   ),
