@@ -148,6 +148,15 @@ class FeedProvider extends ChangeNotifier {
         );
   }
 
+  // Feed작성자의 게시물 불러오기
+  Stream<List<PostModel>> listenUserPosts(String userId) {
+    return _postCollection
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((doc) => PostModel.fromDoc(doc)).toList());
+  }
+
   // 게시글 삭제 시 해당 게시글의 모든 댓글도 함께 삭제
   Future<void> deletePost(PostModel post) async {
     for (final url in post.mediaUrls) {
