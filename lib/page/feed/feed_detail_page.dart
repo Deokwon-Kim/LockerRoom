@@ -7,6 +7,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
+import 'package:lockerroom/page/feed/feed_mypage.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -103,42 +104,67 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Consumer<ProfileProvider>(
-                          builder: (context, profileProvider, child) {
-                            final url = profileProvider
-                                .userProfiles[widget.post.userId];
-                            return CircleAvatar(
-                              radius: 25,
-                              backgroundImage: url != null
-                                  ? NetworkImage(url)
-                                  : null,
-                              backgroundColor: GRAYSCALE_LABEL_300,
-                              child: url == null
-                                  ? const Icon(
-                                      Icons.person,
-                                      color: Colors.black,
-                                      size: 25,
-                                    )
-                                  : null,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    FeedMypage(post: widget.post),
+                              ),
                             );
                           },
+                          child: Consumer<ProfileProvider>(
+                            builder: (context, profileProvider, child) {
+                              final url = profileProvider
+                                  .userProfiles[widget.post.userId];
+                              return CircleAvatar(
+                                radius: 25,
+                                backgroundImage: url != null
+                                    ? NetworkImage(url)
+                                    : null,
+                                backgroundColor: GRAYSCALE_LABEL_300,
+                                child: url == null
+                                    ? const Icon(
+                                        Icons.person,
+                                        color: Colors.black,
+                                        size: 25,
+                                      )
+                                    : null,
+                              );
+                            },
+                          ),
                         ),
-                        SizedBox(width: 10),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              widget.post.userName,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
+                            TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        FeedMypage(post: widget.post),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                widget.post.userName,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black,
+                                ),
                               ),
                             ),
-                            Text(
-                              timeAgo(widget.post.createdAt),
-                              style: TextStyle(
-                                color: GRAYSCALE_LABEL_500,
-                                fontSize: 13,
+                            Transform.translate(
+                              offset: Offset(10, -10),
+                              child: Text(
+                                timeAgo(widget.post.createdAt),
+                                style: TextStyle(
+                                  color: GRAYSCALE_LABEL_500,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
