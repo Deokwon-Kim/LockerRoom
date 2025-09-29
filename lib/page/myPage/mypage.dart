@@ -5,7 +5,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/my_post/mypost.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
-import 'package:lockerroom/page/team_select_page.dart';
+import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
@@ -13,7 +13,8 @@ import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
 class Mypage extends StatefulWidget {
-  const Mypage({super.key});
+  final String userId;
+  const Mypage({super.key, required this.userId});
 
   @override
   State<Mypage> createState() => _MypageState();
@@ -171,24 +172,40 @@ class _MypageState extends State<Mypage> {
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
-        title: Text(
-          '프로필',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            color: WHITE,
-          ),
+        title: Row(
+          children: [
+            Text(
+              userName,
+              style: TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            SizedBox(width: 5),
+            Transform.translate(
+              offset: Offset(0, 5),
+              child: Text(
+                '${selectedTeam?.name}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: selectedTeam?.color,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
             onPressed: () {
               Navigator.pushNamed(context, 'setting');
             },
-            icon: Icon(Icons.menu, color: WHITE),
+            icon: Icon(Icons.menu, color: selectedTeam?.color),
           ),
         ],
-        centerTitle: true,
-        backgroundColor: selectedTeam?.color,
+        centerTitle: false,
+        backgroundColor: BACKGROUND_COLOR,
       ),
       body: Center(
         child: Column(
@@ -292,7 +309,7 @@ class _MypageState extends State<Mypage> {
                 ),
                 SizedBox(width: 20),
                 Padding(
-                  padding: const EdgeInsets.only(top: 30.0),
+                  padding: const EdgeInsets.only(top: 20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -305,96 +322,154 @@ class _MypageState extends State<Mypage> {
                         ),
                       ),
                       SizedBox(height: 5),
-                      Consumer<TeamProvider>(
-                        builder: (context, teamProvider, _) {
-                          final teamName = teamProvider.team ?? '팀 미선택';
-                          final teamModel = teamProvider.findTeamByName(
-                            teamName,
-                          );
-                          final teamColor =
-                              teamModel?.color ?? GRAYSCALE_LABEL_300;
-                          final logoPath = teamModel?.logoPath;
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (logoPath != null)
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
+                      Transform.translate(
+                        offset: Offset(-10, 0),
+                        child: Row(
+                          children: [
+                            StreamBuilder<int>(
+                              stream: context
+                                  .read<FeedProvider>()
+                                  .listenUserPostCount(widget.userId),
+                              builder: (context, snapshot) {
+                                final count = snapshot.data ?? 0;
+                                return Column(
                                   children: [
-                                    Image.asset(
-                                      logoPath,
-                                      width: 28,
-                                      height: 28,
-                                      fit: BoxFit.contain,
-                                    ),
-                                    SizedBox(width: 10),
                                     Text(
-                                      teamName,
+                                      '$count',
                                       style: TextStyle(
-                                        color: teamColor,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      '게시물',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                   ],
-                                )
-                              else
+                                );
+                              },
+                            ),
+
+                            SizedBox(width: 50),
+                            Column(
+                              children: [
                                 Text(
-                                  '응원팀: $teamName',
-                                  style: TextStyle(
-                                    color: BLACK,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  '3',
+                                  style: TextStyle(fontWeight: FontWeight.w500),
                                 ),
-                              SizedBox(height: 10),
-                              SizedBox(
-                                width: 160,
-                                height: 44,
-                                child: ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        teamProvider.selectedTeam?.color,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    elevation: 2,
-                                  ),
-                                  icon: Icon(Icons.swap_horiz),
-                                  label: Text(
-                                    '팀 변경',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  onPressed: () async {
-                                    final changed = await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            TeamSelectPage(isChanging: true),
-                                      ),
-                                    );
-                                    if (changed is String && mounted) {
-                                      toastification.show(
-                                        context: context,
-                                        type: ToastificationType.success,
-                                        alignment: Alignment.bottomCenter,
-                                        autoCloseDuration: const Duration(
-                                          seconds: 2,
-                                        ),
-                                        title: Text('팀이 변경되었습니다: $changed'),
-                                      );
-                                    }
-                                  },
+                                Text(
+                                  '팔로워',
+                                  style: TextStyle(fontWeight: FontWeight.w500),
                                 ),
-                              ),
-                            ],
-                          );
-                        },
+                              ],
+                            ),
+                            SizedBox(width: 50),
+                            Column(
+                              children: [
+                                Text(
+                                  '3',
+                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                                Text(
+                                  '팔로잉',
+                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
+                      // Consumer<TeamProvider>(
+                      //   builder: (context, teamProvider, _) {
+                      //     final teamName = teamProvider.team ?? '팀 미선택';
+                      //     final teamModel = teamProvider.findTeamByName(
+                      //       teamName,
+                      //     );
+                      //     final teamColor =
+                      //         teamModel?.color ?? GRAYSCALE_LABEL_300;
+                      //     final logoPath = teamModel?.logoPath;
+
+                      //     return Column(
+                      //       crossAxisAlignment: CrossAxisAlignment.start,
+                      //       children: [
+                      //         if (logoPath != null)
+                      //           Row(
+                      //             mainAxisSize: MainAxisSize.min,
+                      //             children: [
+                      //               // Image.asset(
+                      //               //   logoPath,
+                      //               //   width: 28,
+                      //               //   height: 28,
+                      //               //   fit: BoxFit.contain,
+                      //               // ),
+                      //               // SizedBox(width: 10),
+                      //               // Text(
+                      //               //   teamName,
+                      //               //   style: TextStyle(
+                      //               //     color: teamColor,
+                      //               //     fontSize: 15,
+                      //               //     fontWeight: FontWeight.bold,
+                      //               //   ),
+                      //               // ),
+                      //             ],
+                      //           )
+                      //         else
+                      //           // Text(
+                      //           //   '응원팀: $teamName',
+                      //           //   style: TextStyle(
+                      //           //     color: BLACK,
+                      //           //     fontSize: 14,
+                      //           //     fontWeight: FontWeight.w600,
+                      //           //   ),
+                      //           // ),
+                      //           SizedBox(height: 10),
+                      //         SizedBox(
+                      //           width: 160,
+                      //           height: 44,
+                      //           child: ElevatedButton.icon(
+                      //             style: ElevatedButton.styleFrom(
+                      //               backgroundColor:
+                      //                   teamProvider.selectedTeam?.color,
+                      //               foregroundColor: Colors.white,
+                      //               shape: RoundedRectangleBorder(
+                      //                 borderRadius: BorderRadius.circular(10),
+                      //               ),
+                      //               elevation: 2,
+                      //             ),
+                      //             icon: Icon(Icons.swap_horiz),
+                      //             label: Text(
+                      //               '팀 변경',
+                      //               style: TextStyle(
+                      //                 fontWeight: FontWeight.bold,
+                      //               ),
+                      //             ),
+                      //             onPressed: () async {
+                      //               final changed = await Navigator.push(
+                      //                 context,
+                      //                 MaterialPageRoute(
+                      //                   builder: (_) =>
+                      //                       TeamSelectPage(isChanging: true),
+                      //                 ),
+                      //               );
+                      //               if (changed is String && mounted) {
+                      //                 toastification.show(
+                      //                   context: context,
+                      //                   type: ToastificationType.success,
+                      //                   alignment: Alignment.bottomCenter,
+                      //                   autoCloseDuration: const Duration(
+                      //                     seconds: 2,
+                      //                   ),
+                      //                   title: Text('팀이 변경되었습니다: $changed'),
+                      //                 );
+                      //               }
+                      //             },
+                      //           ),
+                      //         ),
+                      //       ],
+                      //     );
+                      //   },
+                      // ),
                     ],
                   ),
                 ),
