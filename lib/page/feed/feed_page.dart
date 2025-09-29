@@ -218,8 +218,10 @@ class _PostWidgetState extends State<PostWidget> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    FeedMypage(post: widget.post),
+                                builder: (context) => FeedMypage(
+                                  post: widget.post,
+                                  targetUserId: widget.post.userId,
+                                ),
                               ),
                             );
                           },
@@ -249,8 +251,10 @@ class _PostWidgetState extends State<PostWidget> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    FeedMypage(post: widget.post),
+                                builder: (context) => FeedMypage(
+                                  post: widget.post,
+                                  targetUserId: widget.post.userId,
+                                ),
                               ),
                             );
                           },

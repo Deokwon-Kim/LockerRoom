@@ -109,8 +109,10 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    FeedMypage(post: widget.post),
+                                builder: (context) => FeedMypage(
+                                  post: widget.post,
+                                  targetUserId: widget.post.userId,
+                                ),
                               ),
                             );
                           },
@@ -143,8 +145,10 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        FeedMypage(post: widget.post),
+                                    builder: (context) => FeedMypage(
+                                      post: widget.post,
+                                      targetUserId: widget.post.userId,
+                                    ),
                                   ),
                                 );
                               },
