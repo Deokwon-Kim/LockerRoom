@@ -267,11 +267,14 @@ class _PostWidgetState extends State<PostWidget> {
                             ),
                           ),
                         ),
-                        Text(
-                          timeAgo(widget.post.createdAt),
-                          style: TextStyle(
-                            color: GRAYSCALE_LABEL_500,
-                            fontSize: 13,
+                        Transform.translate(
+                          offset: Offset(10, -10),
+                          child: Text(
+                            timeAgo(widget.post.createdAt),
+                            style: TextStyle(
+                              color: GRAYSCALE_LABEL_500,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
