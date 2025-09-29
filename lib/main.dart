@@ -15,6 +15,7 @@ import 'package:lockerroom/page/setting/setting_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
+import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
@@ -24,6 +25,7 @@ import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/provider/video_provider.dart';
+import 'package:lockerroom/repository/user_repository.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -31,6 +33,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: 'lib/api_key/youtube_key.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  final repo = UserRepository();
+  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
   runApp(
     MultiProvider(
@@ -47,6 +51,9 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => IntutionRecordProvider()),
         ChangeNotifierProvider(
           create: (context) => IntutionRecordListProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => FollowProvider(repo, currentUserId!),
         ),
       ],
       child: const MyApp(),
