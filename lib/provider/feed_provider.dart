@@ -157,6 +157,14 @@ class FeedProvider extends ChangeNotifier {
         .map((snap) => snap.docs.map((doc) => PostModel.fromDoc(doc)).toList());
   }
 
+  // 특정 사용자의 게시물 개수를 실시간으로 스트리밍
+  Stream<int> listenUserPostCount(String userId) {
+    return _postCollection
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) => snapshot.size);
+  }
+
   // 게시글 삭제 시 해당 게시글의 모든 댓글도 함께 삭제
   Future<void> deletePost(PostModel post) async {
     for (final url in post.mediaUrls) {
