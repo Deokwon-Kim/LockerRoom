@@ -10,6 +10,7 @@ import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/widgets/svg_icon.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class BottomTabBar extends StatefulWidget {
   final int initialIndex;
@@ -91,7 +92,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
         },
       ),
       AfterMarket(),
-      Mypage(),
+      Mypage(userId: FirebaseAuth.instance.currentUser?.uid ?? ''),
     ];
 
     return Scaffold(
