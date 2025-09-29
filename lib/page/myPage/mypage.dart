@@ -172,6 +172,7 @@ class _MypageState extends State<Mypage> {
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Row(
           children: [
             Text(
