@@ -66,6 +66,8 @@ class UserProvider extends ChangeNotifier {
         username: username,
         useremail: email,
         uid: userCredential.user!.uid,
+        followersCount: 0,
+        followingCount: 0,
       );
 
       // Firestore에 사용자 정보 저장
