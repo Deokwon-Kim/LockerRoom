@@ -1,12 +1,15 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
+import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
@@ -42,9 +45,50 @@ class _FeedMypageState extends State<FeedMypage> {
       appBar: AppBar(
         backgroundColor: BACKGROUND_COLOR,
         scrolledUnderElevation: 0,
-        title: Text(
-          widget.post.userName,
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Transform.translate(
+          offset: Offset(-20, 0),
+          child: Row(
+            children: [
+              Text(
+                widget.post.userName,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(width: 5),
+              StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(widget.targetUserId)
+                    .snapshots(),
+                builder: (context, snap) {
+                  if (!snap.hasData) return const SizedBox.shrink();
+                  final data = snap.data!.data();
+                  final teamName = data?['team'] as String?;
+                  if (teamName == null || teamName.isEmpty)
+                    return const SizedBox.shrink();
+
+                  final teams = context.read<TeamProvider>().getTeam('team');
+                  TeamModel? teamModel;
+                  try {
+                    teamModel = teams.firstWhere(
+                      (t) => t.name == teamName || t.symplename == teamName,
+                    );
+                  } catch (_) {}
+
+                  return Transform.translate(
+                    offset: Offset(0, 5),
+                    child: Text(
+                      teamName,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: teamModel?.color,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
         centerTitle: false,
         actions: [
@@ -229,6 +273,7 @@ class _FeedMypageState extends State<FeedMypage> {
                                           timeAgo(widget.post.createdAt),
                                           style: TextStyle(
                                             color: GRAYSCALE_LABEL_500,
+                                            fontSize: 13,
                                           ),
                                         ),
                                       ],
