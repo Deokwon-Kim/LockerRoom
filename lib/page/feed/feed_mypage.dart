@@ -5,6 +5,7 @@ import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
+import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
@@ -13,7 +14,8 @@ import 'package:toastification/toastification.dart';
 
 class FeedMypage extends StatefulWidget {
   final PostModel post;
-  const FeedMypage({super.key, required this.post});
+  final String targetUserId;
+  const FeedMypage({super.key, required this.post, required this.targetUserId});
 
   @override
   State<FeedMypage> createState() => _FeedMypageState();
@@ -34,6 +36,7 @@ class _FeedMypageState extends State<FeedMypage> {
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final feedProvider = Provider.of<FeedProvider>(context, listen: false);
+    final fp = context.watch<FollowProvider>();
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
@@ -48,7 +51,7 @@ class _FeedMypageState extends State<FeedMypage> {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: GestureDetector(
-              onTap: () {},
+              onTap: () => fp.toggleFollow(widget.targetUserId),
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
                 decoration: BoxDecoration(
@@ -56,7 +59,10 @@ class _FeedMypageState extends State<FeedMypage> {
                   border: Border.all(color: Colors.black),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text('팔로우', style: TextStyle(fontSize: 13)),
+                child: Text(
+                  fp.isFollowing ? '언팔로잉' : '팔로우',
+                  style: TextStyle(fontSize: 13),
+                ),
               ),
             ),
           ),
@@ -115,9 +121,29 @@ class _FeedMypageState extends State<FeedMypage> {
                         ),
 
                         SizedBox(width: 50),
-                        Column(children: [Text('3'), Text('팔로워')]),
+                        StreamBuilder<int>(
+                          stream: fp.getFollowersCountStream(
+                            widget.targetUserId,
+                          ),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData)
+                              return CircularProgressIndicator();
+                            return Column(
+                              children: [Text('${snapshot.data}'), Text("팔로워")],
+                            );
+                          },
+                        ),
                         SizedBox(width: 50),
-                        Column(children: [Text('3'), Text('팔로잉')]),
+                        StreamBuilder<int>(
+                          stream: fp.getFollowCountStream(widget.targetUserId),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData)
+                              return CircularProgressIndicator();
+                            return Column(
+                              children: [Text('${snapshot.data}'), Text('팔로잉')],
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ],
