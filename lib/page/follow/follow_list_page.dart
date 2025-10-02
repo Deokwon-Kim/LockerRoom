@@ -44,30 +44,36 @@ class _FollowListPageState extends State<FollowListPage> {
                 stream: fp.getFollowersCountStream(widget.userId),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) return CircularProgressIndicator();
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => FollowerListPage(),
-                        ),
-                      );
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${snapshot.data}',
-                          style: TextStyle(color: Colors.black),
-                        ),
-                        SizedBox(width: 5),
-                        Text('팔로워', style: TextStyle(color: Colors.black)),
-                      ],
-                    ),
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${snapshot.data}',
+                        style: TextStyle(color: Colors.black),
+                      ),
+                      SizedBox(width: 5),
+                      Text('팔로워', style: TextStyle(color: Colors.black)),
+                    ],
                   );
                 },
               ),
-              Text('팔로잉', style: TextStyle(color: BLACK)),
+              StreamBuilder<int>(
+                stream: fp.getFollowCountStream(widget.userId),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return CircularProgressIndicator();
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${snapshot.data}',
+                        style: TextStyle(color: Colors.black),
+                      ),
+                      SizedBox(width: 5),
+                      Text('팔로잉', style: TextStyle(color: Colors.black)),
+                    ],
+                  );
+                },
+              ),
             ],
             tabBarProperties: TabBarProperties(
               indicatorColor: selectedTeam,
