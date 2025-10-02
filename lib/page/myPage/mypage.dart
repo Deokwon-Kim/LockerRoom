@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/my_post/mypost.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
+import 'package:lockerroom/page/follow/follow_list_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
@@ -358,11 +359,23 @@ class _MypageState extends State<Mypage> {
                               builder: (context, snapshot) {
                                 if (!snapshot.hasData)
                                   return CircularProgressIndicator();
-                                return Column(
-                                  children: [
-                                    Text('${snapshot.data}'),
-                                    Text("팔로워"),
-                                  ],
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => FollowListPage(
+                                          userId: widget.userId,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Column(
+                                    children: [
+                                      Text('${snapshot.data}'),
+                                      Text("팔로워"),
+                                    ],
+                                  ),
                                 );
                               },
                             ),
@@ -372,11 +385,23 @@ class _MypageState extends State<Mypage> {
                               builder: (context, snapshot) {
                                 if (!snapshot.hasData)
                                   return CircularProgressIndicator();
-                                return Column(
-                                  children: [
-                                    Text('${snapshot.data}'),
-                                    Text('팔로잉'),
-                                  ],
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => FollowListPage(
+                                          userId: widget.userId,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Column(
+                                    children: [
+                                      Text('${snapshot.data}'),
+                                      Text('팔로잉'),
+                                    ],
+                                  ),
                                 );
                               },
                             ),
