@@ -418,7 +418,7 @@ class _MypageState extends State<Mypage> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: WHITE,
+                  color: BACKGROUND_COLOR,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: ContainedTabBarView(
