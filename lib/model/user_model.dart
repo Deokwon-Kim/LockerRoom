@@ -4,7 +4,7 @@ class UserModel {
   final String username;
   final String useremail;
   final String uid;
-  final String? profileImageUrl;
+  final String? profileImage;
   final int followersCount;
   final int followingCount;
 
@@ -12,7 +12,7 @@ class UserModel {
     required this.username,
     required this.useremail,
     required this.uid,
-    this.profileImageUrl,
+    this.profileImage,
     required this.followersCount,
     required this.followingCount,
   });
@@ -23,7 +23,7 @@ class UserModel {
       username: data['username'] ?? 'Unknown',
       useremail: data['email'] ?? 'Unknown',
       uid: data['uid'],
-      profileImageUrl: data['profileImageUrl'] ?? '',
+      profileImage: data['profileImage'] ?? '',
       followersCount: data['followersCount'] ?? 0,
       followingCount: data['followingCount'] ?? 0,
     );
