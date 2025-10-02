@@ -183,7 +183,7 @@ class _HomePageState extends State<HomePage> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                if (nextGame != null) ...[
+                                if (nextGame != null)
                                   Row(
                                     children: [
                                       Text(
@@ -195,14 +195,6 @@ class _HomePageState extends State<HomePage> {
                                         ),
                                       ),
                                       SizedBox(width: 5),
-                                      // Text(
-                                      //   '${nextGame.dateTimeKst.month.toString().padLeft(2, '0')}/${nextGame.dateTimeKst.day.toString().padLeft(2, '0')} ${nextGame.dateTimeKst.hour.toString().padLeft(2, '0')}:${nextGame.dateTimeKst.minute.toString().padLeft(2, '0')}',
-                                      //   style: TextStyle(
-                                      //     color: WHITE,
-                                      //     fontSize: 14,
-                                      //     fontWeight: FontWeight.w400,
-                                      //   ),
-                                      // ),
                                       Text(
                                         '${nextGame.homeTeam} vs ${nextGame.awayTeam}',
                                         style: TextStyle(
@@ -213,7 +205,15 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                     ],
                                   ),
-                                ],
+                                if (nextGame == null)
+                                  Row(
+                                    children: [
+                                      Text(
+                                        '예정된 경기가 없습니다',
+                                        style: TextStyle(color: WHITE),
+                                      ),
+                                    ],
+                                  ),
                               ],
                             ),
                           ),
