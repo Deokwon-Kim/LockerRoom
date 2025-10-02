@@ -83,11 +83,10 @@ class _FollowingListPageState extends State<FollowingListPage> {
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: GRAYSCALE_LABEL_300,
-                          backgroundImage:
-                              (u.profileImageUrl?.isNotEmpty ?? false)
-                              ? NetworkImage(u.profileImageUrl!)
+                          backgroundImage: (u.profileImage?.isNotEmpty ?? false)
+                              ? NetworkImage(u.profileImage!)
                               : null,
-                          child: (u.profileImageUrl?.isEmpty ?? true)
+                          child: (u.profileImage?.isEmpty ?? true)
                               ? const Icon(Icons.person, color: Colors.black)
                               : null,
                         ),
