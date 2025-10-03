@@ -30,13 +30,11 @@ import 'package:lockerroom/repository/user_repository.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
-import 'package:lockerroom/services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: 'lib/api_key/youtube_key.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await NotificationService.instance.init();
   final repo = UserRepository();
   final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
