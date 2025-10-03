@@ -32,58 +32,56 @@ class _FollowListPageState extends State<FollowListPage> {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
         ),
       ),
-      body: Expanded(
-        child: Container(
-          decoration: BoxDecoration(
-            color: BACKGROUND_COLOR,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: ContainedTabBarView(
-            tabs: [
-              StreamBuilder<int>(
-                stream: fp.getFollowersCountStream(widget.userId),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return CircularProgressIndicator();
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '${snapshot.data}',
-                        style: TextStyle(color: Colors.black),
-                      ),
-                      SizedBox(width: 5),
-                      Text('팔로워', style: TextStyle(color: Colors.black)),
-                    ],
-                  );
-                },
-              ),
-              StreamBuilder<int>(
-                stream: fp.getFollowCountStream(widget.userId),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return CircularProgressIndicator();
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '${snapshot.data}',
-                        style: TextStyle(color: Colors.black),
-                      ),
-                      SizedBox(width: 5),
-                      Text('팔로잉', style: TextStyle(color: Colors.black)),
-                    ],
-                  );
-                },
-              ),
-            ],
-            tabBarProperties: TabBarProperties(
-              indicatorColor: selectedTeam,
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicatorWeight: 3.0,
-              unselectedLabelColor: GRAYSCALE_LABEL_500,
+      body: Container(
+        decoration: BoxDecoration(
+          color: BACKGROUND_COLOR,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: ContainedTabBarView(
+          tabs: [
+            StreamBuilder<int>(
+              stream: fp.getFollowersCountStream(widget.userId),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return CircularProgressIndicator();
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${snapshot.data}',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    SizedBox(width: 5),
+                    Text('팔로워', style: TextStyle(color: Colors.black)),
+                  ],
+                );
+              },
             ),
-            views: [FollowerListPage(), FollowingListPage()],
-            onChange: (index) => print(index),
+            StreamBuilder<int>(
+              stream: fp.getFollowCountStream(widget.userId),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return CircularProgressIndicator();
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${snapshot.data}',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    SizedBox(width: 5),
+                    Text('팔로잉', style: TextStyle(color: Colors.black)),
+                  ],
+                );
+              },
+            ),
+          ],
+          tabBarProperties: TabBarProperties(
+            indicatorColor: selectedTeam,
+            indicatorSize: TabBarIndicatorSize.tab,
+            indicatorWeight: 3.0,
+            unselectedLabelColor: GRAYSCALE_LABEL_500,
           ),
+          views: [FollowerListPage(), FollowingListPage()],
+          onChange: (index) => print(index),
         ),
       ),
     );
