@@ -175,8 +175,15 @@ class _FeedMypageState extends State<FeedMypage> {
                             widget.targetUserId,
                           ),
                           builder: (context, snapshot) {
-                            if (!snapshot.hasData)
-                              return CircularProgressIndicator();
+                            if (!snapshot.hasData) {
+                              final color =
+                                  context
+                                      .read<TeamProvider>()
+                                      .selectedTeam
+                                      ?.color ??
+                                  BUTTON;
+                              return CircularProgressIndicator(color: color);
+                            }
                             return Column(
                               children: [Text('${snapshot.data}'), Text("팔로워")],
                             );
@@ -186,8 +193,15 @@ class _FeedMypageState extends State<FeedMypage> {
                         StreamBuilder<int>(
                           stream: fp.getFollowCountStream(widget.targetUserId),
                           builder: (context, snapshot) {
-                            if (!snapshot.hasData)
-                              return CircularProgressIndicator();
+                            if (!snapshot.hasData) {
+                              final color =
+                                  context
+                                      .read<TeamProvider>()
+                                      .selectedTeam
+                                      ?.color ??
+                                  BUTTON;
+                              return CircularProgressIndicator(color: color);
+                            }
                             return Column(
                               children: [Text('${snapshot.data}'), Text('팔로잉')],
                             );
@@ -207,8 +221,11 @@ class _FeedMypageState extends State<FeedMypage> {
                 ),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: BUTTON),
+                    final color =
+                        context.read<TeamProvider>().selectedTeam?.color ??
+                        BUTTON;
+                    return Center(
+                      child: CircularProgressIndicator(color: color),
                     );
                   }
                   final posts = snapshot.data!;
@@ -413,16 +430,25 @@ class _FeedMypageState extends State<FeedMypage> {
                                                                   null) {
                                                                 return child;
                                                               }
+                                                              final color =
+                                                                  context
+                                                                      .read<
+                                                                        TeamProvider
+                                                                      >()
+                                                                      .selectedTeam
+                                                                      ?.color ??
+                                                                  BUTTON;
                                                               return SizedBox(
                                                                 height:
                                                                     listHeight,
                                                                 width:
                                                                     itemWidth,
-                                                                child: const Center(
-                                                                  child: CircularProgressIndicator(
-                                                                    color:
-                                                                        BUTTON,
-                                                                  ),
+                                                                child: Center(
+                                                                  child:
+                                                                      CircularProgressIndicator(
+                                                                        color:
+                                                                            color,
+                                                                      ),
                                                                 ),
                                                               );
                                                             },

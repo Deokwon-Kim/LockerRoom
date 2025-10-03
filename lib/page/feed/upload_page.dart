@@ -142,7 +142,7 @@ class _UploadPageState extends State<UploadPage> {
                       child: LinearProgressIndicator(
                         value: uploadProvider.uploadProgress,
                         backgroundColor: Colors.grey[300],
-                        color: BUTTON,
+                        color: themeColor,
                       ),
                     ),
 

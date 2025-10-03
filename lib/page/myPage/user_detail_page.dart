@@ -8,10 +8,10 @@ import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
-import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 import 'package:toastification/toastification.dart';
 
 class UserDetailPage extends StatefulWidget {
@@ -45,8 +45,11 @@ class _UserDetailPageState extends State<UserDetailPage> {
           .doc(widget.targetUserId)
           .snapshots(),
       builder: (context, snap) {
-        if (!snap.hasData)
-          return Center(child: CircularProgressIndicator(color: BUTTON));
+        if (!snap.hasData) {
+          final color =
+              context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
+          return Center(child: CircularProgressIndicator(color: color));
+        }
         final data = snap.data!.data() ?? {};
         final name = (data['username'] as String?) ?? '';
         final teamName = data['team'] as String?;
@@ -140,8 +143,17 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                 widget.targetUserId,
                               ),
                               builder: (context, snapshot) {
-                                if (!snapshot.hasData)
-                                  return CircularProgressIndicator();
+                                if (!snapshot.hasData) {
+                                  final color =
+                                      context
+                                          .read<TeamProvider>()
+                                          .selectedTeam
+                                          ?.color ??
+                                      BUTTON;
+                                  return CircularProgressIndicator(
+                                    color: color,
+                                  );
+                                }
                                 return GestureDetector(
                                   onTap: () {
                                     // TODO: 새로운 팔로워 리스트 페이지 만들어야 함(현재 보고 있는 유저의 팔로워 리스트)
@@ -161,8 +173,17 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                 widget.targetUserId,
                               ),
                               builder: (context, snapshot) {
-                                if (!snapshot.hasData)
-                                  return CircularProgressIndicator();
+                                if (!snapshot.hasData) {
+                                  final color =
+                                      context
+                                          .read<TeamProvider>()
+                                          .selectedTeam
+                                          ?.color ??
+                                      BUTTON;
+                                  return CircularProgressIndicator(
+                                    color: color,
+                                  );
+                                }
                                 return Column(
                                   children: [
                                     Text('${snapshot.data}'),
@@ -390,15 +411,23 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                                                       null) {
                                                                     return child;
                                                                   }
+                                                                  final color =
+                                                                      context
+                                                                          .read<
+                                                                            TeamProvider
+                                                                          >()
+                                                                          .selectedTeam
+                                                                          ?.color ??
+                                                                      BUTTON;
                                                                   return SizedBox(
                                                                     height:
                                                                         listHeight,
                                                                     width:
                                                                         itemWidth,
-                                                                    child: const Center(
+                                                                    child: Center(
                                                                       child: CircularProgressIndicator(
                                                                         color:
-                                                                            BUTTON,
+                                                                            color,
                                                                       ),
                                                                     ),
                                                                   );

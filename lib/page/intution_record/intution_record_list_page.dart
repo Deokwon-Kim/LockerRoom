@@ -49,8 +49,9 @@ class IntutionRecordListPage extends StatelessWidget {
         child: Consumer2<IntutionRecordListProvider, TeamProvider>(
           builder: (context, lp, tp, child) {
             if (lp.isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(color: BUTTON),
+              final selectedColor = tp.selectedTeam?.color ?? BUTTON;
+              return Center(
+                child: CircularProgressIndicator(color: selectedColor),
               );
             }
             final items = lp.records;

@@ -14,6 +14,7 @@ import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 
 class FeedDetailPage extends StatefulWidget {
   final PostModel post;
@@ -67,6 +68,8 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedColor =
+        Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
     final feedProvider = Provider.of<FeedProvider>(context, listen: false);
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     // Ensure provider is in the tree; actual values are read via Consumers below.
@@ -310,10 +313,11 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                                   return SizedBox(
                                                     height: listHeight,
                                                     width: itemWidth,
-                                                    child: const Center(
+                                                    child: Center(
                                                       child:
                                                           CircularProgressIndicator(
-                                                            color: BUTTON,
+                                                            color:
+                                                                selectedColor,
                                                           ),
                                                     ),
                                                   );

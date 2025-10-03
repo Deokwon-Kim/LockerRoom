@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -27,6 +28,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<NotificationProvider>();
+    final selectedColor =
+        context.watch<TeamProvider>().selectedTeam?.color ?? BUTTON;
 
     return Scaffold(
       appBar: AppBar(
@@ -40,7 +43,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ),
       backgroundColor: BACKGROUND_COLOR,
       body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: selectedColor))
           : Column(
               children: [
                 Expanded(

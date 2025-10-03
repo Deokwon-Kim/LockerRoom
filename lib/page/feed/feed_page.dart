@@ -13,6 +13,7 @@ import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 
 class FeedPage extends StatefulWidget {
   final PostModel? post; // nullable로 변경
@@ -37,6 +38,8 @@ class _FeedPageState extends State<FeedPage> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedColor =
+        Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
@@ -110,7 +113,7 @@ class _FeedPageState extends State<FeedPage> {
                 final allPosts = feedProvider.postsStream;
                 if (feedProvider.isLoading) {
                   return Center(
-                    child: CircularProgressIndicator(color: BUTTON),
+                    child: CircularProgressIndicator(color: selectedColor),
                   );
                 }
                 if (allPosts.isEmpty) {
@@ -182,6 +185,8 @@ class _PostWidgetState extends State<PostWidget> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final selectedColor =
+        Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -399,10 +404,10 @@ class _PostWidgetState extends State<PostWidget> {
                                               return SizedBox(
                                                 height: listHeight,
                                                 width: itemWidth,
-                                                child: const Center(
+                                                child: Center(
                                                   child:
                                                       CircularProgressIndicator(
-                                                        color: BUTTON,
+                                                        color: selectedColor,
                                                       ),
                                                 ),
                                               );

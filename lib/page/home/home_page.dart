@@ -324,10 +324,10 @@ class _HomePageState extends State<HomePage> {
                                                                       inSingle
                                                                       ? 200
                                                                       : 150,
-                                                                  child: const Center(
+                                                                  child: Center(
                                                                     child: CircularProgressIndicator(
-                                                                      color:
-                                                                          BUTTON,
+                                                                      color: selectedTeam
+                                                                          .color,
                                                                     ),
                                                                   ),
                                                                 );
@@ -396,8 +396,10 @@ class _HomePageState extends State<HomePage> {
                   Consumer<VideoProvider>(
                     builder: (context, videoProvider, child) {
                       if (videoProvider.isLoading) {
-                        return const Center(
-                          child: CircularProgressIndicator(color: BUTTON),
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: selectedTeam.color,
+                          ),
                         );
                       }
                       if (videoProvider.videos.isEmpty) {

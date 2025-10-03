@@ -99,6 +99,8 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final selectedColor =
+        Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
@@ -111,7 +113,7 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: BUTTON));
+          return Center(child: CircularProgressIndicator(color: selectedColor));
         } else if (snapshot.hasError) {
           return const Center(child: Text('에러가 발생하였습니다.'));
         } else if (snapshot.hasData) {
@@ -123,8 +125,8 @@ class AuthWrapper extends StatelessWidget {
                 .get(),
             builder: (context, userSnap) {
               if (userSnap.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(color: BUTTON),
+                return Center(
+                  child: CircularProgressIndicator(color: selectedColor),
                 );
               }
               if (userSnap.hasError) {

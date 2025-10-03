@@ -6,6 +6,7 @@ import 'package:lockerroom/page/myPage/user_detail_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 
 class FollowerListPage extends StatefulWidget {
   const FollowerListPage({super.key});
@@ -71,8 +72,11 @@ class _FollowerListPageState extends State<FollowerListPage> {
                 ),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: BUTTON),
+                    final color =
+                        context.read<TeamProvider>().selectedTeam?.color ??
+                        BUTTON;
+                    return Center(
+                      child: CircularProgressIndicator(color: color),
                     );
                   }
                   final users = snapshot.data!;

@@ -5,8 +5,8 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/follow/follower_list_page.dart';
 import 'package:lockerroom/page/follow/following_list_page.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
-import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 
 class FollowListPage extends StatefulWidget {
   final String userId;
@@ -42,7 +42,12 @@ class _FollowListPageState extends State<FollowListPage> {
             StreamBuilder<int>(
               stream: fp.getFollowersCountStream(widget.userId),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return CircularProgressIndicator();
+                if (!snapshot.hasData) {
+                  final color =
+                      context.read<TeamProvider>().selectedTeam?.color ??
+                      BUTTON;
+                  return CircularProgressIndicator(color: color);
+                }
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -59,7 +64,12 @@ class _FollowListPageState extends State<FollowListPage> {
             StreamBuilder<int>(
               stream: fp.getFollowCountStream(widget.userId),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return CircularProgressIndicator();
+                if (!snapshot.hasData) {
+                  final color =
+                      context.read<TeamProvider>().selectedTeam?.color ??
+                      BUTTON;
+                  return CircularProgressIndicator(color: color);
+                }
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

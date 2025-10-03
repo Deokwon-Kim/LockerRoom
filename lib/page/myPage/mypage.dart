@@ -263,14 +263,14 @@ class _MypageState extends State<Mypage> {
                                 children: [
                                   CircularProgressIndicator(
                                     value: profileProvider.uploadProgress,
-                                    color: BUTTON,
+                                    color: selectedTeam?.color ?? BUTTON,
                                     strokeWidth: 3,
                                   ),
                                   SizedBox(height: 8),
                                   Text(
                                     '${(profileProvider.uploadProgress * 100).toInt()}%',
                                     style: TextStyle(
-                                      color: BUTTON,
+                                      color: selectedTeam?.color ?? BUTTON,
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                     ),
