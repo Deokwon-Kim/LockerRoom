@@ -12,6 +12,7 @@ class NotificationProvider extends ChangeNotifier {
   List<AppNotification> _notifications = [];
   List<AppNotification> get notifications => _notifications;
   bool isLoading = true;
+  final Map<String, String> _userNameCache = {};
 
   void listen(String userId) {
     _sub?.cancel();
@@ -35,12 +36,12 @@ class NotificationProvider extends ChangeNotifier {
                   .toList();
               for (final n in newItems) {
                 if (n.type == 'follow') {
-                  NotificationService.instance.showForegroundNotification(
+                  NotificationService().showForegroundNotification(
                     title: '새 팔로워',
                     body: '누군가 당신을 팔로우했습니다',
                   );
                 } else {
-                  NotificationService.instance.showForegroundNotification(
+                  NotificationService().showForegroundNotification(
                     title: '알림',
                     body: '새로운 알림이 도착했습니다',
                   );
@@ -66,6 +67,22 @@ class NotificationProvider extends ChangeNotifier {
         .collection('notifications')
         .doc(notificationId)
         .update({'isRead': true});
+  }
+
+  Future<String> fetchUserName(String userId) async {
+    if (_userNameCache.containsKey(userId)) {
+      return _userNameCache[userId]!;
+    }
+    try {
+      final doc = await _firestore.collection('users').doc(userId).get();
+      final data = doc.data();
+      final name = (data?['username'] as String?)?.trim();
+      final result = (name == null || name.isEmpty) ? '알 수 없음' : name;
+      _userNameCache[userId] = result;
+      return result;
+    } catch (_) {
+      return '알 수 없음';
+    }
   }
 
   @override

@@ -1,56 +1,52 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
-  NotificationService._();
+  final notificationsPlugin = FlutterLocalNotificationsPlugin();
 
-  static final NotificationService instance = NotificationService._();
-  final FlutterLocalNotificationsPlugin _plugin =
-      FlutterLocalNotificationsPlugin();
+  final bool _isInitialized = false;
 
-  static const AndroidNotificationChannel _androidChannel =
-      AndroidNotificationChannel(
-        'lockerroom_default_channel',
-        '알림',
-        description: '일반 알림 채널',
-        importance: Importance.high,
-      );
+  bool get isInitialized => _isInitialized;
 
-  Future<void> init() async {
-    const AndroidInitializationSettings androidInit =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const DarwinInitializationSettings iosInit = DarwinInitializationSettings();
-    const InitializationSettings initSettings = InitializationSettings(
-      android: androidInit,
-      iOS: iosInit,
+  // 알림 초기화
+  Future<void> initNotification() async {
+    if (_isInitialized) return;
+
+    const initSettingAndroid = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
     );
 
-    await _plugin.initialize(initSettings);
+    const initSettingIOS = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(_androidChannel);
+    const initSetting = InitializationSettings(
+      android: initSettingAndroid,
+      iOS: initSettingIOS,
+    );
+
+    await notificationsPlugin.initialize(initSetting);
+  }
+
+  NotificationDetails notificationDetails() {
+    return const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'daily_channel_id',
+        'Daily Notifications',
+        channelDescription: 'Daily Notifications',
+        importance: Importance.max,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
   }
 
   Future<void> showForegroundNotification({
-    required String title,
-    required String body,
+    int id = 0,
+    String? title,
+    String? body,
   }) async {
-    final AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-          _androidChannel.id,
-          '알림',
-          channelDescription: '일반 알림 채널',
-          importance: Importance.high,
-          priority: Priority.high,
-        );
-    final DarwinNotificationDetails iosDetails =
-        const DarwinNotificationDetails();
-    final NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-    await _plugin.show(0, title, body, details);
+    return notificationsPlugin.show(id, title, body, notificationDetails());
   }
 }

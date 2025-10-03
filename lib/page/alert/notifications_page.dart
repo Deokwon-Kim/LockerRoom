@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
@@ -29,7 +30,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('알림'),
+        title: Text(
+          '알림',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: BACKGROUND_COLOR,
         foregroundColor: BLACK,
         elevation: 0,
@@ -40,39 +44,50 @@ class _NotificationsPageState extends State<NotificationsPage> {
           : Column(
               children: [
                 Expanded(
-                  child: ListView.separated(
+                  child: ListView.builder(
                     itemCount: provider.notifications.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+
                     itemBuilder: (context, index) {
                       final n = provider.notifications[index];
-                      final isUnread = !n.isRead;
-                      String title;
-                      if (n.type == 'follow') {
-                        title = '새로운 팔로워가 생겼습니다';
-                      } else {
-                        title = '알림';
-                      }
-                      return ListTile(
-                        tileColor: isUnread ? GRAYSCALE_LABEL_50 : Colors.white,
-                        title: Text(
-                          title,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text('from: ${n.fromUserId}'),
-                        trailing: isUnread
-                            ? TextButton(
-                                onPressed: () async {
-                                  final userId =
-                                      FirebaseAuth.instance.currentUser?.uid;
-                                  if (userId != null) {
-                                    await context
-                                        .read<NotificationProvider>()
-                                        .markAsRead(userId, n.id);
-                                  }
-                                },
-                                child: const Text('읽음'),
-                              )
-                            : null,
+                      return FutureBuilder<
+                        DocumentSnapshot<Map<String, dynamic>>
+                      >(
+                        future: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(n.fromUserId)
+                            .get(),
+                        builder: (context, snap) {
+                          final data = snap.data?.data() ?? {};
+                          final name = (data['username'] as String?) ?? '...';
+                          final imageUrl =
+                              (data['profileImage'] as String?) ?? '';
+
+                          return ListTile(
+                            subtitle: Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: GRAYSCALE_LABEL_300,
+                                  backgroundImage: imageUrl.isNotEmpty
+                                      ? NetworkImage(imageUrl)
+                                      : null,
+                                  child: imageUrl.isEmpty
+                                      ? Icon(
+                                          Icons.person,
+                                          color: GRAYSCALE_LABEL_500,
+                                        )
+                                      : null,
+                                ),
+                                SizedBox(width: 10),
+                                Text(name),
+
+                                Text(
+                                  '님 이 회원님을 팔로우 하기 시작했습니다',
+                                  style: TextStyle(color: Colors.black),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       );
                     },
                   ),

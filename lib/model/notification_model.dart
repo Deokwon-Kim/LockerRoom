@@ -4,6 +4,7 @@ class AppNotification {
   final String id;
   final String type;
   final String fromUserId;
+  final String userName;
   final Timestamp? createdAt;
   final bool isRead;
 
@@ -11,6 +12,7 @@ class AppNotification {
     required this.id,
     required this.type,
     required this.fromUserId,
+    required this.userName,
     required this.createdAt,
     required this.isRead,
   });
@@ -21,9 +23,9 @@ class AppNotification {
       id: doc.id,
       type: data['type'] ?? 'unknown',
       fromUserId: data['fromUserId'] ?? '',
+      userName: data['userName'] ?? '',
       createdAt: data['createdAt'],
       isRead: (data['isRead'] ?? false) as bool,
     );
   }
 }
-
