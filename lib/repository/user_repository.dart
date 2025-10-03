@@ -29,6 +29,18 @@ class UserRepository {
     });
 
     await batch.commit();
+
+    // Create notification for target user about the new follower
+    await _firestore
+        .collection('users')
+        .doc(targetUserId)
+        .collection('notifications')
+        .add({
+          'type': 'follow',
+          'fromUserId': currentUserId,
+          'createdAt': FieldValue.serverTimestamp(),
+          'isRead': false,
+        });
   }
 
   Future<void> unfollowUser(String currentUserId, String targetUserId) async {
