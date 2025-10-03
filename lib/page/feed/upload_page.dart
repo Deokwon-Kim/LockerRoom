@@ -101,12 +101,16 @@ class _UploadPageState extends State<UploadPage> {
                             );
                             final url = profileProvider.myProfileImage;
                             return CircleAvatar(
+                              backgroundColor: GRAYSCALE_LABEL_300,
                               radius: 25,
                               backgroundImage: url != null
                                   ? NetworkImage(url)
                                   : null,
                               child: url == null
-                                  ? const Icon(Icons.person)
+                                  ? const Icon(
+                                      Icons.person,
+                                      color: Colors.black,
+                                    )
                                   : null,
                             );
                           },
