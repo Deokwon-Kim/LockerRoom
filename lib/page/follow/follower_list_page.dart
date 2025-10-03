@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/user_model.dart';
+import 'package:lockerroom/page/myPage/user_detail_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:provider/provider.dart';
@@ -98,7 +99,15 @@ class _FollowerListPageState extends State<FollowerListPage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  UserDetailPage(targetUserId: u.uid),
+                            ),
+                          );
+                        },
                       );
                     },
                   );
