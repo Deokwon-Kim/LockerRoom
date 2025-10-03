@@ -100,7 +100,7 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedColor =
-        Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
+        context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
