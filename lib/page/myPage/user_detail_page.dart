@@ -6,6 +6,7 @@ import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
+import 'package:lockerroom/page/follow/follow_list_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
@@ -15,9 +16,9 @@ import 'package:lockerroom/provider/team_provider.dart';
 import 'package:toastification/toastification.dart';
 
 class UserDetailPage extends StatefulWidget {
-  final String targetUserId;
+  final String userId;
   final PostModel? post;
-  const UserDetailPage({super.key, required this.targetUserId, this.post});
+  const UserDetailPage({super.key, required this.userId, this.post});
 
   @override
   State<UserDetailPage> createState() => _UserDetailPageState();
@@ -42,7 +43,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('users')
-          .doc(widget.targetUserId)
+          .doc(widget.userId)
           .snapshots(),
       builder: (context, snap) {
         if (!snap.hasData) {
@@ -127,7 +128,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                             StreamBuilder<List<PostModel>>(
                               stream: context
                                   .read<FeedProvider>()
-                                  .listenUserPosts(widget.targetUserId),
+                                  .listenUserPosts(widget.userId),
                               builder: (context, snapshot) {
                                 final count =
                                     (snapshot.data ?? const []).length;
@@ -139,9 +140,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
 
                             SizedBox(width: 50),
                             StreamBuilder<int>(
-                              stream: fp.getFollowersCountStream(
-                                widget.targetUserId,
-                              ),
+                              stream: fp.getFollowersCountStream(widget.userId),
                               builder: (context, snapshot) {
                                 if (!snapshot.hasData) {
                                   final color =
@@ -156,7 +155,15 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                 }
                                 return GestureDetector(
                                   onTap: () {
-                                    // TODO: 새로운 팔로워 리스트 페이지 만들어야 함(현재 보고 있는 유저의 팔로워 리스트)
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => FollowListPage(
+                                          userId: widget.userId,
+                                          initialIndex: 0,
+                                        ),
+                                      ),
+                                    );
                                   },
                                   child: Column(
                                     children: [
@@ -169,9 +176,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                             ),
                             SizedBox(width: 50),
                             StreamBuilder<int>(
-                              stream: fp.getFollowCountStream(
-                                widget.targetUserId,
-                              ),
+                              stream: fp.getFollowCountStream(widget.userId),
                               builder: (context, snapshot) {
                                 if (!snapshot.hasData) {
                                   final color =
@@ -184,11 +189,24 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                     color: color,
                                   );
                                 }
-                                return Column(
-                                  children: [
-                                    Text('${snapshot.data}'),
-                                    Text('팔로잉'),
-                                  ],
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => FollowListPage(
+                                          userId: widget.userId,
+                                          initialIndex: 1,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Column(
+                                    children: [
+                                      Text('${snapshot.data}'),
+                                      Text('팔로잉'),
+                                    ],
+                                  ),
                                 );
                               },
                             ),
@@ -208,7 +226,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                   child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                     stream: FirebaseFirestore.instance
                         .collection('posts')
-                        .where('userId', isEqualTo: widget.targetUserId)
+                        .where('userId', isEqualTo: widget.userId)
                         .orderBy('createdAt', descending: true)
                         .snapshots(),
                     builder: (context, snap) {
@@ -453,7 +471,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                 // Expanded(
                 //   child: StreamBuilder<List<PostModel>>(
                 //     stream: context.read<FeedProvider>().listenUserPosts(
-                //       widget.targetUserId,
+                //       widget.userId,
                 //     ),
                 //     builder: (context, snapshot) {
                 //       if (!snapshot.hasData) {
@@ -492,12 +510,12 @@ class _UserDetailPageState extends State<UserDetailPage> {
                 //                         Consumer<ProfileProvider>(
                 //                           builder: (context, pd, child) {
                 //                             pd.subscribeUserProfile(
-                //                               widget.targetUserId,
+                //                               widget.userId,
                 //                             );
 
                 //                             final profileUrl =
                 //                                 pd.userProfiles[widget
-                //                                     .targetUserId];
+                //                                     .userId];
                 //                             return CircleAvatar(
                 //                               radius: 25,
                 //                               backgroundImage:
@@ -539,7 +557,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                 //                         ),
                 //                         Spacer(),
                 //                         currentUserId != null &&
-                //                                 widget.targetUserId ==
+                //                                 widget.userId ==
                 //                                     currentUserId
                 //                             ? PopupMenuTheme(
                 //                                 data: PopupMenuThemeData(
