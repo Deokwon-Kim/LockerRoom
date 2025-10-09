@@ -379,7 +379,12 @@ class _MypageState extends State<Mypage> {
                                   },
                                   child: Column(
                                     children: [
-                                      Text('${snapshot.data}'),
+                                      Text(
+                                        '${snapshot.data}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
                                       Text("팔로워"),
                                     ],
                                   ),
@@ -406,7 +411,12 @@ class _MypageState extends State<Mypage> {
                                   },
                                   child: Column(
                                     children: [
-                                      Text('${snapshot.data}'),
+                                      Text(
+                                        '${snapshot.data}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
                                       Text('팔로잉'),
                                     ],
                                   ),

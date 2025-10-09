@@ -40,6 +40,8 @@ class _FeedMypageState extends State<FeedMypage> {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final feedProvider = Provider.of<FeedProvider>(context, listen: false);
     final fp = context.watch<FollowProvider>();
+    final tp = context.watch<TeamProvider>();
+    final teamColor = tp.selectedTeam?.color;
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
@@ -100,7 +102,7 @@ class _FeedMypageState extends State<FeedMypage> {
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
                   decoration: BoxDecoration(
-                    color: fp.isFollowing ? BACKGROUND_COLOR : BUTTON,
+                    color: fp.isFollowing ? BACKGROUND_COLOR : teamColor,
                     border: Border.all(color: Colors.black),
                     borderRadius: BorderRadius.circular(8),
                   ),

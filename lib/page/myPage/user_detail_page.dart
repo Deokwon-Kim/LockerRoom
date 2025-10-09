@@ -39,6 +39,9 @@ class _UserDetailPageState extends State<UserDetailPage> {
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final fp = context.watch<FollowProvider>();
+    final tp = context.watch<TeamProvider>();
+    final teamColor = tp.selectedTeam?.color;
+
     final feedProvider = context.watch<FeedProvider>();
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
@@ -93,6 +96,32 @@ class _UserDetailPageState extends State<UserDetailPage> {
                 ),
               ],
             ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: GestureDetector(
+                  onTap: () {
+                    fp.toggleFollow(widget.userId);
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: fp.isFollowing ? BACKGROUND_COLOR : teamColor,
+                      border: Border.all(color: Colors.black),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      fp.isFollowing ? '팔로잉' : '팔로우',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: fp.isFollowing ? Colors.black : Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           body: Padding(
             padding: const EdgeInsets.all(15.0),
