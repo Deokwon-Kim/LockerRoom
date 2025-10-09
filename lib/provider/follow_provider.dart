@@ -12,6 +12,21 @@ class FollowProvider extends ChangeNotifier {
   bool _isFollowing = false;
   bool get isFollowing => _isFollowing;
 
+  String _userSearchQuery = '';
+  String get userSearchQuery => _userSearchQuery;
+
+  void setUserSearchQuery(String query) {
+    _userSearchQuery = query.trim().toLowerCase();
+    notifyListeners();
+  }
+
+  List<UserModel> filterUsers(List<UserModel> users) {
+    if (_userSearchQuery.isEmpty) return users;
+    return users
+        .where((u) => (u.username).toLowerCase().contains(_userSearchQuery))
+        .toList();
+  }
+
   Future<void> loadFollowingStatus(String targetUserId) async {
     _isFollowing = await _repository.isFollowing(currentUserId, targetUserId);
     notifyListeners();
