@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/user_model.dart';
 import 'package:lockerroom/page/myPage/user_detail_page.dart';
-import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -38,10 +37,10 @@ class _FollowerListPageState extends State<FollowerListPage> {
                 textInputAction: TextInputAction.newline,
                 enableIMEPersonalizedLearning: true,
                 style: TextStyle(decoration: TextDecoration.none),
-                onChanged: (value) => Provider.of<FeedProvider>(
+                onChanged: (value) => Provider.of<FollowProvider>(
                   context,
                   listen: false,
-                ).setQuery(value),
+                ).setUserSearchQuery(value),
                 decoration: InputDecoration(
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(
@@ -81,10 +80,13 @@ class _FollowerListPageState extends State<FollowerListPage> {
                   final users = snapshot.data!;
                   if (users.isEmpty)
                     return const Center(child: Text('팔로워가 없습니다'));
+                  final filltered = context.watch<FollowProvider>().filterUsers(
+                    users,
+                  );
                   return ListView.builder(
-                    itemCount: users.length,
+                    itemCount: filltered.length,
                     itemBuilder: (_, i) {
-                      final u = users[i];
+                      final u = filltered[i];
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: GRAYSCALE_LABEL_300,
