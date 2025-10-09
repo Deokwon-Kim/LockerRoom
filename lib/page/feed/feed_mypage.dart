@@ -6,6 +6,7 @@ import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
+import 'package:lockerroom/page/follow/follow_list_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -186,8 +187,24 @@ class _FeedMypageState extends State<FeedMypage> {
                                   BUTTON;
                               return CircularProgressIndicator(color: color);
                             }
-                            return Column(
-                              children: [Text('${snapshot.data}'), Text("팔로워")],
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FollowListPage(
+                                      userId: widget.targetUserId,
+                                      initialIndex: 0,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Column(
+                                children: [
+                                  Text('${snapshot.data}'),
+                                  Text("팔로워"),
+                                ],
+                              ),
                             );
                           },
                         ),
@@ -204,8 +221,24 @@ class _FeedMypageState extends State<FeedMypage> {
                                   BUTTON;
                               return CircularProgressIndicator(color: color);
                             }
-                            return Column(
-                              children: [Text('${snapshot.data}'), Text('팔로잉')],
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FollowListPage(
+                                      userId: widget.targetUserId,
+                                      initialIndex: 1,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Column(
+                                children: [
+                                  Text('${snapshot.data}'),
+                                  Text('팔로잉'),
+                                ],
+                              ),
                             );
                           },
                         ),
