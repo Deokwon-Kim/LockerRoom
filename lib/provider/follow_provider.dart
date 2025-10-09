@@ -33,6 +33,7 @@ class FollowProvider extends ChangeNotifier {
   }
 
   Future<void> toggleFollow(String targetUserId) async {
+    if (currentUserId == null) return;
     if (_isFollowing) {
       await _repository.unfollowUser(currentUserId, targetUserId);
       _isFollowing = false;
@@ -59,6 +60,27 @@ class FollowProvider extends ChangeNotifier {
         .map((doc) => (doc.data()?['followingCount'] ?? 0) as int);
   }
 
+  Future<List<UserModel>> _fetchUsersByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final List<List<String>> chunks = [];
+    for (int i = 0; i < ids.length; i += 10) {
+      chunks.add(ids.sublist(i, i + 10 > ids.length ? ids.length : i + 10));
+    }
+
+    final results = await Future.wait(
+      chunks.map(
+        (chunks) => FirebaseFirestore.instance
+            .collection('users')
+            .where('uid', whereIn: chunks)
+            .get(),
+      ),
+    );
+
+    return results
+        .expand((q) => q.docs.map((d) => UserModel.fromDoc(d)))
+        .toList();
+  }
+
   Stream<List<UserModel>> followersUsers(String userId) {
     return FirebaseFirestore.instance
         .collection('users')
@@ -67,16 +89,7 @@ class FollowProvider extends ChangeNotifier {
         .snapshots()
         .asyncMap((snap) async {
           final ids = snap.docs.map((d) => d.id).toList();
-          final users = await Future.wait(
-            ids.map((id) async {
-              final doc = await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(id)
-                  .get();
-              return UserModel.fromDoc(doc);
-            }),
-          );
-          return users;
+          return _fetchUsersByIds(ids);
         });
   }
 
@@ -88,16 +101,7 @@ class FollowProvider extends ChangeNotifier {
         .snapshots()
         .asyncMap((snap) async {
           final ids = snap.docs.map((d) => d.id).toList();
-          final users = await Future.wait(
-            ids.map((id) async {
-              final doc = await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(id)
-                  .get();
-              return UserModel.fromDoc(doc);
-            }),
-          );
-          return users;
+          return _fetchUsersByIds(ids);
         });
   }
 }
