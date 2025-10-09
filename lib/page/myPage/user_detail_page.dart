@@ -36,6 +36,14 @@ class _UserDetailPageState extends State<UserDetailPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(
+      () => context.read<FollowProvider>().loadFollowingStatus(widget.userId),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final fp = context.watch<FollowProvider>();
