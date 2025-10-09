@@ -10,7 +10,12 @@ import 'package:lockerroom/provider/team_provider.dart';
 
 class FollowListPage extends StatefulWidget {
   final String userId;
-  const FollowListPage({super.key, required this.userId});
+  final int initialIndex;
+  const FollowListPage({
+    super.key,
+    required this.userId,
+    this.initialIndex = 0,
+  });
 
   @override
   State<FollowListPage> createState() => _FollowListPageState();
@@ -38,6 +43,7 @@ class _FollowListPageState extends State<FollowListPage> {
           borderRadius: BorderRadius.circular(10),
         ),
         child: ContainedTabBarView(
+          initialIndex: widget.initialIndex,
           tabs: [
             StreamBuilder<int>(
               stream: fp.getFollowersCountStream(widget.userId),
@@ -90,7 +96,10 @@ class _FollowListPageState extends State<FollowListPage> {
             indicatorWeight: 3.0,
             unselectedLabelColor: GRAYSCALE_LABEL_500,
           ),
-          views: [FollowerListPage(), FollowingListPage()],
+          views: [
+            FollowerListPage(userId: widget.userId),
+            FollowingListPage(userId: widget.userId),
+          ],
           onChange: (index) => print(index),
         ),
       ),
