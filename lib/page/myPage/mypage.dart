@@ -372,6 +372,7 @@ class _MypageState extends State<Mypage> {
                                       MaterialPageRoute(
                                         builder: (context) => FollowListPage(
                                           userId: widget.userId,
+                                          initialIndex: 0,
                                         ),
                                       ),
                                     );
@@ -398,6 +399,7 @@ class _MypageState extends State<Mypage> {
                                       MaterialPageRoute(
                                         builder: (context) => FollowListPage(
                                           userId: widget.userId,
+                                          initialIndex: 1,
                                         ),
                                       ),
                                     );
