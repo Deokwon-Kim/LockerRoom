@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/user_model.dart';
@@ -9,7 +8,8 @@ import 'package:provider/provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 
 class FollowingListPage extends StatefulWidget {
-  const FollowingListPage({super.key});
+  final String userId;
+  const FollowingListPage({super.key, required this.userId});
 
   @override
   State<FollowingListPage> createState() => _FollowingListPageState();
@@ -17,7 +17,6 @@ class FollowingListPage extends StatefulWidget {
 
 class _FollowingListPageState extends State<FollowingListPage> {
   final TextEditingController _searchController = TextEditingController();
-  final targetUserId = FirebaseAuth.instance.currentUser!.uid;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,7 +66,7 @@ class _FollowingListPageState extends State<FollowingListPage> {
             Expanded(
               child: StreamBuilder<List<UserModel>>(
                 stream: context.read<FollowProvider>().followingUsers(
-                  targetUserId,
+                  widget.userId,
                 ),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
@@ -107,7 +106,7 @@ class _FollowingListPageState extends State<FollowingListPage> {
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  UserDetailPage(targetUserId: u.uid),
+                                  UserDetailPage(userId: u.uid),
                             ),
                           );
                         },
