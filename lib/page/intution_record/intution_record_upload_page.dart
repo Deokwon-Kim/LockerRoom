@@ -195,6 +195,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                             selectedDate != null
                                 ? '${selectedDate!.year}년 ${selectedDate!.month}월 ${selectedDate!.day}일'
                                 : '날짜 선택',
+                            style: TextStyle(fontWeight: FontWeight.w500),
                           ),
                           IconButton(
                             onPressed: () => _selectedDate(intutionProvider),
@@ -240,7 +241,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                                   ),
                                   SizedBox(height: 10),
                                   Image.asset(
-                                    myTeamModel?.logoPath ??
+                                    myTeamModel?.calenderLogo ??
                                         'assets/images/applogo/app_logo.png',
                                     width: 80,
                                     height: 80,
@@ -292,7 +293,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                                   ),
                                   SizedBox(height: 10),
                                   Image.asset(
-                                    oppenentTeamModel?.logoPath ??
+                                    oppenentTeamModel?.calenderLogo ??
                                         'assets/images/applogo/app_logo.png',
                                     width: 80,
                                     height: 80,

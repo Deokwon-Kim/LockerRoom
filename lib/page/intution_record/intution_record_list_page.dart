@@ -10,11 +10,11 @@ class IntutionRecordListPage extends StatelessWidget {
 
   String _logoForTeam(TeamProvider tp, String nameOrSymple) {
     final bySymple = tp.findTeamByName(nameOrSymple);
-    if (bySymple != null) return bySymple.logoPath;
+    if (bySymple != null) return bySymple.calenderLogo;
     final list = tp.getTeam('team');
     final byFull = list.where((t) => t.name == nameOrSymple).toList();
     return byFull.isNotEmpty
-        ? byFull.first.logoPath
+        ? byFull.first.calenderLogo
         : 'assets/images/applogo/app_logo.png';
   }
 
