@@ -31,6 +31,7 @@ import 'package:lockerroom/repository/user_repository.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
+import 'package:lockerroom/services/notification_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -42,6 +43,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: 'lib/api_key/youtube_key.env');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // 로컬 알림 초기화
+  await NotificationService().initNotification();
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
@@ -61,6 +65,33 @@ Future<void> main() async {
 
   final token = await FirebaseMessaging.instance.getToken();
   print('FCM token: $token');
+  // 토큰 저장 및 갱신 반영
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null && token != null) {
+    await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+      'fcmToken': token,
+    }, SetOptions(merge: true));
+  }
+
+  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u != null) {
+      await FirebaseFirestore.instance.collection('users').doc(u.uid).set({
+        'fcmToken': newToken,
+      }, SetOptions(merge: true));
+    }
+  });
+
+  // 포그라운드 수신 시 로컬 알림 표시
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    final n = message.notification;
+    if (n != null) {
+      NotificationService().showForegroundNotification(
+        title: n.title ?? '알림',
+        body: n.body ?? '',
+      );
+    }
+  });
 
   final repo = UserRepository();
   final currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -83,7 +114,7 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(create: (context) => NotificationProvider()),
         ChangeNotifierProvider(
-          create: (context) => FollowProvider(repo, currentUserId!),
+          create: (context) => FollowProvider(repo, currentUserId ?? ''),
         ),
       ],
       child: const MyApp(),
@@ -136,6 +167,14 @@ class AuthWrapper extends StatelessWidget {
           //사용자 정보를 UserProvider에 로드
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Provider.of<UserProvider>(context, listen: false).loadNickname();
+            // 로그인 후 알림 구독 시작
+            final uid = FirebaseAuth.instance.currentUser?.uid;
+            if (uid != null) {
+              Provider.of<NotificationProvider>(
+                context,
+                listen: false,
+              ).listen(uid);
+            }
           });
         }
 
