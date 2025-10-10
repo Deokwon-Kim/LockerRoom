@@ -2,6 +2,7 @@ import 'package:contained_tab_bar_view/contained_tab_bar_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/my_post/my_market_page.dart';
 import 'package:lockerroom/my_post/mypost.dart';
 import 'package:lockerroom/page/alert/diallog.dart';
 import 'package:lockerroom/page/follow/follow_list_page.dart';
@@ -442,6 +443,7 @@ class _MypageState extends State<Mypage> {
                 child: ContainedTabBarView(
                   tabs: [
                     Text('게시글', style: TextStyle(color: BLACK)),
+                    Text('마켓', style: TextStyle(color: BLACK)),
                     Text('직관기록', style: TextStyle(color: BLACK)),
                   ],
                   tabBarProperties: TabBarProperties(
@@ -450,7 +452,11 @@ class _MypageState extends State<Mypage> {
                     indicatorWeight: 3.0,
                     unselectedLabelColor: GRAYSCALE_LABEL_500,
                   ),
-                  views: [MypostPage(), IntutionRecordListPage()],
+                  views: [
+                    MypostPage(),
+                    MyMarketPage(),
+                    IntutionRecordListPage(),
+                  ],
                   onChange: (index) => print(index),
                 ),
               ),
