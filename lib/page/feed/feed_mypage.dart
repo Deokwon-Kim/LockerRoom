@@ -37,6 +37,17 @@ class _FeedMypageState extends State<FeedMypage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // 대상 유저의 팔로우 상태를 초기 로딩하여 UI가 이전 화면의 상태에 의존하지 않도록 함
+    Future.microtask(
+      () => context.read<FollowProvider>().loadFollowingStatus(
+        widget.targetUserId,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final feedProvider = Provider.of<FeedProvider>(context, listen: false);
@@ -103,16 +114,20 @@ class _FeedMypageState extends State<FeedMypage> {
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
                   decoration: BoxDecoration(
-                    color: fp.isFollowing ? BACKGROUND_COLOR : teamColor,
+                    color: fp.isFollowingUser(widget.targetUserId)
+                        ? BACKGROUND_COLOR
+                        : teamColor,
                     border: Border.all(color: Colors.black),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    fp.isFollowing ? '팔로잉' : '팔로우',
+                    fp.isFollowingUser(widget.targetUserId) ? '팔로잉' : '팔로우',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: fp.isFollowing ? Colors.black : Colors.white,
+                      color: fp.isFollowingUser(widget.targetUserId)
+                          ? Colors.black
+                          : Colors.white,
                     ),
                   ),
                 ),
