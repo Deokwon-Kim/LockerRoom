@@ -3,11 +3,11 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 class NotificationService {
   final notificationsPlugin = FlutterLocalNotificationsPlugin();
 
-  final bool _isInitialized = false;
+  bool _isInitialized = false;
 
   bool get isInitialized => _isInitialized;
 
-  // 알림 초기화
+  // 알림 초기화 (중복 호출 안전)
   Future<void> initNotification() async {
     if (_isInitialized) return;
 
@@ -27,6 +27,7 @@ class NotificationService {
     );
 
     await notificationsPlugin.initialize(initSetting);
+    _isInitialized = true;
   }
 
   NotificationDetails notificationDetails() {
@@ -47,6 +48,7 @@ class NotificationService {
     String? title,
     String? body,
   }) async {
+    await initNotification();
     return notificationsPlugin.show(id, title, body, notificationDetails());
   }
 }
