@@ -115,16 +115,20 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
                       decoration: BoxDecoration(
-                        color: fp.isFollowing ? BACKGROUND_COLOR : teamColor,
+                        color: fp.isFollowingUser(widget.userId)
+                            ? BACKGROUND_COLOR
+                            : teamColor,
                         border: Border.all(color: Colors.black),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        fp.isFollowing ? '팔로잉' : '팔로우',
+                        fp.isFollowingUser(widget.userId) ? '팔로잉' : '팔로우',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: fp.isFollowing ? Colors.black : Colors.white,
+                          color: fp.isFollowingUser(widget.userId)
+                              ? Colors.black
+                              : Colors.white,
                         ),
                       ),
                     ),
