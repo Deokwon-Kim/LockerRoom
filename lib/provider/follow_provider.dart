@@ -27,19 +27,24 @@ class FollowProvider extends ChangeNotifier {
         .toList();
   }
 
+  final Map<String, bool> _followingByUserId = {};
+  bool isFollowingUser(String targetUserId) =>
+      _followingByUserId[targetUserId] ?? false;
+
   Future<void> loadFollowingStatus(String targetUserId) async {
-    _isFollowing = await _repository.isFollowing(currentUserId, targetUserId);
+    final v = await _repository.isFollowing(currentUserId, targetUserId);
+    _followingByUserId[targetUserId] = v;
     notifyListeners();
   }
 
   Future<void> toggleFollow(String targetUserId) async {
-    if (currentUserId == null) return;
-    if (_isFollowing) {
+    final now = isFollowingUser(targetUserId);
+    if (now) {
       await _repository.unfollowUser(currentUserId, targetUserId);
-      _isFollowing = false;
+      _followingByUserId[targetUserId] = false;
     } else {
       await _repository.followUser(currentUserId, targetUserId);
-      _isFollowing = true;
+      _followingByUserId[targetUserId] = true;
     }
     notifyListeners();
   }
