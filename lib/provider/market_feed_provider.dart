@@ -154,4 +154,20 @@ class MarketFeedProvider extends ChangeNotifier {
     });
     notifyListeners();
   }
+
+  // 현재 로그인 한 유저에 게시물만 불러오기
+  Stream<List<MarketPostModel>> listenMyMarketPosts() {
+    return FirebaseAuth.instance.authStateChanges().asyncExpand((user) {
+      if (user == null) return const Stream<List<MarketPostModel>>.empty();
+      return _marketPostCollection
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map(
+            (snapshot) => snapshot.docs
+                .map((doc) => MarketPostModel.fromDoc(doc))
+                .toList(),
+          );
+    });
+  }
 }
