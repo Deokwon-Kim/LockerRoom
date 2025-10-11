@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/market_post_model.dart';
-import 'package:lockerroom/page/alert/diallog.dart';
+import 'package:lockerroom/page/alert/confirm_diallog.dart';
+import 'package:lockerroom/page/alert/declaration_diallog.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -183,12 +184,67 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                     ),
                   );
                 } else if (value == 'report') {
-                  toastification.show(
+                  final reporter = FirebaseAuth.instance.currentUser;
+                  if (reporter == null) {
+                    toastification.show(
+                      context: context,
+                      type: ToastificationType.error,
+                      alignment: Alignment.bottomCenter,
+                      autoCloseDuration: const Duration(seconds: 2),
+                      title: const Text('로그인이 필요합니다'),
+                    );
+                    return;
+                  }
+
+                  await showDialog(
                     context: context,
-                    type: ToastificationType.info,
-                    alignment: Alignment.bottomCenter,
-                    autoCloseDuration: const Duration(seconds: 2),
-                    title: const Text('신고가 접수되었습니다'),
+                    builder: (context) {
+                      return DeclarationDiallog(
+                        title: '신고사유 입력',
+                        onConfirm: (reason) async {
+                          final trimmed = reason.trim();
+                          if (trimmed.isEmpty) {
+                            toastification.show(
+                              context: context,
+                              type: ToastificationType.error,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: const Duration(seconds: 2),
+                              title: const Text('사유를 입력해 주세요'),
+                            );
+                            return;
+                          }
+                          try {
+                            await FirebaseFirestore.instance
+                                .collection('reports')
+                                .add({
+                                  'type': 'market_post',
+                                  'postId': widget.marketPost.postId,
+                                  'reportedUserId': widget.marketPost.userId,
+                                  'reportedUserName':
+                                      widget.marketPost.userName,
+                                  'reporterUserId': reporter.uid,
+                                  'reason': trimmed,
+                                  'createdAt': FieldValue.serverTimestamp(),
+                                });
+                            toastification.show(
+                              context: context,
+                              type: ToastificationType.success,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: const Duration(seconds: 2),
+                              title: const Text('신고가 접수되었습니다'),
+                            );
+                          } catch (e) {
+                            toastification.show(
+                              context: context,
+                              type: ToastificationType.error,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: const Duration(seconds: 2),
+                              title: const Text('신고 중 오류가 발생했습니다'),
+                            );
+                          }
+                        },
+                      );
+                    },
                   );
                 }
               },
