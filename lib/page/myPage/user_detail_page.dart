@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/model/team_model.dart';
-import 'package:lockerroom/my_post/my_market_page.dart';
+import 'package:lockerroom/my_post/user_market_post_page.dart';
 import 'package:lockerroom/my_post/user_post_page.dart';
 import 'package:lockerroom/page/follow/follow_list_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
@@ -275,7 +275,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     ),
                     views: [
                       UserPostPage(userId: widget.userId),
-                      MyMarketPage(),
+                      UserMarketPostPage(userId: widget.userId),
                     ],
                   ),
                 ),
