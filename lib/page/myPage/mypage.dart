@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/my_post/my_market_page.dart';
 import 'package:lockerroom/my_post/mypost.dart';
-import 'package:lockerroom/page/alert/diallog.dart';
+import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/follow/follow_list_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
