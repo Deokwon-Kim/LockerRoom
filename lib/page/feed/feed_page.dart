@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
+import 'package:lockerroom/page/alert/declaration_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_mypage.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
@@ -185,6 +187,8 @@ class _PostWidgetState extends State<PostWidget> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final isOwner =
+        currentUserId != null && widget.post.userId == currentUserId;
     final selectedColor =
         Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
     return GestureDetector(
@@ -285,59 +289,128 @@ class _PostWidgetState extends State<PostWidget> {
                       ],
                     ),
                     Spacer(),
-                    currentUserId != null && widget.post.userId == currentUserId
-                        ? PopupMenuTheme(
-                            data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-                            child: PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_horiz),
-                              onSelected: (value) async {
-                                if (value == 'delete') {
-                                  // 삭제 확인 다이얼로그 추가
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => ConfirmationDialog(
-                                      title: '삭제 확인',
-                                      content: '게시글을 삭제 하시겠습니까?',
-                                      onConfirm: () async {
-                                        await widget.feedProvider.deletePost(
-                                          widget.post,
-                                        );
-                                        toastification.show(
-                                          context: context,
-                                          type: ToastificationType.success,
-                                          alignment: Alignment.bottomCenter,
-                                          autoCloseDuration: Duration(
-                                            seconds: 2,
-                                          ),
-                                          title: Text('게시물을 삭제했습니다'),
-                                        );
-                                      },
-                                    ),
+
+                    PopupMenuTheme(
+                      data: PopupMenuThemeData(color: BACKGROUND_COLOR),
+                      child: PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_horiz),
+                        onSelected: (value) async {
+                          if (value == 'delete' && isOwner) {
+                            // 삭제 확인 다이얼로그 추가
+                            showDialog(
+                              context: context,
+                              builder: (context) => ConfirmationDialog(
+                                title: '삭제 확인',
+                                content: '게시글을 삭제 하시겠습니까?',
+                                onConfirm: () async {
+                                  await widget.feedProvider.deletePost(
+                                    widget.post,
                                   );
-                                }
+                                  toastification.show(
+                                    context: context,
+                                    type: ToastificationType.success,
+                                    alignment: Alignment.bottomCenter,
+                                    autoCloseDuration: Duration(seconds: 2),
+                                    title: Text('게시물을 삭제했습니다'),
+                                  );
+                                },
+                              ),
+                            );
+                          } else if (value == 'report') {
+                            final reporter = FirebaseAuth.instance.currentUser;
+                            if (reporter == null) {
+                              toastification.show(
+                                context: context,
+                                type: ToastificationType.error,
+                                alignment: Alignment.bottomCenter,
+                                autoCloseDuration: Duration(seconds: 2),
+                                title: Text('로그인이 필요합니다'),
+                              );
+                              return;
+                            }
+                            await showDialog(
+                              context: context,
+                              builder: (context) {
+                                return DeclarationDiallog(
+                                  title: '신고사유 입력',
+                                  onConfirm: (reason) async {
+                                    final trimmed = reason.trim();
+                                    if (trimmed.isEmpty) {
+                                      toastification.show(
+                                        context: context,
+                                        type: ToastificationType.error,
+                                        alignment: Alignment.bottomCenter,
+                                        autoCloseDuration: Duration(seconds: 2),
+                                        title: Text('사유를 입력해 주세요'),
+                                      );
+                                      return;
+                                    }
+                                    try {
+                                      await FirebaseFirestore.instance
+                                          .collection('feed_reports')
+                                          .add({
+                                            'type': 'feed_post',
+                                            'postId': widget.post.id,
+                                            'reportedUserId':
+                                                widget.post.userId,
+                                            'reportedUserName':
+                                                widget.post.userName,
+                                            'reporterUserId': reporter.uid,
+                                            'reporterUserName':
+                                                reporter.displayName,
+                                            'reason': trimmed,
+                                            'createdAt':
+                                                FieldValue.serverTimestamp(),
+                                          });
+                                      toastification.show(
+                                        context: context,
+                                        type: ToastificationType.success,
+                                        alignment: Alignment.bottomCenter,
+                                        autoCloseDuration: const Duration(
+                                          seconds: 2,
+                                        ),
+                                        title: const Text('신고가 접수되었습니다'),
+                                      );
+                                    } catch (e) {
+                                      toastification.show(
+                                        context: context,
+                                        type: ToastificationType.error,
+                                        alignment: Alignment.bottomCenter,
+                                        autoCloseDuration: const Duration(
+                                          seconds: 2,
+                                        ),
+                                        title: const Text('신고 중 오류가 발생했습니다'),
+                                      );
+                                    }
+                                  },
+                                );
                               },
-                              itemBuilder: (context) => const [
-                                PopupMenuItem(
-                                  value: '신고',
-                                  child: Text(
-                                    '신고',
-                                    style: TextStyle(color: RED_DANGER_TEXT_50),
-                                  ),
+                            );
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          if (isOwner)
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text(
+                                '삭제하기',
+                                style: TextStyle(color: RED_DANGER_TEXT_50),
+                              ),
+                            )
+                          else
+                            PopupMenuItem(
+                              value: 'report',
+                              child: Text(
+                                '신고',
+                                style: TextStyle(
+                                  color: BLACK,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                PopupMenuItem(
-                                  value: 'delete',
-                                  child: Text(
-                                    '삭제하기',
-                                    style: TextStyle(
-                                      color: RED_DANGER_TEXT_50,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                          )
-                        : SizedBox.shrink(),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
