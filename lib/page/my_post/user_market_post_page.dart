@@ -1,59 +1,52 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/market_post_model.dart';
 import 'package:lockerroom/page/afterMarket/after_market_detail_page.dart';
-import 'package:lockerroom/page/alert/diallog.dart';
+import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
-class MyMarketPage extends StatelessWidget {
-  const MyMarketPage({super.key});
+class UserMarketPostPage extends StatefulWidget {
+  final String userId;
+  const UserMarketPostPage({super.key, required this.userId});
 
   @override
+  State<UserMarketPostPage> createState() => _UserMarketPostPageState();
+}
+
+class _UserMarketPostPageState extends State<UserMarketPostPage> {
+  @override
   Widget build(BuildContext context) {
-    final marketFeedProvider = Provider.of<MarketFeedProvider>(
-      context,
-      listen: false,
-    );
-    final tp = Provider.of<TeamProvider>(context, listen: false);
+    final tp = context.read<TeamProvider>();
     final teamColor = tp.selectedTeam?.color;
+    final marketFeedProvider = context.read<MarketFeedProvider>();
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
-      body: StreamBuilder<List<MarketPostModel>>(
-        stream: marketFeedProvider.listenMyMarketPosts(),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance
+            .collection('market_posts')
+            .where('userId', isEqualTo: widget.userId)
+            .orderBy('createdAt', descending: true)
+            .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            debugPrint('market 스트림에러 : ${snapshot.error}');
-            return Center(child: Text('에러 발생'));
-          }
-          if (!snapshot.hasData) {
+          if (!snapshot.hasData)
             return Center(child: CircularProgressIndicator(color: teamColor));
-          }
+          final marketPosts = snapshot.data!.docs
+              .map((d) => MarketPostModel.fromDoc(d))
+              .toList();
 
-          final posts = snapshot.data!;
-
-          if (posts.isEmpty) {
-            return Center(
-              child: Text(
-                '게시물이 없습니다',
-
-                style: TextStyle(
-                  fontSize: 16,
-                  color: GRAYSCALE_LABEL_500,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            );
-          }
+          if (marketPosts.isEmpty) return Center(child: Text('게시물이 없습니다'));
 
           return ListView.builder(
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
+            itemCount: marketPosts.length,
+            itemBuilder: (_, i) {
+              final mp = marketPosts[i];
               return MyMarketPostWidget(
-                marketPost: posts[index],
+                marketPost: mp,
                 marketFeed: marketFeedProvider,
               );
             },

@@ -6,7 +6,7 @@ import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/post_model.dart';
-import 'package:lockerroom/page/alert/diallog.dart';
+import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_mypage.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
