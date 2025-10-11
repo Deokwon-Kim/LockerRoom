@@ -1,10 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/market_post_model.dart';
-import 'package:lockerroom/page/alert/diallog.dart';
+import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/afterMarket/after_market_detail_page.dart';
 import 'package:lockerroom/page/afterMarket/after_market_upload_page.dart';
+import 'package:lockerroom/page/alert/declaration_diallog.dart';
+import 'package:lockerroom/page/login/login_page.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
@@ -18,17 +21,99 @@ class AfterMarket extends StatefulWidget {
 }
 
 class _AfterMarketState extends State<AfterMarket> {
+  final ScrollController _listScrollController = ScrollController();
+  final List<MarketPostModel> _pagedPosts = [];
+  DocumentSnapshot? _lastDoc;
+  bool _isInitialLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  String _query = '';
   @override
   void initState() {
     super.initState();
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-    final marketFeedProvider = context.read<MarketFeedProvider>();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      });
+    }
 
-    marketFeedProvider.marketPostStream(uid);
+    _fetchInitial();
+    _listScrollController.addListener(() {
+      if (!_listScrollController.hasClients) return;
+      final position = _listScrollController.position;
+      if (position.pixels >= position.maxScrollExtent - 200) {
+        _fetchMore();
+      }
+    });
   }
 
   bool _isSerching = false;
   final TextEditingController _searchController = TextEditingController();
+
+  Future<void> _fetchInitial() async {
+    try {
+      setState(() => _isInitialLoading = true);
+      final snap = await FirebaseFirestore.instance
+          .collection('market_posts')
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .get();
+      final posts = snap.docs.map((d) => MarketPostModel.fromDoc(d)).toList();
+      _pagedPosts
+        ..clear()
+        ..addAll(posts);
+      _lastDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
+      _hasMore = snap.docs.length == 20;
+    } catch (e) {
+      debugPrint('Initial fetch error: $e');
+    } finally {
+      if (mounted) setState(() => _isInitialLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _listScrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchMore() async {
+    if (_isLoadingMore || !_hasMore || _lastDoc == null) return;
+    try {
+      setState(() => _isLoadingMore = true);
+      final snap = await FirebaseFirestore.instance
+          .collection('market_posts')
+          .orderBy('createdAt', descending: true)
+          .startAfterDocument(_lastDoc!)
+          .limit(20)
+          .get();
+      final posts = snap.docs.map((d) => MarketPostModel.fromDoc(d)).toList();
+      _pagedPosts.addAll(posts);
+      if (snap.docs.isNotEmpty) {
+        _lastDoc = snap.docs.last;
+      }
+      if (snap.docs.length < 20) {
+        _hasMore = false;
+      }
+    } catch (e) {
+      debugPrint('Fetch more error: $e');
+    } finally {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  List<MarketPostModel> get _filteredPosts {
+    if (_query.isEmpty) return List<MarketPostModel>.from(_pagedPosts);
+    final lower = _query.toLowerCase();
+    return _pagedPosts
+        .where((p) => p.title.toLowerCase().contains(lower))
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,10 +165,7 @@ class _AfterMarketState extends State<AfterMarket> {
                       textInputAction: TextInputAction.newline,
                       enableIMEPersonalizedLearning: true,
                       style: TextStyle(decoration: TextDecoration.none),
-                      onChanged: (value) => Provider.of<MarketFeedProvider>(
-                        context,
-                        listen: false,
-                      ).setQuery(value),
+                      onChanged: (value) => setState(() => _query = value),
                       decoration: InputDecoration(
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(
@@ -104,15 +186,16 @@ class _AfterMarketState extends State<AfterMarket> {
                     ),
                   ),
                 Expanded(
-                  child: Consumer<MarketFeedProvider>(
-                    builder: (context, marketFeed, child) {
-                      final allMakretPosts = marketFeed.marketPostsStream;
-                      if (marketFeed.isLoading) {
+                  child: Builder(
+                    builder: (context) {
+                      if (_isInitialLoading) {
                         return Center(
                           child: CircularProgressIndicator(color: BUTTON),
                         );
                       }
-                      if (allMakretPosts.isEmpty) {
+
+                      final posts = _filteredPosts;
+                      if (posts.isEmpty) {
                         return Center(
                           child: Text(
                             '게시물이 없습니다',
@@ -120,12 +203,24 @@ class _AfterMarketState extends State<AfterMarket> {
                           ),
                         );
                       }
+                      final marketFeed = context.read<MarketFeedProvider>();
                       return ListView.builder(
-                        itemCount: allMakretPosts.length,
-                        itemBuilder: (context, index) => MarketPostWidget(
-                          marketPost: allMakretPosts[index],
-                          merketFeed: marketFeed,
-                        ),
+                        controller: _listScrollController,
+                        itemCount: posts.length + (_isLoadingMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (_isLoadingMore && index == posts.length) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              child: Center(
+                                child: CircularProgressIndicator(color: BUTTON),
+                              ),
+                            );
+                          }
+                          return MarketPostWidget(
+                            marketPost: posts[index],
+                            merketFeed: marketFeed,
+                          );
+                        },
                       );
                     },
                   ),
@@ -315,12 +410,80 @@ class _MarketPostsWidgetState extends State<MarketPostWidget> {
                                   ),
                                 );
                               } else if (value == 'report') {
-                                toastification.show(
+                                final reporter =
+                                    FirebaseAuth.instance.currentUser;
+                                if (reporter == null) {
+                                  toastification.show(
+                                    context: context,
+                                    type: ToastificationType.error,
+                                    alignment: Alignment.bottomCenter,
+                                    autoCloseDuration: const Duration(
+                                      seconds: 2,
+                                    ),
+                                    title: const Text('로그인이 필요합니다'),
+                                  );
+                                  return;
+                                }
+                                await showDialog(
                                   context: context,
-                                  type: ToastificationType.info,
-                                  alignment: Alignment.bottomCenter,
-                                  autoCloseDuration: const Duration(seconds: 2),
-                                  title: const Text('신고가 접수되었습니다.'),
+                                  builder: (context) {
+                                    return DeclarationDiallog(
+                                      title: '신고사유 입력',
+                                      onConfirm: (reason) async {
+                                        final trimmed = reason.trim();
+                                        if (trimmed.isEmpty) {
+                                          toastification.show(
+                                            context: context,
+                                            type: ToastificationType.error,
+                                            alignment: Alignment.bottomCenter,
+                                            autoCloseDuration: const Duration(
+                                              seconds: 2,
+                                            ),
+                                            title: const Text('사유를 입력해 주세요'),
+                                          );
+                                          return;
+                                        }
+                                        try {
+                                          await FirebaseFirestore.instance
+                                              .collection('reports')
+                                              .add({
+                                                'type': 'market_post',
+                                                'postId':
+                                                    widget.marketPost.postId,
+                                                'reportedUserId':
+                                                    widget.marketPost.userId,
+                                                'reportedUserName':
+                                                    widget.marketPost.userName,
+                                                'reporterUserId': reporter.uid,
+                                                'reason': trimmed,
+                                                'createdAt':
+                                                    FieldValue.serverTimestamp(),
+                                              });
+                                          toastification.show(
+                                            context: context,
+                                            type: ToastificationType.success,
+                                            alignment: Alignment.bottomCenter,
+                                            autoCloseDuration: const Duration(
+                                              seconds: 2,
+                                            ),
+                                            title: const Text('신고가 접수되었습니다'),
+                                          );
+                                        } catch (e) {
+                                          toastification.show(
+                                            context: context,
+                                            type: ToastificationType.error,
+                                            alignment: Alignment.bottomCenter,
+                                            autoCloseDuration: const Duration(
+                                              seconds: 2,
+                                            ),
+                                            title: const Text(
+                                              '신고 중 오류가 발생했습니다',
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    );
+                                  },
                                 );
                               }
                             },
