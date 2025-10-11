@@ -215,7 +215,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                           }
                           try {
                             await FirebaseFirestore.instance
-                                .collection('reports')
+                                .collection('market_reports')
                                 .add({
                                   'type': 'market_post',
                                   'postId': widget.marketPost.postId,

@@ -445,7 +445,7 @@ class _MarketPostsWidgetState extends State<MarketPostWidget> {
                                         }
                                         try {
                                           await FirebaseFirestore.instance
-                                              .collection('reports')
+                                              .collection('market_reports')
                                               .add({
                                                 'type': 'market_post',
                                                 'postId':
