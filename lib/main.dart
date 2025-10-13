@@ -33,6 +33,8 @@ import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 import 'package:lockerroom/services/notification_service.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -49,6 +51,11 @@ Future<void> main() async {
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
+  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+  if (initialMessage != null) {
+    _handleMessageNavigation(initialMessage);
+  }
+
   // ios 권한 요청
   await FirebaseMessaging.instance.requestPermission(
     alert: true,
@@ -63,6 +70,9 @@ Future<void> main() async {
     sound: true,
   );
 
+  final apns = await FirebaseMessaging.instance.getAPNSToken();
+  print('APNs token: $apns');
+
   final token = await FirebaseMessaging.instance.getToken();
   print('FCM token: $token');
   // 토큰 저장 및 갱신 반영
@@ -74,6 +84,7 @@ Future<void> main() async {
   }
 
   FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+    print('FCM token refreshed: $newToken');
     final u = FirebaseAuth.instance.currentUser;
     if (u != null) {
       await FirebaseFirestore.instance.collection('users').doc(u.uid).set({
@@ -122,14 +133,31 @@ Future<void> main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    _setupInteractedMessage();
+  }
+
+  // 백그라운드에서 열었을 때 처리
+  void _setupInteractedMessage() {
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageNavigation);
+  }
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return ToastificationWrapper(
       child: MaterialApp(
+        navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
         title: 'Flutter Demo',
         localizationsDelegates: const [
@@ -149,6 +177,15 @@ class MyApp extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+// 푸시 클릭 시 네비게이션 처리
+void _handleMessageNavigation(RemoteMessage message) {
+  final route = message.data['route'];
+  if (route != null && navigatorKey.currentState != null) {
+    print('알림클릭 -> 이동경로: $route');
+    navigatorKey.currentState!.pushNamed(route, arguments: message.data);
   }
 }
 
