@@ -52,3 +52,6 @@ firebase.json
 
 # Youtube API 키 
 youtube_key.env
+
+# node-moduels 
+functions/node_modules/
