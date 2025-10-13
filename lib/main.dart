@@ -32,8 +32,7 @@ import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 import 'package:lockerroom/services/notification_service.dart';
-
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+import 'package:lockerroom/services/navigation_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -51,11 +50,6 @@ Future<void> main() async {
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-  if (initialMessage != null) {
-    _handleMessageNavigation(initialMessage);
-  }
-
   // ios 권한 요청
   await FirebaseMessaging.instance.requestPermission(
     alert: true,
@@ -65,9 +59,9 @@ Future<void> main() async {
 
   // ios 포그라운드 표시 옵션
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-    alert: true,
-    badge: true,
-    sound: true,
+    alert: false,
+    badge: false,
+    sound: false,
   );
 
   final apns = await FirebaseMessaging.instance.getAPNSToken();
@@ -97,11 +91,23 @@ Future<void> main() async {
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     final n = message.notification;
     if (n != null) {
-      NotificationService().showForegroundNotification(
-        title: n.title ?? '알림',
-        body: n.body ?? '',
-      );
+      // NotificationService().showForegroundNotification(
+      //   title: n.title ?? '알림',
+      //   body: n.body ?? '',
+      //   payload: jsonEncode(message.data),
+      // );
     }
+  });
+
+  // 앱이 완전 종료된 상태에서 알림을 눌러 시작된 경우 딥링크 처리
+  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+  if (initialMessage != null) {
+    navigateFromData(initialMessage.data);
+  }
+
+  // 백그라운드에서 열었을 때 처리
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    navigateFromData(message.data);
   });
 
   final repo = UserRepository();
@@ -133,24 +139,8 @@ Future<void> main() async {
   );
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  @override
-  void initState() {
-    super.initState();
-    _setupInteractedMessage();
-  }
-
-  // 백그라운드에서 열었을 때 처리
-  void _setupInteractedMessage() {
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageNavigation);
-  }
 
   // This widget is the root of your application.
   @override
@@ -177,15 +167,6 @@ class _MyAppState extends State<MyApp> {
         },
       ),
     );
-  }
-}
-
-// 푸시 클릭 시 네비게이션 처리
-void _handleMessageNavigation(RemoteMessage message) {
-  final route = message.data['route'];
-  if (route != null && navigatorKey.currentState != null) {
-    print('알림클릭 -> 이동경로: $route');
-    navigatorKey.currentState!.pushNamed(route, arguments: message.data);
   }
 }
 
