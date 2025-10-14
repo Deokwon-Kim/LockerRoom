@@ -550,7 +550,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                       postId: widget.post.id,
                       comment: comment,
                       currentUserId: currentUser.uid,
-                      postOwnerId: widget.post.id,
+                      postOwnerId: widget.post.userId,
                       parentCommentOwnerId: _replyParentId == null
                           ? null
                           : _replyParentId,
