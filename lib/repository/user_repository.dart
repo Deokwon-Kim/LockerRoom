@@ -30,7 +30,7 @@ class UserRepository {
 
     await batch.commit();
 
-    // Create notification for target user about the new follower
+    // 새로운 팔로워에 대한 대상 사용자 알림을 생성
     await _firestore
         .collection('users')
         .doc(targetUserId)
