@@ -45,7 +45,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
     // Provider 참조를 보관해 두고 사용 (dispose에서 context 조회 방지)
     _commentProvider = context.read<CommentProvider>();
     // postId별 구독 시작
-    _commentProvider.subscribeComments(widget.marketPost.postId);
+    _commentProvider.subscribeMarketComments(widget.marketPost.postId);
     // 작성자 프로필은 빌드 외부에서 1회만 구독
     context.read<ProfileProvider>().subscribeUserProfile(
       widget.marketPost.userId,
@@ -409,9 +409,10 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                             SizedBox(width: 5),
                             Consumer<CommentProvider>(
                               builder: (context, commentProvider, child) {
-                                final comment = commentProvider.getComments(
-                                  widget.marketPost.postId,
-                                );
+                                final comment = commentProvider
+                                    .getMarketComments(
+                                      widget.marketPost.postId,
+                                    );
                                 return Text(
                                   '댓글: ${comment.length}',
                                   style: TextStyle(color: GRAYSCALE_LABEL_500),
@@ -467,7 +468,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                         SizedBox(height: 10),
                         Consumer<CommentProvider>(
                           builder: (context, commentProvider, child) {
-                            final comments = commentProvider.getComments(
+                            final comments = commentProvider.getMarketComments(
                               widget.marketPost.postId,
                             );
                             if (comments.isEmpty) {
@@ -565,7 +566,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                     final text = _marketCommentController.text.trim();
                     if (text.isEmpty) return;
                     final user = FirebaseAuth.instance.currentUser!;
-                    final comment = CommentModel(
+                    final marketComment = CommentModel(
                       id: '', // Firestore에서 자동생성
                       postId: widget.marketPost.postId,
                       userId: user.uid,
@@ -575,15 +576,18 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                       createdAt: DateTime.now(),
                       likesCount: 0,
                     );
-                    await context.read<CommentProvider>().addCommentAndNotify(
-                      postId: widget.marketPost.postId,
-                      comment: comment,
-                      currentUserId: user.uid,
-                      postOwnerId: widget.marketPost.postId,
-                      parentCommentOwnerId: _replyParentId == null
-                          ? null
-                          : _replyParentId,
-                    );
+                    await context
+                        .read<CommentProvider>()
+                        .addMarketCommentAndNotify(
+                          marketPostId: widget.marketPost.postId,
+                          marketComment: marketComment,
+                          currentUserId: user.uid,
+                          marketPostOwnerId: widget.marketPost.userId,
+                          parentMarketCommentOwnerId: _replyParentId == null
+                              ? null
+                              : _replyParentId,
+                        );
+
                     if (!mounted) return;
                     _marketCommentController.clear();
                     setState(() {
