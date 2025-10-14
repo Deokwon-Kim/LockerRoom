@@ -5,7 +5,7 @@ class AppNotification {
   final String type;
   final String fromUserId;
   final String userName;
-  final Timestamp? createdAt;
+  final DateTime? createdAt;
   final bool isRead;
 
   AppNotification({
@@ -24,7 +24,9 @@ class AppNotification {
       type: data['type'] ?? 'unknown',
       fromUserId: data['fromUserId'] ?? '',
       userName: data['userName'] ?? '',
-      createdAt: data['createdAt'],
+      createdAt: data['createdAt'] == null
+          ? DateTime.now()
+          : (data['createdAt'] as Timestamp).toDate(),
       isRead: (data['isRead'] ?? false) as bool,
     );
   }
