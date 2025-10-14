@@ -77,7 +77,7 @@ class _HomePageState extends State<HomePage> {
             actions: [
               IconButton(
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pushNamed(context, 'notifications');
                 },
                 icon: Icon(CupertinoIcons.bell, color: WHITE),
               ),
