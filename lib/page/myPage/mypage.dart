@@ -202,12 +202,6 @@ class _MypageState extends State<Mypage> {
         actions: [
           IconButton(
             onPressed: () {
-              Navigator.pushNamed(context, 'notifications');
-            },
-            icon: Icon(Icons.notifications, color: selectedTeam?.color),
-          ),
-          IconButton(
-            onPressed: () {
               Navigator.pushNamed(context, 'setting');
             },
             icon: Icon(Icons.menu, color: selectedTeam?.color),
