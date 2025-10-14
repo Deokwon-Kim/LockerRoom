@@ -33,7 +33,7 @@ class CommentProvider with ChangeNotifier {
     required String postOwnerId,
     String? parentCommentOwnerId,
   }) async {
-    // 댓글 저장
+    // 댓글 생성
     final commentRef = await _commentsCollection.add({
       ...comment.toMap(),
       'postId': postId,
@@ -41,17 +41,21 @@ class CommentProvider with ChangeNotifier {
     });
 
     // 알림 대상 결정
-    String? targetUserId;
-    if (parentCommentOwnerId != null && parentCommentOwnerId.isNotEmpty) {
-      targetUserId = parentCommentOwnerId; // 답댓글: 상위 댓글 작성자에게
-    } else {
-      targetUserId = postOwnerId; // 일반 댓글: 게시글 작성자에게
-    }
+    final targetUserId = (parentCommentOwnerId?.isNotEmpty ?? false)
+        ? parentCommentOwnerId
+        : postOwnerId;
 
     // 자기 자신이면 알림 스킵
     if (targetUserId == null || targetUserId == currentUserId) return;
 
-    // 알림 문서 생성
+    // 알림 내용 미리보기
+    final preview = comment.text == null
+        ? ''
+        : (comment.text!.length > 40
+              ? '${comment.text!.substring(0, 40)}...'
+              : comment.text!);
+
+    // Firestore에 알림 문서 추가
     await FirebaseFirestore.instance
         .collection('users')
         .doc(targetUserId)
@@ -61,9 +65,8 @@ class CommentProvider with ChangeNotifier {
           'postId': postId,
           'commentId': commentRef.id,
           'fromUserId': currentUserId,
-          'preview': (comment.text?.length ?? 0) > 40
-              ? '${comment.text!.substring(0, 40)}...'
-              : (comment.text ?? ''),
+          'toUserId': targetUserId,
+          'preview': preview,
           'createdAt': FieldValue.serverTimestamp(),
           'isRead': false,
         });
