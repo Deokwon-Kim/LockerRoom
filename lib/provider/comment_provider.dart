@@ -6,6 +6,9 @@ import 'package:lockerroom/model/comment_model.dart';
 
 class CommentProvider with ChangeNotifier {
   final _commentsCollection = FirebaseFirestore.instance.collection('comments');
+  final _marketCommentsCollection = FirebaseFirestore.instance.collection(
+    'marketComments',
+  );
 
   final Map<String, List<CommentModel>> _postComments = {};
   final Map<String, StreamSubscription> _subs = {};
@@ -20,6 +23,26 @@ class CommentProvider with ChangeNotifier {
         .snapshots()
         .listen((snap) {
           _postComments[postId] = snap.docs
+              .map((doc) => CommentModel.fromDoc(doc))
+              .toList();
+          notifyListeners();
+        });
+  }
+
+  final Map<String, List<CommentModel>> _marketPostComments = {};
+  final Map<String, StreamSubscription> _marketSubs = {};
+
+  List<CommentModel> getMarketComments(String postId) =>
+      _marketPostComments[postId] ?? [];
+
+  void subscribeMarketComments(String postId) {
+    _marketSubs[postId]?.cancel();
+    _marketSubs[postId] = _marketCommentsCollection
+        .where('postId', isEqualTo: postId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .listen((snap) {
+          _marketPostComments[postId] = snap.docs
               .map((doc) => CommentModel.fromDoc(doc))
               .toList();
           notifyListeners();
@@ -63,6 +86,52 @@ class CommentProvider with ChangeNotifier {
         .add({
           'type': 'comment',
           'postId': postId,
+          'commentId': commentRef.id,
+          'fromUserId': currentUserId,
+          'toUserId': targetUserId,
+          'preview': preview,
+          'createdAt': FieldValue.serverTimestamp(),
+          'isRead': false,
+        });
+  }
+
+  Future<void> addMarketCommentAndNotify({
+    required String marketPostId,
+    required CommentModel marketComment,
+    required String currentUserId,
+    required String marketPostOwnerId,
+    String? parentMarketCommentOwnerId,
+  }) async {
+    // 댓글 생성
+    final commentRef = await _marketCommentsCollection.add({
+      ...marketComment.toMap(),
+      'postId': marketPostId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    // 알림 대상 결정
+    final targetUserId = (parentMarketCommentOwnerId?.isNotEmpty ?? false)
+        ? parentMarketCommentOwnerId
+        : marketPostOwnerId;
+
+    // 자기 자신이면 알림 스킵
+    if (targetUserId == null || targetUserId == currentUserId) return;
+
+    // 알림 내용 미리보기
+    final preview = marketComment.text == null
+        ? ''
+        : (marketComment.text!.length > 40
+              ? '${marketComment.text!.substring(0, 40)}...'
+              : marketComment.text!);
+
+    // Firestore에 알림 문서 추가
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(targetUserId)
+        .collection('notifications')
+        .add({
+          'type': 'marketComment',
+          'postId': marketPostId,
           'commentId': commentRef.id,
           'fromUserId': currentUserId,
           'toUserId': targetUserId,
