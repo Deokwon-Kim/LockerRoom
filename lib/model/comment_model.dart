@@ -23,15 +23,28 @@ class CommentModel {
 
   factory CommentModel.fromDoc(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final dynamic createdAtRaw = data['createdAt'];
+    DateTime createdAt;
+    if (createdAtRaw is Timestamp) {
+      createdAt = createdAtRaw.toDate();
+    } else if (createdAtRaw is DateTime) {
+      createdAt = createdAtRaw;
+    } else if (createdAtRaw is String) {
+      createdAt = DateTime.tryParse(createdAtRaw) ?? DateTime.now();
+    } else {
+      // 서버 타임스탬프 지연 등으로 null일 수 있으므로 현재 시각으로 대체
+      createdAt = DateTime.now();
+    }
+
     return CommentModel(
       id: doc.id,
       postId: data['postId'] ?? '',
       userId: data['userId'] ?? '',
       userName: data['userName'] ?? '',
       text: data['text'] ?? '',
-      reComments: data['reComments'],
+      reComments: (data['reComments'] ?? '') as String,
       likesCount: data['likesCount'] ?? 0,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      createdAt: createdAt,
     );
   }
 
