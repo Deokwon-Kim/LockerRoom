@@ -26,8 +26,47 @@ class CommentProvider with ChangeNotifier {
         });
   }
 
-  Future<void> addComment(String postId, CommentModel comment) async {
-    await _commentsCollection.add({...comment.toMap(), 'postId': postId});
+  Future<void> addCommentAndNotify({
+    required String postId,
+    required CommentModel comment,
+    required String currentUserId,
+    required String postOwnerId,
+    String? parentCommentOwnerId,
+  }) async {
+    // 댓글 저장
+    final commentRef = await _commentsCollection.add({
+      ...comment.toMap(),
+      'postId': postId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    // 알림 대상 결정
+    String? targetUserId;
+    if (parentCommentOwnerId != null && parentCommentOwnerId.isNotEmpty) {
+      targetUserId = parentCommentOwnerId; // 답댓글: 상위 댓글 작성자에게
+    } else {
+      targetUserId = postOwnerId; // 일반 댓글: 게시글 작성자에게
+    }
+
+    // 자기 자신이면 알림 스킵
+    if (targetUserId == null || targetUserId == currentUserId) return;
+
+    // 알림 문서 생성
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(targetUserId)
+        .collection('notifications')
+        .add({
+          'type': 'comment',
+          'postId': postId,
+          'commentId': commentRef.id,
+          'fromUserId': currentUserId,
+          'preview': (comment.text?.length ?? 0) > 40
+              ? '${comment.text!.substring(0, 40)}...'
+              : (comment.text ?? ''),
+          'createdAt': FieldValue.serverTimestamp(),
+          'isRead': false,
+        });
   }
 
   Future<void> toggleLike(CommentModel comment, String userId) async {
