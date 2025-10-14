@@ -25,6 +25,21 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
+  String timeAgo(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inSeconds < 60) {
+      return '${difference.inSeconds}s 전';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}분 전';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}시간 전';
+    } else {
+      return '${difference.inDays}일 전';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<NotificationProvider>();
@@ -65,7 +80,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           final imageUrl =
                               (data['profileImage'] as String?) ?? '';
 
-                          return ListTile(
+                          final tile = ListTile(
                             subtitle: Row(
                               children: [
                                 CircleAvatar(
@@ -81,6 +96,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       : null,
                                 ),
                                 SizedBox(width: 10),
+
                                 Text(name),
 
                                 Text(
@@ -90,6 +106,28 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               ],
                             ),
                           );
+                          if (index == 0) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  child: Text(
+                                    timeAgo(n.createdAt ?? DateTime.now()),
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      color: BLACK,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                          return tile;
                         },
                       );
                     },
