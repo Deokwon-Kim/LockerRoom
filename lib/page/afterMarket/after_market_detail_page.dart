@@ -575,9 +575,14 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                       createdAt: DateTime.now(),
                       likesCount: 0,
                     );
-                    await context.read<CommentProvider>().addComment(
-                      widget.marketPost.postId,
-                      comment,
+                    await context.read<CommentProvider>().addCommentAndNotify(
+                      postId: widget.marketPost.postId,
+                      comment: comment,
+                      currentUserId: user.uid,
+                      postOwnerId: widget.marketPost.postId,
+                      parentCommentOwnerId: _replyParentId == null
+                          ? null
+                          : _replyParentId,
                     );
                     if (!mounted) return;
                     _marketCommentController.clear();

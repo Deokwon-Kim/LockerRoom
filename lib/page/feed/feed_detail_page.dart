@@ -535,20 +535,25 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                   onTap: () async {
                     final text = _commentsController.text.trim();
                     if (text.isEmpty) return;
-                    final user = FirebaseAuth.instance.currentUser!;
+                    final currentUser = FirebaseAuth.instance.currentUser!;
                     final comment = CommentModel(
                       id: '', // Firestore에서 자동생성
                       postId: widget.post.id,
-                      userId: user.uid,
-                      userName: user.displayName ?? '익명',
+                      userId: currentUser.uid,
+                      userName: currentUser.displayName ?? '익명',
                       text: text,
                       reComments: _replyParentId ?? '',
                       createdAt: DateTime.now(),
                       likesCount: 0,
                     );
-                    await context.read<CommentProvider>().addComment(
-                      widget.post.id,
-                      comment,
+                    await context.read<CommentProvider>().addCommentAndNotify(
+                      postId: widget.post.id,
+                      comment: comment,
+                      currentUserId: currentUser.uid,
+                      postOwnerId: widget.post.id,
+                      parentCommentOwnerId: _replyParentId == null
+                          ? null
+                          : _replyParentId,
                     );
                     if (!mounted) return;
                     _commentsController.clear();
