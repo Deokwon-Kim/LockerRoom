@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:http/http.dart';
 // import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/post_model.dart';
 
@@ -104,7 +105,13 @@ class FeedProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> toggleLike(PostModel post) async {
+  Future<void> toggleLikeAndNotify({
+    required String postId,
+    required PostModel post,
+    required String currentUserId,
+    required String postOwnerId,
+  }) async {
+    // 좋아요 반영
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
@@ -132,6 +139,34 @@ class FeedProvider extends ChangeNotifier {
       tx.update(postRef, {'likedBy': likedByList, 'likesCount': newLikes});
     });
     notifyListeners();
+
+    // 알림 대상 결정
+    final targetUserId = postOwnerId;
+
+    // 게시글 작성자면 알림없음
+    if (targetUserId == null || targetUserId == currentUserId) return;
+
+    // 알림 내용 미리보기
+    final preview = post.text == null
+        ? ''
+        : (post.text!.length > 40
+              ? '${post.text!.substring(0, 40)}...'
+              : post.text!);
+
+    // Firestore에 알림 문서 추가
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(targetUserId)
+        .collection('notifications')
+        .add({
+          'type': 'feedLike',
+          'postId': postId,
+          'fromUserId': currentUserId,
+          'toUserId': targetUserId,
+          'preview': preview,
+          'createdAt': FieldValue.serverTimestamp(),
+          'isRead': false,
+        });
   }
 
   // 현재 로그인 한 유저에 게시물만 불러오기
