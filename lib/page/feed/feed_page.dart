@@ -497,8 +497,12 @@ class _PostWidgetState extends State<PostWidget> {
                 Row(
                   children: [
                     IconButton(
-                      onPressed: () =>
-                          widget.feedProvider.toggleLike(widget.post),
+                      onPressed: () => widget.feedProvider.toggleLikeAndNotify(
+                        postId: widget.post.id,
+                        post: widget.post,
+                        currentUserId: currentUserId!,
+                        postOwnerId: widget.post.userId,
+                      ),
                       icon: Icon(
                         (FirebaseAuth.instance.currentUser?.uid != null &&
                                 widget.post.likedBy.contains(

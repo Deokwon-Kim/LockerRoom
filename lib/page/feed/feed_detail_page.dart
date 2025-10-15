@@ -357,8 +357,12 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                         return Row(
                           children: [
                             IconButton(
-                              onPressed: () =>
-                                  feedProvider.toggleLike(widget.post),
+                              onPressed: () => feedProvider.toggleLikeAndNotify(
+                                postId: widget.post.id,
+                                post: widget.post,
+                                currentUserId: currentUserId!,
+                                postOwnerId: widget.post.userId,
+                              ),
                               icon: Icon(
                                 isLiked
                                     ? Icons.favorite

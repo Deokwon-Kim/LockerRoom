@@ -258,7 +258,12 @@ class MyPostWidget extends StatelessWidget {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () => feedProvider.toggleLike(post),
+                    onPressed: () => feedProvider.toggleLikeAndNotify(
+                      currentUserId: currentUserId!,
+                      post: post,
+                      postId: post.id,
+                      postOwnerId: post.userId,
+                    ),
                     icon: Icon(
                       currentUserId != null &&
                               post.likedBy.contains(currentUserId)
