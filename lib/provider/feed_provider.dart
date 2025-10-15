@@ -4,9 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:http/http.dart';
 // import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/post_model.dart';
+import 'package:lockerroom/model/user_model.dart';
 
 class FeedProvider extends ChangeNotifier {
   final _postCollection = FirebaseFirestore.instance.collection('posts');
@@ -16,7 +16,13 @@ class FeedProvider extends ChangeNotifier {
   List<PostModel> get postsStream => _postsStream;
   // 필터의 기준이 되는 전체 스냅샷 원본 목록
   List<PostModel> _allPosts = [];
+  List<PostModel> _filteredPosts = [];
+  List<UserModel> _allUsers = [];
+  List<UserModel> _filteredUsers = [];
   String _query = '';
+
+  List<PostModel> get filteredPosts => _filteredPosts;
+  List<UserModel> get filteredUsers => _filteredUsers;
 
   StreamSubscription? _sub;
   bool isLoading = true;
@@ -49,12 +55,23 @@ class FeedProvider extends ChangeNotifier {
 
   void _applyFilter() {
     if (_query.isEmpty) {
-      _postsStream = List<PostModel>.from(_allPosts);
+      _filteredPosts = List<PostModel>.from(_allPosts);
+      _filteredUsers = [];
     } else {
-      _postsStream = _allPosts
+      _filteredPosts = _allPosts
           .where((post) => post.text.toLowerCase().contains(_query))
           .toList();
+
+      _filteredUsers = _allUsers.where((user) {
+        return user.username.toLowerCase().contains(_query);
+      }).toList();
     }
+    notifyListeners();
+  }
+
+  Future<void> loadAllUsers() async {
+    final snapshot = await FirebaseFirestore.instance.collection('users').get();
+    _allUsers = snapshot.docs.map((doc) => UserModel.fromDoc(doc)).toList();
     notifyListeners();
   }
 
