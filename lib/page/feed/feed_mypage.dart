@@ -117,7 +117,6 @@ class _FeedMypageState extends State<FeedMypage> {
                     color: fp.isFollowingUser(widget.targetUserId)
                         ? BACKGROUND_COLOR
                         : teamColor,
-                    border: Border.all(color: Colors.black),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

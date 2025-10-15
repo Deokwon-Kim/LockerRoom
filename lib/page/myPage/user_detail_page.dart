@@ -114,7 +114,6 @@ class _UserDetailPageState extends State<UserDetailPage> {
                         color: fp.isFollowingUser(widget.userId)
                             ? BACKGROUND_COLOR
                             : teamColor,
-                        border: Border.all(color: Colors.black),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
