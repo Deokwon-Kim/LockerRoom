@@ -8,6 +8,7 @@ import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/alert/declaration_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_mypage.dart';
+import 'package:lockerroom/page/myPage/user_detail_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -33,6 +34,15 @@ class _FeedPageState extends State<FeedPage> {
     final feedProvider = context.read<FeedProvider>();
 
     feedProvider.postStream(uid);
+    feedProvider.loadAllUsers();
+    // Reset search state after first frame to avoid notifyDuringBuild
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _isSearching = false;
+      _searchController.clear();
+      context.read<FeedProvider>().setQuery('');
+      setState(() {});
+    });
   }
 
   bool _isSearching = false;
@@ -42,6 +52,7 @@ class _FeedPageState extends State<FeedPage> {
   Widget build(BuildContext context) {
     final selectedColor =
         Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
+
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
@@ -96,7 +107,7 @@ class _FeedPageState extends State<FeedPage> {
                     horizontal: 10,
                     vertical: 10,
                   ),
-                  labelText: '검색어를 입력해주세요',
+                  labelText: '사용자 또는 게시물 검색',
                   labelStyle: TextStyle(color: Colors.grey, fontSize: 13),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -110,20 +121,85 @@ class _FeedPageState extends State<FeedPage> {
               ),
             ),
           Expanded(
-            child: Consumer<FeedProvider>(
-              builder: (context, feedProvider, child) {
-                final allPosts = feedProvider.postsStream;
+            child: Consumer2<FeedProvider, ProfileProvider>(
+              builder: (context, feedProvider, profileProvider, child) {
+                final allPosts = feedProvider.filteredPosts;
+                final filteredUser = feedProvider.filteredUsers;
+
                 if (feedProvider.isLoading) {
                   return Center(
                     child: CircularProgressIndicator(color: selectedColor),
                   );
                 }
-                if (allPosts.isEmpty) {
-                  return Center(
-                    child: Text(
-                      '게시물이 없습니다',
-                      style: TextStyle(color: GRAYSCALE_LABEL_500),
-                    ),
+                // 검색 중이고 사용자 검색 결과가 있다면 먼저 보여주기
+                if (_isSearching && filteredUser.isNotEmpty) {
+                  return ListView(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 15,
+                          vertical: 15,
+                        ),
+                        child: Text(
+                          '사용자',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: GRAYSCALE_LABEL_600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      ...filteredUser.map(
+                        (u) => ListTile(
+                          leading: CircleAvatar(
+                            radius: 20,
+                            backgroundColor: GRAYSCALE_LABEL_300,
+                            backgroundImage:
+                                (u.profileImage != null &&
+                                    u.profileImage!.isNotEmpty)
+                                ? NetworkImage(u.profileImage!)
+                                : null,
+                            child:
+                                (u.profileImage == null ||
+                                    u.profileImage!.isEmpty)
+                                ? const Icon(
+                                    Icons.person,
+                                    color: Colors.black,
+                                    size: 20,
+                                  )
+                                : null,
+                          ),
+                          title: Text(u.username),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    UserDetailPage(userId: u.uid),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      if (allPosts.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 15,
+                          ),
+                          child: Text(
+                            '게시물',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: GRAYSCALE_LABEL_600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ...allPosts.map(
+                        (p) => PostWidget(post: p, feedProvider: feedProvider),
+                      ),
+                    ],
                   );
                 }
                 return ListView.builder(
@@ -139,6 +215,13 @@ class _FeedPageState extends State<FeedPage> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // Clear controller only; avoid provider calls during teardown
+    _searchController.dispose();
+    super.dispose();
   }
 }
 
