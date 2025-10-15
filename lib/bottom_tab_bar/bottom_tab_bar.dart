@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/afterMarket/after_market.dart';
@@ -137,8 +136,8 @@ class _BottomTabBarState extends State<BottomTabBar> {
                   BottomNavigationBarItem(
                     icon: _buildTabIcon(
                       1,
-                      CupertinoIcons.search,
-                      CupertinoIcons.search,
+                      Icons.sports_baseball_outlined,
+                      Icons.sports_baseball,
                     ),
                     label: '',
                   ),
@@ -146,6 +145,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
                     icon: _buildSvgTabIcon(2, AppIcons.add, AppIcons.add),
                     label: '',
                   ),
+
                   BottomNavigationBarItem(
                     icon: _buildTabIcon(
                       3,
@@ -181,7 +181,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
       padding: const EdgeInsets.only(top: 8, bottom: 8),
       child: Icon(
         isSelected ? selectedIcon : unselectedIcon,
-        size: 25,
+        size: 29,
         color: isSelected
             ? context.watch<TeamProvider>().selectedTeam?.color
             : Colors.grey,
@@ -200,8 +200,8 @@ class _BottomTabBarState extends State<BottomTabBar> {
       padding: const EdgeInsets.only(top: 8, bottom: 8), // 상하 패딩 조절
       child: SvgIcon(
         assetPath: isSelected ? selectedSvgPath : unselectedSvgPath,
-        width: 25,
-        height: 25,
+        width: 28,
+        height: 28,
         color: isSelected
             ? context.watch<TeamProvider>().selectedTeam?.color
             : Colors.grey,
