@@ -58,7 +58,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         ),
         backgroundColor: BACKGROUND_COLOR,
         foregroundColor: BLACK,
-        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       backgroundColor: BACKGROUND_COLOR,
       body: provider.isLoading
@@ -104,6 +104,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             .doc(n.fromUserId)
                             .get(),
                         builder: (context, snap) {
+                          final isFollow = n.type == 'follow';
+                          final isFeedLike = n.type == 'feedLike';
+                          final commentLike = n.type == 'commentLike';
+
                           final data = snap.data?.data() ?? {};
                           final fetchedName = (data['username'] as String?)
                               ?.trim();
@@ -143,11 +147,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  TextSpan(text: '님이 '),
-                                  TextSpan(text: '회원님'),
-                                  TextSpan(text: '을 '),
-                                  TextSpan(text: '팔로우'),
-                                  TextSpan(text: '하기 시작했습니다.'),
+                                  if (isFollow) ...[
+                                    TextSpan(text: '님이 회원님을 팔로우하기 시작했습니다.'),
+                                  ] else if (isFeedLike) ...[
+                                    TextSpan(text: '님이 회원님의 게시글을 좋아합니다.'),
+                                  ] else if (commentLike) ...[
+                                    TextSpan(text: '님이 회원님의 댓글을 좋아합니다.'),
+                                  ],
                                 ],
                               ),
                             ),
