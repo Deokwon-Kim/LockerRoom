@@ -74,9 +74,9 @@ class CommentProvider with ChangeNotifier {
     // 알림 내용 미리보기
     final preview = comment.text == null
         ? ''
-        : (comment.text!.length > 40
-              ? '${comment.text!.substring(0, 40)}...'
-              : comment.text!);
+        : (comment.text.length > 40
+              ? '${comment.text.substring(0, 40)}...'
+              : comment.text);
 
     // Firestore에 알림 문서 추가
     await FirebaseFirestore.instance
@@ -120,9 +120,9 @@ class CommentProvider with ChangeNotifier {
     // 알림 내용 미리보기
     final preview = marketComment.text == null
         ? ''
-        : (marketComment.text!.length > 40
-              ? '${marketComment.text!.substring(0, 40)}...'
-              : marketComment.text!);
+        : (marketComment.text.length > 40
+              ? '${marketComment.text.substring(0, 40)}...'
+              : marketComment.text);
 
     // Firestore에 알림 문서 추가
     await FirebaseFirestore.instance
@@ -141,20 +141,68 @@ class CommentProvider with ChangeNotifier {
         });
   }
 
-  Future<void> toggleLike(CommentModel comment, String userId) async {
+  Future<void> commentLikeAndNotify({
+    required String commentId,
+    required CommentModel comment,
+    required String currentUserId,
+    required String commentOwnerId,
+  }) async {
+    // 댓글 좋아요 반영
     final docRef = _commentsCollection.doc(comment.id);
     final doc = await docRef.get();
     final data = doc.data()!;
     final likedBy = List<String>.from(data['likedBy'] ?? []);
 
-    if (likedBy.contains(userId)) {
-      likedBy.remove(userId);
+    if (likedBy.contains(currentUserId)) {
+      likedBy.remove(currentUserId);
     } else {
-      likedBy.add(userId);
+      likedBy.add(currentUserId);
     }
 
     await docRef.update({'likedBy': likedBy, 'likesCount': likedBy.length});
+
+    // 알림 대상 결정
+    final targetUserId = commentOwnerId;
+
+    // 댓글 작성자의 좋아요는 알림없음
+    if (targetUserId == null || targetUserId == currentUserId) return;
+
+    // 알림내용 미리보기
+    final preview = comment.text == null
+        ? ''
+        : (comment.text.length > 40
+              ? '${comment.text.substring(0, 40)}...'
+              : comment.text);
+    // Firestore에 알림 문서 추가
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(targetUserId)
+        .collection('notifications')
+        .add({
+          'type': 'commentLike',
+          'commentId': commentId,
+          'fromUserId': currentUserId,
+          'toUserId': targetUserId,
+          'preview': preview,
+          'createdAt': FieldValue.serverTimestamp(),
+          'isRead': false,
+        });
   }
+
+  // Future<void> toggleLike(CommentModel comment, String userId) async {
+  //   final docRef = _commentsCollection.doc(comment.id);
+  //   final doc = await docRef.get();
+  //   final data = doc.data()!;
+  //   final likedBy = List<String>.from(data['likedBy'] ?? []);
+
+  //   if (likedBy.contains(userId)) {
+  //     likedBy.remove(userId);
+  //   } else {
+  //     likedBy.add(userId);
+  //   }
+
+  //   await docRef.update({'likedBy': likedBy, 'likesCount': likedBy.length});
+  // }
 
   void cancelSubscription(String postId) {
     _subs[postId]?.cancel();
