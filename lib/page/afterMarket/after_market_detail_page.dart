@@ -665,9 +665,11 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                 Spacer(),
                 IconButton(
                   onPressed: currentUserId != null
-                      ? () => commentProvider.toggleLike(
-                          parentComment,
-                          currentUserId,
+                      ? () => commentProvider.commentLikeAndNotify(
+                          commentId: parentComment.id,
+                          comment: parentComment,
+                          currentUserId: currentUserId,
+                          commentOwnerId: parentComment.userId,
                         )
                       : null,
                   icon: Icon(
@@ -850,7 +852,12 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
               Spacer(),
               IconButton(
                 onPressed: currentUserId != null
-                    ? () => commentProvider.toggleLike(reply, currentUserId)
+                    ? () => commentProvider.commentLikeAndNotify(
+                        commentId: reply.id,
+                        comment: reply,
+                        currentUserId: currentUserId,
+                        commentOwnerId: reply.userId,
+                      )
                     : null,
                 icon: Icon(
                   liked ? Icons.favorite : Icons.favorite_border,

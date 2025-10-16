@@ -632,7 +632,12 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                 SizedBox(width: 20),
                 IconButton(
                   onPressed: currentUserId != null
-                      ? () => commentProvider.toggleLike(c, currentUserId)
+                      ? () => commentProvider.commentLikeAndNotify(
+                          commentId: c.id,
+                          comment: c,
+                          currentUserId: currentUserId,
+                          commentOwnerId: c.userId,
+                        )
                       : null,
                   icon: Icon(
                     liked ? Icons.favorite : Icons.favorite_border,
@@ -811,7 +816,12 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
               Spacer(),
               IconButton(
                 onPressed: currentUserId != null
-                    ? () => commentProvider.toggleLike(reply, currentUserId)
+                    ? () => commentProvider.commentLikeAndNotify(
+                        commentId: reply.id,
+                        comment: reply,
+                        currentUserId: currentUserId,
+                        commentOwnerId: reply.userId,
+                      )
                     : null,
                 icon: Icon(
                   liked ? Icons.favorite : Icons.favorite_border,
