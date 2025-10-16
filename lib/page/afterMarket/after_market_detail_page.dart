@@ -627,8 +627,6 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
     CommentProvider commentProvider,
     String? currentUserId,
   ) {
-    final liked = currentUserId != null && (parentComment.likesCount! > 0);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -663,22 +661,40 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Spacer(),
-                IconButton(
-                  onPressed: currentUserId != null
-                      ? () => commentProvider.commentLikeAndNotify(
-                          commentId: parentComment.id,
-                          comment: parentComment,
-                          currentUserId: currentUserId,
-                          commentOwnerId: parentComment.userId,
-                        )
-                      : null,
-                  icon: Icon(
-                    liked ? Icons.favorite : Icons.favorite_border,
-                    color: liked ? Colors.red : null,
-                    size: 20,
-                  ),
+                Consumer<CommentProvider>(
+                  builder: (context, commentProvider, _) {
+                    final updatedComment = commentProvider
+                        .getMarketComments(widget.marketPost.postId)
+                        .firstWhere(
+                          (comment) => comment.id == parentComment.id,
+                          orElse: () => parentComment,
+                        );
+                    final bool isLiked =
+                        currentUserId != null &&
+                        updatedComment.likedBy.contains(currentUserId);
+
+                    return Row(
+                      children: [
+                        IconButton(
+                          onPressed: currentUserId != null
+                              ? () => commentProvider.commentLikeAndNotify(
+                                  commentId: parentComment.id,
+                                  comment: updatedComment,
+                                  currentUserId: currentUserId,
+                                  commentOwnerId: parentComment.userId,
+                                )
+                              : null,
+                          icon: Icon(
+                            isLiked ? Icons.favorite : Icons.favorite_border,
+                            color: isLiked ? Colors.red : null,
+                            size: 20,
+                          ),
+                        ),
+                        Text('${updatedComment.likesCount}'),
+                      ],
+                    );
+                  },
                 ),
-                Text('${parentComment.likesCount}'),
                 SizedBox(width: 5),
                 if (currentUserId != null &&
                     parentComment.userId == currentUserId)
@@ -795,17 +811,14 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
           AnimatedContainer(
             duration: Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            margin: EdgeInsets.only(left: 20),
-            child: Transform.translate(
-              offset: Offset(0, -30),
-              child: Column(
-                children: replies
-                    .map(
-                      (reply) =>
-                          _buildReply(reply, commentProvider, currentUserId),
-                    )
-                    .toList(),
-              ),
+            margin: EdgeInsets.only(left: 20, top: 10),
+            child: Column(
+              children: replies
+                  .map(
+                    (reply) =>
+                        _buildReply(reply, commentProvider, currentUserId),
+                  )
+                  .toList(),
             ),
           ),
       ],
@@ -817,8 +830,6 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
     CommentProvider commentProvider,
     String? currentUserId,
   ) {
-    final liked = currentUserId != null && (reply.likesCount! > 0);
-
     return Padding(
       padding: const EdgeInsets.only(left: 10.0),
       child: Column(
@@ -850,22 +861,44 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               ),
               Spacer(),
-              IconButton(
-                onPressed: currentUserId != null
-                    ? () => commentProvider.commentLikeAndNotify(
-                        commentId: reply.id,
-                        comment: reply,
-                        currentUserId: currentUserId,
-                        commentOwnerId: reply.userId,
-                      )
-                    : null,
-                icon: Icon(
-                  liked ? Icons.favorite : Icons.favorite_border,
-                  color: liked ? Colors.red : null,
-                  size: 16,
-                ),
+              Consumer<CommentProvider>(
+                builder: (context, commentProvider, _) {
+                  final updatedReply = commentProvider
+                      .getMarketComments(widget.marketPost.postId)
+                      .firstWhere(
+                        (comment) => comment.id == reply.id,
+                        orElse: () => reply,
+                      );
+                  final bool isLiked =
+                      currentUserId != null &&
+                      updatedReply.likedBy.contains(currentUserId);
+
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: currentUserId != null
+                            ? () => commentProvider.commentLikeAndNotify(
+                                commentId: reply.id,
+                                comment: updatedReply,
+                                currentUserId: currentUserId,
+                                commentOwnerId: reply.userId,
+                              )
+                            : null,
+                        icon: Icon(
+                          isLiked ? Icons.favorite : Icons.favorite_border,
+                          color: isLiked ? Colors.red : null,
+                          size: 16,
+                        ),
+                      ),
+                      Text(
+                        '${updatedReply.likesCount}',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  );
+                },
               ),
-              Text('${reply.likesCount}', style: TextStyle(fontSize: 12)),
               SizedBox(width: 5),
               if (currentUserId != null && reply.userId == currentUserId)
                 PopupMenuTheme(
