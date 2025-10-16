@@ -8,6 +8,7 @@ class CommentModel {
   final String text;
   final String reComments;
   final int? likesCount;
+  final List<String> likedBy;
   final DateTime createdAt;
 
   CommentModel({
@@ -18,6 +19,7 @@ class CommentModel {
     required this.text,
     required this.reComments,
     this.likesCount = 0,
+    this.likedBy = const [],
     required this.createdAt,
   });
 
@@ -44,6 +46,7 @@ class CommentModel {
       text: data['text'] ?? '',
       reComments: (data['reComments'] ?? '') as String,
       likesCount: data['likesCount'] ?? 0,
+      likedBy: List<String>.from(data['likedBy'] ?? []),
       createdAt: createdAt,
     );
   }
@@ -56,6 +59,7 @@ class CommentModel {
       'text': text,
       'reComments': reComments,
       'likesCount': likesCount,
+      'likedBy': likedBy,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
