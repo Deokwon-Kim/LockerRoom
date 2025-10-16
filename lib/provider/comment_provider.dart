@@ -69,14 +69,12 @@ class CommentProvider with ChangeNotifier {
         : postOwnerId;
 
     // 자기 자신이면 알림 스킵
-    if (targetUserId == null || targetUserId == currentUserId) return;
+    if (targetUserId == currentUserId) return;
 
     // 알림 내용 미리보기
-    final preview = comment.text == null
-        ? ''
-        : (comment.text.length > 40
-              ? '${comment.text.substring(0, 40)}...'
-              : comment.text);
+    final preview = comment.text.length > 40
+        ? '${comment.text.substring(0, 40)}...'
+        : comment.text;
 
     // Firestore에 알림 문서 추가
     await FirebaseFirestore.instance
@@ -115,14 +113,12 @@ class CommentProvider with ChangeNotifier {
         : marketPostOwnerId;
 
     // 자기 자신이면 알림 스킵
-    if (targetUserId == null || targetUserId == currentUserId) return;
+    if (targetUserId == currentUserId) return;
 
     // 알림 내용 미리보기
-    final preview = marketComment.text == null
-        ? ''
-        : (marketComment.text.length > 40
-              ? '${marketComment.text.substring(0, 40)}...'
-              : marketComment.text);
+    final preview = marketComment.text.length > 40
+        ? '${marketComment.text.substring(0, 40)}...'
+        : marketComment.text;
 
     // Firestore에 알림 문서 추가
     await FirebaseFirestore.instance
@@ -153,7 +149,9 @@ class CommentProvider with ChangeNotifier {
     final data = doc.data()!;
     final likedBy = List<String>.from(data['likedBy'] ?? []);
 
-    if (likedBy.contains(currentUserId)) {
+    final wasLiked = likedBy.contains(currentUserId);
+
+    if (wasLiked) {
       likedBy.remove(currentUserId);
     } else {
       likedBy.add(currentUserId);
@@ -161,18 +159,19 @@ class CommentProvider with ChangeNotifier {
 
     await docRef.update({'likedBy': likedBy, 'likesCount': likedBy.length});
 
+    // 좋아요 추가할 때만 알림 전송 (취소할 때는 알림 안 함)
+    if (wasLiked) return;
+
     // 알림 대상 결정
     final targetUserId = commentOwnerId;
 
     // 댓글 작성자의 좋아요는 알림없음
-    if (targetUserId == null || targetUserId == currentUserId) return;
+    if (targetUserId == currentUserId) return;
 
     // 알림내용 미리보기
-    final preview = comment.text == null
-        ? ''
-        : (comment.text.length > 40
-              ? '${comment.text.substring(0, 40)}...'
-              : comment.text);
+    final preview = comment.text.length > 40
+        ? '${comment.text.substring(0, 40)}...'
+        : comment.text;
     // Firestore에 알림 문서 추가
     await FirebaseFirestore.instance
         .collection('users')
@@ -188,21 +187,6 @@ class CommentProvider with ChangeNotifier {
           'isRead': false,
         });
   }
-
-  // Future<void> toggleLike(CommentModel comment, String userId) async {
-  //   final docRef = _commentsCollection.doc(comment.id);
-  //   final doc = await docRef.get();
-  //   final data = doc.data()!;
-  //   final likedBy = List<String>.from(data['likedBy'] ?? []);
-
-  //   if (likedBy.contains(userId)) {
-  //     likedBy.remove(userId);
-  //   } else {
-  //     likedBy.add(userId);
-  //   }
-
-  //   await docRef.update({'likedBy': likedBy, 'likesCount': likedBy.length});
-  // }
 
   void cancelSubscription(String postId) {
     _subs[postId]?.cancel();
@@ -221,28 +205,21 @@ class CommentProvider with ChangeNotifier {
   }
 
   Future<void> deleteCommentCascade(CommentModel comment) async {
-    // 부모 댓글이면 연결된 모든 답글까지 일괄 삭제
-    if (comment.reComments.isEmpty) {
-      final batch = FirebaseFirestore.instance.batch();
+    // 트리 전체(부모/답글 포함)를 재귀적으로 삭제
+    // 1) 현재 댓글의 모든 직계 자식을 가져와 먼저 삭제
+    final repliesSnap = await _commentsCollection
+        .where('postId', isEqualTo: comment.postId)
+        .where('reComments', isEqualTo: comment.id)
+        .get();
 
-      // 부모 댓글 문서
-      final parentRef = _commentsCollection.doc(comment.id);
-      batch.delete(parentRef);
-
-      // 자식 답글들 조회 후 배치 삭제
-      final repliesSnap = await _commentsCollection
-          .where('postId', isEqualTo: comment.postId)
-          .where('reComments', isEqualTo: comment.id)
-          .get();
-      for (final d in repliesSnap.docs) {
-        batch.delete(d.reference);
-      }
-
-      await batch.commit();
-    } else {
-      // 답글이면 단일 삭제
-      await deleteComment(comment);
+    for (final d in repliesSnap.docs) {
+      // 자식 댓글도 하위가 있을 수 있으므로 재귀 호출
+      final child = CommentModel.fromDoc(d);
+      await deleteCommentCascade(child);
     }
+
+    // 2) 마지막으로 현재 댓글 삭제
+    await _commentsCollection.doc(comment.id).delete();
   }
 
   @override
