@@ -166,9 +166,9 @@ class FeedProvider extends ChangeNotifier {
     // 알림 내용 미리보기
     final preview = post.text == null
         ? ''
-        : (post.text!.length > 40
-              ? '${post.text!.substring(0, 40)}...'
-              : post.text!);
+        : (post.text.length > 40
+              ? '${post.text.substring(0, 40)}...'
+              : post.text);
 
     // Firestore에 알림 문서 추가
     await FirebaseFirestore.instance
