@@ -10,6 +10,8 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
 import 'package:lockerroom/page/login/login_page.dart';
 import 'package:lockerroom/page/login/signup_page.dart';
+import 'package:lockerroom/page/notice/notice_list_page.dart';
+import 'package:lockerroom/page/setting/custormer_center_page.dart';
 import 'package:lockerroom/page/setting/find_password_page.dart';
 import 'package:lockerroom/page/setting/nickname_change_page.dart';
 import 'package:lockerroom/page/setting/setting_page.dart';
@@ -164,6 +166,8 @@ class MyApp extends StatelessWidget {
           'changeNickname': (context) => const NicknameChangePage(),
           'findPassword': (context) => const FindPasswordPage(),
           'notifications': (context) => const NotificationsPage(),
+          'customer': (context) => const CustormerCenterPage(),
+          'noticeList': (context) => const NoticeListPage(),
         },
       ),
     );
