@@ -6,7 +6,6 @@ import 'package:lockerroom/page/my_post/my_market_page.dart';
 import 'package:lockerroom/page/my_post/mypost.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/follow/follow_list_page.dart';
-import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -438,7 +437,6 @@ class _MypageState extends State<Mypage> {
                   tabs: [
                     Text('게시글', style: TextStyle(color: BLACK)),
                     Text('마켓', style: TextStyle(color: BLACK)),
-                    Text('직관기록', style: TextStyle(color: BLACK)),
                   ],
                   tabBarProperties: TabBarProperties(
                     indicatorColor: selectedTeam?.color,
@@ -446,11 +444,7 @@ class _MypageState extends State<Mypage> {
                     indicatorWeight: 3.0,
                     unselectedLabelColor: GRAYSCALE_LABEL_500,
                   ),
-                  views: [
-                    MypostPage(),
-                    MyMarketPage(),
-                    IntutionRecordListPage(),
-                  ],
+                  views: [MypostPage(), MyMarketPage()],
                   onChange: (index) => print(index),
                 ),
               ),
