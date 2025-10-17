@@ -8,6 +8,7 @@ import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/alert/declaration_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_mypage.dart';
+import 'package:lockerroom/page/feed/fullscreen_video_player.dart';
 import 'package:lockerroom/page/myPage/user_detail_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
@@ -17,6 +18,7 @@ import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/page/feed/fullscreen_image_viewer.dart';
 
 class FeedPage extends StatefulWidget {
   final PostModel? post; // nullable로 변경
@@ -507,11 +509,11 @@ class _PostWidgetState extends State<PostWidget> {
                     builder: (context, constraints) {
                       final bool inSingle = widget.post.mediaUrls.length == 1;
                       final double availableWidth = constraints.maxWidth;
-                      // 리스트 높이와 각 아이템 너비를 화면/가용 폭 기준으로 계산
-                      final double listHeight = (availableWidth * 0.55).clamp(
-                        160.0,
-                        320.0,
-                      );
+
+                      // 싱글일 때는 16:9 비율, 멀티일 때는 정사각형
+                      final double aspectRatio = inSingle ? 16 / 9 : 1.0;
+                      final double listHeight = (availableWidth / aspectRatio)
+                          .clamp(160.0, 400.0);
                       final double itemWidth = inSingle
                           ? availableWidth
                           : (availableWidth * 0.48).clamp(
@@ -538,36 +540,68 @@ class _PostWidgetState extends State<PostWidget> {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: isVideo
-                                    ? NetworkVideoPlayer(
-                                        videoUrl: url,
-                                        width: itemWidth,
-                                        height: listHeight,
-                                        fit: BoxFit.cover,
-                                        autoPlay: true,
-                                        muted: true,
-                                        showControls: false,
+                                    ? GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  FullscreenVideoPlayer(
+                                                    videoUrl: url,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                        child: NetworkVideoPlayer(
+                                          videoUrl: url,
+                                          width: itemWidth,
+                                          height: listHeight,
+                                          fit: BoxFit.contain,
+                                          autoPlay: true,
+                                          muted: true,
+                                          showControls: false,
+                                        ),
                                       )
-                                    : Image.network(
-                                        url,
-                                        height: listHeight,
-                                        width: itemWidth,
-                                        fit: BoxFit.cover,
-                                        loadingBuilder:
-                                            (context, child, loadingProgress) {
-                                              if (loadingProgress == null) {
-                                                return child;
-                                              }
-                                              return SizedBox(
-                                                height: listHeight,
-                                                width: itemWidth,
-                                                child: Center(
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                        color: selectedColor,
-                                                      ),
-                                                ),
-                                              );
-                                            },
+                                    : GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  FullscreenImageViewer(
+                                                    imageUrls:
+                                                        widget.post.mediaUrls,
+                                                    initialIndex: i,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                        child: Image.network(
+                                          url,
+                                          height: listHeight,
+                                          width: itemWidth,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder:
+                                              (
+                                                context,
+                                                child,
+                                                loadingProgress,
+                                              ) {
+                                                if (loadingProgress == null) {
+                                                  return child;
+                                                }
+                                                return SizedBox(
+                                                  height: listHeight,
+                                                  width: itemWidth,
+                                                  child: Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          color: selectedColor,
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                        ),
                                       ),
                               ),
                             );

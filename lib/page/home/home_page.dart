@@ -3,15 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/team_model.dart';
+import 'package:lockerroom/page/feed/fullscreen_image_viewer.dart';
+import 'package:lockerroom/page/feed/fullscreen_video_player.dart';
+import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/page/schedule/schedule.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
+import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/video_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
 import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   final TeamModel teamModel;
@@ -292,50 +295,83 @@ class _HomePageState extends State<HomePage> {
                                                   borderRadius:
                                                       BorderRadius.circular(8),
                                                   child: isVideo
-                                                      ? NetworkVideoPlayer(
-                                                          videoUrl: url,
-                                                          width: inSingle
-                                                              ? 200
-                                                              : 150,
-                                                          height: 150,
-                                                          fit: BoxFit.cover,
-                                                          autoPlay: true,
-                                                          muted: true,
-                                                          showControls: false,
-                                                        )
-                                                      : Image.network(
-                                                          url,
-                                                          height: 150,
-                                                          width: inSingle
-                                                              ? 200
-                                                              : 150,
-                                                          fit: inSingle
-                                                              ? BoxFit.cover
-                                                              : BoxFit.cover,
-                                                          loadingBuilder:
-                                                              (
-                                                                context,
-                                                                child,
-                                                                loadingProgress,
-                                                              ) {
-                                                                if (loadingProgress ==
-                                                                    null) {
-                                                                  return child;
-                                                                }
-                                                                return SizedBox(
-                                                                  height: 150,
-                                                                  width:
-                                                                      inSingle
-                                                                      ? 200
-                                                                      : 150,
-                                                                  child: Center(
-                                                                    child: CircularProgressIndicator(
-                                                                      color: selectedTeam
-                                                                          .color,
+                                                      ? GestureDetector(
+                                                          onTap: () {
+                                                            Navigator.push(
+                                                              context,
+                                                              MaterialPageRoute(
+                                                                builder: (context) =>
+                                                                    FullscreenVideoPlayer(
+                                                                      videoUrl:
+                                                                          url,
                                                                     ),
-                                                                  ),
-                                                                );
-                                                              },
+                                                              ),
+                                                            );
+                                                          },
+                                                          child:
+                                                              NetworkVideoPlayer(
+                                                                videoUrl: url,
+                                                                width: inSingle
+                                                                    ? 200
+                                                                    : 150,
+                                                                height: 150,
+                                                                fit: BoxFit
+                                                                    .cover,
+                                                                autoPlay: true,
+                                                                muted: true,
+                                                                showControls:
+                                                                    false,
+                                                              ),
+                                                        )
+                                                      : GestureDetector(
+                                                          onTap: () {
+                                                            Navigator.push(
+                                                              context,
+                                                              MaterialPageRoute(
+                                                                builder: (context) =>
+                                                                    FullscreenImageViewer(
+                                                                      imageUrls:
+                                                                          post.mediaUrls,
+                                                                      initialIndex:
+                                                                          i,
+                                                                    ),
+                                                              ),
+                                                            );
+                                                          },
+                                                          child: Image.network(
+                                                            url,
+                                                            height: 150,
+                                                            width: inSingle
+                                                                ? 200
+                                                                : 150,
+                                                            fit: inSingle
+                                                                ? BoxFit.cover
+                                                                : BoxFit.cover,
+                                                            loadingBuilder:
+                                                                (
+                                                                  context,
+                                                                  child,
+                                                                  loadingProgress,
+                                                                ) {
+                                                                  if (loadingProgress ==
+                                                                      null) {
+                                                                    return child;
+                                                                  }
+                                                                  return SizedBox(
+                                                                    height: 150,
+                                                                    width:
+                                                                        inSingle
+                                                                        ? 200
+                                                                        : 150,
+                                                                    child: Center(
+                                                                      child: CircularProgressIndicator(
+                                                                        color: selectedTeam
+                                                                            .color,
+                                                                      ),
+                                                                    ),
+                                                                  );
+                                                                },
+                                                          ),
                                                         ),
                                                 ),
                                               );
@@ -374,6 +410,152 @@ class _HomePageState extends State<HomePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
+                        '나의 직관기록',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => IntutionRecordListPage(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          '직관기록 더보기 >',
+                          style: TextStyle(
+                            color: GRAYSCALE_LABEL_500,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  ChangeNotifierProvider(
+                    create: (_) => IntutionRecordListProvider()..subscribe(),
+                    child: Consumer2<IntutionRecordListProvider, TeamProvider>(
+                      builder: (context, ip, tp, child) {
+                        if (ip.isLoading) {
+                          final selectedColor =
+                              tp.selectedTeam?.color ?? BUTTON;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              color: selectedColor,
+                            ),
+                          );
+                        }
+                        final items = ip.records;
+                        if (items.isEmpty) {
+                          return const Center(child: Text('직관 기록이 없습니다.'));
+                        }
+                        int wins = 0;
+                        int losses = 0;
+                        int draws = 0;
+                        int? _prseScore(dynamic v) =>
+                            v is int ? v : int.tryParse('$v');
+                        for (final d in items) {
+                          final int? my = _prseScore(d['myScore']);
+                          final int? opp = _prseScore(d['opponentScore']);
+                          if (my != null && opp != null) {
+                            if (my > opp) {
+                              wins++;
+                            } else if (my < opp) {
+                              losses++;
+                            } else {
+                              draws++;
+                            }
+                          }
+                        }
+                        // 승률 계산
+                        final int totalGames = items.length;
+                        final double winRate = totalGames > 0
+                            ? (wins / totalGames) * 100
+                            : 0;
+
+                        return Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: WHITE,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: GRAYSCALE_LABEL_300,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '총 ${items.length} 경기',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          '승 $wins',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            color: Colors.green.shade800,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          '패 $losses',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            color: Colors.red.shade800,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          '무 $draws',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            color: Colors.grey.shade800,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Spacer(),
+                                        Text(
+                                          '승률: ${winRate.toStringAsFixed(1)}%',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue.shade800,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
                         selectedTeam.youtubeName,
                         style: TextStyle(
                           fontSize: 16,
@@ -382,9 +564,13 @@ class _HomePageState extends State<HomePage> {
                       ),
                       TextButton(
                         onPressed: () {
-                          launchUrl(
-                            Uri.parse(selectedTeam.youtubeUrl),
-                            mode: LaunchMode.externalApplication,
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => FullscreenVideoPlayer(
+                                videoUrl: selectedTeam.youtubeUrl,
+                              ),
+                            ),
                           );
                         },
                         child: Text(
@@ -425,9 +611,14 @@ class _HomePageState extends State<HomePage> {
                                   onTap: () {
                                     final youtubeUrl =
                                         'https://www.youtube.com/watch?v=${video.id}';
-                                    launchUrl(
-                                      Uri.parse(youtubeUrl),
-                                      mode: LaunchMode.externalApplication,
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            FullscreenVideoPlayer(
+                                              videoUrl: youtubeUrl,
+                                            ),
+                                      ),
                                     );
                                   },
                                   child: Image.network(
