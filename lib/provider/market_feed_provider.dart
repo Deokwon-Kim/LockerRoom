@@ -170,4 +170,29 @@ class MarketFeedProvider extends ChangeNotifier {
           );
     });
   }
+
+  // 피드 신고 기능
+  Future<void> reportMarketPost({
+    required MarketPostModel marketPost,
+    required String reporterUserId,
+    required String reporterUserName,
+    required String reason,
+  }) async {
+    try {
+      await FirebaseFirestore.instance.collection('market_feed_reports').add({
+        'type': 'market_post',
+        'postId': marketPost.postId,
+        'reportedUserId': marketPost.userId,
+        'reportedUserName': marketPost.userName,
+        'reporterUserId': reporterUserId,
+        'reporterUserName': reporterUserName,
+        'postText': marketPost.description,
+        'reason': reason,
+        'createdAt': FieldValue.serverTimestamp(),
+        'status': 'pending', // pending, reviewed, closed
+      });
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

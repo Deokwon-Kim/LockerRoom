@@ -161,14 +161,12 @@ class FeedProvider extends ChangeNotifier {
     final targetUserId = postOwnerId;
 
     // 게시글 작성자면 알림없음
-    if (targetUserId == null || targetUserId == currentUserId) return;
+    if (targetUserId == currentUserId) return;
 
     // 알림 내용 미리보기
-    final preview = post.text == null
-        ? ''
-        : (post.text.length > 40
-              ? '${post.text.substring(0, 40)}...'
-              : post.text);
+    final preview = (post.text.length > 40
+        ? '${post.text.substring(0, 40)}...'
+        : post.text);
 
     // Firestore에 알림 문서 추가
     await FirebaseFirestore.instance
@@ -247,5 +245,30 @@ class FeedProvider extends ChangeNotifier {
     }
 
     await batch.commit();
+  }
+
+  // 피드 신고 기능
+  Future<void> reportPost({
+    required PostModel post,
+    required String reporterUserId,
+    required String reporterUserName,
+    required String reason,
+  }) async {
+    try {
+      await FirebaseFirestore.instance.collection('feed_reports').add({
+        'type': 'feed_post',
+        'postId': post.id,
+        'reportedUserId': post.userId,
+        'reportedUserName': post.userName,
+        'reporterUserId': reporterUserId,
+        'reporterUserName': reporterUserName,
+        'postText': post.text,
+        'reason': reason,
+        'createdAt': FieldValue.serverTimestamp(),
+        'status': 'pending', // pending, reviewed, closed
+      });
+    } catch (e) {
+      rethrow;
+    }
   }
 }

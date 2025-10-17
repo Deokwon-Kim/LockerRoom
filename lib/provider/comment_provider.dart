@@ -222,6 +222,60 @@ class CommentProvider with ChangeNotifier {
     await _commentsCollection.doc(comment.id).delete();
   }
 
+  // 댓글 신고 기능
+  Future<void> reportComment({
+    required CommentModel comment,
+    required String reporterUserId,
+    required String reporterUserName,
+    required String reason,
+  }) async {
+    try {
+      await FirebaseFirestore.instance.collection('feed_comment_reports').add({
+        'type': 'comment',
+        'commentId': comment.id,
+        'postId': comment.postId,
+        'reportedUserId': comment.userId,
+        'reportedUserName': comment.userName,
+        'reporterUserId': reporterUserId,
+        'reporterUserName': reporterUserName,
+        'commentText': comment.text,
+        'reason': reason,
+        'createdAt': FieldValue.serverTimestamp(),
+        'status': 'pending', // pending, reviewed, closed
+      });
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // 마켓 댓글 신고 기능
+  Future<void> reportMarketComment({
+    required CommentModel comment,
+    required String reporterUserId,
+    required String reporterUserName,
+    required String reason,
+  }) async {
+    try {
+      await FirebaseFirestore.instance.collection('market_comment_reports').add(
+        {
+          'type': 'market_comment',
+          'commentId': comment.id,
+          'postId': comment.postId,
+          'reportedUserId': comment.userId,
+          'reportedUserName': comment.userName,
+          'reporterUserId': reporterUserId,
+          'reporterUserName': reporterUserName,
+          'commentText': comment.text,
+          'reason': reason,
+          'createdAt': FieldValue.serverTimestamp(),
+          'status': 'pending', // pending, reviewed, closed
+        },
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   @override
   void dispose() {
     for (var sub in _subs.values) {
