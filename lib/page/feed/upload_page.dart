@@ -429,8 +429,49 @@ class _UploadPageState extends State<UploadPage> {
                   subtitle: Text('길면 자동으로 압축해요.'),
                   onTap: () async {
                     if (uploadProvider.isUploading) return;
-                    await uploadProvider.pickVideo();
-                    if (context.mounted) Navigator.pop(context);
+                    try {
+                      // 로딩 다이얼로그 표시
+                      if (context.mounted) {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => AlertDialog(
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircularProgressIndicator(color: BUTTON),
+                                SizedBox(height: 20),
+                                Text(
+                                  '동영상 처리 중...',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      // ⚡ wechat_assets_picker 사용 (빠름)
+                      await uploadProvider.pickVideoFast(context);
+
+                      if (context.mounted) {
+                        Navigator.pop(context); // 로딩 다이얼로그 닫기
+                        Navigator.pop(context); // 메뉴 닫기
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        Navigator.pop(context); // 로딩 다이얼로그 닫기
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              e.toString().replaceAll('Exception: ', ''),
+                            ),
+                            backgroundColor: Colors.red,
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      }
+                    }
                   },
                 ),
                 SizedBox(height: 4),
