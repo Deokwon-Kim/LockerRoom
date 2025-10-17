@@ -175,11 +175,8 @@ class UploadProvider extends ChangeNotifier {
   }
 
   Future<File> _compressVideoFast(File file, int durationSeconds) async {
-    // 길이에 따라 품질 자동 조정
-    final quality = durationSeconds > 30
-        ? VideoQuality
-              .LowQuality // 30초 초과: 낮은 품질 (빠름)
-        : VideoQuality.MediumQuality; // 30초 이하: 중간 품질
+    // 항상 중간 품질로 고정 (품질과 속도의 균형)
+    const quality = VideoQuality.MediumQuality;
 
     try {
       final info = await VideoCompress.compressVideo(
@@ -187,7 +184,7 @@ class UploadProvider extends ChangeNotifier {
         quality: quality,
         deleteOrigin: false,
         includeAudio: true,
-        frameRate: 24, // 기본 30fps → 24fps로 낮춤
+        frameRate: 20, // 24fps → 20fps로 낮춤 (더 빠른 압축)
       );
       return File(info!.path!);
     } catch (e) {
@@ -205,9 +202,9 @@ class UploadProvider extends ChangeNotifier {
       final data = await VideoThumbnail.thumbnailData(
         video: _video!.path,
         imageFormat: ImageFormat.PNG,
-        maxHeight: 80,
-        maxWidth: 120,
-        quality: 40,
+        maxHeight: 150,
+        maxWidth: 200,
+        quality: 100,
         timeMs: 0,
       );
       _videoThumbnail = data;
