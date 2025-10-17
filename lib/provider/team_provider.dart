@@ -26,7 +26,7 @@ class TeamProvider with ChangeNotifier {
         symplename: '두산',
         stadium: '잠실야구장',
         logoPath: 'assets/images/logo/1.png',
-        calenderLogo: 'assets/images/logo/bears.png',
+        calenderLogo: 'assets/images/logo/1.png',
         symbolPath: 'assets/images/symbol/newlogo2.png',
         youtubeName: 'BEARS TV',
         youtubeUrl: 'https://www.youtube.com/@bearstv1982',
