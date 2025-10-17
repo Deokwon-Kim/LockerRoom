@@ -40,7 +40,7 @@ dependencies:
   firebase_core: ^4.0.0
   firebase_auth: ^6.0.0
   toastification: ^3.0.3
-  flutter_local_notifications: ^17.2.1
+  flutter_local_notifications: ^19.4.2
   cloud_firestore: ^6.0.0
   google_fonts: ^6.3.0
   csv: ^6.0.0
@@ -60,6 +60,9 @@ dependencies:
   intl: ^0.20.2
   carousel_slider: ^5.1.1
   firebase_messaging: ^16.0.2
+  wechat_assets_picker: ^9.1.0
+  photo_manager: ^3.0.0
+  permission_handler: ^12.0.1
 
 
 dev_dependencies:
@@ -71,7 +74,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
