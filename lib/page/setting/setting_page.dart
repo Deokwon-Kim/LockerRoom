@@ -275,7 +275,7 @@ class SettingPage extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, 'customerCenter');
+                          Navigator.pushNamed(context, 'customer');
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -289,7 +289,7 @@ class SettingPage extends StatelessWidget {
                             ),
                             IconButton(
                               onPressed: () {
-                                Navigator.pushNamed(context, 'customerCenter');
+                                Navigator.pushNamed(context, 'customer');
                               },
                               icon: Icon(
                                 Icons.arrow_forward_ios_rounded,
