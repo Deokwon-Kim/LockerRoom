@@ -147,11 +147,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
                   ),
 
                   BottomNavigationBarItem(
-                    icon: _buildTabIcon(
-                      3,
-                      Icons.storefront_outlined,
-                      Icons.storefront_rounded,
-                    ),
+                    icon: _buildSvgTabIcon(3, AppIcons.shop, AppIcons.shopFill),
                     label: '',
                   ),
                   BottomNavigationBarItem(
