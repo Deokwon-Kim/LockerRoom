@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_compress/video_compress.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 class UploadProvider extends ChangeNotifier {
   List<File> _images = [];
@@ -67,39 +68,172 @@ class UploadProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> pickVideo() async {
-    final pickedVideo = await ImagePicker().pickVideo(
-      source: ImageSource.gallery,
-    );
-    if (pickedVideo != null) {
-      final compressedVideo = await _compressVideo(File(pickedVideo.path));
-      setVideo(compressedVideo);
+  /// ⚡ wechat_assets_picker를 사용한 빠른 동영상 선택 (iCloud 오류 시 자동 폴백)
+  Future<void> pickVideoFast(BuildContext context) async {
+    final startTime = DateTime.now();
+    print('⚡ pickVideoFast 시작');
+
+    try {
+      print('⚡ wechat_assets_picker 갤러리 열기...');
+
+      final List<AssetEntity>? result = await AssetPicker.pickAssets(
+        context,
+        pickerConfig: const AssetPickerConfig(
+          requestType: RequestType.video,
+          maxAssets: 1,
+        ),
+      );
+
+      if (result == null || result.isEmpty) {
+        print('⚠️ 동영상 선택 취소됨');
+        return;
+      }
+
+      print(
+        '⚡ wechat_assets_picker 선택 완료: ${DateTime.now().difference(startTime).inMilliseconds}ms',
+      );
+
+      final asset = result.first;
+
+      // 📏 비디오 길이 확인 (1분 = 60000ms)
+      final videoDuration = asset.duration; // ms 단위
+      final durationInSeconds = (videoDuration / 1000).round();
+      print('⏱️ 비디오 길이: ${durationInSeconds}초');
+
+      if (durationInSeconds > 60) {
+        throw Exception('1분 이하의 동영상만 업로드 가능합니다.\n현재 길이: ${durationInSeconds}초');
+      }
+
+      // 파일 가져오기 시도
+      File? videoFile;
+
+      // 1차 시도: originFile (가장 빠름)
+      try {
+        videoFile = await asset.originFile;
+        print('✅ originFile 성공');
+      } catch (e) {
+        print('⚠️ originFile 실패: $e');
+
+        // 2차 시도: file (캐시)
+        try {
+          videoFile = await asset.file;
+          print('✅ file 캐시 성공');
+        } catch (e2) {
+          print('⚠️ file 캐시도 실패: $e2');
+          videoFile = null;
+        }
+      }
+
+      if (videoFile != null) {
+        // 파일 크기 확인
+        final fileSizeInMB = videoFile.lengthSync() / (1024 * 1024);
+        print('📁 파일 크기: ${fileSizeInMB.toStringAsFixed(2)} MB');
+
+        _video = videoFile;
+        notifyListeners();
+
+        print(
+          '⚡ UI 표시 완료: ${DateTime.now().difference(startTime).inMilliseconds}ms',
+        );
+
+        // 썸네일 백그라운드 생성
+        _generateThumbnail();
+        return;
+      }
+
+      // 파일을 가져올 수 없으면 폴백
+      throw Exception('wechat_assets_picker에서 파일을 가져올 수 없음');
+    } catch (e) {
+      print('❌ wechat_assets_picker 오류: $e');
+
+      // 1분 초과 오류인 경우 (사용자에게 표시)
+      if (e.toString().contains('1분 이하')) {
+        print('⏱️ 1분 초과 오류 - 사용자에게 표시');
+        rethrow; // 에러 메시지 표시를 위해 전파
+      }
+
+      // 다른 오류는 기존 ImagePicker로 폴백
+      print('📱 기존 ImagePicker로 자동 폴백 중...');
+      try {
+        final pickedVideo = await ImagePicker().pickVideo(
+          source: ImageSource.gallery,
+          maxDuration: const Duration(seconds: 60),
+        );
+
+        if (pickedVideo != null) {
+          final videoFile = File(pickedVideo.path);
+          _video = videoFile;
+          notifyListeners();
+          print('✅ ImagePicker 폴백 성공');
+          _generateThumbnail();
+        }
+      } catch (fallbackError) {
+        print('❌ 폴백도 실패: $fallbackError');
+        rethrow;
+      }
     }
   }
 
-  Future<File> _compressVideo(File file) async {
-    final info = await VideoCompress.compressVideo(
-      file.path,
-      quality: VideoQuality.MediumQuality,
-      deleteOrigin: false,
-    );
-    return File(info!.path!);
+  Future<File> _compressVideoFast(File file, int durationSeconds) async {
+    // 길이에 따라 품질 자동 조정
+    final quality = durationSeconds > 30
+        ? VideoQuality
+              .LowQuality // 30초 초과: 낮은 품질 (빠름)
+        : VideoQuality.MediumQuality; // 30초 이하: 중간 품질
+
+    try {
+      final info = await VideoCompress.compressVideo(
+        file.path,
+        quality: quality,
+        deleteOrigin: false,
+        includeAudio: true,
+        frameRate: 24, // 기본 30fps → 24fps로 낮춤
+      );
+      return File(info!.path!);
+    } catch (e) {
+      // 압축 실패 시 원본 반환
+      return file;
+    }
   }
 
   Future<void> _generateThumbnail() async {
     if (_video == null) return;
+    final startTime = DateTime.now();
+    print('🎨 썸네일 생성 시작');
+
     try {
       final data = await VideoThumbnail.thumbnailData(
         video: _video!.path,
         imageFormat: ImageFormat.PNG,
-        maxHeight: 120,
-        quality: 75,
+        maxHeight: 80,
+        maxWidth: 120,
+        quality: 40,
+        timeMs: 0,
       );
       _videoThumbnail = data;
+      notifyListeners();
+      print(
+        '🎨 썸네일 생성 완료: ${DateTime.now().difference(startTime).inMilliseconds}ms',
+      );
     } catch (e) {
       _videoThumbnail = null;
+      notifyListeners();
+      print('❌ 썸네일 생성 실패: $e');
     }
-    notifyListeners();
+  }
+
+  Future<File> _compressBeforeUpload(File file) async {
+    try {
+      final mediaInfo = await VideoCompress.getMediaInfo(file.path);
+      final durationSeconds = (mediaInfo.duration ?? 0) ~/ 1000;
+
+      final compressedVideo = await _compressVideoFast(file, durationSeconds);
+      return compressedVideo;
+    } catch (e) {
+      // 에러 발생 시 원본 반환
+      print('⚠️ 압축 중 오류: $e, 원본 파일로 업로드 시도');
+      return file;
+    }
   }
 
   Future<void> uploadAndSavePost({
@@ -129,7 +263,9 @@ class UploadProvider extends ChangeNotifier {
 
     // 동영상 업로드
     if (_video != null) {
-      final url = await _uploadFileWithRetry(_video!, 'videos');
+      // 업로드 전에 압축
+      final compressedVideo = await _compressBeforeUpload(_video!);
+      final url = await _uploadFileWithRetry(compressedVideo, 'videos');
       mediaUrls.add(url);
       uploadedCount++;
       _uploadProgress = uploadedCount / totalCount;
