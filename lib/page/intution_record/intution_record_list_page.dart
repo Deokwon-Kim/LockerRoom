@@ -76,6 +76,12 @@ class IntutionRecordListPage extends StatelessWidget {
               }
             }
 
+            // 승률 계산
+            final int totalGames = items.length;
+            final double winRate = totalGames > 0
+                ? (wins / totalGames) * 100
+                : 0;
+
             return Column(
               children: [
                 Padding(
@@ -124,6 +130,15 @@ class IntutionRecordListPage extends StatelessWidget {
                                 fontSize: 18,
                                 color: Colors.grey.shade800,
                                 fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Spacer(),
+                            Text(
+                              '승률: ${winRate.toStringAsFixed(1)}%',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade800,
                               ),
                             ),
                           ],
