@@ -35,6 +35,7 @@ class _NetworkVideoPlayerState extends State<NetworkVideoPlayer>
   bool _isLoading = true;
   bool _isPlaying = false;
   bool _isVisible = true;
+  bool _isMuted = false;
   final String _visibilityKey = DateTime.now().millisecondsSinceEpoch
       .toString();
 
@@ -89,6 +90,13 @@ class _NetworkVideoPlayerState extends State<NetworkVideoPlayer>
         // 음소거 설정
         if (widget.muted) {
           await _controller!.setVolume(0.0);
+          setState(() {
+            _isMuted = true;
+          });
+        } else {
+          setState(() {
+            _isMuted = false;
+          });
         }
 
         // 자동 재생
@@ -129,6 +137,20 @@ class _NetworkVideoPlayerState extends State<NetworkVideoPlayer>
         await _controller!.pause();
       } else {
         await _controller!.play();
+      }
+    }
+  }
+
+  Future<void> _toggleMute() async {
+    if (_controller != null && _isInitialized) {
+      setState(() {
+        _isMuted = !_isMuted;
+      });
+
+      if (_isMuted) {
+        await _controller!.setVolume(0.0);
+      } else {
+        await _controller!.setVolume(1.0);
       }
     }
   }
@@ -265,16 +287,19 @@ class _NetworkVideoPlayerState extends State<NetworkVideoPlayer>
               Positioned(
                 top: 8,
                 right: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Icon(
-                    Icons.volume_off,
-                    color: Colors.white,
-                    size: 16,
+                child: GestureDetector(
+                  onTap: _toggleMute,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Icon(
+                      _isMuted ? Icons.volume_off : Icons.volume_up,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                   ),
                 ),
               ),
@@ -296,10 +321,14 @@ class _NetworkVideoPlayerState extends State<NetworkVideoPlayer>
       content = _buildVideoPlayer();
     }
 
-    return VisibilityDetector(
-      key: Key(_visibilityKey),
-      onVisibilityChanged: _onVisibilityChanged,
-      child: content,
+    return Container(
+      width: widget.width,
+      height: widget.height,
+      child: VisibilityDetector(
+        key: Key(_visibilityKey),
+        onVisibilityChanged: _onVisibilityChanged,
+        child: content,
+      ),
     );
   }
 }
