@@ -17,6 +17,7 @@ import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:toastification/toastification.dart';
 
 class FeedDetailPage extends StatefulWidget {
   final PostModel post;
@@ -74,7 +75,6 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
         Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
     final feedProvider = Provider.of<FeedProvider>(context, listen: false);
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    // Ensure provider is in the tree; actual values are read via Consumers below.
     Provider.of<CommentProvider>(context, listen: false);
 
     return Scaffold(
@@ -723,6 +723,39 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                             style: TextStyle(color: Colors.red),
                           ),
                         ),
+                        PopupMenuItem(
+                          value: 'report',
+                          child: Text(
+                            '신고하기',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (currentUserId != null && c.userId != currentUserId)
+                  PopupMenuTheme(
+                    data: PopupMenuThemeData(color: BACKGROUND_COLOR),
+                    child: PopupMenuButton<String>(
+                      icon: Icon(Icons.more_horiz),
+                      onSelected: (value) async {
+                        if (value == 'report') {
+                          _showCommentReportDialog(
+                            context,
+                            c,
+                            commentProvider,
+                            currentUserId,
+                          );
+                        }
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'report',
+                          child: Text(
+                            '신고하기',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -1010,6 +1043,170 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
             SizedBox(height: 8),
           ],
         ),
+      ),
+    );
+  }
+
+  // 댓글 신고 다이얼로그
+  void _showCommentReportDialog(
+    BuildContext context,
+    CommentModel comment,
+    CommentProvider commentProvider,
+    String currentUserId,
+  ) {
+    final TextEditingController reportController = TextEditingController();
+    final List<String> reportReasons = [
+      '스팸 및 광고',
+      '부적절한 콘텐츠',
+      '혐오 표현',
+      '욕설 및 음란물',
+      '개인정보 침해',
+      '기타',
+    ];
+    String selectedReason = reportReasons[0];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: BACKGROUND_COLOR,
+        title: Text('댓글 신고'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '신고 사유를 선택해주세요',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 12),
+              StatefulBuilder(
+                builder: (context, setState) {
+                  return Column(
+                    children: reportReasons.map((reason) {
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedReason = reason;
+                          });
+                        },
+                        child: Container(
+                          margin: EdgeInsets.symmetric(vertical: 4),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: selectedReason == reason
+                                  ? BUTTON
+                                  : GRAYSCALE_LABEL_400,
+                              width: selectedReason == reason ? 2 : 1,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            color: selectedReason == reason
+                                ? BUTTON.withOpacity(0.1)
+                                : Colors.transparent,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(child: Text(reason)),
+                              if (selectedReason == reason)
+                                Icon(Icons.check, color: BUTTON),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+              SizedBox(height: 16),
+              Text(
+                '추가 설명 (선택사항)',
+                style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+              ),
+              SizedBox(height: 8),
+              TextField(
+                controller: reportController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: '자세한 내용을 입력해주세요',
+                  hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: BUTTON),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('취소'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final description = reportController.text.trim();
+              final reason =
+                  selectedReason +
+                  (description.isNotEmpty ? '\n$description' : '');
+
+              try {
+                final user = FirebaseAuth.instance.currentUser;
+                if (user == null) {
+                  if (!mounted) return;
+                  toastification.show(
+                    context: context,
+                    type: ToastificationType.error,
+                    alignment: Alignment.bottomCenter,
+                    autoCloseDuration: Duration(seconds: 2),
+                    title: Text('로그인이 필요합니다'),
+                  );
+
+                  return;
+                }
+
+                await commentProvider.reportComment(
+                  comment: comment,
+                  reporterUserId: user.uid,
+                  reporterUserName: user.displayName ?? '익명',
+                  reason: reason,
+                );
+
+                if (!mounted) return;
+                Navigator.pop(context);
+                toastification.show(
+                  context: context,
+                  type: ToastificationType.success,
+                  alignment: Alignment.bottomCenter,
+                  autoCloseDuration: Duration(seconds: 2),
+                  title: Text('신고가 접수되었습니다'),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.pop(context);
+                toastification.show(
+                  context: context,
+                  type: ToastificationType.error,
+                  alignment: Alignment.bottomCenter,
+                  autoCloseDuration: Duration(seconds: 2),
+                  title: Text('신고 중 오류가 발생했습니다'),
+                );
+              }
+            },
+            child: Text('신고하기', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }

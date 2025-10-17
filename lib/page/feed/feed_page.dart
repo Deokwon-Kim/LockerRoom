@@ -1,11 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
-import 'package:lockerroom/page/alert/declaration_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_mypage.dart';
 import 'package:lockerroom/page/feed/fullscreen_video_player.dart';
@@ -413,63 +411,11 @@ class _PostWidgetState extends State<PostWidget> {
                               );
                               return;
                             }
-                            await showDialog(
-                              context: context,
-                              builder: (context) {
-                                return DeclarationDiallog(
-                                  title: '신고사유 입력',
-                                  onConfirm: (reason) async {
-                                    final trimmed = reason.trim();
-                                    if (trimmed.isEmpty) {
-                                      toastification.show(
-                                        context: context,
-                                        type: ToastificationType.error,
-                                        alignment: Alignment.bottomCenter,
-                                        autoCloseDuration: Duration(seconds: 2),
-                                        title: Text('사유를 입력해 주세요'),
-                                      );
-                                      return;
-                                    }
-                                    try {
-                                      await FirebaseFirestore.instance
-                                          .collection('feed_reports')
-                                          .add({
-                                            'type': 'feed_post',
-                                            'postId': widget.post.id,
-                                            'reportedUserId':
-                                                widget.post.userId,
-                                            'reportedUserName':
-                                                widget.post.userName,
-                                            'reporterUserId': reporter.uid,
-                                            'reporterUserName':
-                                                reporter.displayName,
-                                            'reason': trimmed,
-                                            'createdAt':
-                                                FieldValue.serverTimestamp(),
-                                          });
-                                      toastification.show(
-                                        context: context,
-                                        type: ToastificationType.success,
-                                        alignment: Alignment.bottomCenter,
-                                        autoCloseDuration: const Duration(
-                                          seconds: 2,
-                                        ),
-                                        title: const Text('신고가 접수되었습니다'),
-                                      );
-                                    } catch (e) {
-                                      toastification.show(
-                                        context: context,
-                                        type: ToastificationType.error,
-                                        alignment: Alignment.bottomCenter,
-                                        autoCloseDuration: const Duration(
-                                          seconds: 2,
-                                        ),
-                                        title: const Text('신고 중 오류가 발생했습니다'),
-                                      );
-                                    }
-                                  },
-                                );
-                              },
+                            _showFeedReportDialog(
+                              context,
+                              widget.post,
+                              widget.feedProvider,
+                              reporter.uid,
                             );
                           }
                         },
@@ -705,6 +651,169 @@ class _PostWidgetState extends State<PostWidget> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showFeedReportDialog(
+    BuildContext context,
+    PostModel post,
+    FeedProvider feedProvider,
+    String currentUserId,
+  ) {
+    final TextEditingController reportController = TextEditingController();
+    final List<String> reportReasons = [
+      '스팸 및 광고',
+      '부적절한 콘텐츠',
+      '혐오 표현',
+      '욕설 및 음란물',
+      '개인정보 침해',
+      '기타',
+    ];
+    String selectedReason = reportReasons[0];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: BACKGROUND_COLOR,
+        title: Text('댓글 신고'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '신고 사유를 선택해주세요',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 12),
+              StatefulBuilder(
+                builder: (context, setState) {
+                  return Column(
+                    children: reportReasons.map((reason) {
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedReason = reason;
+                          });
+                        },
+                        child: Container(
+                          margin: EdgeInsets.symmetric(vertical: 4),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: selectedReason == reason
+                                  ? BUTTON
+                                  : GRAYSCALE_LABEL_400,
+                              width: selectedReason == reason ? 2 : 1,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            color: selectedReason == reason
+                                ? BUTTON.withOpacity(0.1)
+                                : Colors.transparent,
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(child: Text(reason)),
+                              if (selectedReason == reason)
+                                Icon(Icons.check, color: BUTTON),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+              SizedBox(height: 16),
+              Text(
+                '추가 설명 (선택사항)',
+                style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+              ),
+              SizedBox(height: 8),
+              TextField(
+                controller: reportController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: '자세한 내용을 입력해주세요',
+                  hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: BUTTON),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('취소', style: TextStyle(color: Colors.black)),
+          ),
+          TextButton(
+            onPressed: () async {
+              final description = reportController.text.trim();
+              final reason =
+                  selectedReason +
+                  (description.isNotEmpty ? '\n$description' : '');
+
+              try {
+                final user = FirebaseAuth.instance.currentUser;
+                if (user == null) {
+                  if (!mounted) return;
+                  toastification.show(
+                    context: context,
+                    type: ToastificationType.error,
+                    alignment: Alignment.bottomCenter,
+                    autoCloseDuration: Duration(seconds: 2),
+                    title: Text('로그인이 필요합니다'),
+                  );
+
+                  return;
+                }
+
+                await feedProvider.reportPost(
+                  post: post,
+                  reporterUserId: user.uid,
+                  reporterUserName: user.displayName ?? '익명',
+                  reason: reason,
+                );
+
+                if (!mounted) return;
+                Navigator.pop(context);
+                toastification.show(
+                  context: context,
+                  type: ToastificationType.success,
+                  alignment: Alignment.bottomCenter,
+                  autoCloseDuration: Duration(seconds: 2),
+                  title: Text('신고가 접수되었습니다'),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.pop(context);
+                toastification.show(
+                  context: context,
+                  type: ToastificationType.error,
+                  alignment: Alignment.bottomCenter,
+                  autoCloseDuration: Duration(seconds: 2),
+                  title: Text('신고 중 오류가 발생했습니다'),
+                );
+              }
+            },
+            child: Text('신고하기', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
