@@ -62,7 +62,11 @@ class _HomePageState extends State<HomePage> {
             backgroundColor: selectedTeam.color,
             leading: Padding(
               padding: const EdgeInsets.only(left: 20.0),
-              child: Image.asset(selectedTeam.symbolPath),
+              child: Image.asset(
+                selectedTeam.logoPath,
+                scale: 1,
+                fit: BoxFit.cover,
+              ),
             ),
             scrolledUnderElevation: 0,
             title: Text(
