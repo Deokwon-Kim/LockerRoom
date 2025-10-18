@@ -6,8 +6,8 @@ import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_mypage.dart';
+import 'package:lockerroom/page/feed/feed_search_page.dart';
 import 'package:lockerroom/page/feed/fullscreen_video_player.dart';
-import 'package:lockerroom/page/myPage/user_detail_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -28,31 +28,7 @@ class FeedPage extends StatefulWidget {
 
 class _FeedPageState extends State<FeedPage> {
   @override
-  void initState() {
-    super.initState();
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-    final feedProvider = context.read<FeedProvider>();
-
-    feedProvider.postStream(uid);
-    feedProvider.loadAllUsers();
-    // Reset search state after first frame to avoid notifyDuringBuild
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _isSearching = false;
-      _searchController.clear();
-      context.read<FeedProvider>().setQuery('');
-      setState(() {});
-    });
-  }
-
-  bool _isSearching = false;
-  final TextEditingController _searchController = TextEditingController();
-
-  @override
   Widget build(BuildContext context) {
-    final selectedColor =
-        Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
-
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
@@ -64,144 +40,22 @@ class _FeedPageState extends State<FeedPage> {
         actions: [
           IconButton(
             onPressed: () {
-              setState(() {
-                if (_isSearching) {
-                  // 검색 종료 시 검색어 초기화
-                  Provider.of<FeedProvider>(
-                    context,
-                    listen: false,
-                  ).setQuery('');
-                }
-                _isSearching = !_isSearching;
-              });
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => FeedSearchPage()),
+              );
             },
-            icon: Icon(
-              _isSearching ? Icons.close : Icons.search,
-              color: BUTTON,
-            ),
+            icon: Icon(Icons.search, color: BUTTON),
           ),
         ],
       ),
       body: Column(
         children: [
-          if (_isSearching)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(15, 10, 15, 10),
-              child: TextFormField(
-                controller: _searchController,
-                cursorColor: BUTTON,
-                cursorHeight: 18,
-                minLines: 1,
-                maxLines: 3,
-                keyboardType: TextInputType.multiline,
-                textInputAction: TextInputAction.newline,
-                enableIMEPersonalizedLearning: true,
-                style: TextStyle(decoration: TextDecoration.none),
-                onChanged: (value) => Provider.of<FeedProvider>(
-                  context,
-                  listen: false,
-                ).setQuery(value),
-                decoration: InputDecoration(
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 10,
-                  ),
-                  labelText: '사용자 또는 게시물 검색',
-                  labelStyle: TextStyle(color: Colors.grey, fontSize: 13),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
-                  ),
-                ),
-              ),
-            ),
           Expanded(
             child: Consumer2<FeedProvider, ProfileProvider>(
               builder: (context, feedProvider, profileProvider, child) {
-                final allPosts = feedProvider.filteredPosts;
-                final filteredUser = feedProvider.filteredUsers;
+                final allPosts = feedProvider.posts;
 
-                if (feedProvider.isLoading) {
-                  return Center(
-                    child: CircularProgressIndicator(color: selectedColor),
-                  );
-                }
-                // 검색 중이고 사용자 검색 결과가 있다면 먼저 보여주기
-                if (_isSearching && filteredUser.isNotEmpty) {
-                  return ListView(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 15,
-                          vertical: 15,
-                        ),
-                        child: Text(
-                          '사용자',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: GRAYSCALE_LABEL_600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      ...filteredUser.map(
-                        (u) => ListTile(
-                          leading: CircleAvatar(
-                            radius: 20,
-                            backgroundColor: GRAYSCALE_LABEL_300,
-                            backgroundImage:
-                                (u.profileImage != null &&
-                                    u.profileImage!.isNotEmpty)
-                                ? NetworkImage(u.profileImage!)
-                                : null,
-                            child:
-                                (u.profileImage == null ||
-                                    u.profileImage!.isEmpty)
-                                ? const Icon(
-                                    Icons.person,
-                                    color: Colors.black,
-                                    size: 20,
-                                  )
-                                : null,
-                          ),
-                          title: Text(u.username),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    UserDetailPage(userId: u.uid),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      if (allPosts.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 15,
-                            vertical: 15,
-                          ),
-                          child: Text(
-                            '게시물',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: GRAYSCALE_LABEL_600,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ...allPosts.map(
-                        (p) => PostWidget(post: p, feedProvider: feedProvider),
-                      ),
-                    ],
-                  );
-                }
                 return ListView.builder(
                   itemCount: allPosts.length,
                   itemBuilder: (context, index) => PostWidget(
@@ -215,13 +69,6 @@ class _FeedPageState extends State<FeedPage> {
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    // Clear controller only; avoid provider calls during teardown
-    _searchController.dispose();
-    super.dispose();
   }
 }
 
