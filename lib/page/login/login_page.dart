@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/const/custome_button.dart';
 import 'package:toastification/toastification.dart';
+import 'package:lockerroom/main.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -50,6 +51,13 @@ class _LoginPageState extends State<LoginPage> {
           );
 
       debugPrint('로그인 성공: ${userCredential.user}');
+      // AuthWrapper로 돌아가기 - 모든 이전 route 제거
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const AuthWrapper()),
+          (route) => false,
+        );
+      }
     } on FirebaseAuthException catch (e) {
       print('FirebaseAuthException: ${e.code}');
       switch (e.code) {
