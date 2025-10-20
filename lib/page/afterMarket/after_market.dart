@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/market_post_model.dart';
@@ -21,12 +20,10 @@ class AfterMarket extends StatefulWidget {
 
 class _AfterMarketState extends State<AfterMarket> {
   final ScrollController _listScrollController = ScrollController();
-  final List<MarketPostModel> _pagedPosts = [];
-  DocumentSnapshot? _lastDoc;
-  bool _isInitialLoading = true;
-  bool _isLoadingMore = false;
-  bool _hasMore = true;
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
   String _query = '';
+
   @override
   void initState() {
     super.initState();
@@ -38,40 +35,18 @@ class _AfterMarketState extends State<AfterMarket> {
           MaterialPageRoute(builder: (context) => const LoginPage()),
         );
       });
+    } else {
+      // 실시간 리스너 시작
+      context.read<MarketFeedProvider>().marketPostStream(user.uid);
     }
 
-    _fetchInitial();
     _listScrollController.addListener(() {
       if (!_listScrollController.hasClients) return;
       final position = _listScrollController.position;
       if (position.pixels >= position.maxScrollExtent - 200) {
-        _fetchMore();
+        // 더 이상 페이지네이션이 필요 없음 (실시간 리스너로 모든 데이터 받음)
       }
     });
-  }
-
-  bool _isSerching = false;
-  final TextEditingController _searchController = TextEditingController();
-
-  Future<void> _fetchInitial() async {
-    try {
-      setState(() => _isInitialLoading = true);
-      final snap = await FirebaseFirestore.instance
-          .collection('market_posts')
-          .orderBy('createdAt', descending: true)
-          .limit(20)
-          .get();
-      final posts = snap.docs.map((d) => MarketPostModel.fromDoc(d)).toList();
-      _pagedPosts
-        ..clear()
-        ..addAll(posts);
-      _lastDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
-      _hasMore = snap.docs.length == 20;
-    } catch (e) {
-      debugPrint('Initial fetch error: $e');
-    } finally {
-      if (mounted) setState(() => _isInitialLoading = false);
-    }
   }
 
   @override
@@ -79,39 +54,6 @@ class _AfterMarketState extends State<AfterMarket> {
     _listScrollController.dispose();
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _fetchMore() async {
-    if (_isLoadingMore || !_hasMore || _lastDoc == null) return;
-    try {
-      setState(() => _isLoadingMore = true);
-      final snap = await FirebaseFirestore.instance
-          .collection('market_posts')
-          .orderBy('createdAt', descending: true)
-          .startAfterDocument(_lastDoc!)
-          .limit(20)
-          .get();
-      final posts = snap.docs.map((d) => MarketPostModel.fromDoc(d)).toList();
-      _pagedPosts.addAll(posts);
-      if (snap.docs.isNotEmpty) {
-        _lastDoc = snap.docs.last;
-      }
-      if (snap.docs.length < 20) {
-        _hasMore = false;
-      }
-    } catch (e) {
-      debugPrint('Fetch more error: $e');
-    } finally {
-      if (mounted) setState(() => _isLoadingMore = false);
-    }
-  }
-
-  List<MarketPostModel> get _filteredPosts {
-    if (_query.isEmpty) return List<MarketPostModel>.from(_pagedPosts);
-    final lower = _query.toLowerCase();
-    return _pagedPosts
-        .where((p) => p.title.toLowerCase().contains(lower))
-        .toList();
   }
 
   @override
@@ -129,17 +71,17 @@ class _AfterMarketState extends State<AfterMarket> {
           IconButton(
             onPressed: () {
               setState(() {
-                if (_isSerching) {
+                if (_isSearching) {
                   // 검색 종료 시 검색어 초기화
                   Provider.of<MarketFeedProvider>(
                     context,
                     listen: false,
                   ).setQuery('');
                 }
-                _isSerching = !_isSerching;
+                _isSearching = !_isSearching;
               });
             },
-            icon: _isSerching ? Icon(Icons.close) : Icon(Icons.search),
+            icon: _isSearching ? Icon(Icons.close) : Icon(Icons.search),
           ),
         ],
         scrolledUnderElevation: 0,
@@ -151,7 +93,7 @@ class _AfterMarketState extends State<AfterMarket> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (_isSerching)
+                if (_isSearching)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(15, 10, 15, 10),
                     child: TextFormField(
@@ -164,7 +106,10 @@ class _AfterMarketState extends State<AfterMarket> {
                       textInputAction: TextInputAction.newline,
                       enableIMEPersonalizedLearning: true,
                       style: TextStyle(decoration: TextDecoration.none),
-                      onChanged: (value) => setState(() => _query = value),
+                      onChanged: (value) {
+                        setState(() => _query = value);
+                        context.read<MarketFeedProvider>().setQuery(value);
+                      },
                       decoration: InputDecoration(
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(
@@ -185,15 +130,24 @@ class _AfterMarketState extends State<AfterMarket> {
                     ),
                   ),
                 Expanded(
-                  child: Builder(
-                    builder: (context) {
-                      if (_isInitialLoading) {
+                  child: Consumer<MarketFeedProvider>(
+                    builder: (context, marketFeed, child) {
+                      if (marketFeed.isLoading) {
                         return Center(
                           child: CircularProgressIndicator(color: BUTTON),
                         );
                       }
 
-                      final posts = _filteredPosts;
+                      final posts = _query.isEmpty
+                          ? marketFeed.marketPostsStream
+                          : marketFeed.marketPostsStream
+                                .where(
+                                  (p) => p.title.toLowerCase().contains(
+                                    _query.toLowerCase(),
+                                  ),
+                                )
+                                .toList();
+
                       if (posts.isEmpty) {
                         return Center(
                           child: Text(
@@ -202,19 +156,10 @@ class _AfterMarketState extends State<AfterMarket> {
                           ),
                         );
                       }
-                      final marketFeed = context.read<MarketFeedProvider>();
                       return ListView.builder(
                         controller: _listScrollController,
-                        itemCount: posts.length + (_isLoadingMore ? 1 : 0),
+                        itemCount: posts.length,
                         itemBuilder: (context, index) {
-                          if (_isLoadingMore && index == posts.length) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              child: Center(
-                                child: CircularProgressIndicator(color: BUTTON),
-                              ),
-                            );
-                          }
                           return MarketPostWidget(
                             marketPost: posts[index],
                             merketFeed: marketFeed,
@@ -354,17 +299,18 @@ class _MarketPostsWidgetState extends State<MarketPostWidget> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      // mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           widget.marketPost.title,
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                        Spacer(),
                         PopupMenuTheme(
                           data: const PopupMenuThemeData(
                             color: BACKGROUND_COLOR,
