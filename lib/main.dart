@@ -8,9 +8,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
+import 'package:lockerroom/page/legal/privacy_policy_page.dart';
+import 'package:lockerroom/page/legal/terms_of_service_page.dart';
 import 'package:lockerroom/page/login/login_page.dart';
 import 'package:lockerroom/page/login/signup_page.dart';
 import 'package:lockerroom/page/notice/notice_list_page.dart';
+import 'package:lockerroom/page/setting/change_password_page.dart';
 import 'package:lockerroom/page/setting/custormer_center_page.dart';
 import 'package:lockerroom/page/setting/find_password_page.dart';
 import 'package:lockerroom/page/setting/nickname_change_page.dart';
@@ -168,6 +171,9 @@ class MyApp extends StatelessWidget {
           'notifications': (context) => const NotificationsPage(),
           'customer': (context) => const CustormerCenterPage(),
           'noticeList': (context) => const NoticeListPage(),
+          'terms': (context) => const TermsOfServicePage(),
+          'policy': (context) => const PrivacyPolicyPage(),
+          'changePassword': (context) => const ChangePasswordPage(),
         },
       ),
     );
