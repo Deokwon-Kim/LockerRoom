@@ -9,6 +9,13 @@ import 'package:video_compress/video_compress.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
+class VideoDurationExceededException implements Exception {
+  final String message;
+  VideoDurationExceededException(this.message);
+  @override
+  String toString() => message;
+}
+
 class UploadProvider extends ChangeNotifier {
   List<File> _images = [];
   File? _camera;
@@ -95,15 +102,6 @@ class UploadProvider extends ChangeNotifier {
 
       final asset = result.first;
 
-      // 📏 비디오 길이 확인 (1분 = 60000ms)
-      final videoDuration = asset.duration; // ms 단위
-      final durationInSeconds = (videoDuration / 1000).round();
-      print('⏱️ 비디오 길이: ${durationInSeconds}초');
-
-      if (durationInSeconds > 60) {
-        throw Exception('1분 이하의 동영상만 업로드 가능합니다.\n현재 길이: ${durationInSeconds}초');
-      }
-
       // 파일 가져오기 시도
       File? videoFile;
 
@@ -124,30 +122,49 @@ class UploadProvider extends ChangeNotifier {
         }
       }
 
-      if (videoFile != null) {
-        // 파일 크기 확인
-        final fileSizeInMB = videoFile.lengthSync() / (1024 * 1024);
-        print('📁 파일 크기: ${fileSizeInMB.toStringAsFixed(2)} MB');
-
-        _video = videoFile;
-        notifyListeners();
-
-        print(
-          '⚡ UI 표시 완료: ${DateTime.now().difference(startTime).inMilliseconds}ms',
-        );
-
-        // 썸네일 백그라운드 생성
-        _generateThumbnail();
-        return;
+      if (videoFile == null) {
+        throw Exception('wechat_assets_picker에서 파일을 가져올 수 없음');
       }
 
-      // 파일을 가져올 수 없으면 폴백
-      throw Exception('wechat_assets_picker에서 파일을 가져올 수 없음');
+      // 📏 비디오 길이 확인 - VideoCompress를 사용해서 정확한 길이 가져오기
+      try {
+        final mediaInfo = await VideoCompress.getMediaInfo(videoFile.path);
+        final videoDuration = mediaInfo.duration ?? 0; // ms 단위
+        final durationInSeconds = (videoDuration / 1000).round();
+        print('⏱️ 비디오 길이: ${durationInSeconds}초 (${videoDuration}ms)');
+
+        if (durationInSeconds > 60) {
+          throw VideoDurationExceededException(
+            '1분 이하의 동영상만 업로드 가능합니다.\n현재 길이: ${durationInSeconds}초',
+          );
+        }
+      } catch (e) {
+        if (e is VideoDurationExceededException) {
+          rethrow;
+        }
+        print('⚠️ 비디오 길이 확인 실패: $e, 계속 진행합니다');
+        // 길이 확인 실패해도 계속 진행
+      }
+
+      // 파일 크기 확인
+      final fileSizeInMB = videoFile.lengthSync() / (1024 * 1024);
+      print('📁 파일 크기: ${fileSizeInMB.toStringAsFixed(2)} MB');
+
+      _video = videoFile;
+      notifyListeners();
+
+      print(
+        '⚡ UI 표시 완료: ${DateTime.now().difference(startTime).inMilliseconds}ms',
+      );
+
+      // 썸네일 백그라운드 생성
+      _generateThumbnail();
+      return;
     } catch (e) {
       print('❌ wechat_assets_picker 오류: $e');
 
       // 1분 초과 오류인 경우 (사용자에게 표시)
-      if (e.toString().contains('1분 이하')) {
+      if (e is VideoDurationExceededException) {
         print('⏱️ 1분 초과 오류 - 사용자에게 표시');
         rethrow; // 에러 메시지 표시를 위해 전파
       }
