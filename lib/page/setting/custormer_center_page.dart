@@ -5,6 +5,7 @@ import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lockerroom/main.dart';
 
 class CustormerCenterPage extends StatelessWidget {
   const CustormerCenterPage({super.key});
@@ -77,9 +78,13 @@ class CustormerCenterPage extends StatelessWidget {
                       title: Text('회원 탈퇴 완료'),
                     );
 
-                    Navigator.of(
-                      context,
-                    ).pushNamedAndRemoveUntil('signIn', (route) => false);
+                    // AuthWrapper로 돌아가기 - 로그아웃 상태가 감지되면 로그인 페이지 표시
+                    if (context.mounted) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => const AuthWrapper()),
+                        (route) => false,
+                      );
+                    }
                   } catch (e) {
                     toastification.show(
                       context: context,
