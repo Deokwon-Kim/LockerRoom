@@ -54,6 +54,10 @@ class IntutionRecordProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
+    // 컨트롤러 초기화 - 페이지 진입 시마다 빈 상태로 시작
+    myScoreController.clear();
+    oppScoreContreller.clear();
+
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _isLoading = false;
@@ -233,6 +237,13 @@ class IntutionRecordProvider extends ChangeNotifier {
             'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
+
+      // 저장 완료 후 UploadProvider 초기화
+
+      // 입력 필드 초기화
+      myScoreController.clear();
+      oppScoreContreller.clear();
+
       return true;
     } catch (_) {
       return false;
