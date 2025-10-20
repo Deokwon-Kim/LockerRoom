@@ -211,6 +211,19 @@ class AuthWrapper extends StatelessWidget {
         } else if (snapshot.hasError) {
           return const Center(child: Text('에러가 발생하였습니다.'));
         } else if (snapshot.hasData) {
+          print('AuthWrapper - Current User: ${snapshot.data?.uid}');
+          //사용자 정보를 UserProvider에 로드
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Provider.of<UserProvider>(context, listen: false).loadNickname();
+            // 로그인 후 알림 구독 시작
+            final uid = FirebaseAuth.instance.currentUser?.uid;
+            if (uid != null) {
+              Provider.of<NotificationProvider>(
+                context,
+                listen: false,
+              ).listen(uid);
+            }
+          });
           final user = snapshot.data!;
           return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
             future: FirebaseFirestore.instance
@@ -227,25 +240,38 @@ class AuthWrapper extends StatelessWidget {
                 return const Center(child: Text('유저 정보를 불러오지 못했습니다.'));
               }
 
+              // 사용자 데이터가 없거나 비어있으면 TeamSelectPage로 이동
+              if (!userSnap.hasData ||
+                  userSnap.data == null ||
+                  !userSnap.data!.exists) {
+                return const TeamSelectPage();
+              }
+
               final data = userSnap.data?.data() ?? {};
               final savedTeamName = data['team'] as String?;
 
               if (savedTeamName != null && savedTeamName.isNotEmpty) {
                 // Provider에 선택 팀 반영 (TeamModel 매핑)
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  final teamProvider = Provider.of<TeamProvider>(
-                    context,
-                    listen: false,
-                  );
-                  // 문자열 상태도 유지
-                  teamProvider.setTeam(savedTeamName);
-                  // TeamModel 찾아서 선택
-                  final list = teamProvider.getTeam('team');
-                  final match = list.firstWhere(
-                    (t) => t.name == savedTeamName,
-                    orElse: () => list.first,
-                  );
-                  teamProvider.selectTeam(match);
+                  try {
+                    final teamProvider = Provider.of<TeamProvider>(
+                      context,
+                      listen: false,
+                    );
+                    // 문자열 상태도 유지
+                    teamProvider.setTeam(savedTeamName);
+                    // TeamModel 찾아서 선택
+                    final list = teamProvider.getTeam('team');
+                    if (list.isNotEmpty) {
+                      final match = list.firstWhere(
+                        (t) => t.name == savedTeamName,
+                        orElse: () => list.first,
+                      );
+                      teamProvider.selectTeam(match);
+                    }
+                  } catch (e) {
+                    print('팀 선택 중 에러: $e');
+                  }
                 });
                 return const BottomTabBar();
               } else {
