@@ -44,7 +44,7 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
             const SizedBox(height: 20),
             _buildSection('2. 수집하는 개인정보의 항목 및 수집 방법', '''회사는 다음과 같은 개인정보를 수집합니다:
 
-• 이메일, 비밀번호(암호화), 닉네임
+• 이메일, 비밀번호(암호화), 닉네임, 이름
 • 응원 팀 정보, 프로필 사진, 자기소개
 • 게시물(텍스트, 이미지, 영상), 댓글 내용
 • 팔로우/팔로워 정보, 좋아요 목록
