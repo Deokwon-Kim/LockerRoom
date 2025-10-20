@@ -16,6 +16,7 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   final TextEditingController _nicknameController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
@@ -23,6 +24,7 @@ class _SignupPageState extends State<SignupPage> {
 
   // FocusNode 추가
   final FocusNode _nicknameFocus = FocusNode();
+  final FocusNode _nameFocus = FocusNode();
   final FocusNode _emailFocus = FocusNode();
   final FocusNode _passwordFocus = FocusNode();
   final FocusNode _confirmPasswordFocus = FocusNode();
@@ -33,20 +35,18 @@ class _SignupPageState extends State<SignupPage> {
   bool _allFieldsFilled = false;
   bool _isPasswordValid = false;
   bool _isNicknameValid = true;
+  bool _isNameValid = true;
   bool _isEmailValid = true;
   String _passwordErrorMessage = '';
   String _nicknameErrorMessage = '';
+  String _nameErrorMessage = '';
   String _emailErrorMessage = '';
   String _confirmPasswordErrorMessage = '';
 
   // 현재 포커스된 필드 추적
   String _currentFocusField = '';
 
-  // 키보드 표시 여부
-  bool _isKeyboardVisible = false;
-
-  // 입력 필드에 텍스트 존재 여부
-  bool _hasAnyText = false;
+  // 키보드 표시 여부/입력 여부 상태 제거 (미사용)
 
   @override
   void initState() {
@@ -54,6 +54,7 @@ class _SignupPageState extends State<SignupPage> {
 
     // 텍스트 필드 변경 감지
     _nicknameController.addListener(_checkTextAndValidate);
+    _nameController.addListener(_checkTextAndValidate);
     _emailController.addListener(_checkTextAndValidate);
     _passwordController.addListener(_checkTextAndValidate);
     _confirmPasswordController.addListener(_checkTextAndValidate);
@@ -70,12 +71,23 @@ class _SignupPageState extends State<SignupPage> {
       }
     });
 
+    _nameFocus.addListener(() {
+      if (_nameFocus.hasFocus) {
+        setState(() {
+          _currentFocusField = 'name';
+        });
+        _scrollToField(2);
+      } else {
+        _checkFieldFocus();
+      }
+    });
+
     _emailFocus.addListener(() {
       if (_emailFocus.hasFocus) {
         setState(() {
           _currentFocusField = 'email';
         });
-        _scrollToField(2);
+        _scrollToField(3);
       } else {
         _checkFieldFocus();
       }
@@ -86,7 +98,7 @@ class _SignupPageState extends State<SignupPage> {
         setState(() {
           _currentFocusField = 'password';
         });
-        _scrollToField(3);
+        _scrollToField(4);
       } else {
         _checkFieldFocus();
       }
@@ -97,7 +109,7 @@ class _SignupPageState extends State<SignupPage> {
         setState(() {
           _currentFocusField = 'confirmPassword';
         });
-        _scrollToField(4);
+        _scrollToField(5);
       } else {
         _checkFieldFocus();
       }
@@ -106,12 +118,16 @@ class _SignupPageState extends State<SignupPage> {
 
   // 텍스트가 입력되었는지 확인하고 유효성 검사 실행
   void _checkTextAndValidate() {
-    _checkAnyText();
+    // 입력 필드에 텍스트 존재 여부 상태는 제거됨
 
     // 각 필드별 유효성 검사
     if (_currentFocusField == 'nickname' ||
         _nicknameController.text.isNotEmpty) {
       _validateNickname();
+    }
+
+    if (_currentFocusField == 'name' || _nameController.text.isNotEmpty) {
+      _validateName();
     }
 
     if (_currentFocusField == 'email' || _emailController.text.isNotEmpty) {
@@ -132,16 +148,7 @@ class _SignupPageState extends State<SignupPage> {
     _checkFields();
   }
 
-  // 입력 필드에 텍스트가 있는지 확인
-  void _checkAnyText() {
-    setState(() {
-      _hasAnyText =
-          _nicknameController.text.isNotEmpty ||
-          _emailController.text.isNotEmpty ||
-          _passwordController.text.isNotEmpty ||
-          _confirmPasswordController.text.isNotEmpty;
-    });
-  }
+  // 입력 필드 텍스트 여부 확인 로직 제거 (미사용)
 
   // 현재 표시할 에러 메시지 가져오기
   String _getCurrentErrorMessage() {
@@ -153,6 +160,7 @@ class _SignupPageState extends State<SignupPage> {
     // 필드 입력 여부 확인
     bool hasEmptyField =
         _nicknameController.text.isEmpty ||
+        _nameController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _passwordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty;
@@ -162,6 +170,10 @@ class _SignupPageState extends State<SignupPage> {
       return _nicknameErrorMessage;
     }
 
+    // 이름 필드에 텍스트가 있고 유효하지 않은 경우
+    if (_nameController.text.isNotEmpty && !_isNameValid) {
+      return _nameErrorMessage;
+    }
     // 이메일 필드에 텍스트가 있고 유효하지 않은 경우
     if (_emailController.text.isNotEmpty && !_isEmailValid) {
       return _emailErrorMessage;
@@ -185,6 +197,9 @@ class _SignupPageState extends State<SignupPage> {
         errorMessage = _nicknameErrorMessage.isNotEmpty
             ? _nicknameErrorMessage
             : '';
+        break;
+      case 'name':
+        errorMessage = _nameErrorMessage.isNotEmpty ? _nameErrorMessage : '';
         break;
       case 'email':
         errorMessage = _emailErrorMessage.isNotEmpty ? _emailErrorMessage : '';
@@ -220,6 +235,7 @@ class _SignupPageState extends State<SignupPage> {
   void _checkFieldFocus() {
     bool hasFocus =
         _nicknameFocus.hasFocus ||
+        _nameFocus.hasFocus ||
         _emailFocus.hasFocus ||
         _passwordFocus.hasFocus ||
         _confirmPasswordFocus.hasFocus;
@@ -244,10 +260,6 @@ class _SignupPageState extends State<SignupPage> {
       // 키보드 높이를 고려하여 스크롤
       final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
       if (keyboardHeight > 0) {
-        setState(() {
-          _isKeyboardVisible = true;
-        });
-
         final screenHeight = MediaQuery.of(context).size.height;
         final targetPosition =
             fieldPosition - (screenHeight - keyboardHeight) / 2 + 48.0;
@@ -257,10 +269,6 @@ class _SignupPageState extends State<SignupPage> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
-      } else {
-        setState(() {
-          _isKeyboardVisible = false;
-        });
       }
     });
   }
@@ -286,6 +294,31 @@ class _SignupPageState extends State<SignupPage> {
       } else {
         _isNicknameValid = true;
         _nicknameErrorMessage = '';
+      }
+    });
+  }
+
+  // 이름 유효성 검사
+  void _validateName() {
+    final name = _nameController.text;
+
+    if (name.isEmpty) {
+      _isNameValid = true;
+      _nameErrorMessage = '';
+      return;
+    }
+
+    // UTF-8 인코딩을 사용하여 바이트 수 계산
+    final bytes = utf8.encode(name);
+    final byteLength = bytes.length;
+
+    setState(() {
+      if (byteLength < 6) {
+        _isNameValid = false;
+        _nameErrorMessage = '이름은 2자 이상 10자 이하로 입력해주세요';
+      } else {
+        _isNameValid = true;
+        _nameErrorMessage = '';
       }
     });
   }
@@ -365,10 +398,22 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   void _checkFields() {
+    final userProvider = context.read<UserProvider>();
+    final nickname = _nicknameController.text;
+    final bytes = utf8.encode(nickname);
+    final byteLength = bytes.length;
+
+    // 닉네임: 바이트 길이 6 이상 AND 중복 확인 완료(available 상태)
+    bool isNicknameValid =
+        nickname.isNotEmpty &&
+        byteLength >= 6 &&
+        userProvider.state == UsernameCheckState.available;
+
     setState(() {
       _allFieldsFilled =
-          _nicknameController.text.isNotEmpty &&
-          _isNicknameValid &&
+          isNicknameValid &&
+          _nameController.text.isNotEmpty &&
+          _isNameValid &&
           _emailController.text.isNotEmpty &&
           _isEmailValid &&
           _isPasswordValid &&
@@ -380,12 +425,14 @@ class _SignupPageState extends State<SignupPage> {
   @override
   void dispose() {
     _nicknameController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
 
     // FocusNode 해제
     _nicknameFocus.dispose();
+    _nameFocus.dispose();
     _emailFocus.dispose();
     _passwordFocus.dispose();
     _confirmPasswordFocus.dispose();
@@ -400,10 +447,12 @@ class _SignupPageState extends State<SignupPage> {
   Widget build(BuildContext context) {
     // 중앙에 표시할 메시지 가져오기
     final String centerMessage = _getCurrentErrorMessage();
+    final userProvider = context.watch<UserProvider>();
 
-    // 키보드 표시 여부 확인
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    _isKeyboardVisible = keyboardHeight > 0;
+    // UserProvider 상태 변경 감시 후 필드 상태 업데이트
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkFields();
+    });
 
     // // 버튼을 하단에 고정할지 여부 결정
     // final shouldFixButtonToBottom = !_hasAnyText && !_isKeyboardVisible;
@@ -425,11 +474,19 @@ class _SignupPageState extends State<SignupPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Image.asset('assets/images/applogo/app_logo.png'),
-                      _buildTextField(
+                      _buildNickNameTextField(
+                        userProvider,
                         '닉네임',
                         _nicknameController,
                         focusNode: _nicknameFocus,
                         isValid: _isNicknameValid,
+                      ),
+                      const SizedBox(height: 20.0),
+                      _buildTextField(
+                        '이름',
+                        _nameController,
+                        focusNode: _nameFocus,
+                        isValid: _isNameValid,
                       ),
                       const SizedBox(height: 20.0),
                       _buildTextField(
@@ -488,6 +545,7 @@ class _SignupPageState extends State<SignupPage> {
                                         checkPassword:
                                             _confirmPasswordController.text,
                                         username: _nicknameController.text,
+                                        name: _nameController.text,
                                       );
                                       ScaffoldMessenger.of(
                                         context,
@@ -503,7 +561,7 @@ class _SignupPageState extends State<SignupPage> {
                                             seconds: 2,
                                           ),
                                           title: Text(
-                                            '회원가입 성공! 이름: ${userProvider.currentUser?.displayName}',
+                                            '회원가입 성공! 닉네임: ${userProvider.currentUser?.displayName}',
                                           ),
                                         );
                                         Navigator.pushReplacement(
@@ -665,5 +723,120 @@ class _SignupPageState extends State<SignupPage> {
         ),
       ],
     );
+  }
+
+  Widget _buildNickNameTextField(
+    UserProvider userProvider,
+    String hintText,
+    TextEditingController controller, {
+    FocusNode? focusNode,
+    TextInputType? keyboardType,
+    String? errorText,
+    double height = 50.0,
+    bool isValid = true,
+  }) {
+    // 현재 필드가 포커스되었는지 확인
+    bool isFieldFocused = focusNode != null && focusNode.hasFocus;
+
+    // 유효하지 않고 포커스가 없는 경우에만 빨간색 테두리 표시
+    bool shouldShowRedBorder =
+        !isValid && !isFieldFocused && controller.text.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: height,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8.0),
+            border: Border.all(
+              color:
+                  shouldShowRedBorder ||
+                      (errorText != null && errorText.isNotEmpty)
+                  ? Colors.red.shade400
+                  : GRAYSCALE_LABEL_400,
+              width: 1.0,
+            ),
+          ),
+          child: TextFormField(
+            cursorColor: BUTTON,
+            controller: _nicknameController,
+            focusNode: focusNode,
+            keyboardType: keyboardType,
+            style: const TextStyle(fontSize: 15.0),
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: TextStyle(color: Colors.grey[500], fontSize: 15.0),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12.0,
+              ),
+            ),
+            onChanged: (value) {
+              _validateNickname();
+              context.read<UserProvider>().onUserNameChanged(value);
+            },
+          ),
+        ),
+
+        const SizedBox(height: 16),
+        _buildStatus(userProvider),
+      ],
+    );
+  }
+
+  Widget _buildStatus(UserProvider userProvider) {
+    final nickname = _nicknameController.text;
+    final bytes = utf8.encode(nickname);
+    final byteLength = bytes.length;
+
+    // 닉네임이 비어있으면 안내 메시지
+    if (nickname.isEmpty) {
+      return const Text('닉네임을 입력해주세요');
+    }
+
+    // 바이트 길이가 부족하면 길이 오류 표시
+    if (byteLength < 6) {
+      return Text(
+        '닉네임은 한글 2자, 영문 6자 이상이어야 합니다',
+        style: TextStyle(color: Colors.red[400]),
+      );
+    }
+
+    // 바이트 길이 충분 → 중복 확인 상태 표시
+    switch (userProvider.state) {
+      case UsernameCheckState.idle:
+        return const Text('닉네임을 확인 중입니다...');
+      case UsernameCheckState.checking:
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              height: 16,
+              width: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: BUTTON),
+            ),
+            const SizedBox(width: 8),
+            const Text('중복 확인 중...'),
+          ],
+        );
+      case UsernameCheckState.available:
+        return Text(
+          userProvider.message ?? '사용 가능한 닉네임입니다.',
+          style: const TextStyle(color: Colors.green),
+        );
+      case UsernameCheckState.duplicated:
+        return Text(
+          userProvider.message ?? '이미 사용 중인 닉네임입니다.',
+          style: const TextStyle(color: Colors.red),
+        );
+      case UsernameCheckState.error:
+        return Text(
+          userProvider.message ?? '확인 중 오류가 발생했습니다.',
+          style: const TextStyle(color: Colors.orange),
+        );
+    }
   }
 }
