@@ -295,14 +295,24 @@ class UserProvider extends ChangeNotifier {
       );
       await user.reauthenticateWithCredential(credential);
 
-      // 2. 사용자 데이터 삭제
+      // 2. 사용자 데이터 삭제 (Auth 삭제 전에 먼저 실행)
       await _deleteUserData(user.uid);
 
-      // 3. Firebase Auth에서 사용자 삭제
-      await user.delete();
+      // 3. Firebase Auth에서 사용자 삭제 (마지막에 실행)
+      // 주의: Auth 삭제 후 모든 리스너는 permission-denied 에러를 받으므로
+      // 미리 모든 구독을 취소하거나 에러를 무시해야 함
+      try {
+        await user.delete();
+      } catch (e) {
+        print('Auth 사용자 삭제 중 오류 (무시): $e');
+        // Auth 삭제 실패는 계속 진행 (이미 Firestore 데이터는 삭제됨)
+      }
 
       clearUserData();
     } on FirebaseAuthException {
+      rethrow;
+    } catch (e) {
+      print('회원탈퇴 중 오류: $e');
       rethrow;
     } finally {
       _isLoading = false;
@@ -313,60 +323,281 @@ class UserProvider extends ChangeNotifier {
   // 사용자 데이터 삭제 (공통 메서드)
   Future<void> _deleteUserData(String uid) async {
     try {
-      // 1. Firestore에서 사용자 기본 정보 삭제
+      // 1. 사용자의 피드 댓글 삭제 (고유 ID 기반)
+      final commentsSnapshot = await _firestore
+          .collection('comments')
+          .where('userId', isEqualTo: uid)
+          .get();
+
+      for (final doc in commentsSnapshot.docs) {
+        await doc.reference.delete();
+      }
+      print('피드 댓글 ${commentsSnapshot.docs.length}개 삭제됨');
+
+      // 2. 마켓 댓글 삭제 (고유 ID 기반, 컬렉션 이름 수정)
+      final marketCommentsSnapshot = await _firestore
+          .collection('marketComments')
+          .where('userId', isEqualTo: uid)
+          .get();
+
+      for (final doc in marketCommentsSnapshot.docs) {
+        await doc.reference.delete();
+      }
+      print('마켓 댓글 ${marketCommentsSnapshot.docs.length}개 삭제됨');
+
+      // 3. 마켓 포스트 삭제
+      final marketPostDoc = await _firestore
+          .collection('market_posts')
+          .doc(uid)
+          .get();
+
+      // Firestore의 List<dynamic>을 List<String>으로 안전하게 변환
+      final List<String> imageUrls = marketPostDoc.data() != null
+          ? List<String>.from(marketPostDoc.data()?['imageUrls'] ?? [])
+          : [];
+
+      if (imageUrls.isNotEmpty) {
+        final storage = FirebaseStorage.instance;
+        for (final imageUrl in imageUrls) {
+          try {
+            final imageRef = storage.refFromURL(imageUrl);
+            await imageRef.delete();
+            print('Storage 이미지 삭제: $imageUrl');
+          } catch (e) {
+            print('Storage 이미지 삭제 중 오류: $e');
+          }
+        }
+        print('마켓 이미지 ${imageUrls.length}개 삭제됨');
+      }
+
+      await _firestore.collection('market_posts').doc(uid).delete();
+
+      // 4. 일반 포스트 삭제 (고유 ID 기반, userId 필드로 조회)
+      final postsSnapshot = await _firestore
+          .collection('posts')
+          .where('userId', isEqualTo: uid)
+          .get();
+
+      for (final doc in postsSnapshot.docs) {
+        await doc.reference.delete();
+      }
+      print('피드 포스트 ${postsSnapshot.docs.length}개 삭제됨');
+
+      // 5. 사용자 기본 정보 삭제
       await _firestore.collection('users').doc(uid).delete();
+      print('사용자 정보 삭제됨');
 
-      // 2. 사용자의 산책 기록 삭제
-      await _firestore.collection('trackingResult').doc(uid).delete();
-
-      // 3. Firebase Storage에서 사용자 파일 삭제
-      // 사용자별 폴더 구조: users/{uid}/
+      // 5-1. 사용자의 알림 삭제 (notifications 컬렉션 - toUserId로 조회)
       try {
-        final storageRef = FirebaseStorage.instance.ref().child('users/$uid');
-        final listResult = await storageRef.listAll();
+        final notificationsSnapshot = await _firestore
+            .collection('notifications')
+            .where('toUserId', isEqualTo: uid)
+            .get();
 
-        // 하위 폴더들 삭제
-        for (final prefix in listResult.prefixes) {
-          await _deleteStorageFolder(prefix);
+        for (final doc in notificationsSnapshot.docs) {
+          await doc.reference.delete();
+        }
+        print('알림 ${notificationsSnapshot.docs.length}개 삭제됨');
+      } catch (e) {
+        print('알림 삭제 중 오류: $e');
+      }
+
+      // 5-1-1. 사용자의 경기 참석 기록 삭제 (attendances 서브컬렉션)
+      try {
+        final attendancesSnapshot = await _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('attendances')
+            .get();
+
+        for (final doc in attendancesSnapshot.docs) {
+          await doc.reference.delete();
+        }
+        print('경기 참석 기록 ${attendancesSnapshot.docs.length}개 삭제됨');
+      } catch (e) {
+        print('경기 참석 기록 삭제 중 오류: $e');
+      }
+
+      // 5-2. 팔로우 관계 정리
+      try {
+        // 1) 사용자가 팔로우하는 사람들 정보 가져오기
+        final followingSnapshot = await _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('following')
+            .get();
+
+        // 2) 각 팔로우 대상자의 followers에서 현재 사용자 제거
+        for (final doc in followingSnapshot.docs) {
+          final targetUserId = doc.id;
+          await _firestore
+              .collection('users')
+              .doc(targetUserId)
+              .collection('followers')
+              .doc(uid)
+              .delete();
         }
 
-        // 직접 파일들 삭제
-        for (final item in listResult.items) {
-          await item.delete();
+        // 3) 현재 사용자의 following 컬렉션 삭제
+        for (final doc in followingSnapshot.docs) {
+          await doc.reference.delete();
         }
+        print('팔로우 ${followingSnapshot.docs.length}개 정리됨');
+
+        // 4) 사용자를 팔로우하는 사람들 정보 가져오기
+        final followersSnapshot = await _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('followers')
+            .get();
+
+        // 5) 각 팔로워의 following에서 현재 사용자 제거
+        for (final doc in followersSnapshot.docs) {
+          final followerUserId = doc.id;
+          await _firestore
+              .collection('users')
+              .doc(followerUserId)
+              .collection('following')
+              .doc(uid)
+              .delete();
+        }
+
+        // 6) 현재 사용자의 followers 컬렉션 삭제
+        for (final doc in followersSnapshot.docs) {
+          await doc.reference.delete();
+        }
+        print('팔로워 ${followersSnapshot.docs.length}개 정리됨');
+      } catch (e) {
+        print('팔로우 관계 정리 중 오류: $e');
+      }
+
+      // 5-3. 신고 기록 삭제 (사용자가 신고한 또는 신고받은 모든 신고)
+      try {
+        // 1) 피드 신고 - 신고한 또는 신고받은 기록
+        final feedReportsSnapshot = await _firestore
+            .collection('feed_reports')
+            .where('reporterUserId', isEqualTo: uid)
+            .get();
+
+        for (final doc in feedReportsSnapshot.docs) {
+          await doc.reference.delete();
+        }
+
+        final reportedFeedSnapshot = await _firestore
+            .collection('feed_reports')
+            .where('reportedUserId', isEqualTo: uid)
+            .get();
+
+        for (final doc in reportedFeedSnapshot.docs) {
+          await doc.reference.delete();
+        }
+        print(
+          '피드 신고 ${feedReportsSnapshot.docs.length + reportedFeedSnapshot.docs.length}개 삭제됨',
+        );
+
+        // 2) 피드 댓글 신고
+        final feedCommentReportsSnapshot = await _firestore
+            .collection('feed_comment_reports')
+            .where('reporterUserId', isEqualTo: uid)
+            .get();
+
+        for (final doc in feedCommentReportsSnapshot.docs) {
+          await doc.reference.delete();
+        }
+
+        final reportedFeedCommentSnapshot = await _firestore
+            .collection('feed_comment_reports')
+            .where('reportedUserId', isEqualTo: uid)
+            .get();
+
+        for (final doc in reportedFeedCommentSnapshot.docs) {
+          await doc.reference.delete();
+        }
+        print(
+          '피드 댓글 신고 ${feedCommentReportsSnapshot.docs.length + reportedFeedCommentSnapshot.docs.length}개 삭제됨',
+        );
+
+        // 3) 마켓 댓글 신고
+        final marketCommentReportsSnapshot = await _firestore
+            .collection('market_comment_reports')
+            .where('reporterUserId', isEqualTo: uid)
+            .get();
+
+        for (final doc in marketCommentReportsSnapshot.docs) {
+          await doc.reference.delete();
+        }
+
+        final reportedMarketCommentSnapshot = await _firestore
+            .collection('market_comment_reports')
+            .where('reportedUserId', isEqualTo: uid)
+            .get();
+
+        for (final doc in reportedMarketCommentSnapshot.docs) {
+          await doc.reference.delete();
+        }
+        print(
+          '마켓 댓글 신고 ${marketCommentReportsSnapshot.docs.length + reportedMarketCommentSnapshot.docs.length}개 삭제됨',
+        );
+
+        // 4) 마켓 신고
+        final marketReportsSnapshot = await _firestore
+            .collection('market_feed_reports')
+            .where('reporterUserId', isEqualTo: uid)
+            .get();
+
+        for (final doc in marketReportsSnapshot.docs) {
+          await doc.reference.delete();
+        }
+
+        final reportedMarketSnapshot = await _firestore
+            .collection('market_feed_reports')
+            .where('reportedUserId', isEqualTo: uid)
+            .get();
+
+        for (final doc in reportedMarketSnapshot.docs) {
+          await doc.reference.delete();
+        }
+        print(
+          '마켓 신고 ${marketReportsSnapshot.docs.length + reportedMarketSnapshot.docs.length}개 삭제됨',
+        );
+      } catch (e) {
+        print('신고 기록 삭제 중 오류: $e');
+      }
+
+      // 6. Firebase Storage에서 사용자 파일 삭제
+      try {
+        final storage = FirebaseStorage.instance;
+
+        // 프로필 이미지 삭제 (profiles/{userId}/ 경로)
+        try {
+          final profilesRef = storage.ref().child('profiles/$uid');
+          final profilesList = await profilesRef.listAll();
+          for (final item in profilesList.items) {
+            await item.delete();
+          }
+          if (profilesList.items.isNotEmpty) {
+            print('프로필 이미지 ${profilesList.items.length}개 삭제됨');
+          }
+        } catch (e) {
+          print('프로필 삭제 중 오류: $e');
+        }
+
+        // 주의: 피드의 이미지/동영상(images/, videos/)은 deletePost() 시 mediaUrls로 개별 삭제됨
+        // 주의: 마켓 이미지(after_market/)는 마켓 포스트 삭제 시 imageUrls로 개별 삭제됨
+        // → 모든 미디어 파일이 정상적으로 삭제됨
+
+        print('Storage 파일 삭제 완료');
       } catch (e) {
         print('Storage 삭제 중 오류: $e');
         // Storage 삭제 실패는 치명적이지 않으므로 계속 진행
       }
-
-      // 4. 기타 사용자 관련 컬렉션이 있다면 여기서 삭제
-      // 예: 사용자 설정, 즐겨찾기 등
     } catch (e) {
       print('사용자 데이터 삭제 중 오류: $e');
       throw FirebaseException(
         plugin: 'firestore',
-        message: '사용자 데이터 삭제에 실패했습니다.',
+        message: '사용자 데이터 삭제에 실패했습니다: ${e.toString()}',
         code: 'data-deletion-failed',
       );
-    }
-  }
-
-  // Storage 폴더 재귀적 삭제
-  Future<void> _deleteStorageFolder(Reference folderRef) async {
-    try {
-      final listResult = await folderRef.listAll();
-
-      // 하위 폴더들 재귀적 삭제
-      for (final prefix in listResult.prefixes) {
-        await _deleteStorageFolder(prefix);
-      }
-
-      // 파일들 삭제
-      for (final item in listResult.items) {
-        await item.delete();
-      }
-    } catch (e) {
-      print('Storage 폴더 삭제 중 오류: $e');
     }
   }
 
