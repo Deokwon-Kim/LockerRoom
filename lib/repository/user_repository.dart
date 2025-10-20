@@ -31,16 +31,13 @@ class UserRepository {
     await batch.commit();
 
     // 새로운 팔로워에 대한 대상 사용자 알림을 생성
-    await _firestore
-        .collection('users')
-        .doc(targetUserId)
-        .collection('notifications')
-        .add({
-          'type': 'follow',
-          'fromUserId': currentUserId,
-          'createdAt': FieldValue.serverTimestamp(),
-          'isRead': false,
-        });
+    await _firestore.collection('notifications').add({
+      'type': 'follow',
+      'fromUserId': currentUserId,
+      'toUserId': targetUserId,
+      'createdAt': FieldValue.serverTimestamp(),
+      'isRead': false,
+    });
   }
 
   Future<void> unfollowUser(String currentUserId, String targetUserId) async {
