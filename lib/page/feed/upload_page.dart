@@ -50,6 +50,7 @@ class _UploadPageState extends State<UploadPage> {
         userProvider.currentUser?.displayName ??
         FirebaseAuth.instance.currentUser?.displayName ??
         '';
+    final name = userProvider.name;
     final teamProvider = context.read<TeamProvider>();
     final profileProvider = context.watch<ProfileProvider>();
     final authUser = FirebaseAuth.instance.currentUser;
@@ -284,6 +285,7 @@ class _UploadPageState extends State<UploadPage> {
                               await uploadProvider.uploadAndSavePost(
                                 userId: FirebaseAuth.instance.currentUser!.uid,
                                 userName: userName,
+                                name: name!,
                                 text: _captionController.text,
                               );
                               _captionController.clear();
