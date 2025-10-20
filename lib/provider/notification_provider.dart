@@ -17,9 +17,8 @@ class NotificationProvider extends ChangeNotifier {
   void listen(String userId) {
     _sub?.cancel();
     _sub = _firestore
-        .collection('users')
-        .doc(userId)
         .collection('notifications')
+        .where('toUserId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .listen(
@@ -61,12 +60,9 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   Future<void> markAsRead(String userId, String notificationId) async {
-    await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('notifications')
-        .doc(notificationId)
-        .update({'isRead': true});
+    await _firestore.collection('notifications').doc(notificationId).update({
+      'isRead': true,
+    });
   }
 
   Future<String> fetchUserName(String userId) async {
