@@ -1,18 +1,31 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/model/user_model.dart';
 
+enum UsernameCheckState { idle, checking, available, duplicated, error }
+
 class UserProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  UsernameCheckState _state = UsernameCheckState.idle;
+  UsernameCheckState get state => _state;
+
+  String? _message;
+  String? get message => _message;
+
+  Timer? _debounce;
 
   bool _isLoading = false;
   String? _errorMessage;
   bool _isSignUpSuccess = false;
   User? _currentUser;
   String? _nickname;
+  String? _name;
   String? _email;
 
   // 게터
@@ -21,7 +34,29 @@ class UserProvider extends ChangeNotifier {
   bool get isSignUpSuccess => _isSignUpSuccess;
   User? get currentUser => _currentUser;
   String? get nickname => _nickname;
+  String? get name => _name;
   String? get email => _email;
+
+  void onUserNameChanged(String username) {
+    _debounce?.cancel();
+
+    if (username.trim().isEmpty) {
+      _state = UsernameCheckState.idle;
+      _message = null;
+      notifyListeners();
+      return;
+    }
+
+    // 새로운 입력이 들어왔으므로 상태를 idle로 초기화
+    _state = UsernameCheckState.idle;
+    _message = null;
+    notifyListeners();
+
+    // 500ms 동안 입력이 멈추면 검사실행
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _checkUserName(username);
+    });
+  }
 
   // 로딩 상태 설정
   void setLoading(bool loading) {
@@ -40,12 +75,47 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> _checkUserName(String username) async {
+    _state = UsernameCheckState.checking;
+    _message = '중복 확인 중...';
+    notifyListeners();
+
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .where('username', isEqualTo: username)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        _state = UsernameCheckState.available;
+        _message = '사용 가능한 닉네임 입니다.';
+      } else {
+        _state = UsernameCheckState.duplicated;
+        _message = '이미 사용 중인 닉네임 입니다.';
+      }
+    } catch (e) {
+      _state = UsernameCheckState.error;
+      _message = '확인 중 오류가 발생했습니다.';
+      debugPrint('닉네임 중복 확인 오류: $e');
+    }
+
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
   // 회원가입 함수
   Future<bool> signUp({
     required String email,
     required String password,
     required String checkPassword,
     required String username,
+    required String name,
   }) async {
     setLoading(true);
     setErrorMessage(null);
@@ -64,6 +134,7 @@ class UserProvider extends ChangeNotifier {
       // UserModel 생성
       UserModel user = UserModel(
         username: username,
+        name: name,
         useremail: email,
         uid: userCredential.user!.uid,
         followersCount: 0,
@@ -73,6 +144,7 @@ class UserProvider extends ChangeNotifier {
       // Firestore에 사용자 정보 저장
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
         'username': user.username,
+        'name': user.name,
         'email': user.useremail,
         'uid': user.uid,
         'createdAt': FieldValue.serverTimestamp(),
@@ -119,6 +191,7 @@ class UserProvider extends ChangeNotifier {
     // 사용자 관련 모든 상태 초기화
     _currentUser = null;
     _nickname = null;
+    _name = null;
     _email = null;
     _errorMessage = null;
     _isSignUpSuccess = false;
@@ -137,9 +210,43 @@ class UserProvider extends ChangeNotifier {
         .collection('users')
         .doc(uid)
         .get();
+
     _nickname = doc.data()?['username'] ?? _currentUser?.displayName;
     _email = doc.data()?['email'];
+
+    // name 필드 로드
+    _name = doc.data()?['name'];
+
+    // name이 null이면 username을 기본값으로 설정하고 Firestore에 저장
+    if (_name == null && _nickname != null) {
+      _name = _nickname;
+      // Firestore에 name 필드 추가 (기존 사용자 마이그레이션)
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(uid).update({
+          'name': _name,
+        });
+      } catch (e) {
+        debugPrint('name 필드 업데이트 오류: $e');
+      }
+    }
+
     notifyListeners();
+  }
+
+  Future<void> loadName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final uid = user?.uid;
+    if (uid == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .get();
+
+    _name = doc.data()?['name'] ?? doc.data()?['username'];
+    if (_name != null) {
+      notifyListeners();
+    }
   }
 
   Future<void> updateNickname(String newNickname) async {
