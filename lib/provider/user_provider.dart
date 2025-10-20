@@ -427,15 +427,20 @@ class UserProvider extends ChangeNotifier {
             .collection('following')
             .get();
 
-        // 2) 각 팔로우 대상자의 followers에서 현재 사용자 제거
+        // 2) 각 팔로우 대상자의 followers에서 현재 사용자 제거 + followersCount 감소
         for (final doc in followingSnapshot.docs) {
           final targetUserId = doc.id;
+          // followers 문서 삭제
           await _firestore
               .collection('users')
               .doc(targetUserId)
               .collection('followers')
               .doc(uid)
               .delete();
+          // followersCount 감소
+          await _firestore.collection('users').doc(targetUserId).update({
+            'followersCount': FieldValue.increment(-1),
+          });
         }
 
         // 3) 현재 사용자의 following 컬렉션 삭제
@@ -451,15 +456,20 @@ class UserProvider extends ChangeNotifier {
             .collection('followers')
             .get();
 
-        // 5) 각 팔로워의 following에서 현재 사용자 제거
+        // 5) 각 팔로워의 following에서 현재 사용자 제거 + followingCount 감소
         for (final doc in followersSnapshot.docs) {
           final followerUserId = doc.id;
+          // following 문서 삭제
           await _firestore
               .collection('users')
               .doc(followerUserId)
               .collection('following')
               .doc(uid)
               .delete();
+          // followingCount 감소
+          await _firestore.collection('users').doc(followerUserId).update({
+            'followingCount': FieldValue.increment(-1),
+          });
         }
 
         // 6) 현재 사용자의 followers 컬렉션 삭제
