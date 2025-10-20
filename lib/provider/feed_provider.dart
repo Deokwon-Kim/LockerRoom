@@ -41,7 +41,7 @@ class FeedProvider extends ChangeNotifier {
             notifyListeners();
           },
           onError: (e) {
-            print('Firestore error: $e');
+            print('피드 구독 에러: $e');
             isLoading = false;
             notifyListeners();
           },
@@ -169,19 +169,15 @@ class FeedProvider extends ChangeNotifier {
         : post.text);
 
     // Firestore에 알림 문서 추가
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(targetUserId)
-        .collection('notifications')
-        .add({
-          'type': 'feedLike',
-          'postId': postId,
-          'fromUserId': currentUserId,
-          'toUserId': targetUserId,
-          'preview': preview,
-          'createdAt': FieldValue.serverTimestamp(),
-          'isRead': false,
-        });
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'feedLike',
+      'postId': postId,
+      'fromUserId': currentUserId,
+      'toUserId': targetUserId,
+      'preview': preview,
+      'createdAt': FieldValue.serverTimestamp(),
+      'isRead': false,
+    });
   }
 
   // 현재 로그인 한 유저에 게시물만 불러오기
