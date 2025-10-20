@@ -2,6 +2,7 @@ import 'package:contained_tab_bar_view/contained_tab_bar_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/user_model.dart';
 import 'package:lockerroom/page/my_post/my_market_page.dart';
 import 'package:lockerroom/page/my_post/mypost.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
@@ -16,7 +17,8 @@ import 'package:toastification/toastification.dart';
 
 class Mypage extends StatefulWidget {
   final String userId;
-  const Mypage({super.key, required this.userId});
+  final UserModel? user;
+  const Mypage({super.key, required this.userId, this.user});
 
   @override
   State<Mypage> createState() => _MypageState();
@@ -324,6 +326,17 @@ class _MypageState extends State<Mypage> {
                         ),
                       ),
                       SizedBox(height: 5),
+                      Consumer<UserProvider>(
+                        builder: (context, userProvider, child) {
+                          return Text(
+                            userProvider.name ?? widget.user?.name ?? '',
+                            style: TextStyle(
+                              color: GRAYSCALE_LABEL_600,
+                              fontSize: 14,
+                            ),
+                          );
+                        },
+                      ),
                       Transform.translate(
                         offset: Offset(-10, 0),
                         child: Row(

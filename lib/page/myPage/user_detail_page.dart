@@ -59,7 +59,8 @@ class _UserDetailPageState extends State<UserDetailPage> {
           return Center(child: CircularProgressIndicator(color: color));
         }
         final data = snap.data!.data() ?? {};
-        final name = (data['username'] as String?) ?? '';
+        final nickName = (data['username'] as String?) ?? '';
+        final userName = (data['name'] as String?) ?? '';
         final teamName = data['team'] as String?;
         if (teamName == null || teamName.isEmpty)
           return const SizedBox.shrink();
@@ -82,7 +83,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                 Transform.translate(
                   offset: Offset(-15, 0),
                   child: Text(
-                    name,
+                    nickName,
                     style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -153,13 +154,14 @@ class _UserDetailPageState extends State<UserDetailPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          name,
+                          nickName,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         SizedBox(height: 5),
+                        Text(userName),
                         Row(
                           children: [
                             StreamBuilder<List<PostModel>>(

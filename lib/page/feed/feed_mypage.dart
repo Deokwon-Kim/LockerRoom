@@ -64,9 +64,10 @@ class _FeedMypageState extends State<FeedMypage> {
           child: Row(
             children: [
               Text(
-                widget.post.userName,
+                widget.post.userNickName,
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
+
               SizedBox(width: 5),
               StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                 stream: FirebaseFirestore.instance
@@ -165,11 +166,16 @@ class _FeedMypageState extends State<FeedMypage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.post.userName,
+                      widget.post.userNickName,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      widget.post.userName,
+                      style: TextStyle(color: GRAYSCALE_LABEL_600),
                     ),
                     SizedBox(height: 10),
                     Row(
@@ -334,7 +340,7 @@ class _FeedMypageState extends State<FeedMypage> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          widget.post.userName,
+                                          widget.post.userNickName,
                                           style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w500,

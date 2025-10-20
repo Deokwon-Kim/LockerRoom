@@ -17,6 +17,7 @@ import 'package:lockerroom/services/schedule_service.dart';
 import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   final TeamModel teamModel;
@@ -406,7 +407,7 @@ class _HomePageState extends State<HomePage> {
                                         ),
                                         SizedBox(height: 3),
                                         Text(
-                                          post.userName,
+                                          post.userNickName,
                                           style: TextStyle(
                                             fontSize: 13,
                                             color: GRAYSCALE_LABEL_400,
@@ -483,8 +484,17 @@ class _HomePageState extends State<HomePage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Text('직관기록이 없습니다.'),
-                                  Text('직관기록 추가 하기 +'),
+                                  Text(
+                                    '아직 직관 기록이 없네요. 첫 직관을 남겨볼까요?',
+                                    style: TextStyle(
+                                      color: GRAYSCALE_LABEL_600,
+                                    ),
+                                  ),
+                                  SizedBox(height: 10),
+                                  Text(
+                                    '직관기록 추가 하기 +',
+                                    style: TextStyle(color: Colors.black),
+                                  ),
                                 ],
                               ),
                             ),
@@ -649,14 +659,9 @@ class _HomePageState extends State<HomePage> {
                                   onTap: () {
                                     final youtubeUrl =
                                         'https://www.youtube.com/watch?v=${video.id}';
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            FullscreenVideoPlayer(
-                                              videoUrl: youtubeUrl,
-                                            ),
-                                      ),
+                                    launchUrl(
+                                      Uri.parse(youtubeUrl),
+                                      mode: LaunchMode.externalApplication,
                                     );
                                   },
                                   child: Image.network(

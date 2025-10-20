@@ -8,7 +8,9 @@ class PostModel {
   final String userId;
   final DateTime createdAt;
   final int likesCount;
+  final String userNickName;
   final String userName;
+
   final List<String> likedBy;
 
   PostModel({
@@ -19,6 +21,7 @@ class PostModel {
     required this.userId,
     required this.createdAt,
     required this.likesCount,
+    required this.userNickName,
     required this.userName,
     required this.likedBy,
   });
@@ -44,7 +47,8 @@ class PostModel {
           ? DateTime.now()
           : (data['createdAt'] as Timestamp).toDate(),
       likesCount: data['likesCount'] ?? 0,
-      userName: data['userName'] ?? '사용자',
+      userNickName: data['userName'] ?? '사용자',
+      userName: data['name'] ?? '',
       likedBy: List<String>.from(data['likedBy'] ?? const []),
     );
   }
