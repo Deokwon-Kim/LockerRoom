@@ -9,6 +9,7 @@ import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:toastification/toastification.dart';
 
 class UploadPage extends StatefulWidget {
   final VoidCallback? onUploaded;
@@ -426,7 +427,7 @@ class _UploadPageState extends State<UploadPage> {
                     '동영상 선택',
                     style: TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  subtitle: Text('길면 자동으로 압축해요.'),
+                  subtitle: Text('최대 1분짜리 동영상만 업로드 가능합니다.'),
                   onTap: () async {
                     if (uploadProvider.isUploading) return;
                     try {
@@ -456,20 +457,26 @@ class _UploadPageState extends State<UploadPage> {
 
                       if (context.mounted) {
                         Navigator.pop(context); // 로딩 다이얼로그 닫기
-                        Navigator.pop(context); // 메뉴 닫기
+                        Navigator.pop(context); // 바텀시트(메뉴) 닫기
                       }
                     } catch (e) {
                       if (context.mounted) {
                         Navigator.pop(context); // 로딩 다이얼로그 닫기
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              e.toString().replaceAll('Exception: ', ''),
+                        Navigator.pop(context); // 바텀시트(메뉴) 닫기
+
+                        // 바텀시트가 닫힌 후 메시지 표시
+
+                        if (context.mounted) {
+                          toastification.show(
+                            context: context,
+                            type: ToastificationType.error,
+                            alignment: Alignment.bottomCenter,
+                            autoCloseDuration: Duration(seconds: 4),
+                            title: Text(
+                              e.toString().replaceAll('Exception:', ''),
                             ),
-                            backgroundColor: Colors.red,
-                            duration: Duration(seconds: 3),
-                          ),
-                        );
+                          );
+                        }
                       }
                     }
                   },
