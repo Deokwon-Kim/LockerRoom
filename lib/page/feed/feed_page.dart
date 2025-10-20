@@ -27,6 +27,24 @@ class FeedPage extends StatefulWidget {
 }
 
 class _FeedPageState extends State<FeedPage> {
+  late FeedProvider _feedProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    // initState에서 context.read() 사용 (안전함)
+    _feedProvider = context.read<FeedProvider>();
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    _feedProvider.postStream(userId);
+  }
+
+  @override
+  void dispose() {
+    // dispose에서는 저장된 참조를 직접 사용 (context.read() 사용 금지!)
+    _feedProvider.cancelSubscription();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,7 +72,7 @@ class _FeedPageState extends State<FeedPage> {
           Expanded(
             child: Consumer2<FeedProvider, ProfileProvider>(
               builder: (context, feedProvider, profileProvider, child) {
-                final allPosts = feedProvider.posts;
+                final allPosts = feedProvider.filteredPosts;
 
                 return ListView.builder(
                   itemCount: allPosts.length,
