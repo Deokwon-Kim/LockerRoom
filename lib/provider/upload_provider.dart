@@ -253,6 +253,7 @@ class UploadProvider extends ChangeNotifier {
   Future<void> uploadAndSavePost({
     required String userId,
     required String userName,
+    required String name,
     required String text,
   }) async {
     if (_images.isEmpty && _video == null && _camera == null) return;
@@ -299,6 +300,7 @@ class UploadProvider extends ChangeNotifier {
     await FirebaseFirestore.instance.collection('posts').add({
       'userId': userId,
       'userName': userName,
+      'name': name,
       'text': text,
       'mediaUrls': mediaUrls,
       'createdAt': FieldValue.serverTimestamp(),
