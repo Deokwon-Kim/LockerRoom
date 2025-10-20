@@ -100,16 +100,19 @@ class MarketUploadProvider extends ChangeNotifier {
     }
 
     // Firestore에 게시물 저장
-    await FirebaseFirestore.instance.collection('market_posts').add({
-      'userId': userId,
-      'userName': userName,
-      'title': title,
-      'description': description,
-      'price': price,
-      'type': type,
-      'imageUrls': imageUrls,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    await FirebaseFirestore.instance
+        .collection('market_posts')
+        .doc(userId)
+        .set({
+          'userId': userId,
+          'userName': userName,
+          'title': title,
+          'description': description,
+          'price': price,
+          'type': type,
+          'imageUrls': imageUrls,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
 
     _isUploading = false;
     _uploadProgress = 1.0;
