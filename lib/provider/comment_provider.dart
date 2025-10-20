@@ -21,12 +21,18 @@ class CommentProvider with ChangeNotifier {
         .where('postId', isEqualTo: postId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .listen((snap) {
-          _postComments[postId] = snap.docs
-              .map((doc) => CommentModel.fromDoc(doc))
-              .toList();
-          notifyListeners();
-        });
+        .listen(
+          (snap) {
+            _postComments[postId] = snap.docs
+                .map((doc) => CommentModel.fromDoc(doc))
+                .toList();
+            notifyListeners();
+          },
+          onError: (e) {
+            print('댓글 구독 에러: $e');
+            // 에러 무시 (회원탈퇴 등으로 인한 permission-denied)
+          },
+        );
   }
 
   final Map<String, List<CommentModel>> _marketPostComments = {};
@@ -41,12 +47,18 @@ class CommentProvider with ChangeNotifier {
         .where('postId', isEqualTo: postId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .listen((snap) {
-          _marketPostComments[postId] = snap.docs
-              .map((doc) => CommentModel.fromDoc(doc))
-              .toList();
-          notifyListeners();
-        });
+        .listen(
+          (snap) {
+            _marketPostComments[postId] = snap.docs
+                .map((doc) => CommentModel.fromDoc(doc))
+                .toList();
+            notifyListeners();
+          },
+          onError: (e) {
+            print('마켓 댓글 구독 에러: $e');
+            // 에러 무시 (회원탈퇴 등으로 인한 permission-denied)
+          },
+        );
   }
 
   Future<void> addCommentAndNotify({
@@ -77,20 +89,16 @@ class CommentProvider with ChangeNotifier {
         : comment.text;
 
     // Firestore에 알림 문서 추가
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(targetUserId)
-        .collection('notifications')
-        .add({
-          'type': 'comment',
-          'postId': postId,
-          'commentId': commentRef.id,
-          'fromUserId': currentUserId,
-          'toUserId': targetUserId,
-          'preview': preview,
-          'createdAt': FieldValue.serverTimestamp(),
-          'isRead': false,
-        });
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'comment',
+      'postId': postId,
+      'commentId': commentRef.id,
+      'fromUserId': currentUserId,
+      'toUserId': targetUserId,
+      'preview': preview,
+      'createdAt': FieldValue.serverTimestamp(),
+      'isRead': false,
+    });
   }
 
   Future<void> addMarketCommentAndNotify({
@@ -121,20 +129,16 @@ class CommentProvider with ChangeNotifier {
         : marketComment.text;
 
     // Firestore에 알림 문서 추가
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(targetUserId)
-        .collection('notifications')
-        .add({
-          'type': 'marketComment',
-          'postId': marketPostId,
-          'commentId': commentRef.id,
-          'fromUserId': currentUserId,
-          'toUserId': targetUserId,
-          'preview': preview,
-          'createdAt': FieldValue.serverTimestamp(),
-          'isRead': false,
-        });
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'marketComment',
+      'postId': marketPostId,
+      'commentId': commentRef.id,
+      'fromUserId': currentUserId,
+      'toUserId': targetUserId,
+      'preview': preview,
+      'createdAt': FieldValue.serverTimestamp(),
+      'isRead': false,
+    });
   }
 
   Future<void> commentLikeAndNotify({
@@ -173,19 +177,15 @@ class CommentProvider with ChangeNotifier {
         ? '${comment.text.substring(0, 40)}...'
         : comment.text;
     // Firestore에 알림 문서 추가
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(targetUserId)
-        .collection('notifications')
-        .add({
-          'type': 'commentLike',
-          'commentId': commentId,
-          'fromUserId': currentUserId,
-          'toUserId': targetUserId,
-          'preview': preview,
-          'createdAt': FieldValue.serverTimestamp(),
-          'isRead': false,
-        });
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'commentLike',
+      'commentId': commentId,
+      'fromUserId': currentUserId,
+      'toUserId': targetUserId,
+      'preview': preview,
+      'createdAt': FieldValue.serverTimestamp(),
+      'isRead': false,
+    });
   }
 
   void cancelSubscription(String postId) {
