@@ -317,22 +317,23 @@ class _MypageState extends State<Mypage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        userName,
-                        style: TextStyle(
-                          color: BLACK,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 5),
+                      // Text(
+                      //   userName,
+                      //   style: TextStyle(
+                      //     color: BLACK,
+                      //     fontSize: 16,
+                      //     fontWeight: FontWeight.bold,
+                      //   ),
+                      // ),
+                      // SizedBox(height: 5),
                       Consumer<UserProvider>(
                         builder: (context, userProvider, child) {
                           return Text(
                             userProvider.name ?? widget.user?.name ?? '',
                             style: TextStyle(
-                              color: GRAYSCALE_LABEL_600,
-                              fontSize: 14,
+                              color: BLACK,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
                             ),
                           );
                         },

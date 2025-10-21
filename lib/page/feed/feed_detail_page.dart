@@ -158,7 +158,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                 );
                               },
                               child: Text(
-                                widget.post.userName,
+                                widget.post.userNickName,
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w500,

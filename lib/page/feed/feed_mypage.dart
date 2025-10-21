@@ -161,108 +161,149 @@ class _FeedMypageState extends State<FeedMypage> {
                     );
                   },
                 ),
-                SizedBox(width: 20),
+                SizedBox(width: 30),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.post.userNickName,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 5),
+                    // Text(
+                    //   widget.post.userNickName,
+                    //   style: TextStyle(
+                    //     fontSize: 16,
+                    //     fontWeight: FontWeight.bold,
+                    //   ),
+                    // ),
                     Text(
                       widget.post.userName,
-                      style: TextStyle(color: GRAYSCALE_LABEL_600),
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    SizedBox(height: 10),
-                    Row(
-                      children: [
-                        StreamBuilder<List<PostModel>>(
-                          stream: context.read<FeedProvider>().listenUserPosts(
-                            widget.post.userId,
-                          ),
-                          builder: (context, snapshot) {
-                            final count = (snapshot.data ?? const []).length;
-                            return Column(
-                              children: [Text('$count'), Text('게시물')],
-                            );
-                          },
-                        ),
 
-                        SizedBox(width: 50),
-                        StreamBuilder<int>(
-                          stream: fp.getFollowersCountStream(
-                            widget.targetUserId,
+                    Transform.translate(
+                      offset: Offset(-10, 0),
+                      child: Row(
+                        children: [
+                          StreamBuilder<List<PostModel>>(
+                            stream: context
+                                .read<FeedProvider>()
+                                .listenUserPosts(widget.post.userId),
+                            builder: (context, snapshot) {
+                              final count = (snapshot.data ?? const []).length;
+                              return Column(
+                                children: [
+                                  Text(
+                                    '$count',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    '게시물',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              final color =
-                                  context
-                                      .read<TeamProvider>()
-                                      .selectedTeam
-                                      ?.color ??
-                                  BUTTON;
-                              return CircularProgressIndicator(color: color);
-                            }
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FollowListPage(
-                                      userId: widget.targetUserId,
-                                      initialIndex: 0,
+
+                          SizedBox(width: 50),
+                          StreamBuilder<int>(
+                            stream: fp.getFollowersCountStream(
+                              widget.targetUserId,
+                            ),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                final color =
+                                    context
+                                        .read<TeamProvider>()
+                                        .selectedTeam
+                                        ?.color ??
+                                    BUTTON;
+                                return CircularProgressIndicator(color: color);
+                              }
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => FollowListPage(
+                                        userId: widget.targetUserId,
+                                        initialIndex: 0,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                              child: Column(
-                                children: [
-                                  Text('${snapshot.data}'),
-                                  Text("팔로워"),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                        SizedBox(width: 50),
-                        StreamBuilder<int>(
-                          stream: fp.getFollowCountStream(widget.targetUserId),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              final color =
-                                  context
-                                      .read<TeamProvider>()
-                                      .selectedTeam
-                                      ?.color ??
-                                  BUTTON;
-                              return CircularProgressIndicator(color: color);
-                            }
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FollowListPage(
-                                      userId: widget.targetUserId,
-                                      initialIndex: 1,
+                                  );
+                                },
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${snapshot.data}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                              child: Column(
-                                children: [
-                                  Text('${snapshot.data}'),
-                                  Text('팔로잉'),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                                    Text(
+                                      "팔로워",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(width: 50),
+                          StreamBuilder<int>(
+                            stream: fp.getFollowCountStream(
+                              widget.targetUserId,
+                            ),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                final color =
+                                    context
+                                        .read<TeamProvider>()
+                                        .selectedTeam
+                                        ?.color ??
+                                    BUTTON;
+                                return CircularProgressIndicator(color: color);
+                              }
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => FollowListPage(
+                                        userId: widget.targetUserId,
+                                        initialIndex: 1,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${snapshot.data}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      '팔로잉',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
