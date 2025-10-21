@@ -57,11 +57,13 @@ class _FeedPageState extends State<FeedPage> {
         backgroundColor: BACKGROUND_COLOR,
         actions: [
           IconButton(
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => FeedSearchPage()),
               );
+              if (!mounted) return;
+              context.read<FeedProvider>().setQuery('');
             },
             icon: Icon(Icons.search, color: BUTTON),
           ),
