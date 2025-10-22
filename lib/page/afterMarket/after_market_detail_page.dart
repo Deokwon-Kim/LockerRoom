@@ -6,6 +6,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/market_post_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
+import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -201,6 +202,15 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                     marketFeedProvider,
                     reporter.uid,
                   );
+                } else if (value == 'block') {
+                  final uid = FirebaseAuth.instance.currentUser?.uid;
+                  if (uid == null) return;
+                  _showBlockConfirmDialog(
+                    context,
+                    widget.marketPost.userName,
+                    widget.marketPost.userId,
+                    uid,
+                  );
                 }
               },
               itemBuilder: (context) => [
@@ -212,8 +222,28 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                       style: TextStyle(color: RED_DANGER_TEXT_50),
                     ),
                   )
-                else
-                  PopupMenuItem(value: 'report', child: Text('신고')),
+                else ...[
+                  PopupMenuItem(
+                    value: 'report',
+                    child: Text(
+                      '신고',
+                      style: TextStyle(
+                        color: BLACK,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'block',
+                    child: Text(
+                      '사용자 차단',
+                      style: TextStyle(
+                        color: RED_DANGER_TEXT_50,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1264,6 +1294,201 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
           ),
         ],
       ),
+    );
+  }
+
+  // 사용자 차단 다이얼로그
+  void _showBlockConfirmDialog(
+    BuildContext context,
+    String userNickName,
+    String userId,
+    String currentUserId,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: BACKGROUND_COLOR,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: 8),
+              // 상단 바
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: GRAYSCALE_LABEL_400,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(height: 24),
+
+              // 제목
+              Text(
+                '${userNickName}님을\n차단하시겠어요?',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 16),
+
+              // 설명 텍스트
+              Text(
+                '이 사람이 만든 다른 계정과 앞으로 만드는 모든 계정이 함께 차단됩니다. 언제든지 차단을 해제할 수 있습니다.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: GRAYSCALE_LABEL_600,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 20),
+
+              // 차단 효과 설명
+              _buildBlockEffectItem(
+                icon: Icons.search_off,
+                title: '게시물 및 프로필 숨김',
+                description: '해당 사용자는 회원님의 프로필과 게시물을 찾을 수 없습니다.',
+              ),
+              SizedBox(height: 16),
+
+              _buildBlockEffectItem(
+                icon: Icons.comment,
+                title: '상호작용 차단',
+                description: '해당 사용자가 남긴 댓글은 회원님에게 보이지 않습니다.',
+              ),
+              SizedBox(height: 16),
+
+              _buildBlockEffectItem(
+                icon: Icons.mail,
+                title: '메시지 차단',
+                description: '해당 사용자는 직접 메시지를 보낼 수 없습니다.',
+              ),
+              SizedBox(height: 16),
+
+              _buildBlockEffectItem(
+                icon: Icons.notifications_off,
+                title: '상대방에게 알림 없음',
+                description: '상대방에게 회원님이 차단했다는 사실을 알리지 않습니다.',
+              ),
+              SizedBox(height: 28),
+
+              // 버튼
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: GRAYSCALE_LABEL_300),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '취소',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: GRAYSCALE_LABEL_900,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () async {
+                        await context.read<BlockProvider>().blockUser(
+                          currentUserId: currentUserId,
+                          targetUserId: userId,
+                        );
+                        if (!mounted) return;
+                        Navigator.pop(context);
+                        toastification.show(
+                          context: context,
+                          type: ToastificationType.success,
+                          alignment: Alignment.bottomCenter,
+                          autoCloseDuration: Duration(seconds: 2),
+                          title: Text('${userNickName}님을 차단했습니다'),
+                        );
+                      },
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: RED_DANGER_TEXT_50,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '차단',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: WHITE,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBlockEffectItem({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 24, color: GRAYSCALE_LABEL_600),
+        SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: GRAYSCALE_LABEL_900,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: GRAYSCALE_LABEL_600,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
