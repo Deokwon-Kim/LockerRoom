@@ -53,16 +53,27 @@ class FeedProvider extends ChangeNotifier {
     _applyFilter();
   }
 
+  Set<String> _blockedUserIds = <String>{};
+
+  void setBlockedUsers(Set<String> ids) {
+    _blockedUserIds = ids;
+    _applyFilter();
+  }
+
   void _applyFilter() {
     if (_query.isEmpty) {
-      _filteredPosts = List<PostModel>.from(_allPosts);
+      _filteredPosts = _allPosts
+          .where((p) => !_blockedUserIds.contains(p.userId))
+          .toList();
       _filteredUsers = [];
     } else {
-      _filteredPosts = _allPosts
-          .where((post) => post.text.toLowerCase().contains(_query))
-          .toList();
+      _filteredPosts = _allPosts.where((post) {
+        if (_blockedUserIds.contains(post.userId)) return false;
+        return post.text.toLowerCase().contains(_query);
+      }).toList();
 
       _filteredUsers = _allUsers.where((user) {
+        if (_blockedUserIds.contains(user.uid)) return false;
         return user.username.toLowerCase().contains(_query);
       }).toList();
     }
