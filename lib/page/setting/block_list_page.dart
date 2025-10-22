@@ -39,6 +39,41 @@ class _BlockListPageState extends State<BlockListPage> {
     }
   }
 
+  Future<DateTime?> _getBlockedDate(String currentUserId, String userId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserId)
+          .collection('blocked')
+          .doc(userId)
+          .get();
+      final data = doc.data();
+      final timestamp = data?['blockedAt'] as Timestamp?;
+      return timestamp?.toDate();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  String _formatBlockedDate(DateTime? date) {
+    if (date == null) return '';
+
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inSeconds < 60) {
+      return '방금 전';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}분 전';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}시간 전';
+    } else if (difference.inDays < 30) {
+      return '${difference.inDays}일 전';
+    } else {
+      return '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -98,88 +133,97 @@ class _BlockListPageState extends State<BlockListPage> {
                 builder: (context, snapshot) {
                   final userName = snapshot.data ?? '로딩 중...';
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: GRAYSCALE_LABEL_50,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: GRAYSCALE_LABEL_200),
-                      ),
-                      child: Padding(
+                  return FutureBuilder<DateTime?>(
+                    future: _getBlockedDate(currentUserId, userId),
+                    builder: (context, dateSnapshot) {
+                      final blockedDate = dateSnapshot.data;
+                      final formattedDate = _formatBlockedDate(blockedDate);
+
+                      return Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16.0,
-                          vertical: 12.0,
+                          vertical: 8.0,
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    userName,
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: GRAYSCALE_LABEL_950,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    userId,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: GRAYSCALE_LABEL_500,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: GRAYSCALE_LABEL_50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: GRAYSCALE_LABEL_200),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 12.0,
                             ),
-                            const SizedBox(width: 12),
-                            GestureDetector(
-                              onTap: () {
-                                _showUnblockDialog(
-                                  context,
-                                  userName,
-                                  userId,
-                                  currentUserId,
-                                  blockProvider,
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: GRAYSCALE_LABEL_400,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        userName,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: GRAYSCALE_LABEL_950,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+
+                                      Text(
+                                        '차단한 날짜: $formattedDate',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: GRAYSCALE_LABEL_600,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: const Text(
-                                  '차단 해제',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: GRAYSCALE_LABEL_700,
+                                const SizedBox(width: 12),
+                                GestureDetector(
+                                  onTap: () {
+                                    _showUnblockDialog(
+                                      context,
+                                      userName,
+                                      userId,
+                                      currentUserId,
+                                      blockProvider,
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: GRAYSCALE_LABEL_400,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      '차단 해제',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: GRAYSCALE_LABEL_700,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   );
                 },
               );
