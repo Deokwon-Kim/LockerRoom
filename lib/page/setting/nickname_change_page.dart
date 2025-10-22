@@ -194,7 +194,7 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
                     child: TextField(
                       controller: _nickNameController,
                       onChanged: _onNicknameChanged,
-                      cursorColor: BUTTON,
+                      cursorColor: teamProvider.selectedTeam!.color,
                       decoration: InputDecoration(
                         hintText: _currentNicknameHint,
                         hintStyle: TextStyle(
@@ -247,7 +247,9 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
                     height: fieldHeight,
                     child: _isLoading
                         ? Center(
-                            child: CircularProgressIndicator(color: BUTTON),
+                            child: CircularProgressIndicator(
+                              color: teamProvider.selectedTeam!.color,
+                            ),
                           )
                         : ElevatedButton(
                             onPressed: () {
@@ -268,7 +270,7 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
                                       _enteredNickname.length < 2 ||
                                       _enteredNickname.length > 8)
                                   ? GRAYSCALE_LABEL_300
-                                  : BUTTON,
+                                  : teamProvider.selectedTeam!.color,
                               foregroundColor: WHITE,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
