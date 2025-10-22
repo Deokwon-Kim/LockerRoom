@@ -45,7 +45,6 @@ import 'package:lockerroom/services/navigation_service.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // TODO: 백그라운드 수신 처리
 }
 
 Future<void> main() async {
