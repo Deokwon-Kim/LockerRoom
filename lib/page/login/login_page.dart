@@ -59,7 +59,7 @@ class _LoginPageState extends State<LoginPage> {
         );
       }
     } on FirebaseAuthException catch (e) {
-      print('FirebaseAuthException: ${e.code}');
+      // print('FirebaseAuthException: ${e.code}');
       switch (e.code) {
         case 'invalid-credential':
           toastification.show(
@@ -82,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
           );
       }
     } catch (e) {
-      print('로그인 오류: $e');
+      // print('로그인 오류: $e');
     }
   }
 

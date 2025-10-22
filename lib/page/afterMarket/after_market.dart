@@ -341,7 +341,7 @@ class _MarketPostsWidgetState extends State<MarketPostWidget> {
                                           title: const Text('게시물을 삭제했습니다'),
                                         );
                                       } catch (e) {
-                                        print('Delete error: $e');
+                                        // print('Delete error: $e');
                                         toastification.show(
                                           context: context,
                                           type: ToastificationType.error,

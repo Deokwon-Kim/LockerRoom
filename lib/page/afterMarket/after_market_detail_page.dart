@@ -171,7 +171,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                             title: const Text('게시물을 삭제했습니다'),
                           );
                         } catch (e) {
-                          print('게시물 삭제 실패: $e');
+                          // print('게시물 삭제 실패: $e');
                           toastification.show(
                             context: context,
                             type: ToastificationType.error,

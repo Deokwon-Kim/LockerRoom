@@ -72,10 +72,10 @@ Future<void> main() async {
   );
 
   final apns = await FirebaseMessaging.instance.getAPNSToken();
-  print('APNs token: $apns');
+  // print('APNs token: $apns');
 
   final token = await FirebaseMessaging.instance.getToken();
-  print('FCM token: $token');
+  // print('FCM token: $token');
   // 토큰 저장 및 갱신 반영
   final user = FirebaseAuth.instance.currentUser;
   if (user != null && token != null) {
@@ -85,7 +85,7 @@ Future<void> main() async {
   }
 
   FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-    print('FCM token refreshed: $newToken');
+    // print('FCM token refreshed: $newToken');
     final u = FirebaseAuth.instance.currentUser;
     if (u != null) {
       await FirebaseFirestore.instance.collection('users').doc(u.uid).set({
@@ -195,7 +195,7 @@ class AuthWrapper extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (BuildContext context, AsyncSnapshot<User?> snapshot) {
         if (snapshot.hasData) {
-          print('AuthWrapper - Current User: ${snapshot.data?.uid}');
+          // print('AuthWrapper - Current User: ${snapshot.data?.uid}');
           //사용자 정보를 UserProvider에 로드
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Provider.of<UserProvider>(context, listen: false).loadNickname();
@@ -217,7 +217,7 @@ class AuthWrapper extends StatelessWidget {
         } else if (snapshot.hasError) {
           return const Center(child: Text('에러가 발생하였습니다.'));
         } else if (snapshot.hasData) {
-          print('AuthWrapper - Current User: ${snapshot.data?.uid}');
+          // print('AuthWrapper - Current User: ${snapshot.data?.uid}');
           //사용자 정보를 UserProvider에 로드
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Provider.of<UserProvider>(context, listen: false).loadNickname();
@@ -287,7 +287,7 @@ class AuthWrapper extends StatelessWidget {
                       teamProvider.selectTeam(match);
                     }
                   } catch (e) {
-                    print('팀 선택 중 에러: $e');
+                    // print('팀 선택 중 에러: $e');
                   }
                 });
                 return const BottomTabBar();

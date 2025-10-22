@@ -74,45 +74,45 @@ class CustormerCenterPage extends StatelessWidget {
                   if (password == null || password.isEmpty) return;
 
                   try {
-                    print('=== 회원탈퇴 시작: 모든 구독 취소 ===');
+                    // print('=== 회원탈퇴 시작: 모든 구독 취소 ===');
 
                     // 1. 모든 실시간 구독 취소 (권한 에러 방지)
                     try {
                       context.read<CommentProvider>().cancelAllSubscriptions();
-                      print('✓ CommentProvider 구독 취소됨');
+                      // print('✓ CommentProvider 구독 취소됨');
                     } catch (_) {}
 
                     try {
                       context.read<FeedProvider>().cancelAllSubscriptions();
-                      print('✓ FeedProvider 구독 취소됨');
+                      // print('✓ FeedProvider 구독 취소됨');
                     } catch (_) {}
 
                     try {
                       context
                           .read<MarketFeedProvider>()
                           .cancelAllSubscriptions();
-                      print('✓ MarketFeedProvider 구독 취소됨');
+                      // print('✓ MarketFeedProvider 구독 취소됨');
                     } catch (_) {}
 
                     try {
                       context.read<ProfileProvider>().cancelAllSubscriptions();
-                      print('✓ ProfileProvider 구독 취소됨');
+                      // print('✓ ProfileProvider 구독 취소됨');
                     } catch (_) {}
 
                     try {
                       context.read<NotificationProvider>().cancel();
-                      print('✓ NotificationProvider 구독 취소됨');
+                      // print('✓ NotificationProvider 구독 취소됨');
                     } catch (_) {}
 
                     try {
                       context.read<BlockProvider>().cancel();
-                      print('✓ BlockProvider 구독 취소됨');
+                      // print('✓ BlockProvider 구독 취소됨');
                     } catch (_) {}
 
                     // 2. 회원탈퇴 (데이터 삭제 + Auth 삭제)
-                    print('회원탈퇴 시작...');
+                    // print('회원탈퇴 시작...');
                     await up.deleteEmailAccount(password);
-                    print('✓ 회원탈퇴 완료');
+                    // print('✓ 회원탈퇴 완료');
 
                     toastification.show(
                       context: context,
@@ -132,7 +132,7 @@ class CustormerCenterPage extends StatelessWidget {
                       );
                     }
                   } catch (e) {
-                    print('회원탈퇴 에러: $e');
+                    // print('회원탈퇴 에러: $e');
                     toastification.show(
                       context: context,
                       type: ToastificationType.error,

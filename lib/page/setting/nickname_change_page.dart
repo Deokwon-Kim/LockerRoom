@@ -116,7 +116,7 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
           title: Text('닉네임 변경 실패: ${e.toString()}'),
         );
       }
-      print("닉네임 변경 실패: $e");
+      // print("닉네임 변경 실패: $e");
     }
   }
 
@@ -136,7 +136,7 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
         _currentNicknameHint = "현재 닉네임: $nickname";
       });
     }
-    print(nickname);
+    // print(nickname);
     initialNickname = nickname;
   }
 
