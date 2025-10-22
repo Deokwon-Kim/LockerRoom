@@ -41,8 +41,6 @@
 	<string>게시물 업로드와 프로필 설정을 위해 사진·영상을 선택합니다. </string>
 	<key>NSPhotoLibraryAddOnlyUsageDescription</key>
 	<string>촬영한 사진·영상을 기기에 저장하기 위해 사진 보관함 쓰기 권한이 필요합니다.</string>
-	<key>NSLocalizedFailureReasonErrorKey</key>
-	<string>이 앱은 사진 라이브러리에 접근하여 사진을 동기화하기 위해 필요합니다.</string>
 	<key>NSCloudPhotoLibraryUsageDescription</key>
 	<string>iCloud 사진과 동기화된 미디어에 접근하여 게시물 업로드를 돕습니다.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
