@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/provider/team_provider.dart';
+import 'package:provider/provider.dart';
 
 class ConfirmationDialog extends StatelessWidget {
   final String title;
@@ -21,6 +23,7 @@ class ConfirmationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final teamProvider = context.read<TeamProvider>();
     return AlertDialog(
       backgroundColor: Colors.white,
       elevation: 0,
@@ -68,7 +71,7 @@ class ConfirmationDialog extends StatelessWidget {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
-                  backgroundColor: confirmColor,
+                  backgroundColor: teamProvider.selectedTeam!.color,
                   overlayColor: Colors.transparent,
                   shadowColor: Colors.transparent,
                   shape: RoundedRectangleBorder(
