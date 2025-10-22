@@ -28,7 +28,7 @@ class _TermsOfServicePageState extends State<TermsOfServicePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '📋 이용약관',
+              '📋 더베이스 이용약관',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -39,12 +39,12 @@ class _TermsOfServicePageState extends State<TermsOfServicePage> {
             const SizedBox(height: 24),
             _buildSection(
               '서문',
-              '본 이용약관은 TheBase가 제공하는 모바일 애플리케이션 및 관련 서비스의 이용에 관하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정하고 있습니다. 이용자는 본 약관에 동의함으로써 서비스를 이용할 수 있습니다.',
+              '본 이용약관은 더베이스가 제공하는 모바일 애플리케이션 및 관련 서비스의 이용에 관하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정하고 있습니다. 이용자는 본 약관에 동의함으로써 서비스를 이용할 수 있습니다.',
             ),
             const SizedBox(height: 20),
             _buildSection(
               '제1조 서비스의 정의',
-              '''"서비스"는 TheBase 모바일 애플리케이션을 통해 제공되는 모든 기능을 의미하며, 다음을 포함합니다:
+              '''"서비스"는 더베이스 모바일 애플리케이션을 통해 제공되는 모든 기능을 의미하며, 다음을 포함합니다:
 
 • 팀 기반 커뮤니티 피드
 • 게시물 작성 및 공유
