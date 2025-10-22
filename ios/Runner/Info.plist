@@ -34,17 +34,17 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>이 앱은 사진과 동영상을 촬영하기 위해 카메라에 접근합니다.</string>
+	<string>피드에 사진·동영상을 촬영·업로드하고 프로필을 설정하기 위해 카메라 접근이 필요합니다.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>이 앱은 동영상 녹화 시 오디오를 녹음하기 위해 마이크에 접근합니다.</string>
+	<string>동영상 촬영 시 현장 음성을 녹음하여 함께 업로드하기 위해 마이크 접근이 필요합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>이 앱은 게시물에 업로드할 사진과 동영상을 선택하기 위해 사진 라이브러리에 접근합니다.</string>
+	<string>게시물 업로드와 프로필 설정을 위해 사진·영상을 선택합니다. </string>
 	<key>NSPhotoLibraryAddOnlyUsageDescription</key>
-	<string>이 앱은 촬영한 사진과 동영상을 사진 라이브러리에 저장하기 위해 접근합니다.</string>
+	<string>촬영한 사진·영상을 기기에 저장하기 위해 사진 보관함 쓰기 권한이 필요합니다.</string>
 	<key>NSLocalizedFailureReasonErrorKey</key>
 	<string>이 앱은 사진 라이브러리에 접근하여 사진을 동기화하기 위해 필요합니다.</string>
 	<key>NSCloudPhotoLibraryUsageDescription</key>
-	<string>이 앱은 사진 라이브러리에 접근하여 사진을 동기화하기 위해 필요합니다.</string>
+	<string>iCloud 사진과 동기화된 미디어에 접근하여 게시물 업로드를 돕습니다.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
