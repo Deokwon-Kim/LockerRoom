@@ -59,6 +59,11 @@ class NotificationProvider extends ChangeNotifier {
         );
   }
 
+  void cancel() {
+    _sub?.cancel();
+    _sub = null;
+  }
+
   Future<void> markAsRead(String userId, String notificationId) async {
     await _firestore.collection('notifications').doc(notificationId).update({
       'isRead': true,
