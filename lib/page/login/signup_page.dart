@@ -2,7 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
-import 'package:lockerroom/page/team_select_page.dart';
+// import 'package:lockerroom/page/team_select_page.dart';
+import 'package:lockerroom/page/login/terms_gate_page.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
@@ -313,7 +314,7 @@ class _SignupPageState extends State<SignupPage> {
     final byteLength = bytes.length;
 
     setState(() {
-      if (byteLength < 6) {
+      if (byteLength < 2) {
         _isNameValid = false;
         _nameErrorMessage = '이름은 2자 이상 10자 이하로 입력해주세요';
       } else {
@@ -568,7 +569,7 @@ class _SignupPageState extends State<SignupPage> {
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) =>
-                                                const TeamSelectPage(),
+                                                const TermsGatePage(),
                                           ),
                                         );
                                       } else {
