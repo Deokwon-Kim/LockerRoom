@@ -18,8 +18,10 @@ import 'package:lockerroom/page/setting/custormer_center_page.dart';
 import 'package:lockerroom/page/setting/find_password_page.dart';
 import 'package:lockerroom/page/setting/nickname_change_page.dart';
 import 'package:lockerroom/page/setting/setting_page.dart';
+import 'package:lockerroom/page/setting/block_list_page.dart';
 import 'package:lockerroom/page/alert/notifications_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
+import 'package:lockerroom/page/login/terms_gate_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
@@ -34,6 +36,7 @@ import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/provider/video_provider.dart';
 import 'package:lockerroom/repository/user_repository.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
+import 'package:lockerroom/provider/block_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 import 'package:lockerroom/services/notification_service.dart';
@@ -135,6 +138,7 @@ Future<void> main() async {
           create: (context) => IntutionRecordListProvider(),
         ),
         ChangeNotifierProvider(create: (context) => NotificationProvider()),
+        ChangeNotifierProvider(create: (context) => BlockProvider()),
         ChangeNotifierProvider(
           create: (context) => FollowProvider(repo, currentUserId ?? ''),
         ),
@@ -174,6 +178,7 @@ class MyApp extends StatelessWidget {
           'terms': (context) => const TermsOfServicePage(),
           'policy': (context) => const PrivacyPolicyPage(),
           'changePassword': (context) => const ChangePasswordPage(),
+          'blockList': (context) => const BlockListPage(),
         },
       ),
     );
@@ -202,6 +207,8 @@ class AuthWrapper extends StatelessWidget {
                 context,
                 listen: false,
               ).listen(uid);
+              // 차단 목록 구독 시작
+              Provider.of<BlockProvider>(context, listen: false).listen(uid);
             }
           });
         }
@@ -222,6 +229,8 @@ class AuthWrapper extends StatelessWidget {
                 context,
                 listen: false,
               ).listen(uid);
+              // 차단 목록 구독 시작
+              Provider.of<BlockProvider>(context, listen: false).listen(uid);
             }
           });
           final user = snapshot.data!;
@@ -249,6 +258,15 @@ class AuthWrapper extends StatelessWidget {
 
               final data = userSnap.data?.data() ?? {};
               final savedTeamName = data['team'] as String?;
+              final agreedTermsAt = data['agreedTermsAt'];
+              final agreedPolicyAt = data['agreedPolicyAt'];
+              final agreedNoToleranceAt = data['agreedNoToleranceAt'];
+
+              if (agreedTermsAt == null ||
+                  agreedPolicyAt == null ||
+                  agreedNoToleranceAt == null) {
+                return const TermsGatePage();
+              }
 
               if (savedTeamName != null && savedTeamName.isNotEmpty) {
                 // Provider에 선택 팀 반영 (TeamModel 매핑)
