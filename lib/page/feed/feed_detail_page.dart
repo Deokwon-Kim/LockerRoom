@@ -264,7 +264,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                   child: Text(
                                     '사용자 차단',
                                     style: TextStyle(
-                                      color: BLACK,
+                                      color: RED_DANGER_TEXT_50,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
