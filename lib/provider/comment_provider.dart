@@ -13,7 +13,29 @@ class CommentProvider with ChangeNotifier {
   final Map<String, List<CommentModel>> _postComments = {};
   final Map<String, StreamSubscription> _subs = {};
 
-  List<CommentModel> getComments(String postId) => _postComments[postId] ?? [];
+  Set<String> _blockedUserIds = <String>{};
+  Set<String> _blockedByUserIds = <String>{};
+
+  List<CommentModel> getComments(String postId) {
+    final comments = _postComments[postId] ?? [];
+    return comments
+        .where(
+          (c) =>
+              !_blockedUserIds.contains(c.userId) &&
+              !_blockedByUserIds.contains(c.userId),
+        )
+        .toList();
+  }
+
+  void setBlockedUsers(Set<String> ids) {
+    _blockedUserIds = ids;
+    notifyListeners();
+  }
+
+  void setBlockedByUsers(Set<String> ids) {
+    _blockedByUserIds = ids;
+    notifyListeners();
+  }
 
   void subscribeComments(String postId) {
     _subs[postId]?.cancel();
@@ -38,8 +60,16 @@ class CommentProvider with ChangeNotifier {
   final Map<String, List<CommentModel>> _marketPostComments = {};
   final Map<String, StreamSubscription> _marketSubs = {};
 
-  List<CommentModel> getMarketComments(String postId) =>
-      _marketPostComments[postId] ?? [];
+  List<CommentModel> getMarketComments(String postId) {
+    final comments = _marketPostComments[postId] ?? [];
+    return comments
+        .where(
+          (c) =>
+              !_blockedUserIds.contains(c.userId) &&
+              !_blockedByUserIds.contains(c.userId),
+        )
+        .toList();
+  }
 
   void subscribeMarketComments(String postId) {
     _marketSubs[postId]?.cancel();

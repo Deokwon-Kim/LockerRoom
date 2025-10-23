@@ -18,6 +18,8 @@ class MarketFeedProvider extends ChangeNotifier {
 
   List<MarketPostModel> _allMarketPosts = [];
   String _query = '';
+  Set<String> _blockedUserIds = <String>{};
+  Set<String> _blockedByUserIds = <String>{};
 
   StreamSubscription? _marketSub;
   bool isLoading = true;
@@ -50,13 +52,31 @@ class MarketFeedProvider extends ChangeNotifier {
     _applyFilter();
   }
 
+  void setBlockedUsers(Set<String> ids) {
+    _blockedUserIds = ids;
+    _applyFilter();
+  }
+
+  void setBlockedByUsers(Set<String> ids) {
+    _blockedByUserIds = ids;
+    _applyFilter();
+  }
+
   void _applyFilter() {
     if (_query.isEmpty) {
-      _marketPostsStream = List<MarketPostModel>.from(_allMarketPosts);
-    } else {
       _marketPostsStream = _allMarketPosts
-          .where((post) => post.title.toLowerCase().contains(_query))
+          .where(
+            (p) =>
+                !_blockedUserIds.contains(p.userId) &&
+                !_blockedByUserIds.contains(p.userId),
+          )
           .toList();
+    } else {
+      _marketPostsStream = _allMarketPosts.where((post) {
+        if (_blockedUserIds.contains(post.userId)) return false;
+        if (_blockedByUserIds.contains(post.userId)) return false;
+        return post.title.toLowerCase().contains(_query);
+      }).toList();
     }
     notifyListeners();
   }

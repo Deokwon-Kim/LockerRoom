@@ -569,6 +569,70 @@ class UserProvider extends ChangeNotifier {
         print('팔로우 관계 삭제 중 오류: $e');
       }
 
+      // 1-7-1. 차단 정보 삭제
+      try {
+        var batch = _firestore.batch();
+        batchCount = 0;
+
+        // 내가 차단한 사용자들(blocked 컬렉션) 삭제
+        final blockedSnapshot = await _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('blocked')
+            .get();
+        for (final doc in blockedSnapshot.docs) {
+          batch.delete(doc.reference);
+          batchCount++;
+          if (batchCount >= maxBatchSize) {
+            await batch.commit();
+            batchCount = 0;
+          }
+        }
+
+        // 나를 차단한 사용자들(blockedBy 컬렉션) 삭제
+        final blockedBySnapshot = await _firestore
+            .collection('users')
+            .doc(uid)
+            .collection('blockedBy')
+            .get();
+        for (final doc in blockedBySnapshot.docs) {
+          batch.delete(doc.reference);
+          batchCount++;
+          if (batchCount >= maxBatchSize) {
+            await batch.commit();
+            batchCount = 0;
+          }
+        }
+
+        // 다른 사용자들의 blockedBy 컬렉션에서 현재 사용자 제거
+        final usersSnapshot = await _firestore.collection('users').get();
+        for (final userDoc in usersSnapshot.docs) {
+          final otherUserId = userDoc.id;
+          if (otherUserId != uid) {
+            batch.delete(
+              _firestore
+                  .collection('users')
+                  .doc(otherUserId)
+                  .collection('blockedBy')
+                  .doc(uid),
+            );
+            batchCount++;
+            if (batchCount >= maxBatchSize) {
+              await batch.commit();
+              batch = _firestore.batch();
+              batchCount = 0;
+            }
+          }
+        }
+
+        if (batchCount > 0) {
+          await batch.commit();
+        }
+        print('차단 정보 삭제 완료');
+      } catch (e) {
+        print('차단 정보 삭제 중 오류: $e');
+      }
+
       // 1-8. 사용자 문서 및 서브컬렉션 삭제
       try {
         // 경기 참석 기록 삭제
