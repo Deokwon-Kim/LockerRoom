@@ -9,6 +9,7 @@ import 'package:lockerroom/page/feed/fullscreen_video_player.dart';
 import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_upload_page.dart';
 import 'package:lockerroom/page/schedule/schedule.dart';
+import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -36,6 +37,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   TeamModel? _lastFetchedTeam;
+  BlockProvider? _blockProvider;
+  VoidCallback? _blockListener;
 
   @override
   void initState() {
@@ -43,7 +46,30 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<FeedProvider>().listenRecentPosts();
+
+      // BlockProvider와 동기화
+      _blockProvider = context.read<BlockProvider>();
+      final feedProvider = context.read<FeedProvider>();
+      // 초기 동기화
+      feedProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+      feedProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
+      // 차단 목록 변경 리스너
+      _blockListener = () {
+        if (mounted) {
+          feedProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+          feedProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
+        }
+      };
+      _blockProvider!.addListener(_blockListener!);
     });
+  }
+
+  @override
+  void dispose() {
+    if (_blockProvider != null && _blockListener != null) {
+      _blockProvider!.removeListener(_blockListener!);
+    }
+    super.dispose();
   }
 
   void _maybeFetchVideos(TeamModel team) {
