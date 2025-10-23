@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/model/user_model.dart';
 import 'package:lockerroom/page/myPage/user_detail_page.dart';
+import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 
 class FollowingListPage extends StatefulWidget {
   final String userId;
-  const FollowingListPage({super.key, required this.userId});
+  final PostModel? post;
+  const FollowingListPage({super.key, required this.userId, this.post});
 
   @override
   State<FollowingListPage> createState() => _FollowingListPageState();
@@ -16,6 +19,40 @@ class FollowingListPage extends StatefulWidget {
 
 class _FollowingListPageState extends State<FollowingListPage> {
   final TextEditingController _searchController = TextEditingController();
+  late FollowProvider _followProvider;
+  BlockProvider? _blockProvider;
+  VoidCallback? _blockListener;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _followProvider = context.read<FollowProvider>();
+      _blockProvider = context.read<BlockProvider>();
+
+      // 초기 동기화
+      _followProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+
+      // 차단 목록 변경 리스너
+      _blockListener = () {
+        if (mounted) {
+          _followProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+        }
+      };
+      _blockProvider!.addListener(_blockListener!);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    if (_blockListener != null && _blockProvider != null) {
+      _blockProvider!.removeListener(_blockListener!);
+    }
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
