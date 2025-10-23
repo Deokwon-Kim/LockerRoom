@@ -96,6 +96,7 @@ flutter:
     - assets/images/symbol/
     - assets/images/applogo/
     - assets/schedules/
+    - lib/api_key/youtube_key.env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
