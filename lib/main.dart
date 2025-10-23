@@ -137,7 +137,7 @@ Future<void> main() async {
           create: (context) => IntutionRecordListProvider(),
         ),
         ChangeNotifierProvider(create: (context) => NotificationProvider()),
-        ChangeNotifierProvider(create: (context) => BlockProvider()),
+        ChangeNotifierProvider(create: (context) => BlockProvider(repo)),
         ChangeNotifierProvider(
           create: (context) => FollowProvider(repo, currentUserId ?? ''),
         ),
