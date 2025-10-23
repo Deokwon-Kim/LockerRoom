@@ -31,6 +31,8 @@ class FeedDetailPage extends StatefulWidget {
 class _FeedDetailPageState extends State<FeedDetailPage> {
   final TextEditingController _commentsController = TextEditingController();
   late final CommentProvider _commentProvider;
+  BlockProvider? _blockProvider;
+  VoidCallback? _blockListener;
   final FocusNode _commentFocusNode = FocusNode();
   String? _replyParentId;
   String? _replyToUserName;
@@ -45,11 +47,28 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
     _commentProvider.subscribeComments(widget.post.id);
     // 작성자 프로필은 빌드 외부에서 1회만 구독
     context.read<ProfileProvider>().subscribeUserProfile(widget.post.userId);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _blockProvider = context.read<BlockProvider>();
+      // 초기 동기화
+      _commentProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+      _commentProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
+      // 차단 목록 변경 리스너
+      _blockListener = () {
+        _commentProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+        _commentProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
+      };
+      _blockProvider!.addListener(_blockListener!);
+    });
   }
 
   @override
   void dispose() {
     _commentProvider.cancelSubscription(widget.post.id);
+    if (_blockProvider != null && _blockListener != null) {
+      _blockProvider!.removeListener(_blockListener!);
+    }
     _commentsController.dispose();
     super.dispose();
   }

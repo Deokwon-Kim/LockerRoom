@@ -46,10 +46,12 @@ class _FeedSearchPageState extends State<FeedSearchPage> {
       _blockProvider = context.read<BlockProvider>();
       // 초기 동기화
       _feedProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+      _feedProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
       // 차단 목록 변경 리스너
       _blockListener = () {
         if (mounted) {
           _feedProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+          _feedProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
         }
       };
       _blockProvider!.addListener(_blockListener!);
@@ -216,6 +218,8 @@ class PostWidget extends StatefulWidget {
 
 class _PostWidgetState extends State<PostWidget> {
   late final CommentProvider _commentProvider;
+  BlockProvider? _blockProvider;
+  VoidCallback? _blockListener;
 
   String timeAgo(DateTime date) {
     final now = DateTime.now();
@@ -237,11 +241,28 @@ class _PostWidgetState extends State<PostWidget> {
     super.initState();
     _commentProvider = context.read<CommentProvider>();
     _commentProvider.subscribeComments(widget.post.id);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _blockProvider = context.read<BlockProvider>();
+      // 초기 동기화
+      _commentProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+      _commentProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
+      // 차단 목록 변경 리스너
+      _blockListener = () {
+        _commentProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+        _commentProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
+      };
+      _blockProvider!.addListener(_blockListener!);
+    });
   }
 
   @override
   void dispose() {
     _commentProvider.cancelSubscription(widget.post.id);
+    if (_blockProvider != null && _blockListener != null) {
+      _blockProvider!.removeListener(_blockListener!);
+    }
     super.dispose();
   }
 

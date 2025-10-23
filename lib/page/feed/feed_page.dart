@@ -45,9 +45,11 @@ class _FeedPageState extends State<FeedPage> {
       _blockProvider = context.read<BlockProvider>();
       // 초기 동기화
       _feedProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+      _feedProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
       // 차단 목록 변경 리스너
       _blockListener = () {
         _feedProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+        _feedProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
       };
       _blockProvider!.addListener(_blockListener!);
     });
@@ -123,6 +125,8 @@ class PostWidget extends StatefulWidget {
 
 class _PostWidgetState extends State<PostWidget> {
   late final CommentProvider _commentProvider;
+  BlockProvider? _blockProvider;
+  VoidCallback? _blockListener;
 
   String timeAgo(DateTime date) {
     final now = DateTime.now();
@@ -144,11 +148,28 @@ class _PostWidgetState extends State<PostWidget> {
     super.initState();
     _commentProvider = context.read<CommentProvider>();
     _commentProvider.subscribeComments(widget.post.id);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _blockProvider = context.read<BlockProvider>();
+      // 초기 동기화
+      _commentProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+      _commentProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
+      // 차단 목록 변경 리스너
+      _blockListener = () {
+        _commentProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+        _commentProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
+      };
+      _blockProvider!.addListener(_blockListener!);
+    });
   }
 
   @override
   void dispose() {
     _commentProvider.cancelSubscription(widget.post.id);
+    if (_blockProvider != null && _blockListener != null) {
+      _blockProvider!.removeListener(_blockListener!);
+    }
     super.dispose();
   }
 
@@ -159,6 +180,7 @@ class _PostWidgetState extends State<PostWidget> {
         currentUserId != null && widget.post.userId == currentUserId;
     final selectedColor =
         Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -836,19 +858,36 @@ class _PostWidgetState extends State<PostWidget> {
                   Expanded(
                     child: GestureDetector(
                       onTap: () async {
-                        await context.read<BlockProvider>().blockUser(
-                          currentUserId: currentUserId,
-                          targetUserId: userId,
-                        );
-                        if (!mounted) return;
-                        Navigator.pop(context);
-                        toastification.show(
-                          context: context,
-                          type: ToastificationType.success,
-                          alignment: Alignment.bottomCenter,
-                          autoCloseDuration: Duration(seconds: 2),
-                          title: Text('${userNickName}님을 차단했습니다'),
-                        );
+                        final bottomSheetContext = context;
+                        try {
+                          await context.read<BlockProvider>().blockUser(
+                            currentUserId: currentUserId,
+                            targetUserId: userId,
+                          );
+                          Future.delayed(Duration.zero, () {
+                            Navigator.pop(bottomSheetContext);
+                            toastification.show(
+                              context: bottomSheetContext,
+                              type: ToastificationType.success,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: Duration(seconds: 2),
+                              title: Text('${userNickName}님을 차단했습니다'),
+                            );
+                          });
+                          if (!mounted) return;
+                        } catch (e) {
+                          Future.delayed(Duration.zero, () {
+                            Navigator.pop(bottomSheetContext);
+                          });
+                          if (!mounted) return;
+                          toastification.show(
+                            context: bottomSheetContext,
+                            type: ToastificationType.error,
+                            alignment: Alignment.bottomCenter,
+                            autoCloseDuration: Duration(seconds: 2),
+                            title: Text('차단 중 오류가 발생했습니다'),
+                          );
+                        }
                       },
                       child: Container(
                         padding: EdgeInsets.symmetric(vertical: 14),

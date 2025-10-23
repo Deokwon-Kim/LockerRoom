@@ -24,6 +24,9 @@ class _AfterMarketState extends State<AfterMarket> {
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  late MarketFeedProvider _marketFeedProvider;
+  BlockProvider? _blockProvider;
+  VoidCallback? _blockListener;
 
   @override
   void initState() {
@@ -38,7 +41,26 @@ class _AfterMarketState extends State<AfterMarket> {
       });
     } else {
       // 실시간 리스너 시작
-      context.read<MarketFeedProvider>().marketPostStream(user.uid);
+      _marketFeedProvider = context.read<MarketFeedProvider>();
+      _marketFeedProvider.marketPostStream(user.uid);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _blockProvider = context.read<BlockProvider>();
+        // 초기 동기화
+        _marketFeedProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+        _marketFeedProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
+        // 차단 목록 변경 리스너
+        _blockListener = () {
+          if (mounted) {
+            _marketFeedProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+            _marketFeedProvider.setBlockedByUsers(
+              _blockProvider!.blockedByUserIds,
+            );
+          }
+        };
+        _blockProvider!.addListener(_blockListener!);
+      });
     }
 
     _listScrollController.addListener(() {
@@ -54,6 +76,9 @@ class _AfterMarketState extends State<AfterMarket> {
   void dispose() {
     _listScrollController.dispose();
     _searchController.dispose();
+    if (_blockListener != null && _blockProvider != null) {
+      _blockProvider!.removeListener(_blockListener!);
+    }
     super.dispose();
   }
 
@@ -743,19 +768,36 @@ class _MarketPostsWidgetState extends State<MarketPostWidget> {
                   Expanded(
                     child: GestureDetector(
                       onTap: () async {
-                        await context.read<BlockProvider>().blockUser(
-                          currentUserId: currentUserId,
-                          targetUserId: userId,
-                        );
-                        if (!mounted) return;
-                        Navigator.pop(context);
-                        toastification.show(
-                          context: context,
-                          type: ToastificationType.success,
-                          alignment: Alignment.bottomCenter,
-                          autoCloseDuration: Duration(seconds: 2),
-                          title: Text('${userNickName}님을 차단했습니다'),
-                        );
+                        final bottomSheetContext = context;
+                        try {
+                          await context.read<BlockProvider>().blockUser(
+                            currentUserId: currentUserId,
+                            targetUserId: userId,
+                          );
+                          Future.delayed(Duration.zero, () {
+                            Navigator.pop(bottomSheetContext);
+                            toastification.show(
+                              context: bottomSheetContext,
+                              type: ToastificationType.success,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: Duration(seconds: 2),
+                              title: Text('${userNickName}님을 차단했습니다'),
+                            );
+                          });
+                          if (!mounted) return;
+                        } catch (e) {
+                          Future.delayed(Duration.zero, () {
+                            Navigator.pop(bottomSheetContext);
+                            toastification.show(
+                              context: bottomSheetContext,
+                              type: ToastificationType.error,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: Duration(seconds: 2),
+                              title: Text('차단 중 오류가 발생했습니다'),
+                            );
+                          });
+                          if (!mounted) return;
+                        }
                       },
                       child: Container(
                         padding: EdgeInsets.symmetric(vertical: 14),
