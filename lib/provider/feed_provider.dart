@@ -54,26 +54,40 @@ class FeedProvider extends ChangeNotifier {
   }
 
   Set<String> _blockedUserIds = <String>{};
+  Set<String> _blockedByUserIds = <String>{};
 
   void setBlockedUsers(Set<String> ids) {
     _blockedUserIds = ids;
     _applyFilter();
+    _applyRecentPostsFilter();
+  }
+
+  void setBlockedByUsers(Set<String> ids) {
+    _blockedByUserIds = ids;
+    _applyFilter();
+    _applyRecentPostsFilter();
   }
 
   void _applyFilter() {
     if (_query.isEmpty) {
       _filteredPosts = _allPosts
-          .where((p) => !_blockedUserIds.contains(p.userId))
+          .where(
+            (p) =>
+                !_blockedUserIds.contains(p.userId) &&
+                !_blockedByUserIds.contains(p.userId),
+          )
           .toList();
       _filteredUsers = [];
     } else {
       _filteredPosts = _allPosts.where((post) {
         if (_blockedUserIds.contains(post.userId)) return false;
+        if (_blockedByUserIds.contains(post.userId)) return false;
         return post.text.toLowerCase().contains(_query);
       }).toList();
 
       _filteredUsers = _allUsers.where((user) {
         if (_blockedUserIds.contains(user.uid)) return false;
+        if (_blockedByUserIds.contains(user.uid)) return false;
         return user.username.toLowerCase().contains(_query);
       }).toList();
     }
@@ -87,6 +101,7 @@ class FeedProvider extends ChangeNotifier {
   }
 
   // --- 최근 5개 피드 ---
+  List<PostModel> _allRecentPosts = [];
   List<PostModel> _posts = [];
   List<PostModel> get posts => _posts;
   StreamSubscription? _subB;
@@ -101,7 +116,10 @@ class FeedProvider extends ChangeNotifier {
         .snapshots()
         .listen(
           (snap) {
-            _posts = snap.docs.map((doc) => PostModel.fromDoc(doc)).toList();
+            _allRecentPosts = snap.docs
+                .map((doc) => PostModel.fromDoc(doc))
+                .toList();
+            _applyRecentPostsFilter();
             isLoading = false;
             notifyListeners();
           },
@@ -110,6 +128,16 @@ class FeedProvider extends ChangeNotifier {
             notifyListeners();
           },
         );
+  }
+
+  void _applyRecentPostsFilter() {
+    _posts = _allRecentPosts
+        .where(
+          (p) =>
+              !_blockedUserIds.contains(p.userId) &&
+              !_blockedByUserIds.contains(p.userId),
+        )
+        .toList();
   }
 
   void cancelSubscription() {

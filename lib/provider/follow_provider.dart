@@ -15,14 +15,27 @@ class FollowProvider extends ChangeNotifier {
   String _userSearchQuery = '';
   String get userSearchQuery => _userSearchQuery;
 
+  Set<String> _blockedUserIds = <String>{};
+
   void setUserSearchQuery(String query) {
     _userSearchQuery = query.trim().toLowerCase();
     notifyListeners();
   }
 
+  void setBlockedUsers(Set<String> ids) {
+    _blockedUserIds = ids;
+    notifyListeners();
+  }
+
   List<UserModel> filterUsers(List<UserModel> users) {
-    if (_userSearchQuery.isEmpty) return users;
-    return users
+    var filtered = users;
+
+    // 차단된 사용자 필터링
+    filtered = filtered.where((u) => !_blockedUserIds.contains(u.uid)).toList();
+
+    // 검색어 필터링
+    if (_userSearchQuery.isEmpty) return filtered;
+    return filtered
         .where((u) => (u.username).toLowerCase().contains(_userSearchQuery))
         .toList();
   }
