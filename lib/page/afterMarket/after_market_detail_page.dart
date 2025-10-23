@@ -32,6 +32,8 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
   final TextEditingController _marketCommentController =
       TextEditingController();
   late final CommentProvider _commentProvider;
+  BlockProvider? _blockProvider;
+  VoidCallback? _blockListener;
   int _currentIndex = 0;
   final ScrollController _scrollController = ScrollController();
   final FocusNode _commentFocusNode = FocusNode();
@@ -69,11 +71,28 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
         context.read<MarketFeedProvider>().viewPost(widget.postId);
       });
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _blockProvider = context.read<BlockProvider>();
+      // 초기 동기화
+      _commentProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+      _commentProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
+      // 차단 목록 변경 리스너
+      _blockListener = () {
+        _commentProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+        _commentProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
+      };
+      _blockProvider!.addListener(_blockListener!);
+    });
   }
 
   @override
   void dispose() {
     _commentProvider.cancelSubscription(widget.marketPost.postId);
+    if (_blockProvider != null && _blockListener != null) {
+      _blockProvider!.removeListener(_blockListener!);
+    }
     _marketCommentController.dispose();
     _commentFocusNode.dispose();
     _scrollController.dispose();
@@ -1411,19 +1430,36 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                   Expanded(
                     child: GestureDetector(
                       onTap: () async {
-                        await context.read<BlockProvider>().blockUser(
-                          currentUserId: currentUserId,
-                          targetUserId: userId,
-                        );
-                        if (!mounted) return;
-                        Navigator.pop(context);
-                        toastification.show(
-                          context: context,
-                          type: ToastificationType.success,
-                          alignment: Alignment.bottomCenter,
-                          autoCloseDuration: Duration(seconds: 2),
-                          title: Text('${userNickName}님을 차단했습니다'),
-                        );
+                        final bottomSheetContext = context;
+                        try {
+                          await context.read<BlockProvider>().blockUser(
+                            currentUserId: currentUserId,
+                            targetUserId: userId,
+                          );
+                          Future.delayed(Duration.zero, () {
+                            Navigator.pop(bottomSheetContext);
+                            toastification.show(
+                              context: bottomSheetContext,
+                              type: ToastificationType.success,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: Duration(seconds: 2),
+                              title: Text('${userNickName}님을 차단했습니다'),
+                            );
+                          });
+                          if (!mounted) return;
+                        } catch (e) {
+                          Future.delayed(Duration.zero, () {
+                            Navigator.pop(bottomSheetContext);
+                            toastification.show(
+                              context: bottomSheetContext,
+                              type: ToastificationType.error,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: Duration(seconds: 2),
+                              title: Text('차단 중 오류가 발생했습니다'),
+                            );
+                          });
+                          if (!mounted) return;
+                        }
                       },
                       child: Container(
                         padding: EdgeInsets.symmetric(vertical: 14),
