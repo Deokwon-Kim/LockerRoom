@@ -1,1 +1,16 @@
-<svg width="24" height="24" version="1.1" xmlns="http://www.w3.org/2000/svg" desc="Created with imagetracer.js version 1.2.6" ><path fill="rgb(0,0,0)" stroke="rgb(0,0,0)" stroke-width="1" opacity="0.6509803921568628" d="M 10.5 2 L 15.5 3 L 22 8.5 L 22 19.5 L 19.5 22 L 4.5 22 L 2 19.5 L 2 8.5 L 3.5 7 L 10.5 2 Z M 12 3 L 6 7 L 3 10 L 3 20 L 5 21 L 20 21 L 21 20 L 21 10 L 12 3 Z " /><path fill="rgb(0,0,0)" stroke="rgb(0,0,0)" stroke-width="1" opacity="0.6509803921568628" d="M 9 17 L 15 17 L 15 19 L 9 19 L 9 17 Z " /><path fill="rgb(0,0,0)" stroke="rgb(0,0,0)" stroke-width="1" opacity="0" d="M 0 0 L 24 0 L 24 24 L 0 24 L 0 0 Z M 11 2 L 9 3 L 6 7 L 12 3 L 18 7 L 19 7 Q 17 2 11 2 Z M 4 7 L 2 9 L 3 20 L 3 10 L 5 8 L 4 7 Z M 20 7 L 21 10 L 22 20 L 22 9 L 20 7 Z M 9 17 L 9 19 L 15 19 L 15 17 L 9 17 Z M 5 21 L 5 22 L 20 22 L 5 21 Z " /></svg>
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="24.000000pt" height="24.000000pt" viewBox="0 0 24.000000 24.000000"
+ preserveAspectRatio="xMidYMid meet">
+
+<g transform="translate(0.000000,24.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M32 208 c-7 -7 -12 -35 -12 -64 0 -49 3 -55 42 -88 23 -20 49 -36 58
+-36 9 0 35 16 58 36 39 33 42 39 42 88 0 29 -5 57 -12 64 -16 16 -160 16 -176
+0z m176 -58 c3 -54 2 -57 -37 -88 -22 -18 -45 -32 -51 -32 -7 0 -30 14 -51 31
+-36 29 -39 34 -39 83 0 29 3 56 7 60 4 4 43 5 88 4 l80 -3 3 -55z"/>
+<path d="M108 183 c6 -2 18 -2 25 0 6 3 1 5 -13 5 -14 0 -19 -2 -12 -5z"/>
+</g>
+</svg>

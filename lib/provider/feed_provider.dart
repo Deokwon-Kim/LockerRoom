@@ -6,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 // import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/post_model.dart';
+import 'package:lockerroom/model/user_model.dart';
 
 class FeedProvider extends ChangeNotifier {
   final _postCollection = FirebaseFirestore.instance.collection('posts');
@@ -15,7 +16,13 @@ class FeedProvider extends ChangeNotifier {
   List<PostModel> get postsStream => _postsStream;
   // 필터의 기준이 되는 전체 스냅샷 원본 목록
   List<PostModel> _allPosts = [];
+  List<PostModel> _filteredPosts = [];
+  List<UserModel> _allUsers = [];
+  List<UserModel> _filteredUsers = [];
   String _query = '';
+
+  List<PostModel> get filteredPosts => _filteredPosts;
+  List<UserModel> get filteredUsers => _filteredUsers;
 
   StreamSubscription? _sub;
   bool isLoading = true;
@@ -34,7 +41,7 @@ class FeedProvider extends ChangeNotifier {
             notifyListeners();
           },
           onError: (e) {
-            print('Firestore error: $e');
+            print('피드 구독 에러: $e');
             isLoading = false;
             notifyListeners();
           },
@@ -46,38 +53,105 @@ class FeedProvider extends ChangeNotifier {
     _applyFilter();
   }
 
+  Set<String> _blockedUserIds = <String>{};
+  Set<String> _blockedByUserIds = <String>{};
+
+  void setBlockedUsers(Set<String> ids) {
+    _blockedUserIds = ids;
+    _applyFilter();
+    _applyRecentPostsFilter();
+  }
+
+  void setBlockedByUsers(Set<String> ids) {
+    _blockedByUserIds = ids;
+    _applyFilter();
+    _applyRecentPostsFilter();
+  }
+
   void _applyFilter() {
     if (_query.isEmpty) {
-      _postsStream = List<PostModel>.from(_allPosts);
-    } else {
-      _postsStream = _allPosts
-          .where((post) => post.text.toLowerCase().contains(_query))
+      _filteredPosts = _allPosts
+          .where(
+            (p) =>
+                !_blockedUserIds.contains(p.userId) &&
+                !_blockedByUserIds.contains(p.userId),
+          )
           .toList();
+      _filteredUsers = [];
+    } else {
+      _filteredPosts = _allPosts.where((post) {
+        if (_blockedUserIds.contains(post.userId)) return false;
+        if (_blockedByUserIds.contains(post.userId)) return false;
+        return post.text.toLowerCase().contains(_query);
+      }).toList();
+
+      _filteredUsers = _allUsers.where((user) {
+        if (_blockedUserIds.contains(user.uid)) return false;
+        if (_blockedByUserIds.contains(user.uid)) return false;
+        return user.username.toLowerCase().contains(_query);
+      }).toList();
     }
     notifyListeners();
   }
 
+  Future<void> loadAllUsers() async {
+    final snapshot = await FirebaseFirestore.instance.collection('users').get();
+    _allUsers = snapshot.docs.map((doc) => UserModel.fromDoc(doc)).toList();
+    notifyListeners();
+  }
+
   // --- 최근 5개 피드 ---
+  List<PostModel> _allRecentPosts = [];
   List<PostModel> _posts = [];
   List<PostModel> get posts => _posts;
   StreamSubscription? _subB;
 
-  FeedProvider() {
+  FeedProvider();
+
+  void listenRecentPosts() {
     _subB?.cancel();
     _subB = _postCollection
         .orderBy('createdAt', descending: true)
         .limit(5)
         .snapshots()
-        .listen((snap) {
-          _posts = snap.docs.map((doc) => PostModel.fromDoc(doc)).toList();
-          isLoading = false;
-          notifyListeners();
-        });
+        .listen(
+          (snap) {
+            _allRecentPosts = snap.docs
+                .map((doc) => PostModel.fromDoc(doc))
+                .toList();
+            _applyRecentPostsFilter();
+            isLoading = false;
+            notifyListeners();
+          },
+          onError: (e) {
+            isLoading = false;
+            notifyListeners();
+          },
+        );
+  }
+
+  void _applyRecentPostsFilter() {
+    _posts = _allRecentPosts
+        .where(
+          (p) =>
+              !_blockedUserIds.contains(p.userId) &&
+              !_blockedByUserIds.contains(p.userId),
+        )
+        .toList();
   }
 
   void cancelSubscription() {
     _sub?.cancel();
     _subB?.cancel();
+  }
+
+  void cancelAllSubscriptions() {
+    _sub?.cancel();
+    _subB?.cancel();
+    _sub = null;
+    _subB = null;
+    _postsStream = [];
+    _allPosts = [];
   }
 
   @override
@@ -87,7 +161,13 @@ class FeedProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> toggleLike(PostModel post) async {
+  Future<void> toggleLikeAndNotify({
+    required String postId,
+    required PostModel post,
+    required String currentUserId,
+    required String postOwnerId,
+  }) async {
+    // 좋아요 반영
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
@@ -114,6 +194,29 @@ class FeedProvider extends ChangeNotifier {
 
       tx.update(postRef, {'likedBy': likedByList, 'likesCount': newLikes});
     });
+    notifyListeners();
+
+    // 알림 대상 결정
+    final targetUserId = postOwnerId;
+
+    // 게시글 작성자면 알림없음
+    if (targetUserId == currentUserId) return;
+
+    // 알림 내용 미리보기
+    final preview = (post.text.length > 40
+        ? '${post.text.substring(0, 40)}...'
+        : post.text);
+
+    // Firestore에 알림 문서 추가
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'feedLike',
+      'postId': postId,
+      'fromUserId': currentUserId,
+      'toUserId': targetUserId,
+      'preview': preview,
+      'createdAt': FieldValue.serverTimestamp(),
+      'isRead': false,
+    });
   }
 
   // 현재 로그인 한 유저에 게시물만 불러오기
@@ -130,10 +233,28 @@ class FeedProvider extends ChangeNotifier {
         );
   }
 
+  // Feed작성자의 게시물 불러오기
+  Stream<List<PostModel>> listenUserPosts(String userId) {
+    return _postCollection
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((doc) => PostModel.fromDoc(doc)).toList());
+  }
+
+  // 특정 사용자의 게시물 개수를 실시간으로 스트리밍
+  Stream<int> listenUserPostCount(String userId) {
+    return _postCollection
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) => snapshot.size);
+  }
+
   // 게시글 삭제 시 해당 게시글의 모든 댓글도 함께 삭제
   Future<void> deletePost(PostModel post) async {
-    for (final url in post.mediaUrls)
+    for (final url in post.mediaUrls) {
       await FirebaseStorage.instance.refFromURL(url).delete();
+    }
     final firestore = FirebaseFirestore.instance;
     final postRef = _postCollection.doc(post.id);
 
@@ -159,5 +280,30 @@ class FeedProvider extends ChangeNotifier {
     }
 
     await batch.commit();
+  }
+
+  // 피드 신고 기능
+  Future<void> reportPost({
+    required PostModel post,
+    required String reporterUserId,
+    required String reporterUserName,
+    required String reason,
+  }) async {
+    try {
+      await FirebaseFirestore.instance.collection('feed_reports').add({
+        'type': 'feed_post',
+        'postId': post.id,
+        'reportedUserId': post.userId,
+        'reportedUserName': post.userName,
+        'reporterUserId': reporterUserId,
+        'reporterUserName': reporterUserName,
+        'postText': post.text,
+        'reason': reason,
+        'createdAt': FieldValue.serverTimestamp(),
+        'status': 'pending', // pending, reviewed, closed
+      });
+    } catch (e) {
+      rethrow;
+    }
   }
 }

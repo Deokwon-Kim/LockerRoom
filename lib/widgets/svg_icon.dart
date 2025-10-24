@@ -38,6 +38,8 @@ class AppIcons {
   static const String add = 'assets/icons/add.svg';
   static const String person = 'assets/icons/person.svg';
   static const String personFill = 'assets/icons/person_fill.svg';
+  static const String shop = 'assets/icons/shop.svg';
+  static const String shopFill = 'assets/icons/shop_fill.svg';
 
   // SVG 아이콘 위젯들
   static Widget homeIcon({double? size, Color? color}) {
@@ -62,6 +64,19 @@ class AppIcons {
   }
 
   static Widget personFillIcon({double? size, Color? color}) {
+    return SvgIcon(
+      assetPath: personFill,
+      width: size,
+      height: size,
+      color: color,
+    );
+  }
+
+  static Widget shopIcon({double? size, Color? color}) {
+    return SvgIcon(assetPath: person, width: size, height: size, color: color);
+  }
+
+  static Widget shopFillIcon({double? size, Color? color}) {
     return SvgIcon(
       assetPath: personFill,
       width: size,

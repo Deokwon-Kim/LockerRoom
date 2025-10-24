@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.lockerroom"
+    namespace = "com.codegrove.thebase"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 

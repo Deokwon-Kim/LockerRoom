@@ -1,8 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/components/theme_tile.dart';
 import 'package:lockerroom/const/color.dart';
@@ -86,10 +84,11 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
             child: GridView.builder(
               padding: const EdgeInsets.only(left: 10, right: 10),
               itemCount: teamProvider.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 200,
                 mainAxisSpacing: 15,
                 crossAxisSpacing: 12,
+                childAspectRatio: 1,
               ),
               itemBuilder: (context, index) {
                 final team = teamProvider[index];
