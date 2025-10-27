@@ -131,6 +131,18 @@ class _SchedulePageState extends State<SchedulePage> {
                             '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')} '
                             '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 
+                        // 상태/더블헤더 배지 텍스트 구성
+                        final List<String> badges = [];
+                        final statusUpper = s.status.toString().toUpperCase();
+                        if (statusUpper.startsWith('CANCELLED')) {
+                          badges.add('경기취소');
+                        }
+                        final dh = s.doubleHeaderNo?.toString().trim();
+                        if (dh != null && dh.isNotEmpty) {
+                          badges.add('DH $dh');
+                        }
+                        final headerLine = '$timeStr  ${s.stadium}';
+
                         final homeTeamModel = nameToTeam[s.homeTeam];
                         final awayTeamModel = nameToTeam[s.awayTeam];
                         return Padding(
@@ -147,16 +159,39 @@ class _SchedulePageState extends State<SchedulePage> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(8.0),
+                              padding: const EdgeInsets.all(10.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    '$timeStr · ${s.stadium}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        headerLine,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (badges.isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          badges.join('  '),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color:
+                                                statusUpper.startsWith(
+                                                  'CANCELLED',
+                                                )
+                                                ? Colors.red
+                                                : GRAYSCALE_LABEL_500,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
+
                                   const Spacer(),
                                   LayoutBuilder(
                                     builder: (context, constraints) {
@@ -170,73 +205,108 @@ class _SchedulePageState extends State<SchedulePage> {
                                         64.0,
                                       );
 
-                                      return Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          if (awayTeamModel != null)
-                                            Flexible(
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    s.awayTeam,
-                                                    style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 13,
-                                                    ),
-                                                  ),
-                                                  SizedBox(width: 8),
-                                                  SizedBox(
-                                                    width: clampedLogo,
-                                                    height: clampedLogo,
-                                                    child: Image.asset(
-                                                      awayTeamModel
-                                                          .calenderLogo,
-                                                      fit: BoxFit.contain,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: 55.0,
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
 
-                                          const SizedBox(width: 12),
-                                          const Text(
-                                            'vs',
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          if (homeTeamModel != null)
-                                            Flexible(
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (awayTeamModel != null)
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
                                                 children: [
-                                                  SizedBox(
-                                                    width: clampedLogo,
-                                                    height: clampedLogo,
-                                                    child: Image.asset(
-                                                      homeTeamModel
-                                                          .calenderLogo,
-                                                      fit: BoxFit.contain,
-                                                    ),
+                                                  Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      SizedBox(
+                                                        width: clampedLogo,
+                                                        height: clampedLogo,
+                                                        child: Image.asset(
+                                                          awayTeamModel
+                                                              .calenderLogo,
+                                                          fit: BoxFit.contain,
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        s.awayTeam,
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 13,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                   SizedBox(width: 10),
                                                   Text(
-                                                    s.homeTeam,
+                                                    '${s.awayScroe}',
                                                     style: TextStyle(
+                                                      fontSize: 20,
+                                                      color:
+                                                          GRAYSCALE_LABEL_500,
                                                       fontWeight:
                                                           FontWeight.bold,
-                                                      fontSize: 13,
                                                     ),
                                                   ),
                                                 ],
                                               ),
+                                            SizedBox(width: 20),
+                                            const Text(
+                                              'vs',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
-                                        ],
+                                            SizedBox(width: 20),
+                                            if (homeTeamModel != null)
+                                              Flexible(
+                                                child: Row(
+                                                  children: [
+                                                    Text(
+                                                      '${s.homeScore}',
+                                                      style: TextStyle(
+                                                        fontSize: 20,
+                                                        color:
+                                                            GRAYSCALE_LABEL_500,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    SizedBox(width: 10),
+                                                    Column(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        SizedBox(
+                                                          width: clampedLogo,
+                                                          height: clampedLogo,
+                                                          child: Image.asset(
+                                                            homeTeamModel
+                                                                .calenderLogo,
+                                                            fit: BoxFit.contain,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          s.homeTeam,
+                                                          style: TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 13,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                          ],
+                                        ),
                                       );
                                     },
                                   ),
