@@ -198,21 +198,35 @@ class MarketFeedProvider extends ChangeNotifier {
     required String reporterUserName,
     required String reason,
   }) async {
-    try {
-      await FirebaseFirestore.instance.collection('market_feed_reports').add({
-        'type': 'market_post',
-        'postId': marketPost.postId,
-        'reportedUserId': marketPost.userId,
-        'reportedUserName': marketPost.userName,
-        'reporterUserId': reporterUserId,
-        'reporterUserName': reporterUserName,
-        'postText': marketPost.description,
-        'reason': reason,
-        'createdAt': FieldValue.serverTimestamp(),
-        'status': 'pending', // pending, reviewed, closed
-      });
-    } catch (e) {
-      rethrow;
-    }
+    await FirebaseFirestore.instance.collection('market_feed_reports').add({
+      'type': 'market_post',
+      'postId': marketPost.postId,
+      'reportedUserId': marketPost.userId,
+      'reportedUserName': marketPost.userName,
+      'reporterUserId': reporterUserId,
+      'reporterUserName': reporterUserName,
+      'postText': marketPost.description,
+      'reason': reason,
+      'createdAt': FieldValue.serverTimestamp(),
+      'status': 'pending', // pending, reviewed, closed
+    });
+
+    // 알림 대상 결정
+    final targetUserId = 'Wxi2XKOWJYQeCSD9eY9wunyew1U2';
+
+    // Firestore에 알림문서 추가
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'market_post_report',
+      'postId': marketPost.postId,
+      'reportedUserId': marketPost.userId,
+      'reportedUserName': marketPost.userName,
+      'reporterUserId': reporterUserId,
+      'reporterUserName': reporterUserName,
+      'toUserId': targetUserId,
+      'postText': marketPost.description,
+      'reason': reason,
+      'createdAt': FieldValue.serverTimestamp(),
+      'status': 'pending',
+    });
   }
 }

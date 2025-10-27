@@ -282,6 +282,48 @@ class FeedProvider extends ChangeNotifier {
     await batch.commit();
   }
 
+  Future<void> reportPostAndNotify({
+    required PostModel post,
+    required String reporterUserId,
+    required String reporterUserName,
+    required String reason,
+  }) async {
+    await FirebaseFirestore.instance.collection('feed_reports').add({
+      'type': 'feed_post',
+      'postId': post.id,
+      'reportedUserId': post.userId,
+      'reportedUserName': post.userName,
+      'reporterUserId': reporterUserId,
+      'reporterUserName': reporterUserName,
+      'postText': post.text,
+      'reason': reason,
+      'createdAt': FieldValue.serverTimestamp(),
+      'status': 'pending', // pending, reviewed, closed
+    });
+
+    // 알림 대상 결정
+    final targetUserId = 'Wxi2XKOWJYQeCSD9eY9wunyew1U2';
+
+    // 알림 내용 미리보기
+    final preview = reason.length > 40 ? '${reason.substring(0, 40)}...' : null;
+
+    // Firestore에 알림문서 추가
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'report',
+      'postId': post.id,
+      'reportedUserId': post.userId,
+      'reportedUserName': post.userName,
+      'reporterUserId': reporterUserId,
+      'reporterUserName': reporterUserName,
+      'toUserId': targetUserId,
+      'postText': post.text,
+      'reason': reason,
+      'preview': preview,
+      'createdAt': FieldValue.serverTimestamp(),
+      'status': 'pending',
+    });
+  }
+
   // 피드 신고 기능
   Future<void> reportPost({
     required PostModel post,
