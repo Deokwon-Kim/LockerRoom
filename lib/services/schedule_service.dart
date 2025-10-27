@@ -3,7 +3,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:lockerroom/model/schedule_model.dart';
 
 class ScheduleService {
-  static const String defaultAssetPath = 'assets/schedules/kbo_2025.csv';
+  static const String defaultAssetPath =
+      'assets/schedules/kbo_2025_results.csv';
 
   Future<List<ScheduleModel>> loadSchedules({
     String assetPath = defaultAssetPath,
@@ -31,6 +32,7 @@ class ScheduleService {
     final int idxBroadcast = header.indexOf('broadcast');
     final int idxDoubleHeader = header.indexOf('doubleheader_no');
     final int idxNote = header.indexOf('note');
+    final int idxScore = header.indexOf('score');
 
     String normalizeToHHmm(String rawTime) {
       final t = rawTime.trim();
@@ -65,11 +67,37 @@ class ScheduleService {
       return DateTime.parse(isoLocal);
     }
 
+    int _parseIntOrZero(String? s) {
+      if (s == null) return 0;
+      final v = int.tryParse(s.trim());
+      return v ?? 0;
+    }
+
+    (int away, int home) _parseScore(String? raw) {
+      if (raw == null) return (0, 0);
+      final t = raw.trim();
+      if (t.isEmpty) return (0, 0);
+      final parts = t.split('-');
+      if (parts.length == 2) {
+        final away = _parseIntOrZero(parts[0]);
+        final home = _parseIntOrZero(parts[1]);
+        return (away, home);
+      }
+      return (0, 0);
+    }
+
     final List<ScheduleModel> schedules = [];
     for (int i = 1; i < rows.length; i++) {
       final List<dynamic> r = rows[i];
       if (r.isEmpty) continue;
       try {
+        int awayScore = 0;
+        int homeScore = 0;
+        if (idxScore >= 0 && idxScore < r.length) {
+          final parsed = _parseScore(r[idxScore]?.toString());
+          awayScore = parsed.$1;
+          homeScore = parsed.$2;
+        }
         schedules.add(
           ScheduleModel(
             season: int.tryParse(r[idxSeason].toString()) ?? 2025,
@@ -85,6 +113,8 @@ class ScheduleService {
                 ? r[idxDoubleHeader]?.toString()
                 : null,
             note: idxNote >= 0 ? r[idxNote]?.toString() : null,
+            homeScore: homeScore,
+            awayScroe: awayScore,
           ),
         );
       } catch (_) {
