@@ -5,12 +5,30 @@ import 'package:lockerroom/model/schedule_model.dart';
 class ScheduleService {
   static const String defaultAssetPath =
       'assets/schedules/kbo_2025_results.csv';
+  static const List<String> defaultAssetPaths = [
+    'assets/schedules/kbo_2023.csv',
+    'assets/schedules/kbo_2024.csv',
+    'assets/schedules/kbo_2025_results.csv',
+  ];
 
   Future<List<ScheduleModel>> loadSchedules({
     String assetPath = defaultAssetPath,
+    List<String>? assetPaths,
   }) async {
+    final List<String> targets = (assetPaths == null || assetPaths.isEmpty)
+        ? defaultAssetPaths
+        : assetPaths;
+
+    final List<ScheduleModel> all = [];
+    for (final path in targets) {
+      final List<ScheduleModel> one = await _loadSingleCsv(path);
+      all.addAll(one);
+    }
+    return all;
+  }
+
+  Future<List<ScheduleModel>> _loadSingleCsv(String assetPath) async {
     final String raw = await rootBundle.loadString(assetPath, cache: true);
-    // Parse CSV
     final List<List<dynamic>> rows = const CsvToListConverter(
       eol: '\n',
     ).convert(raw);
