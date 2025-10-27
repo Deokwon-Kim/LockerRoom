@@ -187,20 +187,20 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                     )
                                   : null,
                             ),
-                            SizedBox(width: 30),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  userName,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
+                            SizedBox(width: 20),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    userName,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                ),
-                                Transform.translate(
-                                  offset: Offset(-10, 0),
-                                  child: Row(
+                                  SizedBox(height: 5),
+                                  Row(
                                     children: [
                                       StreamBuilder<List<PostModel>>(
                                         stream: context
@@ -241,8 +241,16 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                                     .selectedTeam
                                                     ?.color ??
                                                 BUTTON;
-                                            return CircularProgressIndicator(
-                                              color: teamColor,
+                                            return Center(
+                                              child: SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: teamColor,
+                                                      strokeWidth: 2,
+                                                    ),
+                                              ),
                                             );
                                           }
                                           return GestureDetector(
@@ -290,8 +298,16 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                                     .selectedTeam
                                                     ?.color ??
                                                 BUTTON;
-                                            return CircularProgressIndicator(
-                                              color: teamColor,
+                                            return Center(
+                                              child: SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: teamColor,
+                                                      strokeWidth: 2,
+                                                    ),
+                                              ),
                                             );
                                           }
                                           return GestureDetector(
@@ -328,8 +344,8 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                       ),
                                     ],
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -367,98 +383,106 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                 )
                               : Row(
                                   children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        fp.toggleFollow(widget.userId);
-                                      },
-                                      child: Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 70,
-                                          vertical: 8,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color:
-                                              fp.isFollowingUser(widget.userId)
-                                              ? GRAYSCALE_LABEL_300
-                                              : teamColor,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          fp.toggleFollow(widget.userId);
+                                        },
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 8,
                                           ),
-                                        ),
-                                        child: Text(
-                                          fp.isFollowingUser(widget.userId)
-                                              ? '팔로잉'
-                                              : '팔로우',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
+                                          decoration: BoxDecoration(
                                             color:
                                                 fp.isFollowingUser(
                                                   widget.userId,
                                                 )
-                                                ? Colors.black
-                                                : Colors.white,
+                                                ? GRAYSCALE_LABEL_300
+                                                : teamColor,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              fp.isFollowingUser(widget.userId)
+                                                  ? '팔로잉'
+                                                  : '팔로우',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                                color:
+                                                    fp.isFollowingUser(
+                                                      widget.userId,
+                                                    )
+                                                    ? Colors.black
+                                                    : Colors.white,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
                                     SizedBox(width: 10),
-                                    GestureDetector(
-                                      onTap: () {
-                                        showMenu<String>(
-                                          context: context,
-                                          position: RelativeRect.fromLTRB(
-                                            300,
-                                            250,
-                                            50,
-                                            0,
-                                          ),
-                                          color: BACKGROUND_COLOR,
-                                          items: [
-                                            PopupMenuItem(
-                                              value: 'block',
-                                              child: Text(
-                                                '사용자 차단',
-                                                style: TextStyle(
-                                                  color: RED_DANGER_TEXT_50,
-                                                  fontWeight: FontWeight.bold,
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          showMenu<String>(
+                                            context: context,
+                                            position: RelativeRect.fromLTRB(
+                                              300,
+                                              250,
+                                              50,
+                                              0,
+                                            ),
+                                            color: BACKGROUND_COLOR,
+                                            items: [
+                                              PopupMenuItem(
+                                                value: 'block',
+                                                child: Text(
+                                                  '사용자 차단',
+                                                  style: TextStyle(
+                                                    color: RED_DANGER_TEXT_50,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ],
-                                        ).then((value) {
-                                          if (value == 'block') {
-                                            final uid = FirebaseAuth
-                                                .instance
-                                                .currentUser
-                                                ?.uid;
-                                            if (uid == null) return;
-                                            _showBlockConfirmDialog(
-                                              context,
-                                              nickName,
-                                              widget.userId,
-                                              uid,
-                                            );
-                                          }
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 70,
-                                          vertical: 8,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: GRAYSCALE_LABEL_300,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
+                                            ],
+                                          ).then((value) {
+                                            if (value == 'block') {
+                                              final uid = FirebaseAuth
+                                                  .instance
+                                                  .currentUser
+                                                  ?.uid;
+                                              if (uid == null) return;
+                                              _showBlockConfirmDialog(
+                                                context,
+                                                nickName,
+                                                widget.userId,
+                                                uid,
+                                              );
+                                            }
+                                          });
+                                        },
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 8,
                                           ),
-                                        ),
-                                        child: Text(
-                                          '더보기',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black,
+                                          decoration: BoxDecoration(
+                                            color: GRAYSCALE_LABEL_300,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              '더보기',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),

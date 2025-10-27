@@ -114,176 +114,196 @@ class _FeedMypageState extends State<FeedMypage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Column(
-              children: [
-                Row(
-                  children: [
-                    Consumer<ProfileProvider>(
-                      builder: (context, pt, child) {
-                        final profileUrl = pt.userProfiles[widget.post.userId];
-                        return CircleAvatar(
-                          radius: 35,
-                          backgroundImage: profileUrl != null
-                              ? NetworkImage(profileUrl)
-                              : null,
-                          backgroundColor: GRAYSCALE_LABEL_300,
-                          child: profileUrl == null
-                              ? const Icon(
-                                  Icons.person,
-                                  color: Colors.black,
-                                  size: 25,
-                                )
-                              : null,
-                        );
-                      },
-                    ),
-                    SizedBox(width: 30),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.post.userName,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-
-                        Transform.translate(
-                          offset: Offset(-10, 0),
-                          child: Row(
-                            children: [
-                              StreamBuilder<List<PostModel>>(
-                                stream: context
-                                    .read<FeedProvider>()
-                                    .listenUserPosts(widget.post.userId),
-                                builder: (context, snapshot) {
-                                  final count =
-                                      (snapshot.data ?? const []).length;
-                                  return Column(
-                                    children: [
-                                      Text(
-                                        '$count',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      Text(
-                                        '게시물',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Consumer<ProfileProvider>(
+                        builder: (context, pt, child) {
+                          final profileUrl =
+                              pt.userProfiles[widget.post.userId];
+                          return CircleAvatar(
+                            radius: 35,
+                            backgroundImage: profileUrl != null
+                                ? NetworkImage(profileUrl)
+                                : null,
+                            backgroundColor: GRAYSCALE_LABEL_300,
+                            child: profileUrl == null
+                                ? const Icon(
+                                    Icons.person,
+                                    color: Colors.black,
+                                    size: 25,
+                                  )
+                                : null,
+                          );
+                        },
+                      ),
+                      SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.post.userName,
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
                               ),
-
-                              SizedBox(width: 50),
-                              StreamBuilder<int>(
-                                stream: fp.getFollowersCountStream(
-                                  widget.targetUserId,
-                                ),
-                                builder: (context, snapshot) {
-                                  if (!snapshot.hasData) {
-                                    final color =
-                                        context
-                                            .read<TeamProvider>()
-                                            .selectedTeam
-                                            ?.color ??
-                                        BUTTON;
-                                    return CircularProgressIndicator(
-                                      color: color,
-                                    );
-                                  }
-                                  return GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => FollowListPage(
-                                            userId: widget.targetUserId,
-                                            initialIndex: 0,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: Column(
+                            ),
+                            SizedBox(height: 8),
+                            Row(
+                              children: [
+                                StreamBuilder<List<PostModel>>(
+                                  stream: context
+                                      .read<FeedProvider>()
+                                      .listenUserPosts(widget.post.userId),
+                                  builder: (context, snapshot) {
+                                    final count =
+                                        (snapshot.data ?? const []).length;
+                                    return Column(
                                       children: [
                                         Text(
-                                          '${snapshot.data}',
+                                          '$count',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
                                         Text(
-                                          "팔로워",
+                                          '게시물',
                                           style: TextStyle(
                                             fontWeight: FontWeight.w500,
                                           ),
                                         ),
                                       ],
-                                    ),
-                                  );
-                                },
-                              ),
-                              SizedBox(width: 50),
-                              StreamBuilder<int>(
-                                stream: fp.getFollowCountStream(
-                                  widget.targetUserId,
-                                ),
-                                builder: (context, snapshot) {
-                                  if (!snapshot.hasData) {
-                                    final color =
-                                        context
-                                            .read<TeamProvider>()
-                                            .selectedTeam
-                                            ?.color ??
-                                        BUTTON;
-                                    return CircularProgressIndicator(
-                                      color: color,
                                     );
-                                  }
-                                  return GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => FollowListPage(
-                                            userId: widget.targetUserId,
-                                            initialIndex: 1,
+                                  },
+                                ),
+                                SizedBox(width: 50),
+                                StreamBuilder<int>(
+                                  stream: fp.getFollowersCountStream(
+                                    widget.targetUserId,
+                                  ),
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData) {
+                                      final color =
+                                          context
+                                              .read<TeamProvider>()
+                                              .selectedTeam
+                                              ?.color ??
+                                          BUTTON;
+                                      return Center(
+                                        child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            color: color,
+                                            strokeWidth: 2,
                                           ),
                                         ),
                                       );
-                                    },
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          '${snapshot.data}',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w500,
+                                    }
+                                    return GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                FollowListPage(
+                                                  userId: widget.targetUserId,
+                                                  initialIndex: 0,
+                                                ),
+                                          ),
+                                        );
+                                      },
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            '${snapshot.data}',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          Text(
+                                            "팔로워",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                                SizedBox(width: 50),
+                                StreamBuilder<int>(
+                                  stream: fp.getFollowCountStream(
+                                    widget.targetUserId,
+                                  ),
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData) {
+                                      final color =
+                                          context
+                                              .read<TeamProvider>()
+                                              .selectedTeam
+                                              ?.color ??
+                                          BUTTON;
+                                      return Center(
+                                        child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            color: color,
+                                            strokeWidth: 2,
                                           ),
                                         ),
-                                        Text(
-                                          '팔로잉',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w500,
+                                      );
+                                    }
+                                    return GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                FollowListPage(
+                                                  userId: widget.targetUserId,
+                                                  initialIndex: 1,
+                                                ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
+                                        );
+                                      },
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            '${snapshot.data}',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          Text(
+                                            '팔로잉',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
             SizedBox(height: 10),
             if (widget.post.userId != FirebaseAuth.instance.currentUser?.uid)
@@ -316,93 +336,96 @@ class _FeedMypageState extends State<FeedMypage> {
                           )
                         : Row(
                             children: [
-                              GestureDetector(
-                                onTap: () {
-                                  fp.toggleFollow(widget.post.userId);
-                                },
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 70,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        fp.isFollowingUser(widget.post.userId)
-                                        ? GRAYSCALE_LABEL_300
-                                        : teamColor,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    fp.isFollowingUser(widget.post.userId)
-                                        ? '팔로잉'
-                                        : '팔로우',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    fp.toggleFollow(widget.post.userId);
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(vertical: 8),
+                                    decoration: BoxDecoration(
                                       color:
                                           fp.isFollowingUser(widget.post.userId)
-                                          ? Colors.black
-                                          : Colors.white,
+                                          ? GRAYSCALE_LABEL_300
+                                          : teamColor,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        fp.isFollowingUser(widget.post.userId)
+                                            ? '팔로잉'
+                                            : '팔로우',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color:
+                                              fp.isFollowingUser(
+                                                widget.post.userId,
+                                              )
+                                              ? Colors.black
+                                              : Colors.white,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                               SizedBox(width: 10),
-                              GestureDetector(
-                                onTap: () {
-                                  showMenu<String>(
-                                    context: context,
-                                    position: RelativeRect.fromLTRB(
-                                      300,
-                                      250,
-                                      50,
-                                      0,
-                                    ),
-                                    color: BACKGROUND_COLOR,
-                                    items: [
-                                      PopupMenuItem(
-                                        value: 'block',
-                                        child: Text(
-                                          '사용자 차단',
-                                          style: TextStyle(
-                                            color: RED_DANGER_TEXT_50,
-                                            fontWeight: FontWeight.bold,
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    showMenu<String>(
+                                      context: context,
+                                      position: RelativeRect.fromLTRB(
+                                        300,
+                                        250,
+                                        50,
+                                        0,
+                                      ),
+                                      color: BACKGROUND_COLOR,
+                                      items: [
+                                        PopupMenuItem(
+                                          value: 'block',
+                                          child: Text(
+                                            '사용자 차단',
+                                            style: TextStyle(
+                                              color: RED_DANGER_TEXT_50,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
+                                      ],
+                                    ).then((value) {
+                                      if (value == 'block') {
+                                        final uid = FirebaseAuth
+                                            .instance
+                                            .currentUser
+                                            ?.uid;
+                                        if (uid == null) return;
+                                        _showBlockConfirmDialog(
+                                          context,
+                                          widget.post.userNickName,
+                                          widget.post.userId,
+                                          uid,
+                                        );
+                                      }
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: GRAYSCALE_LABEL_300,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '더보기',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
                                       ),
-                                    ],
-                                  ).then((value) {
-                                    if (value == 'block') {
-                                      final uid = FirebaseAuth
-                                          .instance
-                                          .currentUser
-                                          ?.uid;
-                                      if (uid == null) return;
-                                      _showBlockConfirmDialog(
-                                        context,
-                                        widget.post.userNickName,
-                                        widget.post.userId,
-                                        uid,
-                                      );
-                                    }
-                                  });
-                                },
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 70,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: GRAYSCALE_LABEL_300,
-
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    '더보기',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
                                     ),
                                   ),
                                 ),
