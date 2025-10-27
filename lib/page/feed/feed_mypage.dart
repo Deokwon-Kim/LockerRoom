@@ -644,7 +644,7 @@ class _FeedMypageState extends State<FeedMypage> {
                                   LayoutBuilder(
                                     builder: (context, constraints) {
                                       final bool inSingle =
-                                          widget.post.mediaUrls.length == 1;
+                                          p.mediaUrls.length == 1;
                                       final double avilableWidth =
                                           constraints.maxWidth;
                                       // 리스트 높이와 각 아이템 너비를 화면/가용 폭 기준으로 계산
@@ -669,7 +669,7 @@ class _FeedMypageState extends State<FeedMypage> {
                                             final url = p.mediaUrls[i];
                                             final isVideo =
                                                 MediaUtils.isVideoFromPost(
-                                                  widget.post,
+                                                  p,
                                                   i,
                                                 );
                                             return Padding(
