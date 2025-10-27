@@ -710,7 +710,7 @@ class _PostWidgetState extends State<PostWidget> {
                   return;
                 }
 
-                await feedProvider.reportPost(
+                await feedProvider.reportPostAndNotify(
                   post: post,
                   reporterUserId: user.uid,
                   reporterUserName: user.displayName ?? '익명',
