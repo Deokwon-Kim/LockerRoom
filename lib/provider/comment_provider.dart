@@ -234,6 +234,10 @@ class CommentProvider with ChangeNotifier {
     await _commentsCollection.doc(comment.id).delete();
   }
 
+  Future<void> deleteMarketComment(CommentModel comment) async {
+    await _marketCommentsCollection.doc(comment.id).delete();
+  }
+
   Future<void> deleteCommentCascade(CommentModel comment) async {
     // 트리 전체(부모/답글 포함)를 재귀적으로 삭제
     // 1) 현재 댓글의 모든 직계 자식을 가져와 먼저 삭제
@@ -259,23 +263,37 @@ class CommentProvider with ChangeNotifier {
     required String reporterUserName,
     required String reason,
   }) async {
-    try {
-      await FirebaseFirestore.instance.collection('feed_comment_reports').add({
-        'type': 'comment',
-        'commentId': comment.id,
-        'postId': comment.postId,
-        'reportedUserId': comment.userId,
-        'reportedUserName': comment.userName,
-        'reporterUserId': reporterUserId,
-        'reporterUserName': reporterUserName,
-        'commentText': comment.text,
-        'reason': reason,
-        'createdAt': FieldValue.serverTimestamp(),
-        'status': 'pending', // pending, reviewed, closed
-      });
-    } catch (e) {
-      rethrow;
-    }
+    await FirebaseFirestore.instance.collection('feed_comment_reports').add({
+      'type': 'comment',
+      'commentId': comment.id,
+      'postId': comment.postId,
+      'reportedUserId': comment.userId,
+      'reportedUserName': comment.userName,
+      'reporterUserId': reporterUserId,
+      'reporterUserName': reporterUserName,
+      'commentText': comment.text,
+      'reason': reason,
+      'createdAt': FieldValue.serverTimestamp(),
+      'status': 'pending', // pending, reviewed, closed
+    });
+
+    // 알림 대상 결정
+    final targetUserId = 'Wxi2XKOWJYQeCSD9eY9wunyew1U2';
+
+    // Firestore에 알림문서 추가
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'coment_report',
+      'commentId': comment.id,
+      'reportedUserId': comment.userId,
+      'reportedUserName': comment.userName,
+      'reporterUserId': reporterUserId,
+      'reporterUserName': reporterUserName,
+      'toUserId': targetUserId,
+      'commentText': comment.text,
+      'reason': reason,
+      'createdAt': FieldValue.serverTimestamp(),
+      'status': 'pending',
+    });
   }
 
   // 마켓 댓글 신고 기능
@@ -285,25 +303,37 @@ class CommentProvider with ChangeNotifier {
     required String reporterUserName,
     required String reason,
   }) async {
-    try {
-      await FirebaseFirestore.instance.collection('market_comment_reports').add(
-        {
-          'type': 'market_comment',
-          'commentId': comment.id,
-          'postId': comment.postId,
-          'reportedUserId': comment.userId,
-          'reportedUserName': comment.userName,
-          'reporterUserId': reporterUserId,
-          'reporterUserName': reporterUserName,
-          'commentText': comment.text,
-          'reason': reason,
-          'createdAt': FieldValue.serverTimestamp(),
-          'status': 'pending', // pending, reviewed, closed
-        },
-      );
-    } catch (e) {
-      rethrow;
-    }
+    await FirebaseFirestore.instance.collection('market_comment_reports').add({
+      'type': 'market_comment',
+      'commentId': comment.id,
+      'postId': comment.postId,
+      'reportedUserId': comment.userId,
+      'reportedUserName': comment.userName,
+      'reporterUserId': reporterUserId,
+      'reporterUserName': reporterUserName,
+      'commentText': comment.text,
+      'reason': reason,
+      'createdAt': FieldValue.serverTimestamp(),
+      'status': 'pending', // pending, reviewed, closed
+    });
+
+    // 알림 대상 결정
+    final targetUserId = 'Wxi2XKOWJYQeCSD9eY9wunyew1U2';
+
+    // Firestore에 알림문서 추가
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'market_comment_report',
+      'commentId': comment.id,
+      'reportedUserId': comment.userId,
+      'reportedUserName': comment.userName,
+      'reporterUserId': reporterUserId,
+      'reporterUserName': reporterUserName,
+      'toUserId': targetUserId,
+      'commentText': comment.text,
+      'reason': reason,
+      'createdAt': FieldValue.serverTimestamp(),
+      'status': 'pending',
+    });
   }
 
   @override
