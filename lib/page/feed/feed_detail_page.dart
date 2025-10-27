@@ -743,66 +743,84 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                   },
                 ),
                 SizedBox(width: 5),
-                if (currentUserId != null && c.userId == currentUserId)
+
+                if (currentUserId != null)
                   PopupMenuTheme(
                     data: PopupMenuThemeData(color: BACKGROUND_COLOR),
                     child: PopupMenuButton<String>(
                       icon: Icon(Icons.more_horiz),
                       onSelected: (value) async {
-                        showDialog(
-                          context: context,
-                          builder: (context) => ConfirmationDialog(
-                            title: '댓글 삭제',
-                            content: '댓글을 삭제 하시겠습니까?',
-                            onConfirm: () async {
-                              await commentProvider.deleteComment(c);
-                              if (!mounted) return;
-                            },
-                          ),
-                        );
-                      },
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(
-                            '삭제하기',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'report',
-                          child: Text(
-                            '신고하기',
-                            style: TextStyle(color: Colors.black),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (currentUserId != null && c.userId != currentUserId)
-                  PopupMenuTheme(
-                    data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-                    child: PopupMenuButton<String>(
-                      icon: Icon(Icons.more_horiz),
-                      onSelected: (value) async {
-                        if (value == 'report') {
+                        if (value == 'delete') {
+                          showDialog(
+                            context: context,
+                            builder: (context) => ConfirmationDialog(
+                              title: '댓글 삭제',
+                              content: '댓글을 삭제 하시겠습니까?',
+                              onConfirm: () async {
+                                await commentProvider.deleteComment(c);
+                              },
+                            ),
+                          );
+                        } else if (value == 'report') {
+                          final reporter = FirebaseAuth.instance.currentUser;
+                          if (reporter == null) {
+                            toastification.show(
+                              context: context,
+                              type: ToastificationType.error,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: Duration(seconds: 2),
+                              title: Text('로그인이 필요합니다'),
+                            );
+                            return;
+                          }
                           _showCommentReportDialog(
                             context,
                             c,
                             commentProvider,
                             currentUserId,
                           );
+                        } else if (value == 'block') {
+                          final uid = FirebaseAuth.instance.currentUser?.uid;
+                          if (uid == null) return;
+                          _showBlockConfirmDialog(
+                            context,
+                            c.userName,
+                            c.userId,
+                            currentUserId,
+                          );
                         }
                       },
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(
-                          value: 'report',
-                          child: Text(
-                            '신고하기',
-                            style: TextStyle(color: Colors.black),
-                          ),
-                        ),
-                      ],
+                      itemBuilder: (context) {
+                        final isOwner = c.userId == currentUserId;
+                        if (isOwner) {
+                          return [
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text(
+                                '삭제하기',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ];
+                        } else {
+                          return [
+                            PopupMenuItem(
+                              value: 'report',
+                              child: Text(
+                                '신고하기',
+                                style: TextStyle(color: Colors.black),
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'block',
+                              child: Text(
+                                '사용자 차단',
+                                style: TextStyle(color: RED_DANGER_TEXT_50),
+                              ),
+                            ),
+                          ];
+                        }
+                      },
                     ),
                   ),
               ],

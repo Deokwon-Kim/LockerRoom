@@ -700,46 +700,26 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                   },
                 ),
                 SizedBox(width: 5),
-                if (currentUserId != null &&
-                    parentComment.userId == currentUserId)
+                if (currentUserId != null)
                   PopupMenuTheme(
                     data: PopupMenuThemeData(color: BACKGROUND_COLOR),
                     child: PopupMenuButton<String>(
                       icon: Icon(Icons.more_horiz),
                       onSelected: (value) async {
-                        showDialog(
-                          context: context,
-                          builder: (context) => ConfirmationDialog(
-                            title: '댓글 삭제',
-                            content: '댓글을 삭제 하시겠습니까?',
-                            onConfirm: () async {
-                              await commentProvider.deleteCommentCascade(
-                                parentComment,
-                              );
-                              if (!mounted) return;
-                            },
-                          ),
-                        );
-                      },
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(
-                            '삭제하기',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (currentUserId != null &&
-                    parentComment.userId != currentUserId)
-                  PopupMenuTheme(
-                    data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-                    child: PopupMenuButton<String>(
-                      icon: Icon(Icons.more_horiz),
-                      onSelected: (value) async {
-                        if (value == 'report') {
+                        if (value == 'delete') {
+                          showDialog(
+                            context: context,
+                            builder: (context) => ConfirmationDialog(
+                              title: '댓글 삭제',
+                              content: '댓글을 삭제 하시겠습니까?',
+                              onConfirm: () async {
+                                await commentProvider.deleteMarketComment(
+                                  parentComment,
+                                );
+                              },
+                            ),
+                          );
+                        } else if (value == 'report') {
                           final reporter = FirebaseAuth.instance.currentUser;
                           if (reporter == null) {
                             toastification.show(
@@ -757,17 +737,48 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                             commentProvider,
                             currentUserId,
                           );
+                        } else if (value == 'block') {
+                          final uid = FirebaseAuth.instance.currentUser?.uid;
+                          if (uid == null) return;
+                          _showBlockConfirmDialog(
+                            context,
+                            widget.comment!.userName,
+                            widget.comment!.userId,
+                            currentUserId,
+                          );
                         }
                       },
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(
-                          value: 'report',
-                          child: Text(
-                            '신고하기',
-                            style: TextStyle(color: Colors.black),
-                          ),
-                        ),
-                      ],
+                      itemBuilder: (context) {
+                        final isOwner = parentComment.userId == currentUserId;
+                        if (isOwner) {
+                          return [
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text(
+                                '삭제하기',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ];
+                        } else {
+                          return [
+                            PopupMenuItem(
+                              value: 'report',
+                              child: Text(
+                                '신고하기',
+                                style: TextStyle(color: Colors.black),
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'block',
+                              child: Text(
+                                '사용자 차단',
+                                style: TextStyle(color: RED_DANGER_TEXT_50),
+                              ),
+                            ),
+                          ];
+                        }
+                      },
                     ),
                   ),
               ],
@@ -954,7 +965,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                           title: '답글 삭제',
                           content: '답글을 삭제 하시겠습니까?',
                           onConfirm: () async {
-                            await commentProvider.deleteComment(reply);
+                            await commentProvider.deleteMarketComment(reply);
                             if (!mounted) return;
                           },
                         ),
