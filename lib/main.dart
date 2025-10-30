@@ -41,6 +41,8 @@ import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 import 'package:lockerroom/services/notification_service.dart';
 import 'package:lockerroom/services/navigation_service.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -57,22 +59,29 @@ Future<void> main() async {
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // ios 권한 요청
-  await FirebaseMessaging.instance.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
+  // 플랫폼별 알림 권한 요청
+  if (Platform.isAndroid) {
+    // Android 13+ (API 33+) 알림 권한 요청
+    final status = await Permission.notification.request();
+    if (status.isGranted) {
+      // 알림 권한이 허용된 경우에만 FCM 토큰 등록
+    }
+  } else if (Platform.isIOS) {
+    // iOS 권한 요청
+    await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
 
-  // ios 포그라운드 표시 옵션
-  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-    alert: false,
-    badge: false,
-    sound: false,
-  );
-
-  final apns = await FirebaseMessaging.instance.getAPNSToken();
-  // print('APNs token: $apns');
+    // iOS 포그라운드 표시 옵션
+    await FirebaseMessaging.instance
+        .setForegroundNotificationPresentationOptions(
+          alert: false,
+          badge: false,
+          sound: false,
+        );
+  }
 
   final token = await FirebaseMessaging.instance.getToken();
   // print('FCM token: $token');
