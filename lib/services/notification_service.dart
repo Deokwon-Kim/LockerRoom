@@ -26,7 +26,27 @@ class NotificationService {
       iOS: initSettingIOS,
     );
 
-    await notificationsPlugin.initialize(initSetting);
+    await notificationsPlugin.initialize(
+      initSetting,
+      onDidReceiveNotificationResponse: (details) {
+        // 알림 클릭 시 처리 (필요한 경우)
+      },
+    );
+
+    // Android 알림 채널 생성
+    const androidChannel = AndroidNotificationChannel(
+      'daily_channel_id',
+      'Daily Notifications',
+      description: 'Daily Notifications',
+      importance: Importance.high,
+    );
+
+    await notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(androidChannel);
+
     _isInitialized = true;
   }
 
