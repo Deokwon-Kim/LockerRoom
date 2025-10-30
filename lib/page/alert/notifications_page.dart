@@ -107,14 +107,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           final isFollow = n.type == 'follow';
                           final isFeedLike = n.type == 'feedLike';
                           final commentLike = n.type == 'commentLike';
+                          final isComment = n.type == 'comment';
+                          final isMarketComment = n.type == 'marketComment';
+                          final isReport = n.type == 'report';
+                          final isCommentReport =
+                              n.type == 'coment_report' ||
+                              n.type == 'comment_report';
+                          final isMarketCommentReport =
+                              n.type == 'market_comment_report';
+                          final isMarketPostReport =
+                              n.type == 'market_post_report';
 
+                          // users 컬렉션에서 사용자 정보 가져오기
                           final data = snap.data?.data() ?? {};
                           final fetchedName = (data['username'] as String?)
                               ?.trim();
                           final name =
                               (n.userName.isNotEmpty
                                       ? n.userName
-                                      : (fetchedName ?? '...'))
+                                      : (fetchedName ?? '알 수 없음'))
                                   .trim();
                           final imageUrl =
                               (data['profileImage'] as String?) ?? '';
@@ -153,6 +164,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     TextSpan(text: '님이 회원님의 게시글을 좋아합니다.'),
                                   ] else if (commentLike) ...[
                                     TextSpan(text: '님이 회원님의 댓글을 좋아합니다.'),
+                                  ] else if (isComment) ...[
+                                    TextSpan(text: '님이 회원님의 게시글에 댓글을 남겼습니다.'),
+                                  ] else if (isMarketComment) ...[
+                                    TextSpan(
+                                      text: '님이 회원님의 마켓 게시글에 댓글을 남겼습니다.',
+                                    ),
+                                  ] else if (isReport ||
+                                      isCommentReport ||
+                                      isMarketCommentReport ||
+                                      isMarketPostReport) ...[
+                                    TextSpan(text: '신고가 접수되었습니다.'),
+                                  ] else ...[
+                                    TextSpan(text: '새로운 알림이 있습니다.'),
                                   ],
                                 ],
                               ),
