@@ -8,6 +8,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
+import 'package:lockerroom/page/food_store/gocheokStore_page.dart';
+import 'package:lockerroom/page/food_store/jamsilStore_page.dart';
+import 'package:lockerroom/page/food_store/landersfield_Store_page.dart';
 import 'package:lockerroom/page/legal/privacy_policy_page.dart';
 import 'package:lockerroom/page/legal/terms_of_service_page.dart';
 import 'package:lockerroom/page/login/login_page.dart';
@@ -25,6 +28,7 @@ import 'package:lockerroom/page/login/terms_gate_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
+import 'package:lockerroom/provider/food_store_provider.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
@@ -150,6 +154,7 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (context) => FollowProvider(repo, currentUserId ?? ''),
         ),
+        ChangeNotifierProvider(create: (context) => FoodStoreProvider()),
       ],
       child: const MyApp(),
     ),
@@ -173,7 +178,7 @@ class MyApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
-        home: const AuthWrapper(),
+        home: const LandersFieldStorePage(),
         routes: {
           'signUp': (context) => const SignupPage(),
           'signIn': (context) => const LoginPage(),
