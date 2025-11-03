@@ -8,9 +8,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
-import 'package:lockerroom/page/food_store/gocheokStore_page.dart';
-import 'package:lockerroom/page/food_store/jamsilStore_page.dart';
 import 'package:lockerroom/page/food_store/landersfield_Store_page.dart';
+import 'package:lockerroom/page/food_store/wizParkStore_page.dart';
 import 'package:lockerroom/page/legal/privacy_policy_page.dart';
 import 'package:lockerroom/page/legal/terms_of_service_page.dart';
 import 'package:lockerroom/page/login/login_page.dart';
@@ -178,7 +177,7 @@ class MyApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
-        home: const LandersFieldStorePage(),
+        home: const WizparkstorePage(),
         routes: {
           'signUp': (context) => const SignupPage(),
           'signIn': (context) => const LoginPage(),
