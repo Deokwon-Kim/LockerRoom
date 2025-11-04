@@ -24,7 +24,12 @@ class FoodstoreTile extends StatelessWidget {
           children: [
             Row(
               children: [
-                Image.asset('assets/images/applogo/app_logo.png', height: 100),
+                Image.asset(
+                  foodStoreModel.storePhoto ??
+                      'assets/images/applogo/app_logo.png',
+                  height: 100,
+                ),
+                SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
