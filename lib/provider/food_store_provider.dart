@@ -738,7 +738,12 @@ class FoodStoreProvider extends ChangeNotifier {
     ],
 
     '라이온즈 파크': [
-      FoodStoreModel(storeName: '맘스터치', location: '2층 외부', type: '버거,치킨'),
+      FoodStoreModel(
+        storeName: '맘스터치',
+        location: '2층 외부',
+        type: '버거,치킨',
+        storePhoto: 'assets/images/logo/moms.webp',
+      ),
       FoodStoreModel(storeName: '버터우드커피1', location: '2층 외부', type: '아이스크림'),
       FoodStoreModel(storeName: 'WOKSTER', location: '2층 외부', type: '아메리칸 중식'),
       FoodStoreModel(
@@ -754,7 +759,12 @@ class FoodStoreProvider extends ChangeNotifier {
         type: '츄러스',
         storePhoto: 'assets/images/logo/street.jpg',
       ),
-      FoodStoreModel(storeName: '알통떡강정', location: '2층 외부', type: '닭강정'),
+      FoodStoreModel(
+        storeName: '알통떡강정',
+        location: '2층 외부',
+        type: '닭강정',
+        storePhoto: 'assets/images/logo/altong.png',
+      ),
       FoodStoreModel(
         storeName: 'CU',
         location: '2층 푸드스트릿',
@@ -774,13 +784,19 @@ class FoodStoreProvider extends ChangeNotifier {
         type: '피자',
         storePhoto: 'assets/images/logo/papajons.png',
       ),
-      FoodStoreModel(storeName: '해피치즈스마일', location: '2층 푸드스트릿', type: '분식'),
+      FoodStoreModel(
+        storeName: '해피치즈스마일',
+        location: '2층 푸드스트릿',
+        type: '분식',
+        storePhoto: 'assets/images/logo/happy.png',
+      ),
       FoodStoreModel(storeName: '만재네', location: '외야 RF9', type: '구이'),
       FoodStoreModel(storeName: 'BLUE LION', location: '외야 RF9', type: '생맥주'),
       FoodStoreModel(
         storeName: 'MONTBLANC DE PARIS',
         location: '외야 LF9',
         type: '디저트',
+        storePhoto: 'assets/images/logo/monblanc.png',
       ),
       FoodStoreModel(storeName: '테라생맥주', location: '외야 LF9', type: '생맥주'),
       FoodStoreModel(storeName: '해피크레페', location: '외야 LF5', type: '크레페'),
@@ -794,7 +810,12 @@ class FoodStoreProvider extends ChangeNotifier {
         type: '편의점',
         storePhoto: 'assets/images/logo/cu.jpg',
       ),
-      FoodStoreModel(storeName: '노랑통닭', location: '1루 원정응원석 3구역', type: '치킨'),
+      FoodStoreModel(
+        storeName: '노랑통닭',
+        location: '1루 원정응원석 3구역',
+        type: '치킨',
+        storePhoto: 'assets/images/logo/norang.png',
+      ),
       FoodStoreModel(
         storeName: '북촌손만두',
         location: '3루 테이블석 2구역',
@@ -809,12 +830,27 @@ class FoodStoreProvider extends ChangeNotifier {
       FoodStoreModel(storeName: '전설스낵', location: '3루 테이블석 3구역', type: '스낵'),
       FoodStoreModel(storeName: '리얼피그', location: '3루 테이블석 4구역', type: '스낵'),
       FoodStoreModel(storeName: '5직떡볶이', location: '3루 테이블석 4구역', type: '분식'),
-      FoodStoreModel(storeName: '알통떡강정', location: '3루 테이블석 4구역', type: '닭강정'),
+      FoodStoreModel(
+        storeName: '알통떡강정',
+        location: '3루 테이블석 4구역',
+        type: '닭강정',
+        storePhoto: 'assets/images/logo/altong.png',
+      ),
       FoodStoreModel(storeName: '버터우드커피', location: '블루존 4구역', type: '커피,음료'),
-      FoodStoreModel(storeName: '해피치즈스마일', location: '블루존 5구역', type: '아이스크림'),
+      FoodStoreModel(
+        storeName: '해피치즈스마일',
+        location: '블루존 5구역',
+        type: '아이스크림',
+        storePhoto: 'assets/images/logo/happy.png',
+      ),
       FoodStoreModel(storeName: '전설꼬치', location: '블루존 6구역', type: '꼬치'),
       FoodStoreModel(storeName: '리얼누들', location: '블루존 6구역', type: '분식'),
-      FoodStoreModel(storeName: '노랑통닭', location: '블루존 6구역', type: '치킨'),
+      FoodStoreModel(
+        storeName: '노랑통닭',
+        location: '블루존 6구역',
+        type: '치킨',
+        storePhoto: 'assets/images/logo/norang.png',
+      ),
       FoodStoreModel(storeName: '빙수집', location: '5층 3루 스카이 3구역', type: '빙수'),
       FoodStoreModel(
         storeName: '리얼키친비어',
