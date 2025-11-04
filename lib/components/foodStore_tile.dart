@@ -28,6 +28,7 @@ class FoodstoreTile extends StatelessWidget {
                   foodStoreModel.storePhoto ??
                       'assets/images/applogo/app_logo.png',
                   height: 120,
+                  width: 120,
                 ),
                 SizedBox(width: 20),
                 Column(
