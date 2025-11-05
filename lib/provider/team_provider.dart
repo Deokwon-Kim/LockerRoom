@@ -60,7 +60,7 @@ class TeamProvider with ChangeNotifier {
       TeamModel(
         name: '기아타이거즈',
         symplename: '기아',
-        stadium: '챔피언스 필드',
+        stadium: '챔피언스필드',
         logoPath: 'assets/images/logo/tigers.png',
         calenderLogo: 'assets/images/logo/tigers.png',
         symbolPath: 'assets/images/symbol/kia_symbol.png',
@@ -84,7 +84,7 @@ class TeamProvider with ChangeNotifier {
       TeamModel(
         name: 'SSG랜더스',
         symplename: 'SSG',
-        stadium: '랜더스 필드',
+        stadium: '랜더스필드',
         logoPath: 'assets/images/logo/ssg.png',
         calenderLogo: 'assets/images/logo/ssg.png',
         symbolPath: 'assets/images/symbol/landers_symbol.png',
@@ -96,7 +96,7 @@ class TeamProvider with ChangeNotifier {
       TeamModel(
         name: '한화이글스',
         symplename: '한화',
-        stadium: '이글스 볼파크',
+        stadium: '한화생명볼파크',
         logoPath: 'assets/images/logo/eagles.png',
         calenderLogo: 'assets/images/logo/eagles.png',
         symbolPath: 'assets/images/symbol/hanwha_symbol.png',
@@ -121,7 +121,7 @@ class TeamProvider with ChangeNotifier {
       TeamModel(
         name: 'NC다이노스',
         symplename: 'NC',
-        stadium: '창원 NC파크',
+        stadium: '창원NC파크',
         logoPath: 'assets/images/logo/nc.png',
         calenderLogo: 'assets/images/logo/nc.png',
         symbolPath: 'assets/images/symbol/nc_symbol.png',
