@@ -6,11 +6,21 @@ import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/fullscreen_image_viewer.dart';
 import 'package:lockerroom/page/feed/fullscreen_video_player.dart';
+import 'package:lockerroom/page/food_store/ballParkStore_page.dart';
+import 'package:lockerroom/page/food_store/championsFieldStore_page.dart';
+import 'package:lockerroom/page/food_store/giantsStroe_page.dart';
+import 'package:lockerroom/page/food_store/gocheokStore_page.dart';
+import 'package:lockerroom/page/food_store/jamsilStore_page.dart';
+import 'package:lockerroom/page/food_store/landersfield_Store_page.dart';
+import 'package:lockerroom/page/food_store/lionsParksStore_page.dart';
+import 'package:lockerroom/page/food_store/ncParkStore_page.dart';
+import 'package:lockerroom/page/food_store/wizParkStore_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_upload_page.dart';
 import 'package:lockerroom/page/schedule/schedule.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
+import 'package:lockerroom/provider/food_store_provider.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/video_provider.dart';
@@ -630,6 +640,137 @@ class _HomePageState extends State<HomePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
+                        '${selectedTeam.stadium} 푸드존',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          final foodStorePage = _getFoodStorePage(
+                            selectedTeam.stadium,
+                          );
+                          if (foodStorePage != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => foodStorePage,
+                              ),
+                            );
+                          }
+                        },
+                        child: Text(
+                          '푸드존 정보 더보기 >',
+                          style: TextStyle(
+                            color: GRAYSCALE_LABEL_500,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Consumer<FoodStoreProvider>(
+                    builder: (context, fsp, child) {
+                      // 선택된 팀의 경기장 이름으로 푸드존 리스트 가져오기
+                      final foodStores = fsp.getStore(selectedTeam.stadium);
+
+                      // 최대 5개만 표시
+                      final displayStores = foodStores.take(5).toList();
+
+                      if (displayStores.isEmpty) {
+                        return Center(child: Text('해당 경기장의 푸드존 정보가 없습니다.'));
+                      }
+
+                      return SizedBox(
+                        height: 200,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: displayStores.length,
+                          itemBuilder: (context, index) {
+                            final store = displayStores[index];
+                            return Container(
+                              width: 150,
+                              margin: const EdgeInsets.only(right: 12),
+                              child: Card(
+                                color: WHITE,
+                                child: Padding(
+                                  padding: EdgeInsets.all(10.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // 가게 이미지
+                                      if (store.storePhoto != null)
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          child: Image.asset(
+                                            store.storePhoto!,
+                                            height: 100,
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                      if (store.storePhoto == null)
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          child: Container(
+                                            width: double.infinity,
+                                            height: 100,
+                                            color: GRAYSCALE_LABEL_300,
+                                            child: Icon(Icons.restaurant_menu),
+                                          ),
+                                        ),
+
+                                      SizedBox(height: 8),
+                                      // 상호명
+                                      Text(
+                                        store.storeName,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      SizedBox(height: 4),
+                                      // 음식 타입
+                                      Text(
+                                        store.type,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: GRAYSCALE_LABEL_500,
+                                        ),
+                                      ),
+                                      SizedBox(height: 2),
+                                      Text(
+                                        store.location,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: GRAYSCALE_LABEL_400,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
                         selectedTeam.youtubeName,
                         style: TextStyle(
                           fontSize: 16,
@@ -710,5 +851,30 @@ class _HomePageState extends State<HomePage> {
         );
       },
     );
+  }
+
+  Widget? _getFoodStorePage(String stadium) {
+    switch (stadium) {
+      case '잠실야구장':
+        return JamsilstorePage();
+      case '고척스카이돔':
+        return GocheokstorePage();
+      case '랜더스필드':
+        return LandersFieldStorePage();
+      case '위즈파크':
+        return WizparkstorePage();
+      case '한화생명볼파크':
+        return BallparkstorePage();
+      case '챔피언스필드':
+        return ChampionsfieldstorePage();
+      case '라이온즈 파크':
+        return LionsparksstorePage();
+      case '창원NC파크':
+        return NcparkstorePage();
+      case '사직야구장':
+        return GiantsstroePage();
+      default:
+        return null;
+    }
   }
 }
