@@ -6,7 +6,13 @@ class FoodStoreProvider extends ChangeNotifier {
     '잠실야구장': [
       FoodStoreModel(
         storeName: '통밥',
-        location: '1루내야 2.5층, 3루내야 2층',
+        location: '1루내야 2.5층',
+        type: '한식',
+        storePhoto: 'assets/images/logo/ttonbbab.jpeg',
+      ),
+      FoodStoreModel(
+        storeName: '통밥',
+        location: '3루내야 2층',
         type: '한식',
         storePhoto: 'assets/images/logo/ttonbbab.jpeg',
       ),
