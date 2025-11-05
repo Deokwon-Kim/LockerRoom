@@ -24,11 +24,14 @@ class FoodstoreTile extends StatelessWidget {
           children: [
             Row(
               children: [
-                Image.asset(
-                  foodStoreModel.storePhoto ??
-                      'assets/images/applogo/app_logo.png',
-                  height: 120,
-                  width: 120,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(60),
+                  child: Image.asset(
+                    foodStoreModel.storePhoto ??
+                        'assets/images/applogo/app_logo.png',
+                    height: 120,
+                    width: 120,
+                  ),
                 ),
                 SizedBox(width: 20),
                 Column(
