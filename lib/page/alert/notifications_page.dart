@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:toastification/toastification.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -190,6 +192,43 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             ),
                           );
 
+                          final slidableTile = Slidable(
+                            key: ValueKey(index),
+                            endActionPane: ActionPane(
+                              motion: ScrollMotion(),
+                              children: [
+                                SlidableAction(
+                                  onPressed: (context) async {
+                                    try {
+                                      await provider.deleteNotification(n.id);
+                                      if (!mounted) return;
+                                      toastification.show(
+                                        context: context,
+                                        type: ToastificationType.success,
+                                        alignment: Alignment.bottomCenter,
+                                        autoCloseDuration: Duration(seconds: 2),
+                                        title: Text('알림이 삭제되었습니다'),
+                                      );
+                                    } catch (e) {
+                                      if (!mounted) return;
+                                      toastification.show(
+                                        context: context,
+                                        type: ToastificationType.error,
+                                        alignment: Alignment.bottomCenter,
+                                        autoCloseDuration: Duration(seconds: 2),
+                                        title: Text('알림 삭제에 실패했습니다'),
+                                      );
+                                    }
+                                  },
+                                  backgroundColor: RED_DANGER_TEXT_50,
+                                  icon: Icons.delete,
+                                  foregroundColor: WHITE,
+                                ),
+                              ],
+                            ),
+                            child: tile,
+                          );
+
                           if (showHeader) {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,11 +247,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     ),
                                   ),
                                 ),
-                                tile,
+                                slidableTile,
                               ],
                             );
                           }
-                          return tile;
+                          return slidableTile;
                         },
                       );
                     },
