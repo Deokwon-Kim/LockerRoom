@@ -127,6 +127,14 @@ class NotificationProvider extends ChangeNotifier {
     });
   }
 
+  Future<void> deleteNotification(String notificationId) async {
+    try {
+      await _firestore.collection('notifications').doc(notificationId).delete();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<String> fetchUserName(String userId) async {
     if (_userNameCache.containsKey(userId)) {
       return _userNameCache[userId]!;
