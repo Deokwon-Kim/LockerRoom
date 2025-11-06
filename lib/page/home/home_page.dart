@@ -22,6 +22,7 @@ import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/food_store_provider.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
+import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/video_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
@@ -29,6 +30,7 @@ import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:badges/badges.dart' as badges;
 
 class HomePage extends StatefulWidget {
   final TeamModel teamModel;
@@ -117,12 +119,40 @@ class _HomePageState extends State<HomePage> {
             ),
 
             actions: [
-              IconButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, 'notifications');
-                },
-                icon: Icon(CupertinoIcons.bell, color: WHITE),
+              Padding(
+                padding: const EdgeInsets.only(right: 10.0),
+                child: Consumer<NotificationProvider>(
+                  builder: (context, ntp, child) {
+                    return badges.Badge(
+                      position: badges.BadgePosition.topEnd(top: 0, end: 0),
+                      badgeAnimation: const badges.BadgeAnimation.slide(
+                        animationDuration: Duration(milliseconds: 300),
+                      ),
+                      showBadge: ntp.notifications.isNotEmpty,
+                      badgeStyle: const badges.BadgeStyle(
+                        badgeColor: RED_DANGER_TEXT_50,
+                        padding: EdgeInsets.all(5),
+                      ),
+                      badgeContent: Text(
+                        '${ntp.notifications.length}',
+                        style: TextStyle(color: WHITE, fontSize: 15),
+                      ),
+                      child: IconButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, 'notifications');
+                        },
+                        icon: Icon(CupertinoIcons.bell, color: WHITE),
+                      ),
+                    );
+                  },
+                ),
               ),
+              // IconButton(
+              //   onPressed: () {
+              //     Navigator.pushNamed(context, 'notifications');
+              //   },
+              //   icon: Icon(CupertinoIcons.bell, color: WHITE),
+              // ),
             ],
           ),
           body: SingleChildScrollView(
