@@ -906,12 +906,12 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
           AnimatedContainer(
             duration: Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            margin: EdgeInsets.only(left: 20, top: 10),
+            margin: EdgeInsets.only(top: 10),
             child: Column(
               children: replies
                   .map(
                     (reply) =>
-                        _buildReply(reply, commentProvider, currentUserId),
+                        _buildReply(reply, commentProvider, currentUserId, 1),
                   )
                   .toList(),
             ),
@@ -924,189 +924,225 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
     CommentModel reply,
     CommentProvider commentProvider,
     String? currentUserId,
+    int depth,
   ) {
     final bool isOwner = currentUserId != null && reply.userId == currentUserId;
+    final int effectiveDepth = depth > 4 ? 4 : depth;
+    final double leftPadding = effectiveDepth * 20.0;
 
     return KeyedSubtree(
       key: ValueKey(reply.id),
-      child: Padding(
-        padding: const EdgeInsets.only(left: 0.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Consumer<ProfileProvider>(
-                  builder: (context, profileProvider, child) {
-                    profileProvider.subscribeUserProfile(reply.userId);
-                    final url = profileProvider.userProfiles[reply.userId];
-                    return CircleAvatar(
-                      radius: 12,
-                      backgroundImage: url != null ? NetworkImage(url) : null,
-                      backgroundColor: GRAYSCALE_LABEL_300,
-                      child: url == null
-                          ? const Icon(
-                              Icons.person,
-                              color: Colors.black,
-                              size: 16,
-                            )
-                          : null,
-                    );
-                  },
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    reply.userName,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Consumer<CommentProvider>(
-                  builder: (context, commentProvider, _) {
-                    final updatedReply = commentProvider
-                        .getComments(widget.post.id)
-                        .firstWhere(
-                          (comment) => comment.id == reply.id,
-                          orElse: () => reply,
-                        );
-                    final bool isLiked =
-                        currentUserId != null &&
-                        updatedReply.likedBy.contains(currentUserId);
-
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          onPressed: currentUserId != null
-                              ? () => commentProvider.commentLikeAndNotify(
-                                  commentId: reply.id,
-                                  comment: updatedReply,
-                                  currentUserId: currentUserId,
-                                  commentOwnerId: reply.userId,
-                                )
-                              : null,
-                          icon: Icon(
-                            isLiked ? Icons.favorite : Icons.favorite_border,
-                            color: isLiked ? Colors.red : null,
-                          ),
-                        ),
-                        SizedBox(width: 2),
-                        Text(
-                          '${updatedReply.likesCount}',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        SizedBox(width: 5),
-                        Visibility(
-                          visible: isOwner,
-                          maintainSize: true,
-                          maintainAnimation: true,
-                          maintainState: true,
-                          child: PopupMenuTheme(
-                            data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-                            child: PopupMenuButton<String>(
-                              icon: Icon(Icons.more_horiz, size: 16),
-                              onSelected: (value) async {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => ConfirmationDialog(
-                                    title: '답글 삭제',
-                                    content: '답글을 삭제 하시겠습니까?',
-                                    onConfirm: () async {
-                                      await commentProvider
-                                          .deleteCommentCascade(reply);
-                                      if (!mounted) return;
-                                    },
-                                  ),
-                                );
-                              },
-                              itemBuilder: (context) => const [
-                                PopupMenuItem(
-                                  value: 'delete',
-                                  child: Text(
-                                    '삭제하기',
-                                    style: TextStyle(
-                                      color: Colors.red,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 32.0),
-              child: Transform.translate(
-                offset: Offset(0, -8),
-                child: Text(
-                  reply.text,
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400),
-                ),
-              ),
-            ),
-            // Reply to a reply
-            Padding(
-              padding: const EdgeInsets.only(left: 0),
-              child: TextButton(
-                onPressed: () {
-                  setState(() {
-                    _replyParentId = reply.id;
-                    _replyToUserName = reply.userName;
-                  });
-                  _commentFocusNode.requestFocus();
-                },
-                child: Text(
-                  '답글달기',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: GRAYSCALE_LABEL_500,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            // Nested child replies for this reply
-            Builder(
-              builder: (context) {
-                final all = commentProvider.getComments(widget.post.id);
-                final childReplies = all
-                    .where((c) => c.reComments == reply.id)
-                    .toList();
-                if (childReplies.isEmpty) return SizedBox(height: 8);
-                return Column(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: leftPadding),
+              Container(
+                width: 24,
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_replyVisibility[reply.id] ?? true)
-                      AnimatedContainer(
-                        duration: Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        margin: EdgeInsets.only(left: 0),
-                        child: Column(
-                          children: childReplies
-                              .map(
-                                (child) => _buildReply(
-                                  child,
-                                  commentProvider,
-                                  currentUserId,
-                                ),
-                              )
-                              .toList(),
+                    Container(width: 2, height: 28, color: GRAYSCALE_LABEL_300),
+                    Container(width: 18, height: 2, color: GRAYSCALE_LABEL_300),
+                  ],
+                ),
+              ),
+              SizedBox(width: 4),
+              Consumer<ProfileProvider>(
+                builder: (context, profileProvider, child) {
+                  profileProvider.subscribeUserProfile(reply.userId);
+                  final url = profileProvider.userProfiles[reply.userId];
+                  return CircleAvatar(
+                    radius: 12,
+                    backgroundImage: url != null ? NetworkImage(url) : null,
+                    backgroundColor: GRAYSCALE_LABEL_300,
+                    child: url == null
+                        ? const Icon(
+                            Icons.person,
+                            color: Colors.black,
+                            size: 16,
+                          )
+                        : null,
+                  );
+                },
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            reply.userName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Consumer<CommentProvider>(
+                          builder: (context, commentProvider, _) {
+                            final updatedReply = commentProvider
+                                .getComments(widget.post.id)
+                                .firstWhere(
+                                  (comment) => comment.id == reply.id,
+                                  orElse: () => reply,
+                                );
+                            final bool isLiked =
+                                currentUserId != null &&
+                                updatedReply.likedBy.contains(currentUserId);
+
+                            return Transform.translate(
+                              offset: Offset(0, -10),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    onPressed: currentUserId != null
+                                        ? () => commentProvider
+                                              .commentLikeAndNotify(
+                                                commentId: reply.id,
+                                                comment: updatedReply,
+                                                currentUserId: currentUserId,
+                                                commentOwnerId: reply.userId,
+                                              )
+                                        : null,
+                                    icon: Icon(
+                                      isLiked
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: isLiked ? Colors.red : null,
+                                    ),
+                                  ),
+                                  SizedBox(width: 2),
+                                  Text(
+                                    '${updatedReply.likesCount}',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                  SizedBox(width: 5),
+                                  Visibility(
+                                    visible: isOwner,
+                                    maintainSize: true,
+                                    maintainAnimation: true,
+                                    maintainState: true,
+                                    child: PopupMenuTheme(
+                                      data: PopupMenuThemeData(
+                                        color: BACKGROUND_COLOR,
+                                      ),
+                                      child: PopupMenuButton<String>(
+                                        icon: Icon(Icons.more_horiz, size: 16),
+                                        onSelected: (value) async {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) =>
+                                                ConfirmationDialog(
+                                                  title: '답글 삭제',
+                                                  content: '답글을 삭제 하시겠습니까?',
+                                                  onConfirm: () async {
+                                                    await commentProvider
+                                                        .deleteCommentCascade(
+                                                          reply,
+                                                        );
+                                                    if (!mounted) return;
+                                                  },
+                                                ),
+                                          );
+                                        },
+                                        itemBuilder: (context) => const [
+                                          PopupMenuItem(
+                                            value: 'delete',
+                                            child: Text(
+                                              '삭제하기',
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    Transform.translate(
+                      offset: Offset(0, -20),
+                      child: Text(
+                        reply.text,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
+                    ),
+                    Transform.translate(
+                      offset: Offset(0, -20),
+                      child: TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _replyParentId = reply.id;
+                            _replyToUserName = reply.userName;
+                          });
+                          _commentFocusNode.requestFocus();
+                        },
+                        child: Text(
+                          '답글달기',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: GRAYSCALE_LABEL_500,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
-                );
-              },
-            ),
-            SizedBox(height: 8),
-          ],
-        ),
+                ),
+              ),
+            ],
+          ),
+          Builder(
+            builder: (context) {
+              final all = commentProvider.getComments(widget.post.id);
+              final childReplies = all
+                  .where((c) => c.reComments == reply.id)
+                  .toList();
+              if (childReplies.isEmpty) return SizedBox(height: 8);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_replyVisibility[reply.id] ?? true)
+                    AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: Column(
+                        children: childReplies
+                            .map(
+                              (child) => _buildReply(
+                                child,
+                                commentProvider,
+                                currentUserId,
+                                depth + 1,
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
