@@ -7,6 +7,7 @@ class PostModel {
   final List<Map<String, dynamic>>? mediaInfo; // 새로운 미디어 정보 필드
   final String userId;
   final DateTime createdAt;
+  final DateTime? updateAt;
   final int likesCount;
   final String userNickName;
   final String userName;
@@ -20,6 +21,7 @@ class PostModel {
     this.mediaInfo,
     required this.userId,
     required this.createdAt,
+    this.updateAt,
     required this.likesCount,
     required this.userNickName,
     required this.userName,
@@ -46,6 +48,9 @@ class PostModel {
       createdAt: data['createdAt'] == null
           ? DateTime.now()
           : (data['createdAt'] as Timestamp).toDate(),
+      updateAt: data['updatedAt'] == null
+          ? DateTime.now()
+          : (data['updatedAt'] as Timestamp).toDate(),
       likesCount: data['likesCount'] ?? 0,
       userNickName: data['userName'] ?? '사용자',
       userName: data['name'] ?? '',
