@@ -256,8 +256,6 @@ class UploadProvider extends ChangeNotifier {
     required String name,
     required String text,
   }) async {
-    if (_images.isEmpty && _video == null && _camera == null) return;
-
     _isUploading = true;
     _uploadProgress = 0.0;
     notifyListeners();
@@ -272,7 +270,7 @@ class UploadProvider extends ChangeNotifier {
       final url = await _uploadFileWithRetry(img, 'images');
       mediaUrls.add(url);
       uploadedCount++;
-      _uploadProgress = uploadedCount / totalCount;
+      _uploadProgress = totalCount > 0 ? uploadedCount / totalCount : 1.0;
       notifyListeners();
     }
 
@@ -283,7 +281,7 @@ class UploadProvider extends ChangeNotifier {
       final url = await _uploadFileWithRetry(compressedVideo, 'videos');
       mediaUrls.add(url);
       uploadedCount++;
-      _uploadProgress = uploadedCount / totalCount;
+      _uploadProgress = totalCount > 0 ? uploadedCount / totalCount : 1.0;
       notifyListeners();
     }
 
@@ -292,7 +290,7 @@ class UploadProvider extends ChangeNotifier {
       final url = await _uploadFileWithRetry(_camera!, 'images');
       mediaUrls.add(url);
       uploadedCount++;
-      _uploadProgress = uploadedCount / totalCount;
+      _uploadProgress = totalCount > 0 ? uploadedCount / totalCount : 1.0;
       notifyListeners();
     }
 
