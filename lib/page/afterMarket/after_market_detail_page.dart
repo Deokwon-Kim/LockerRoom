@@ -1,6 +1,7 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/comment_model.dart';
@@ -156,115 +157,11 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
             },
           ),
 
-          PopupMenuTheme(
-            data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-            child: PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert_outlined),
-              onSelected: (value) async {
-                if (value == 'delete' && isOwner) {
-                  // 삭제 확인 다이얼로그
-                  showDialog(
-                    context: context,
-                    builder: (context) => ConfirmationDialog(
-                      title: '삭제 확인',
-                      content: '게시글을 삭제 하시겠습니까?',
-                      onConfirm: () async {
-                        try {
-                          Navigator.of(context).pop();
-
-                          await marketFeedProvider.deletePost(
-                            widget.marketPost,
-                          );
-
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (!mounted) return;
-                            context.read<CommentProvider>().cancelSubscription(
-                              widget.marketPost.postId,
-                            );
-                          });
-                          toastification.show(
-                            context: context,
-                            type: ToastificationType.success,
-                            alignment: Alignment.bottomCenter,
-                            autoCloseDuration: const Duration(seconds: 2),
-                            title: const Text('게시물을 삭제했습니다'),
-                          );
-                        } catch (e) {
-                          // print('게시물 삭제 실패: $e');
-                          toastification.show(
-                            context: context,
-                            type: ToastificationType.error,
-                            alignment: Alignment.bottomCenter,
-                            autoCloseDuration: const Duration(seconds: 2),
-                            title: const Text('삭제 중 오류가 발생했습니다'),
-                          );
-                        }
-                      },
-                    ),
-                  );
-                } else if (value == 'report') {
-                  final reporter = FirebaseAuth.instance.currentUser;
-                  if (reporter == null) {
-                    toastification.show(
-                      context: context,
-                      type: ToastificationType.error,
-                      alignment: Alignment.bottomCenter,
-                      autoCloseDuration: const Duration(seconds: 2),
-                      title: const Text('로그인이 필요합니다'),
-                    );
-
-                    return;
-                  }
-                  _showMarketFeedReportDialog(
-                    context,
-                    widget.marketPost,
-                    marketFeedProvider,
-                    reporter.uid,
-                  );
-                } else if (value == 'block') {
-                  final uid = FirebaseAuth.instance.currentUser?.uid;
-                  if (uid == null) return;
-                  _showBlockConfirmDialog(
-                    context,
-                    widget.marketPost.userName,
-                    widget.marketPost.userId,
-                    uid,
-                  );
-                }
-              },
-              itemBuilder: (context) => [
-                if (isOwner)
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Text(
-                      '삭제하기',
-                      style: TextStyle(color: RED_DANGER_TEXT_50),
-                    ),
-                  )
-                else ...[
-                  PopupMenuItem(
-                    value: 'report',
-                    child: Text(
-                      '신고',
-                      style: TextStyle(
-                        color: BLACK,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'block',
-                    child: Text(
-                      '사용자 차단',
-                      style: TextStyle(
-                        color: RED_DANGER_TEXT_50,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+          IconButton(
+            onPressed: () {
+              _showPostOptionBottomSheet(context, marketFeedProvider, isOwner);
+            },
+            icon: Icon(Icons.more_horiz),
           ),
         ],
       ),
@@ -1164,6 +1061,206 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
     );
   }
 
+  void _showPostOptionBottomSheet(
+    BuildContext context,
+    MarketFeedProvider mfp,
+    bool isOwner,
+  ) {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      context: context,
+      backgroundColor: GRAYSCALE_LABEL_50,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        height: 200,
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 상단 바
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: GRAYSCALE_LABEL_400,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(height: 20),
+              if (isOwner) ...[
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context); // 바텀시트 닫기
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder: (context) => FeedEditPage(post: post),
+                    //   ),
+                    // );
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: WHITE,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '게시물 수정',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Icon(Icons.edit_outlined, color: BLACK),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context); // 바텀시트 닫기
+                    showDialog(
+                      context: context,
+                      builder: (context) => ConfirmationDialog(
+                        title: '삭제 확인',
+                        content: '게시물을 삭제 하시겠습니까?',
+                        onConfirm: () async {
+                          await mfp.deletePost(widget.marketPost);
+                          toastification.show(
+                            context: context,
+                            type: ToastificationType.success,
+                            alignment: Alignment.bottomCenter,
+                            autoCloseDuration: Duration(seconds: 2),
+                            title: Text('게시물을 삭제했습니다'),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: WHITE,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '게시물 삭제',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: RED_DANGER_TEXT_50,
+                          ),
+                        ),
+                        Icon(
+                          CupertinoIcons.delete_solid,
+                          color: RED_DANGER_TEXT_50,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ] else ...[
+                GestureDetector(
+                  onTap: () {
+                    final reporter = FirebaseAuth.instance.currentUser;
+                    if (reporter == null) {
+                      toastification.show(
+                        context: context,
+                        type: ToastificationType.error,
+                        alignment: Alignment.bottomCenter,
+                        autoCloseDuration: Duration(seconds: 2),
+                        title: Text('로그인이 필요합니다'),
+                      );
+                      return;
+                    }
+                    Navigator.pop(context); // 바텀시트 닫기
+                    _showMarketFeedReportDialog(
+                      context,
+                      widget.marketPost,
+                      mfp,
+                      reporter.uid,
+                    );
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: WHITE,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '게시물 신고',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: RED_DANGER_TEXT_50,
+                          ),
+                        ),
+                        Icon(Icons.report_outlined, color: RED_DANGER_TEXT_50),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () {
+                    final uid = FirebaseAuth.instance.currentUser?.uid;
+                    if (uid == null) return;
+                    Navigator.pop(context); // 바텀시트 닫기
+                    _showBlockConfirmDialog(
+                      context,
+                      widget.marketPost.userName,
+                      widget.marketPost.userId,
+                      uid,
+                    );
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: WHITE,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '사용자 차단',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: RED_DANGER_TEXT_50,
+                          ),
+                        ),
+                        Icon(
+                          Icons.person_off_outlined,
+                          color: RED_DANGER_TEXT_50,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showMarketFeedReportDialog(
     BuildContext context,
     MarketPostModel marketPost,
@@ -1185,7 +1282,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: BACKGROUND_COLOR,
-        title: Text('댓글 신고'),
+        title: Text('게시물 신고'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
