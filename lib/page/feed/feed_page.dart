@@ -5,6 +5,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
+import 'package:lockerroom/page/feed/feed_edit_page.dart';
 import 'package:lockerroom/page/feed/feed_mypage.dart';
 import 'package:lockerroom/page/feed/feed_search_page.dart';
 import 'package:lockerroom/page/feed/fullscreen_video_player.dart';
@@ -334,17 +335,33 @@ class _PostWidgetState extends State<PostWidget> {
                               uid,
                             );
                           }
+                          if (value == 'edit') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    FeedEditPage(post: widget.post),
+                              ),
+                            );
+                          }
                         },
                         itemBuilder: (context) => [
-                          if (isOwner)
+                          if (isOwner) ...[
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Text(
+                                '게시물 수정',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
                             PopupMenuItem(
                               value: 'delete',
                               child: Text(
                                 '삭제하기',
                                 style: TextStyle(color: RED_DANGER_TEXT_50),
                               ),
-                            )
-                          else ...[
+                            ),
+                          ] else ...[
                             PopupMenuItem(
                               value: 'report',
                               child: Text(
