@@ -523,7 +523,6 @@ class _PostWidgetState extends State<PostWidget> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(height: 8),
               // 상단 바
               Container(
                 width: 40,
