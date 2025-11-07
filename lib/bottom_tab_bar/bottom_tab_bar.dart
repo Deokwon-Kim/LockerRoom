@@ -4,7 +4,7 @@ import 'package:lockerroom/page/afterMarket/after_market.dart';
 import 'package:lockerroom/page/feed/feed_page.dart';
 import 'package:lockerroom/page/home/home_page.dart';
 import 'package:lockerroom/page/myPage/mypage.dart';
-import 'package:lockerroom/page/feed/upload_page.dart';
+import 'package:lockerroom/page/feed/%08feedUpload_page.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/widgets/svg_icon.dart';
@@ -78,7 +78,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
         ),
       ),
       FeedPage(),
-      UploadPage(
+      FeedUploadPage(
         onUploaded: () {
           // UI 상태 충돌을 방지하기 위해 지연 실행
           Future.delayed(Duration(milliseconds: 100), () {
