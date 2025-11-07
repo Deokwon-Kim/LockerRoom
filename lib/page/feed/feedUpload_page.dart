@@ -11,15 +11,15 @@ import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
-class UploadPage extends StatefulWidget {
+class FeedUploadPage extends StatefulWidget {
   final VoidCallback? onUploaded;
-  const UploadPage({super.key, this.onUploaded});
+  const FeedUploadPage({super.key, this.onUploaded});
 
   @override
-  State<UploadPage> createState() => _UploadPageState();
+  State<FeedUploadPage> createState() => _UploadPageState();
 }
 
-class _UploadPageState extends State<UploadPage> {
+class _UploadPageState extends State<FeedUploadPage> {
   late final TextEditingController _captionController;
   bool _requestedProfileLoad = false;
 
@@ -43,7 +43,7 @@ class _UploadPageState extends State<UploadPage> {
         uploadProvider.images.isNotEmpty ||
         uploadProvider.video != null ||
         uploadProvider.camera != null;
-    final canUpload = hasCaption && hasMedia && !uploadProvider.isUploading;
+    final canUpload = hasCaption && !uploadProvider.isUploading;
     final userProvider = context.watch<UserProvider>();
     final userName =
         userProvider.nickname ??
@@ -259,7 +259,7 @@ class _UploadPageState extends State<UploadPage> {
                       },
                       icon: const Icon(Icons.perm_media),
                       label: const Text(
-                        '미디어 추가',
+                        '미디어 추가(선택사항)',
                         style: TextStyle(fontWeight: FontWeight.w500),
                       ),
                       style: OutlinedButton.styleFrom(
