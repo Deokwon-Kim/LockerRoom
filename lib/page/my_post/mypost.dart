@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
+import 'package:lockerroom/page/feed/feed_edit_page.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
@@ -139,45 +140,13 @@ class MyPostWidget extends StatelessWidget {
                     ],
                   ),
                   const Spacer(),
-                  currentUserId != null && post.userId == currentUserId
-                      ? PopupMenuTheme(
-                          data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-                          child: PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_horiz),
-                            onSelected: (value) async {
-                              if (value == 'delete') {
-                                // 삭제 확인 다이얼로그 추가
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => ConfirmationDialog(
-                                    title: '삭제 확인',
-                                    content: '게시글을 삭제 하시겠습니까?',
-                                    onConfirm: () async {
-                                      await feedProvider.deletePost(post);
-                                      toastification.show(
-                                        context: context,
-                                        type: ToastificationType.success,
-                                        alignment: Alignment.bottomCenter,
-                                        autoCloseDuration: Duration(seconds: 2),
-                                        title: Text('게시물을 삭제했습니다'),
-                                      );
-                                    },
-                                  ),
-                                );
-                              }
-                            },
-                            itemBuilder: (context) => const [
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Text(
-                                  '삭제하기',
-                                  style: TextStyle(color: RED_DANGER_TEXT_50),
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : SizedBox.shrink(),
+
+                  IconButton(
+                    onPressed: () {
+                      _showPostOptionBottomSheet(context, post, feedProvider);
+                    },
+                    icon: Icon(Icons.more_horiz),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -294,6 +263,121 @@ class MyPostWidget extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPostOptionBottomSheet(
+    BuildContext context,
+    PostModel post,
+    FeedProvider feedProvider,
+  ) {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      context: context,
+      backgroundColor: GRAYSCALE_LABEL_50,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        height: 200,
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 상단 바
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: GRAYSCALE_LABEL_400,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(height: 20),
+
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context); // 바텀시트 닫기
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FeedEditPage(post: post),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: EdgeInsets.all(10),
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: WHITE,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '게시물 수정',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Icon(Icons.edit_outlined, color: BLACK),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 10),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context); // 바텀시트 닫기
+                  showDialog(
+                    context: context,
+                    builder: (context) => ConfirmationDialog(
+                      title: '삭제 확인',
+                      content: '게시물을 삭제 하시겠습니까?',
+                      onConfirm: () async {
+                        await feedProvider.deletePost(post);
+                        toastification.show(
+                          context: context,
+                          type: ToastificationType.success,
+                          alignment: Alignment.bottomCenter,
+                          autoCloseDuration: Duration(seconds: 2),
+                          title: Text('게시물을 삭제했습니다'),
+                        );
+                      },
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: EdgeInsets.all(10),
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: WHITE,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '게시물 삭제',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: RED_DANGER_TEXT_50,
+                        ),
+                      ),
+                      Icon(
+                        CupertinoIcons.delete_solid,
+                        color: RED_DANGER_TEXT_50,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

@@ -464,38 +464,39 @@ class _PostWidgetState extends State<PostWidget> {
                     ),
                   ],
                 ),
-                Builder(
-                  builder: (context) {
-                    int videoCount = 0;
-                    int imageCount = 0;
+                if (widget.post.mediaUrls.isNotEmpty)
+                  Builder(
+                    builder: (context) {
+                      int videoCount = 0;
+                      int imageCount = 0;
 
-                    for (int i = 0; i < widget.post.mediaUrls.length; i++) {
-                      if (MediaUtils.isVideoFromPost(widget.post, i)) {
-                        videoCount++;
-                      } else {
-                        imageCount++;
+                      for (int i = 0; i < widget.post.mediaUrls.length; i++) {
+                        if (MediaUtils.isVideoFromPost(widget.post, i)) {
+                          videoCount++;
+                        } else {
+                          imageCount++;
+                        }
                       }
-                    }
 
-                    String mediaText;
-                    if (videoCount > 0 && imageCount > 0) {
-                      mediaText = '이미지 $imageCount개, 동영상 $videoCount개';
-                    } else if (videoCount > 0) {
-                      mediaText = '$videoCount개의 동영상';
-                    } else {
-                      mediaText = '$imageCount개의 이미지';
-                    }
+                      String mediaText;
+                      if (videoCount > 0 && imageCount > 0) {
+                        mediaText = '이미지 $imageCount개, 동영상 $videoCount개';
+                      } else if (videoCount > 0) {
+                        mediaText = '$videoCount개의 동영상';
+                      } else {
+                        mediaText = '$imageCount개의 이미지';
+                      }
 
-                    return Text(
-                      mediaText,
-                      style: TextStyle(
-                        color: GRAYSCALE_LABEL_500,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    );
-                  },
-                ),
+                      return Text(
+                        mediaText,
+                        style: TextStyle(
+                          color: GRAYSCALE_LABEL_500,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
           ),

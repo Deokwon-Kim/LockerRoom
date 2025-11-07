@@ -313,174 +313,187 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
+
                   Consumer<FeedProvider>(
                     builder: (context, feedProvider, child) {
                       final posts = feedProvider.posts;
                       if (posts.isEmpty) return Text('최근 게시물이 존재하지 않습니다');
+                      final hasMediaPosts = posts.any(
+                        (p) => p.mediaUrls.isNotEmpty,
+                      );
+                      final listHeight = hasMediaPosts ? 245.0 : 100.0;
+
                       return SizedBox(
-                        height: 245,
+                        height: listHeight,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: posts.length,
                           itemBuilder: (context, index) {
                             final post = posts[index];
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        FeedDetailPage(post: post),
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                width: 240,
-                                margin: const EdgeInsets.only(right: 12),
-                                child: Card(
-                                  color: WHITE,
-                                  child: Padding(
-                                    padding: EdgeInsets.all(15.0),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        if (post.mediaUrls.isNotEmpty)
-                                          SizedBox(
-                                            height: 150,
-                                            child: ListView.builder(
-                                              scrollDirection: Axis.horizontal,
-                                              itemCount: post.mediaUrls.length,
-                                              itemBuilder: (_, i) {
-                                                final url = post.mediaUrls[i];
-                                                final inSingle =
-                                                    post.mediaUrls.length == 1;
-                                                final isVideo =
-                                                    MediaUtils.isVideoFromPost(
-                                                      post,
-                                                      i,
-                                                    );
+                            return Align(
+                              alignment: Alignment.topCenter,
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          FeedDetailPage(post: post),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  width: 240,
+                                  height: post.mediaUrls.isNotEmpty ? 250 : 100,
+                                  margin: const EdgeInsets.only(right: 12),
+                                  child: Card(
+                                    color: WHITE,
+                                    child: Padding(
+                                      padding: EdgeInsets.all(15.0),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          if (post.mediaUrls.isNotEmpty)
+                                            SizedBox(
+                                              height: 150,
+                                              child: ListView.builder(
+                                                scrollDirection:
+                                                    Axis.horizontal,
+                                                itemCount:
+                                                    post.mediaUrls.length,
+                                                itemBuilder: (_, i) {
+                                                  final url = post.mediaUrls[i];
+                                                  final inSingle =
+                                                      post.mediaUrls.length ==
+                                                      1;
+                                                  final isVideo =
+                                                      MediaUtils.isVideoFromPost(
+                                                        post,
+                                                        i,
+                                                      );
 
-                                                return Padding(
-                                                  padding: EdgeInsets.only(
-                                                    left: inSingle ? 0 : 0,
-                                                    right: inSingle ? 0 : 8,
-                                                  ),
-                                                  child: ClipRRect(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                    child: isVideo
-                                                        ? GestureDetector(
-                                                            onTap: () {
-                                                              Navigator.push(
-                                                                context,
-                                                                MaterialPageRoute(
-                                                                  builder:
-                                                                      (
-                                                                        context,
-                                                                      ) => FullscreenVideoPlayer(
-                                                                        videoUrl:
-                                                                            url,
-                                                                      ),
-                                                                ),
-                                                              );
-                                                            },
-                                                            child:
-                                                                NetworkVideoPlayer(
-                                                                  videoUrl: url,
-                                                                  width:
-                                                                      inSingle
-                                                                      ? 200
-                                                                      : 150,
-                                                                  height: 150,
-                                                                  fit: BoxFit
-                                                                      .cover,
-                                                                  autoPlay:
-                                                                      true,
-                                                                  muted: true,
-                                                                  showControls:
-                                                                      false,
-                                                                ),
-                                                          )
-                                                        : GestureDetector(
-                                                            onTap: () {
-                                                              Navigator.push(
-                                                                context,
-                                                                MaterialPageRoute(
-                                                                  builder:
-                                                                      (
-                                                                        context,
-                                                                      ) => FullscreenImageViewer(
-                                                                        imageUrls:
-                                                                            post.mediaUrls,
-                                                                        initialIndex:
-                                                                            i,
-                                                                      ),
-                                                                ),
-                                                              );
-                                                            },
-                                                            child: Image.network(
-                                                              url,
-                                                              height: 150,
-                                                              width: inSingle
-                                                                  ? 200
-                                                                  : 150,
-                                                              fit: inSingle
-                                                                  ? BoxFit.cover
-                                                                  : BoxFit
-                                                                        .cover,
-                                                              loadingBuilder:
-                                                                  (
-                                                                    context,
-                                                                    child,
-                                                                    loadingProgress,
-                                                                  ) {
-                                                                    if (loadingProgress ==
-                                                                        null) {
-                                                                      return child;
-                                                                    }
-                                                                    return SizedBox(
-                                                                      height:
-                                                                          150,
-                                                                      width:
-                                                                          inSingle
-                                                                          ? 200
-                                                                          : 150,
-                                                                      child: Center(
-                                                                        child: CircularProgressIndicator(
-                                                                          color:
-                                                                              selectedTeam.color,
-                                                                        ),
-                                                                      ),
-                                                                    );
-                                                                  },
-                                                            ),
+                                                  return Padding(
+                                                    padding: EdgeInsets.only(
+                                                      left: inSingle ? 0 : 0,
+                                                      right: inSingle ? 0 : 8,
+                                                    ),
+                                                    child: ClipRRect(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
                                                           ),
-                                                  ),
-                                                );
-                                              },
+                                                      child: isVideo
+                                                          ? GestureDetector(
+                                                              onTap: () {
+                                                                Navigator.push(
+                                                                  context,
+                                                                  MaterialPageRoute(
+                                                                    builder:
+                                                                        (
+                                                                          context,
+                                                                        ) => FullscreenVideoPlayer(
+                                                                          videoUrl:
+                                                                              url,
+                                                                        ),
+                                                                  ),
+                                                                );
+                                                              },
+                                                              child:
+                                                                  NetworkVideoPlayer(
+                                                                    videoUrl:
+                                                                        url,
+                                                                    width:
+                                                                        inSingle
+                                                                        ? 200
+                                                                        : 150,
+                                                                    height: 150,
+                                                                    fit: BoxFit
+                                                                        .cover,
+                                                                    autoPlay:
+                                                                        true,
+                                                                    muted: true,
+                                                                    showControls:
+                                                                        false,
+                                                                  ),
+                                                            )
+                                                          : GestureDetector(
+                                                              onTap: () {
+                                                                Navigator.push(
+                                                                  context,
+                                                                  MaterialPageRoute(
+                                                                    builder: (context) => FullscreenImageViewer(
+                                                                      imageUrls:
+                                                                          post.mediaUrls,
+                                                                      initialIndex:
+                                                                          i,
+                                                                    ),
+                                                                  ),
+                                                                );
+                                                              },
+                                                              child: Image.network(
+                                                                url,
+                                                                height: 150,
+                                                                width: inSingle
+                                                                    ? 200
+                                                                    : 150,
+                                                                fit: inSingle
+                                                                    ? BoxFit
+                                                                          .cover
+                                                                    : BoxFit
+                                                                          .cover,
+                                                                loadingBuilder:
+                                                                    (
+                                                                      context,
+                                                                      child,
+                                                                      loadingProgress,
+                                                                    ) {
+                                                                      if (loadingProgress ==
+                                                                          null) {
+                                                                        return child;
+                                                                      }
+                                                                      return SizedBox(
+                                                                        height:
+                                                                            150,
+                                                                        width:
+                                                                            inSingle
+                                                                            ? 200
+                                                                            : 150,
+                                                                        child: Center(
+                                                                          child: CircularProgressIndicator(
+                                                                            color:
+                                                                                selectedTeam.color,
+                                                                          ),
+                                                                        ),
+                                                                      );
+                                                                    },
+                                                              ),
+                                                            ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+
+                                          SizedBox(height: 10),
+                                          Text(
+                                            post.text,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 16,
                                             ),
                                           ),
-                                        SizedBox(height: 10),
-                                        Text(
-                                          post.text,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w500,
-                                            fontSize: 16,
+                                          SizedBox(height: 3),
+                                          Text(
+                                            post.userNickName,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: GRAYSCALE_LABEL_400,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
-                                        ),
-                                        SizedBox(height: 3),
-                                        Text(
-                                          post.userNickName,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: GRAYSCALE_LABEL_400,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),

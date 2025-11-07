@@ -213,98 +213,6 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                           },
                           icon: Icon(Icons.more_horiz),
                         ),
-
-                        // PopupMenuTheme(
-                        //   data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-                        //   child: PopupMenuButton<String>(
-                        //     icon: const Icon(Icons.more_horiz),
-                        //     onSelected: (value) async {
-                        //       if (value == 'delete' && isOwner) {
-                        //         // 삭제 확인 다이얼로그 추가
-                        //         showDialog(
-                        //           context: context,
-                        //           builder: (context) => ConfirmationDialog(
-                        //             title: '삭제 확인',
-                        //             content: '게시글을 삭제 하시겠습니까?',
-                        //             onConfirm: () async {
-                        //               await feedProvider.deletePost(
-                        //                 widget.post,
-                        //               );
-                        //               toastification.show(
-                        //                 context: context,
-                        //                 type: ToastificationType.success,
-                        //                 alignment: Alignment.bottomCenter,
-                        //                 autoCloseDuration: Duration(seconds: 2),
-                        //                 title: Text('게시물을 삭제했습니다'),
-                        //               );
-                        //             },
-                        //           ),
-                        //         );
-                        //       } else if (value == 'report') {
-                        //         final reporter =
-                        //             FirebaseAuth.instance.currentUser;
-                        //         if (reporter == null) {
-                        //           toastification.show(
-                        //             context: context,
-                        //             type: ToastificationType.error,
-                        //             alignment: Alignment.bottomCenter,
-                        //             autoCloseDuration: Duration(seconds: 2),
-                        //             title: Text('로그인이 필요합니다'),
-                        //           );
-                        //           return;
-                        //         }
-                        //         _showFeedReportDialog(
-                        //           context,
-                        //           widget.post,
-                        //           feedProvider,
-                        //           reporter.uid,
-                        //         );
-                        //       } else if (value == 'block') {
-                        //         final uid =
-                        //             FirebaseAuth.instance.currentUser?.uid;
-                        //         if (uid == null) return;
-                        //         _showBlockConfirmDialog(
-                        //           context,
-                        //           widget.post.userNickName,
-                        //           widget.post.userId,
-                        //           uid,
-                        //         );
-                        //       }
-                        //     },
-                        //     itemBuilder: (context) => [
-                        //       if (isOwner)
-                        //         PopupMenuItem(
-                        //           value: 'delete',
-                        //           child: Text(
-                        //             '삭제하기',
-                        //             style: TextStyle(color: RED_DANGER_TEXT_50),
-                        //           ),
-                        //         )
-                        //       else ...[
-                        //         PopupMenuItem(
-                        //           value: 'report',
-                        //           child: Text(
-                        //             '신고',
-                        //             style: TextStyle(
-                        //               color: BLACK,
-                        //               fontWeight: FontWeight.bold,
-                        //             ),
-                        //           ),
-                        //         ),
-                        //         PopupMenuItem(
-                        //           value: 'block',
-                        //           child: Text(
-                        //             '사용자 차단',
-                        //             style: TextStyle(
-                        //               color: RED_DANGER_TEXT_50,
-                        //               fontWeight: FontWeight.bold,
-                        //             ),
-                        //           ),
-                        //         ),
-                        //       ],
-                        //     ],
-                        //   ),
-                        // ),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -493,38 +401,43 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                         );
                       },
                     ),
-                    Builder(
-                      builder: (context) {
-                        int videoCount = 0;
-                        int imageCount = 0;
+                    if (widget.post.mediaUrls.isNotEmpty)
+                      Builder(
+                        builder: (context) {
+                          int videoCount = 0;
+                          int imageCount = 0;
 
-                        for (int i = 0; i < widget.post.mediaUrls.length; i++) {
-                          if (MediaUtils.isVideoFromPost(widget.post, i)) {
-                            videoCount++;
-                          } else {
-                            imageCount++;
+                          for (
+                            int i = 0;
+                            i < widget.post.mediaUrls.length;
+                            i++
+                          ) {
+                            if (MediaUtils.isVideoFromPost(widget.post, i)) {
+                              videoCount++;
+                            } else {
+                              imageCount++;
+                            }
                           }
-                        }
 
-                        String mediaText;
-                        if (videoCount > 0 && imageCount > 0) {
-                          mediaText = '이미지 $imageCount개, 동영상 $videoCount개';
-                        } else if (videoCount > 0) {
-                          mediaText = '$videoCount개의 동영상';
-                        } else {
-                          mediaText = '$imageCount개의 이미지';
-                        }
+                          String mediaText;
+                          if (videoCount > 0 && imageCount > 0) {
+                            mediaText = '이미지 $imageCount개, 동영상 $videoCount개';
+                          } else if (videoCount > 0) {
+                            mediaText = '$videoCount개의 동영상';
+                          } else {
+                            mediaText = '$imageCount개의 이미지';
+                          }
 
-                        return Text(
-                          mediaText,
-                          style: TextStyle(
-                            color: GRAYSCALE_LABEL_500,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        );
-                      },
-                    ),
+                          return Text(
+                            mediaText,
+                            style: TextStyle(
+                              color: GRAYSCALE_LABEL_500,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          );
+                        },
+                      ),
                     SizedBox(height: 10),
                     Consumer<CommentProvider>(
                       builder: (context, cp, _) {
