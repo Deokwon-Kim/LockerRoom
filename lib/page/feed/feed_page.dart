@@ -281,110 +281,15 @@ class _PostWidgetState extends State<PostWidget> {
                     ),
                     Spacer(),
 
-                    PopupMenuTheme(
-                      data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-                      child: PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_horiz),
-                        onSelected: (value) async {
-                          if (value == 'delete' && isOwner) {
-                            // 삭제 확인 다이얼로그 추가
-                            showDialog(
-                              context: context,
-                              builder: (context) => ConfirmationDialog(
-                                title: '삭제 확인',
-                                content: '게시글을 삭제 하시겠습니까?',
-                                onConfirm: () async {
-                                  await widget.feedProvider.deletePost(
-                                    widget.post,
-                                  );
-                                  toastification.show(
-                                    context: context,
-                                    type: ToastificationType.success,
-                                    alignment: Alignment.bottomCenter,
-                                    autoCloseDuration: Duration(seconds: 2),
-                                    title: Text('게시물을 삭제했습니다'),
-                                  );
-                                },
-                              ),
-                            );
-                          } else if (value == 'report') {
-                            final reporter = FirebaseAuth.instance.currentUser;
-                            if (reporter == null) {
-                              toastification.show(
-                                context: context,
-                                type: ToastificationType.error,
-                                alignment: Alignment.bottomCenter,
-                                autoCloseDuration: Duration(seconds: 2),
-                                title: Text('로그인이 필요합니다'),
-                              );
-                              return;
-                            }
-                            _showFeedReportDialog(
-                              context,
-                              widget.post,
-                              widget.feedProvider,
-                              reporter.uid,
-                            );
-                          } else if (value == 'block') {
-                            final uid = FirebaseAuth.instance.currentUser?.uid;
-                            if (uid == null) return;
-                            _showBlockConfirmDialog(
-                              context,
-                              widget.post.userNickName,
-                              widget.post.userId,
-                              uid,
-                            );
-                          }
-                          if (value == 'edit') {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    FeedEditPage(post: widget.post),
-                              ),
-                            );
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          if (isOwner) ...[
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: Text(
-                                '게시물 수정',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Text(
-                                '삭제하기',
-                                style: TextStyle(color: RED_DANGER_TEXT_50),
-                              ),
-                            ),
-                          ] else ...[
-                            PopupMenuItem(
-                              value: 'report',
-                              child: Text(
-                                '신고',
-                                style: TextStyle(
-                                  color: BLACK,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'block',
-                              child: Text(
-                                '사용자 차단',
-                                style: TextStyle(
-                                  color: RED_DANGER_TEXT_50,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                    IconButton(
+                      onPressed: () {
+                        _showPostOptionBottomSheet(
+                          context,
+                          widget.post,
+                          isOwner,
+                        );
+                      },
+                      icon: Icon(Icons.more_horiz),
                     ),
                   ],
                 ),
@@ -599,6 +504,207 @@ class _PostWidgetState extends State<PostWidget> {
     );
   }
 
+  void _showPostOptionBottomSheet(
+    BuildContext context,
+    PostModel post,
+    bool isOwner,
+  ) {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      context: context,
+      backgroundColor: GRAYSCALE_LABEL_50,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        height: 200,
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: 8),
+              // 상단 바
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: GRAYSCALE_LABEL_400,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(height: 20),
+              if (isOwner) ...[
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context); // 바텀시트 닫기
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FeedEditPage(post: post),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: WHITE,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '게시물 수정',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Icon(Icons.edit_outlined, color: BLACK),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context); // 바텀시트 닫기
+                    showDialog(
+                      context: context,
+                      builder: (context) => ConfirmationDialog(
+                        title: '삭제 확인',
+                        content: '게시물을 삭제 하시겠습니까?',
+                        onConfirm: () async {
+                          await widget.feedProvider.deletePost(widget.post);
+                          toastification.show(
+                            context: context,
+                            type: ToastificationType.success,
+                            alignment: Alignment.bottomCenter,
+                            autoCloseDuration: Duration(seconds: 2),
+                            title: Text('게시물을 삭제했습니다'),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: WHITE,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '게시물 삭제',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: RED_DANGER_TEXT_50,
+                          ),
+                        ),
+                        Icon(
+                          CupertinoIcons.delete_solid,
+                          color: RED_DANGER_TEXT_50,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ] else ...[
+                GestureDetector(
+                  onTap: () {
+                    final reporter = FirebaseAuth.instance.currentUser;
+                    if (reporter == null) {
+                      toastification.show(
+                        context: context,
+                        type: ToastificationType.error,
+                        alignment: Alignment.bottomCenter,
+                        autoCloseDuration: Duration(seconds: 2),
+                        title: Text('로그인이 필요합니다'),
+                      );
+                      return;
+                    }
+                    Navigator.pop(context); // 바텀시트 닫기
+                    _showFeedReportDialog(
+                      context,
+                      post,
+                      widget.feedProvider,
+                      reporter.uid,
+                    );
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: WHITE,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '게시물 신고',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: RED_DANGER_TEXT_50,
+                          ),
+                        ),
+                        Icon(Icons.report_outlined, color: RED_DANGER_TEXT_50),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10),
+                GestureDetector(
+                  onTap: () {
+                    final uid = FirebaseAuth.instance.currentUser?.uid;
+                    if (uid == null) return;
+                    Navigator.pop(context); // 바텀시트 닫기
+                    _showBlockConfirmDialog(
+                      context,
+                      widget.post.userNickName,
+                      widget.post.userId,
+                      uid,
+                    );
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(10),
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: WHITE,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '사용자 차단',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: RED_DANGER_TEXT_50,
+                          ),
+                        ),
+                        Icon(
+                          Icons.person_off_outlined,
+                          color: RED_DANGER_TEXT_50,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showFeedReportDialog(
     BuildContext context,
     PostModel post,
@@ -620,7 +726,7 @@ class _PostWidgetState extends State<PostWidget> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: BACKGROUND_COLOR,
-        title: Text('댓글 신고'),
+        title: Text('게시물 신고'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
