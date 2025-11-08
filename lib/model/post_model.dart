@@ -52,7 +52,7 @@ class PostModel {
           ? DateTime.now()
           : (data['updatedAt'] as Timestamp).toDate(),
       likesCount: data['likesCount'] ?? 0,
-      userNickName: data['userName'] ?? '사용자',
+      userNickName: data['userNickName'] ?? '사용자',
       userName: data['name'] ?? '',
       likedBy: List<String>.from(data['likedBy'] ?? const []),
     );
