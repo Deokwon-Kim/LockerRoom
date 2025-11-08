@@ -365,7 +365,7 @@ class MyMarketPostWidget extends StatelessWidget {
                     Navigator.pop(context); // 바텀시트 닫기
                     _showBlockConfirmDialog(
                       context,
-                      marketPost.userName,
+                      marketPost.userNickName,
                       marketPost.userId,
                       uid,
                     );
@@ -535,7 +535,7 @@ class MyMarketPostWidget extends StatelessWidget {
                 await marketFeedProvider.reportMarketPost(
                   marketPost: marketPost,
                   reporterUserId: user.uid,
-                  reporterUserName: user.displayName ?? '익명',
+                  reporterUserNickName: user.displayName ?? '익명',
                   reason: reason,
                 );
 

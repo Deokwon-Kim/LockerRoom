@@ -260,7 +260,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                                 profileProvider.userNicknames[widget
                                     .marketPost
                                     .postId] ??
-                                widget.marketPost.userName;
+                                widget.marketPost.userNickName;
                             return Text(
                               nickname,
                               style: TextStyle(
@@ -1250,7 +1250,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                     Navigator.pop(context); // 바텀시트 닫기
                     _showBlockConfirmDialog(
                       context,
-                      widget.marketPost.userName,
+                      widget.marketPost.userNickName,
                       widget.marketPost.userId,
                       uid,
                     );
@@ -1420,7 +1420,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                 await marketFeedProvider.reportMarketPost(
                   marketPost: marketPost,
                   reporterUserId: user.uid,
-                  reporterUserName: user.displayName ?? '익명',
+                  reporterUserNickName: user.displayName ?? '익명',
                   reason: reason,
                 );
 
