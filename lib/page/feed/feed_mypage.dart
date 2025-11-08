@@ -68,9 +68,17 @@ class _FeedMypageState extends State<FeedMypage> {
           offset: Offset(-20, 0),
           child: Row(
             children: [
-              Text(
-                widget.post.userNickName,
-                style: TextStyle(fontWeight: FontWeight.bold),
+              Consumer<ProfileProvider>(
+                builder: (context, profileProvider, child) {
+                  profileProvider.subscribeUserProfile(widget.post.userId);
+                  final nickname =
+                      profileProvider.userNicknames[widget.post.userId] ??
+                      widget.post.userNickName;
+                  return Text(
+                    nickname,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  );
+                },
               ),
 
               SizedBox(width: 5),
@@ -404,9 +412,16 @@ class _FeedMypageState extends State<FeedMypage> {
                                             .currentUser
                                             ?.uid;
                                         if (uid == null) return;
+                                        final profileProvider = context
+                                            .read<ProfileProvider>();
+                                        final nickname =
+                                            profileProvider.userNicknames[widget
+                                                .post
+                                                .userId] ??
+                                            widget.post.userNickName;
                                         _showBlockConfirmDialog(
                                           context,
-                                          widget.post.userNickName,
+                                          nickname,
                                           widget.post.userId,
                                           uid,
                                         );
@@ -508,12 +523,31 @@ class _FeedMypageState extends State<FeedMypage> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          widget.post.userNickName,
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                        Consumer<ProfileProvider>(
+                                          builder:
+                                              (
+                                                context,
+                                                profileProvider,
+                                                child,
+                                              ) {
+                                                profileProvider
+                                                    .subscribeUserProfile(
+                                                      widget.post.userId,
+                                                    );
+                                                final nickname =
+                                                    profileProvider
+                                                        .userNicknames[widget
+                                                        .post
+                                                        .userId] ??
+                                                    widget.post.userNickName;
+                                                return Text(
+                                                  nickname,
+                                                  style: TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                );
+                                              },
                                         ),
                                         Text(
                                           timeAgo(widget.post.createdAt),
@@ -814,10 +848,14 @@ class _FeedMypageState extends State<FeedMypage> {
                   onTap: () {
                     final uid = FirebaseAuth.instance.currentUser?.uid;
                     if (uid == null) return;
+                    final profileProvider = context.read<ProfileProvider>();
+                    final nickname =
+                        profileProvider.userNicknames[widget.post.userId] ??
+                        widget.post.userNickName;
                     Navigator.pop(context); // 바텀시트 닫기
                     _showBlockConfirmDialog(
                       context,
-                      widget.post.userNickName,
+                      nickname,
                       widget.post.userId,
                       uid,
                     );

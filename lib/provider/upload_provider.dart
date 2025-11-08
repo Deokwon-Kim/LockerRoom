@@ -252,7 +252,7 @@ class UploadProvider extends ChangeNotifier {
 
   Future<void> uploadAndSavePost({
     required String userId,
-    required String userName,
+    required String userNickName,
     required String name,
     required String text,
   }) async {
@@ -297,7 +297,7 @@ class UploadProvider extends ChangeNotifier {
     // Firestore에 Post 저장
     await FirebaseFirestore.instance.collection('posts').add({
       'userId': userId,
-      'userName': userName,
+      'userNickName': userNickName,
       'name': name,
       'text': text,
       'mediaUrls': mediaUrls,

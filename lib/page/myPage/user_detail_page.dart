@@ -119,7 +119,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
               return Center(child: CircularProgressIndicator(color: color));
             }
             final data = snap.data!.data() ?? {};
-            final nickName = (data['username'] as String?) ?? '';
+            final nickName = (data['userNickName'] as String?) ?? '';
             final userName = (data['name'] as String?) ?? '';
             final teamName = data['team'] as String?;
             if (teamName == null || teamName.isEmpty)

@@ -134,7 +134,7 @@ class _FollowingListPageState extends State<FollowingListPage> {
                               : null,
                         ),
                         title: Text(
-                          u.username,
+                          u.userNickName,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,

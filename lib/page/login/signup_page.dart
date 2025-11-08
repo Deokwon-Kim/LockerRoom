@@ -545,7 +545,7 @@ class _SignupPageState extends State<SignupPage> {
                                         password: _passwordController.text,
                                         checkPassword:
                                             _confirmPasswordController.text,
-                                        username: _nicknameController.text,
+                                        userNickName: _nicknameController.text,
                                         name: _nameController.text,
                                       );
                                       ScaffoldMessenger.of(

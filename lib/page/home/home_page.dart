@@ -23,6 +23,7 @@ import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/food_store_provider.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
+import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/video_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
@@ -321,7 +322,7 @@ class _HomePageState extends State<HomePage> {
                       final hasMediaPosts = posts.any(
                         (p) => p.mediaUrls.isNotEmpty,
                       );
-                      final listHeight = hasMediaPosts ? 245.0 : 100.0;
+                      final listHeight = hasMediaPosts ? 246.0 : 100.0;
 
                       return SizedBox(
                         height: listHeight,
@@ -484,13 +485,30 @@ class _HomePageState extends State<HomePage> {
                                             ),
                                           ),
                                           SizedBox(height: 3),
-                                          Text(
-                                            post.userNickName,
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              color: GRAYSCALE_LABEL_400,
-                                              fontWeight: FontWeight.w500,
-                                            ),
+                                          Consumer<ProfileProvider>(
+                                            builder:
+                                                (
+                                                  context,
+                                                  profileProvider,
+                                                  child,
+                                                ) {
+                                                  profileProvider
+                                                      .subscribeUserProfile(
+                                                        post.userId,
+                                                      );
+                                                  final nickName =
+                                                      profileProvider
+                                                          .userNicknames[post
+                                                          .userId] ??
+                                                      post.userNickName;
+                                                  return Text(
+                                                    nickName,
+                                                    style: TextStyle(
+                                                      color:
+                                                          GRAYSCALE_LABEL_500,
+                                                    ),
+                                                  );
+                                                },
                                           ),
                                         ],
                                       ),

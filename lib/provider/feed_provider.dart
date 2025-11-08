@@ -88,7 +88,7 @@ class FeedProvider extends ChangeNotifier {
       _filteredUsers = _allUsers.where((user) {
         if (_blockedUserIds.contains(user.uid)) return false;
         if (_blockedByUserIds.contains(user.uid)) return false;
-        return user.username.toLowerCase().contains(_query);
+        return user.userNickName.toLowerCase().contains(_query);
       }).toList();
     }
     notifyListeners();

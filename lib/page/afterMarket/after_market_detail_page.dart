@@ -251,12 +251,24 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                           },
                         ),
                         SizedBox(width: 10),
-                        Text(
-                          widget.marketPost.userName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
+                        Consumer<ProfileProvider>(
+                          builder: (context, profileProvider, child) {
+                            profileProvider.subscribeUserProfile(
+                              widget.marketPost.postId,
+                            );
+                            final nickname =
+                                profileProvider.userNicknames[widget
+                                    .marketPost
+                                    .postId] ??
+                                widget.marketPost.userName;
+                            return Text(
+                              nickname,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -557,9 +569,17 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                   },
                 ),
                 SizedBox(width: 10),
-                Text(
-                  parentComment.userName,
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                Consumer<ProfileProvider>(
+                  builder: (context, profileProvider, child) {
+                    profileProvider.subscribeUserProfile(parentComment.userId);
+                    final nickname =
+                        profileProvider.userNicknames[parentComment.userId] ??
+                        parentComment.userName;
+                    return Text(
+                      nickname,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    );
+                  },
                 ),
                 Spacer(),
                 Consumer<CommentProvider>(
@@ -806,9 +826,17 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                 },
               ),
               SizedBox(width: 8),
-              Text(
-                reply.userName,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              Consumer<ProfileProvider>(
+                builder: (context, profileProvider, child) {
+                  profileProvider.subscribeUserProfile(reply.userId);
+                  final nickname =
+                      profileProvider.userNicknames[reply.userId] ??
+                      reply.userName;
+                  return Text(
+                    nickname,
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  );
+                },
               ),
               Spacer(),
               Consumer<CommentProvider>(

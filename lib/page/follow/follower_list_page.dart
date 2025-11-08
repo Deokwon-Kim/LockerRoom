@@ -135,7 +135,7 @@ class _FollowerListPageState extends State<FollowerListPage> {
                               : null,
                         ),
                         title: Text(
-                          u.username,
+                          u.userNickName,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,

@@ -246,26 +246,39 @@ class _PostWidgetState extends State<PostWidget> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => FeedMypage(
-                                  post: widget.post,
-                                  targetUserId: widget.post.userId,
+                        Consumer<ProfileProvider>(
+                          builder: (context, profileProvider, child) {
+                            profileProvider.subscribeUserProfile(
+                              widget.post.userId,
+                            );
+                            final nickname =
+                                profileProvider.userNicknames[widget
+                                    .post
+                                    .userId] ??
+                                widget.post.userNickName;
+
+                            return TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FeedMypage(
+                                      post: widget.post,
+                                      targetUserId: widget.post.userId,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                nickname,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black,
                                 ),
                               ),
                             );
                           },
-                          child: Text(
-                            widget.post.userNickName,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                            ),
-                          ),
                         ),
                         Transform.translate(
                           offset: Offset(10, -10),

@@ -9,6 +9,7 @@ import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_edit_page.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
+import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
@@ -118,12 +119,26 @@ class _UserPostPageState extends State<UserPostPage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        p.userNickName,
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                      Consumer<ProfileProvider>(
+                                        builder:
+                                            (context, profileProvider, child) {
+                                              profileProvider
+                                                  .subscribeUserProfile(
+                                                    p.userId,
+                                                  );
+                                              final nickName =
+                                                  profileProvider
+                                                      .userNicknames[p
+                                                      .userId] ??
+                                                  p.userNickName;
+                                              return Text(
+                                                nickName,
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              );
+                                            },
                                       ),
                                       Text(
                                         timeAgo(p.createdAt),

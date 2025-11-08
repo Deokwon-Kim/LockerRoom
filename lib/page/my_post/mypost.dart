@@ -123,12 +123,20 @@ class MyPostWidget extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        post.userNickName,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      Consumer<ProfileProvider>(
+                        builder: (context, profileProvider, child) {
+                          profileProvider.subscribeUserProfile(post.userId);
+                          final nickName =
+                              profileProvider.userNicknames[post.userId] ??
+                              post.userNickName;
+                          return Text(
+                            nickName,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          );
+                        },
                       ),
                       Text(
                         timeAgo(post.createdAt),

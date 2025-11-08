@@ -167,26 +167,39 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FeedMypage(
-                                      post: widget.post,
-                                      targetUserId: widget.post.userId,
+                            Consumer<ProfileProvider>(
+                              builder: (context, profileProvider, child) {
+                                profileProvider.subscribeUserProfile(
+                                  widget.post.userId,
+                                );
+                                final nickname =
+                                    profileProvider.userNicknames[widget
+                                        .post
+                                        .userId] ??
+                                    widget.post.userNickName;
+
+                                return TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => FeedMypage(
+                                          post: widget.post,
+                                          targetUserId: widget.post.userId,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Text(
+                                    nickname,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black,
                                     ),
                                   ),
                                 );
                               },
-                              child: Text(
-                                widget.post.userNickName,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
-                                ),
-                              ),
                             ),
                             Transform.translate(
                               offset: Offset(10, -10),
@@ -632,7 +645,17 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                   },
                 ),
                 SizedBox(width: 10),
-                Text(c.userName, style: TextStyle(fontWeight: FontWeight.bold)),
+                Consumer<ProfileProvider>(
+                  builder: (context, profileProvider, child) {
+                    profileProvider.subscribeUserProfile(c.userId);
+                    final nickname =
+                        profileProvider.userNicknames[c.userId] ?? c.userName;
+                    return Text(
+                      nickname,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    );
+                  },
+                ),
                 SizedBox(width: 20),
                 Consumer<CommentProvider>(
                   builder: (context, commentProvider, _) {
@@ -708,9 +731,14 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                         } else if (value == 'block') {
                           final uid = FirebaseAuth.instance.currentUser?.uid;
                           if (uid == null) return;
+                          final profileProvider = context
+                              .read<ProfileProvider>();
+                          final nickname =
+                              profileProvider.userNicknames[c.userId] ??
+                              c.userName;
                           _showBlockConfirmDialog(
                             context,
-                            c.userName,
+                            nickname,
                             c.userId,
                             currentUserId,
                           );
@@ -769,9 +797,13 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                   children: [
                     TextButton(
                       onPressed: () {
+                        final profileProvider = context.read<ProfileProvider>();
+                        final nickname =
+                            profileProvider.userNicknames[c.userId] ??
+                            c.userName;
                         setState(() {
                           _replyParentId = c.id;
-                          _replyToUserName = c.userName;
+                          _replyToUserName = nickname;
                         });
                         _commentFocusNode.requestFocus();
                       },

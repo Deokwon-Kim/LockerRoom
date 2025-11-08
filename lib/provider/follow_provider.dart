@@ -36,7 +36,7 @@ class FollowProvider extends ChangeNotifier {
     // 검색어 필터링
     if (_userSearchQuery.isEmpty) return filtered;
     return filtered
-        .where((u) => (u.username).toLowerCase().contains(_userSearchQuery))
+        .where((u) => (u.userNickName).toLowerCase().contains(_userSearchQuery))
         .toList();
   }
 

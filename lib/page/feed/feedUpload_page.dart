@@ -45,7 +45,7 @@ class _UploadPageState extends State<FeedUploadPage> {
         uploadProvider.camera != null;
     final canUpload = hasCaption && !uploadProvider.isUploading;
     final userProvider = context.watch<UserProvider>();
-    final userName =
+    final userNickName =
         userProvider.nickname ??
         userProvider.currentUser?.displayName ??
         FirebaseAuth.instance.currentUser?.displayName ??
@@ -126,7 +126,7 @@ class _UploadPageState extends State<FeedUploadPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          userName,
+                          userNickName,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -284,7 +284,7 @@ class _UploadPageState extends State<FeedUploadPage> {
                           ? () async {
                               await uploadProvider.uploadAndSavePost(
                                 userId: FirebaseAuth.instance.currentUser!.uid,
-                                userName: userName,
+                                userNickName: userNickName,
                                 name: name!,
                                 text: _captionController.text,
                               );

@@ -114,7 +114,7 @@ class UserProvider extends ChangeNotifier {
     required String email,
     required String password,
     required String checkPassword,
-    required String username,
+    required String userNickName,
     required String name,
   }) async {
     setLoading(true);
@@ -125,7 +125,7 @@ class UserProvider extends ChangeNotifier {
           .createUserWithEmailAndPassword(email: email, password: password);
 
       // 사용자 이름 업데이트
-      await userCredential.user?.updateDisplayName(username.trim());
+      await userCredential.user?.updateDisplayName(userNickName.trim());
       await userCredential.user?.reload();
 
       // 현재 사용자 정보 업데이트
@@ -133,7 +133,7 @@ class UserProvider extends ChangeNotifier {
 
       // UserModel 생성
       UserModel user = UserModel(
-        username: username,
+        userNickName: userNickName,
         name: name,
         useremail: email,
         uid: userCredential.user!.uid,
@@ -143,7 +143,7 @@ class UserProvider extends ChangeNotifier {
 
       // Firestore에 사용자 정보 저장
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
-        'username': user.username,
+        'username': user.userNickName,
         'name': user.name,
         'email': user.useremail,
         'uid': user.uid,
@@ -211,7 +211,7 @@ class UserProvider extends ChangeNotifier {
         .doc(uid)
         .get();
 
-    _nickname = doc.data()?['username'] ?? _currentUser?.displayName;
+    _nickname = doc.data()?['userNickName'] ?? _currentUser?.displayName;
     _email = doc.data()?['email'];
 
     // name 필드 로드
@@ -243,7 +243,7 @@ class UserProvider extends ChangeNotifier {
         .doc(uid)
         .get();
 
-    _name = doc.data()?['name'] ?? doc.data()?['username'];
+    _name = doc.data()?['name'] ?? doc.data()?['userNickName'];
     if (_name != null) {
       notifyListeners();
     }
@@ -254,7 +254,7 @@ class UserProvider extends ChangeNotifier {
     if (uid == null) return;
 
     await FirebaseFirestore.instance.collection('users').doc(uid).update({
-      'username': newNickname,
+      'userNickName': newNickname,
     });
 
     await FirebaseAuth.instance.currentUser?.updateDisplayName(newNickname);
