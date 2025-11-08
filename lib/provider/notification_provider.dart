@@ -142,8 +142,10 @@ class NotificationProvider extends ChangeNotifier {
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
       final data = doc.data();
-      final name = (data?['username'] as String?)?.trim();
-      final result = (name == null || name.isEmpty) ? '알 수 없음' : name;
+      final userNickName = (data?['userNickName'] as String?)?.trim();
+      final result = (userNickName == null || userNickName.isEmpty)
+          ? '알 수 없음'
+          : userNickName;
       _userNameCache[userId] = result;
       return result;
     } catch (_) {
@@ -153,9 +155,9 @@ class NotificationProvider extends ChangeNotifier {
 
   void _showNotificationToast(AppNotification notification) async {
     // 사용자 이름 가져오기 (캐시에서 먼저 확인)
-    String userName = notification.userName;
-    if (userName.isEmpty) {
-      userName = await fetchUserName(notification.fromUserId);
+    String userNickName = notification.userNickName;
+    if (userNickName.isEmpty) {
+      userNickName = await fetchUserName(notification.fromUserId);
     }
 
     String title = '';
@@ -166,40 +168,40 @@ class NotificationProvider extends ChangeNotifier {
     switch (notification.type) {
       case 'follow':
         title = '새 팔로워';
-        description = userName != '알 수 없음'
-            ? '$userName님이 회원님을 팔로우했습니다'
+        description = userNickName != '알 수 없음'
+            ? '$userNickName 회원님을 팔로우했습니다'
             : '누군가 회원님을 팔로우했습니다';
         type = ToastificationType.success;
         icon = Icons.person_add;
         break;
       case 'feedLike':
         title = '좋아요';
-        description = userName != '알 수 없음'
-            ? '$userName님이 회원님의 게시글을 좋아합니다'
+        description = userNickName != '알 수 없음'
+            ? '$userNickName님이 회원님의 게시글을 좋아합니다'
             : '회원님의 게시글에 좋아요가 추가되었습니다';
         type = ToastificationType.info;
         icon = Icons.favorite;
         break;
       case 'commentLike':
         title = '댓글 좋아요';
-        description = userName != '알 수 없음'
-            ? '$userName님이 회원님의 댓글을 좋아합니다'
+        description = userNickName != '알 수 없음'
+            ? '$userNickName님이 회원님의 댓글을 좋아합니다'
             : '회원님의 댓글에 좋아요가 추가되었습니다';
         type = ToastificationType.info;
         icon = Icons.favorite;
         break;
       case 'comment':
         title = '새 댓글';
-        description = userName != '알 수 없음'
-            ? '$userName님이 회원님의 게시글에 댓글을 남겼습니다'
+        description = userNickName != '알 수 없음'
+            ? '$userNickName님이 회원님의 게시글에 댓글을 남겼습니다'
             : '회원님의 게시글에 새 댓글이 달렸습니다';
         type = ToastificationType.info;
         icon = Icons.comment;
         break;
       case 'marketComment':
         title = '마켓 댓글';
-        description = userName != '알 수 없음'
-            ? '$userName님이 회원님의 마켓 게시글에 댓글을 남겼습니다'
+        description = userNickName != '알 수 없음'
+            ? '$userNickName님이 회원님의 마켓 게시글에 댓글을 남겼습니다'
             : '회원님의 마켓 게시글에 새 댓글이 달렸습니다';
         type = ToastificationType.info;
         icon = Icons.comment;

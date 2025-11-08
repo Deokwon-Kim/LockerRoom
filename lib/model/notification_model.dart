@@ -4,7 +4,7 @@ class AppNotification {
   final String id;
   final String type;
   final String fromUserId;
-  final String userName;
+  final String userNickName;
   final DateTime? createdAt;
   final bool isRead;
 
@@ -12,7 +12,7 @@ class AppNotification {
     required this.id,
     required this.type,
     required this.fromUserId,
-    required this.userName,
+    required this.userNickName,
     required this.createdAt,
     required this.isRead,
   });
@@ -23,7 +23,7 @@ class AppNotification {
       id: doc.id,
       type: data['type'] ?? 'unknown',
       fromUserId: data['fromUserId'] ?? '',
-      userName: data['userName'] ?? '',
+      userNickName: data['userNickName'] ?? '',
       createdAt: data['createdAt'] == null
           ? DateTime.now()
           : (data['createdAt'] as Timestamp).toDate(),

@@ -122,11 +122,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
                           // users 컬렉션에서 사용자 정보 가져오기
                           final data = snap.data?.data() ?? {};
-                          final fetchedName = (data['username'] as String?)
+                          final fetchedName = (data['userNickName'] as String?)
                               ?.trim();
                           final name =
-                              (n.userName.isNotEmpty
-                                      ? n.userName
+                              (n.userNickName.isNotEmpty
+                                      ? n.userNickName
                                       : (fetchedName ?? '알 수 없음'))
                                   .trim();
                           final imageUrl =
@@ -161,16 +161,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     ),
                                   ),
                                   if (isFollow) ...[
-                                    TextSpan(text: '님이 회원님을 팔로우하기 시작했습니다.'),
+                                    TextSpan(text: ' 님이 회원님을 팔로우하기 시작했습니다.'),
                                   ] else if (isFeedLike) ...[
-                                    TextSpan(text: '님이 회원님의 게시글을 좋아합니다.'),
+                                    TextSpan(text: ' 님이 회원님의 게시글을 좋아합니다.'),
                                   ] else if (commentLike) ...[
-                                    TextSpan(text: '님이 회원님의 댓글을 좋아합니다.'),
+                                    TextSpan(text: ' 님이 회원님의 댓글을 좋아합니다.'),
                                   ] else if (isComment) ...[
-                                    TextSpan(text: '님이 회원님의 게시글에 댓글을 남겼습니다.'),
+                                    TextSpan(text: ' 님이 회원님의 게시글에 댓글을 남겼습니다.'),
                                   ] else if (isMarketComment) ...[
                                     TextSpan(
-                                      text: '님이 회원님의 마켓 게시글에 댓글을 남겼습니다.',
+                                      text: ' 님이 회원님의 마켓 게시글에 댓글을 남겼습니다.',
                                     ),
                                   ] else if (isReport ||
                                       isCommentReport ||
