@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class MarketPostModel {
   final String postId;
   final String userId;
-  final String userName;
+  final String userNickName;
   final String title;
   final String? description;
   final List<String> imageUrls;
@@ -18,7 +18,7 @@ class MarketPostModel {
   MarketPostModel({
     required this.postId,
     required this.userId,
-    required this.userName,
+    required this.userNickName,
     required this.title,
     this.description,
     required this.imageUrls,
@@ -34,7 +34,7 @@ class MarketPostModel {
   MarketPostModel copyWith({
     String? postId,
     String? userId,
-    String? userName,
+    String? userNickName,
     String? title,
     String? description,
     List<String>? imageUrls,
@@ -49,7 +49,7 @@ class MarketPostModel {
     return MarketPostModel(
       postId: postId ?? this.postId,
       userId: userId ?? this.userId,
-      userName: userName ?? this.userName,
+      userNickName: userNickName ?? this.userNickName,
       title: title ?? this.title,
       imageUrls: imageUrls ?? this.imageUrls,
       price: price ?? this.price,
@@ -83,7 +83,7 @@ class MarketPostModel {
     return MarketPostModel(
       postId: doc.id,
       userId: data['userId'] ?? '',
-      userName: data['userName'] ?? '',
+      userNickName: data['userNickName'] ?? '',
       title: data['title'] ?? '',
       description: data['description'],
       imageUrls: imageUrls,
