@@ -14,6 +14,7 @@ class MarketPostModel {
   final int likesCount;
   final List<String> likedBy;
   final DateTime createdAt;
+  final DateTime? updatedAt;
 
   MarketPostModel({
     required this.postId,
@@ -29,6 +30,7 @@ class MarketPostModel {
     required this.likesCount,
     required this.likedBy,
     required this.createdAt,
+    this.updatedAt,
   });
 
   MarketPostModel copyWith({
@@ -45,6 +47,7 @@ class MarketPostModel {
     int? likesCount,
     List<String>? likedBy,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return MarketPostModel(
       postId: postId ?? this.postId,
@@ -95,6 +98,9 @@ class MarketPostModel {
       likedBy: List<String>.from(data['likedBy'] ?? []),
       createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      updatedAt: data['updatedAt'] is Timestamp
+          ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.now(),
     );
   }
