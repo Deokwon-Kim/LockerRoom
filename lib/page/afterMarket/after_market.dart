@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/market_post_model.dart';
+import 'package:lockerroom/page/afterMarket/after_market_edit_page.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/afterMarket/after_market_detail_page.dart';
 import 'package:lockerroom/page/afterMarket/after_market_upload_page.dart';
@@ -421,12 +422,13 @@ class _MarketPostsWidgetState extends State<MarketPostWidget> {
                 GestureDetector(
                   onTap: () {
                     Navigator.pop(context); // 바텀시트 닫기
-                    // Navigator.push(
-                    //   context,
-                    //   MaterialPageRoute(
-                    //     builder: (context) => FeedEditPage(post: post),
-                    //   ),
-                    // );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            AfterMarketEditPage(marketPost: widget.marketPost),
+                      ),
+                    );
                   },
                   child: Container(
                     padding: EdgeInsets.all(10),
