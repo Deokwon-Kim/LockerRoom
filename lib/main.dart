@@ -29,6 +29,7 @@ import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:lockerroom/provider/food_store_provider.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/intution_record_provider.dart';
+import 'package:lockerroom/provider/marketFeedEdit_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/market_upload_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -154,6 +155,7 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(create: (context) => FoodStoreProvider()),
         ChangeNotifierProvider(create: (context) => FeedEditProvider()),
+        ChangeNotifierProvider(create: (context) => MarketfeededitProvider()),
       ],
       child: const MyApp(),
     ),
