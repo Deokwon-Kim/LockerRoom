@@ -74,7 +74,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
           if (intutionProvider.isLoding) {
             return Scaffold(
               backgroundColor: BACKGROUND_COLOR,
-              appBar: AppBar(title: Text('직관 기록')),
+              appBar: AppBar(title: Text('직관 기록'), scrolledUnderElevation: 0),
               body: Center(child: CircularProgressIndicator(color: BUTTON)),
             );
           }
@@ -82,7 +82,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
           if (intutionProvider.myTeamSymple == null) {
             return Scaffold(
               backgroundColor: BACKGROUND_COLOR,
-              appBar: AppBar(title: Text('직관 기록')),
+              appBar: AppBar(title: Text('직관 기록'), scrolledUnderElevation: 0),
               body: Center(child: Text('응원팀이 설정되어 있지 않습니다.')),
             );
           }
@@ -96,47 +96,50 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
                 backgroundColor: BACKGROUND_COLOR,
+                scrolledUnderElevation: 0,
               ),
-              body: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(10),
-                          alignment: Alignment.centerLeft,
-                          width: double.infinity,
-                          height: 58,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: GRAYSCALE_LABEL_300),
-                            borderRadius: BorderRadius.circular(12),
+              body: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(10),
+                            alignment: Alignment.centerLeft,
+                            width: double.infinity,
+                            height: 58,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: GRAYSCALE_LABEL_300),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  selectedDate != null
+                                      ? '${selectedDate!.year}년 ${selectedDate!.month}월 ${selectedDate!.day}일'
+                                      : '날짜 선택',
+                                ),
+                                IconButton(
+                                  onPressed: () =>
+                                      _selectedDate(intutionProvider),
+                                  icon: Icon(Icons.date_range_outlined),
+                                ),
+                              ],
+                            ),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                selectedDate != null
-                                    ? '${selectedDate!.year}년 ${selectedDate!.month}월 ${selectedDate!.day}일'
-                                    : '날짜 선택',
-                              ),
-                              IconButton(
-                                onPressed: () =>
-                                    _selectedDate(intutionProvider),
-                                icon: Icon(Icons.date_range_outlined),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  Center(
-                    child: Text(
-                      '오늘은 ${intutionProvider.myTeamSymple} 경기 일정이 없습니다.',
+                    Center(
+                      child: Text(
+                        '오늘은 ${intutionProvider.myTeamSymple} 경기 일정이 없습니다.',
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           }
@@ -160,6 +163,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
               backgroundColor: BACKGROUND_COLOR,
+              scrolledUnderElevation: 0,
             ),
             body: Padding(
               padding: const EdgeInsets.only(
@@ -380,6 +384,87 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                         ),
                       ],
                     ),
+                    SizedBox(height: 20),
+                    Text(
+                      '메모(선택)',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: GRAYSCALE_LABEL_300),
+                      ),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          minHeight: 100, // 최소 높이 지정 가능
+                        ),
+                        child: TextField(
+                          controller: intutionProvider.memoController,
+                          cursorColor: BUTTON,
+                          maxLines: null,
+                          minLines: 1,
+                          textAlignVertical: TextAlignVertical.top, // 위쪽 정렬
+                          decoration: const InputDecoration(
+                            hintStyle: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey,
+                            ),
+                            border: InputBorder.none,
+                            isDense: true, // 패딩 최소화
+                            contentPadding: EdgeInsets.zero, // 내부 여백 완전히 제거
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    intutionProvider.selectedImage != null
+                        ? Container(
+                            width: double.infinity,
+                            height: 450,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: GRAYSCALE_LABEL_300),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(
+                                intutionProvider.selectedImage!,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          )
+                        : GestureDetector(
+                            onTap: () {
+                              intutionProvider.pickImage();
+                            },
+                            child: Container(
+                              padding: EdgeInsets.only(left: 10),
+                              width: double.infinity,
+                              height: 50,
+                              alignment: Alignment.centerLeft,
+                              decoration: BoxDecoration(
+                                color: BACKGROUND_COLOR,
+                                border: Border.all(color: GRAYSCALE_LABEL_300),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '+ 이미지 추가하기',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
 
                     const SizedBox(height: 40),
                     GestureDetector(
@@ -400,10 +485,9 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                             },
 
                       child: intutionProvider.saving
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                          ? CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: BUTTON,
                             )
                           : Container(
                               alignment: Alignment.center,
