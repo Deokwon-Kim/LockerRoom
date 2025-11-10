@@ -10,6 +10,7 @@ class CommentModel {
   final int? likesCount;
   final List<String> likedBy;
   final DateTime createdAt;
+  final bool isSecret;
 
   CommentModel({
     required this.id,
@@ -21,6 +22,7 @@ class CommentModel {
     this.likesCount = 0,
     this.likedBy = const [],
     required this.createdAt,
+    this.isSecret = false,
   });
 
   factory CommentModel.fromDoc(DocumentSnapshot doc) {
@@ -48,6 +50,7 @@ class CommentModel {
       likesCount: data['likesCount'] ?? 0,
       likedBy: List<String>.from(data['likedBy'] ?? []),
       createdAt: createdAt,
+      isSecret: data['isSecret'] ?? false,
     );
   }
 
@@ -61,6 +64,7 @@ class CommentModel {
       'likesCount': likesCount,
       'likedBy': likedBy,
       'createdAt': Timestamp.fromDate(createdAt),
+      'isSecret': isSecret,
     };
   }
 }
