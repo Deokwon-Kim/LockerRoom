@@ -370,4 +370,51 @@ class IntutionRecordProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  // 직관기록 삭제
+  Future<bool> deleteRecord(AttendanceModel attendance) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // 이미지가 있으면 Storage에서 삭제
+      if (attendance.imageUrl != null && attendance.imageUrl!.isNotEmpty) {
+        try {
+          await FirebaseStorage.instance
+              .refFromURL(attendance.imageUrl!)
+              .delete();
+          print('직관 이미지 삭제: ${attendance.imageUrl}');
+        } catch (e) {
+          print('이미지 삭제 실패 ${attendance.imageUrl}: $e');
+          // 이미지 삭제 실패해도 Firestore 문서 삭제는 계속 진행
+        }
+      }
+
+      // Firestore에서 문서 삭제
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('attendances')
+          .doc(attendance.gameId)
+          .delete();
+
+      print('직관기록 삭제 완료: ${attendance.gameId}');
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('직관기록 삭제 실패: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
 }
