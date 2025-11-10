@@ -45,6 +45,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
   String? _replyToUserName;
   final Map<String, bool> _replyVisibility = {}; // 답글 표시/숨김 상태 관리
   bool _isInitialized = false;
+  bool _isSecretComment = false; // 비밀댓글 여부
 
   @override
   void initState() {
@@ -454,96 +455,167 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 0),
-            child: Row(
+          child: Container(
+            decoration: BoxDecoration(
+              color: WHITE,
+              border: Border(
+                top: BorderSide(color: GRAYSCALE_LABEL_300, width: 1),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: TextFormField(
-                    focusNode: _commentFocusNode,
-                    controller: _marketCommentController,
-                    cursorColor: BUTTON,
-                    cursorHeight: 18,
-                    minLines: 1,
-                    maxLines: 3,
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.newline,
-                    enableIMEPersonalizedLearning: true,
-                    style: TextStyle(decoration: TextDecoration.none),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 10,
-                      ),
-                      labelText: _replyParentId == null
-                          ? '댓글을 입력해주세요'
-                          : (_replyToUserName != null
-                                ? '${_replyToUserName}님에게 답글'
-                                : '답글을 입력하세요'),
-                      labelStyle: TextStyle(color: Colors.grey, fontSize: 13),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 10),
+                // 비밀댓글 체크박스
                 GestureDetector(
-                  onTap: () async {
-                    final text = _marketCommentController.text.trim();
-                    if (text.isEmpty) return;
-                    final user = FirebaseAuth.instance.currentUser!;
-                    final marketComment = CommentModel(
-                      id: '', // Firestore에서 자동생성
-                      postId: widget.marketPost.postId,
-                      userId: user.uid,
-                      userName: user.displayName ?? '익명',
-                      text: text,
-                      reComments: _replyParentId ?? '',
-                      createdAt: DateTime.now(),
-                      likesCount: 0,
-                    );
-                    await context
-                        .read<CommentProvider>()
-                        .addMarketCommentAndNotify(
-                          marketPostId: widget.marketPost.postId,
-                          marketComment: marketComment,
-                          currentUserId: user.uid,
-                          marketPostOwnerId: widget.marketPost.userId,
-                          parentMarketCommentOwnerId: _replyParentId == null
-                              ? null
-                              : _replyParentId,
-                        );
-
-                    if (!mounted) return;
-                    _marketCommentController.clear();
+                  onTap: () {
                     setState(() {
-                      _replyParentId = null;
-                      _replyToUserName = null;
-                    });
-                    // 전송 후에도 맨 아래로 스크롤
-                    Future.delayed(const Duration(milliseconds: 80), () {
-                      if (!_scrollController.hasClients) return;
-                      _scrollController.animateTo(
-                        _scrollController.position.maxScrollExtent,
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOut,
-                      );
+                      _isSecretComment = !_isSecretComment;
                     });
                   },
                   child: Container(
-                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                    decoration: BoxDecoration(
-                      color: BUTTON,
-                      borderRadius: BorderRadius.circular(50),
+                    padding: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _isSecretComment
+                              ? Icons.check_box
+                              : Icons.check_box_outline_blank,
+                          color: _isSecretComment
+                              ? BUTTON
+                              : GRAYSCALE_LABEL_500,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          '비밀댓글',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: _isSecretComment
+                                ? BUTTON
+                                : GRAYSCALE_LABEL_700,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.lock_outline,
+                          size: 14,
+                          color: _isSecretComment
+                              ? BUTTON
+                              : GRAYSCALE_LABEL_500,
+                        ),
+                      ],
                     ),
-                    child: Icon(Icons.send, color: WHITE),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 15.0,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          focusNode: _commentFocusNode,
+                          controller: _marketCommentController,
+                          cursorColor: BUTTON,
+                          cursorHeight: 18,
+                          minLines: 1,
+                          maxLines: 3,
+                          keyboardType: TextInputType.multiline,
+                          textInputAction: TextInputAction.newline,
+                          enableIMEPersonalizedLearning: true,
+                          style: TextStyle(decoration: TextDecoration.none),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 10,
+                            ),
+                            labelText: _replyParentId == null
+                                ? '댓글을 입력해주세요'
+                                : (_replyToUserName != null
+                                      ? '${_replyToUserName}님에게 답글'
+                                      : '답글을 입력하세요'),
+                            labelStyle: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 13,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: GRAYSCALE_LABEL_400,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: GRAYSCALE_LABEL_400,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: () async {
+                          final text = _marketCommentController.text.trim();
+                          if (text.isEmpty) return;
+                          final user = FirebaseAuth.instance.currentUser!;
+                          final marketComment = CommentModel(
+                            id: '', // Firestore에서 자동생성
+                            postId: widget.marketPost.postId,
+                            userId: user.uid,
+                            userName: user.displayName ?? '익명',
+                            text: text,
+                            reComments: _replyParentId ?? '',
+                            createdAt: DateTime.now(),
+                            likesCount: 0,
+                            isSecret: _isSecretComment,
+                          );
+                          await context
+                              .read<CommentProvider>()
+                              .addMarketCommentAndNotify(
+                                marketPostId: widget.marketPost.postId,
+                                marketComment: marketComment,
+                                currentUserId: user.uid,
+                                marketPostOwnerId: widget.marketPost.userId,
+                                parentMarketCommentOwnerId:
+                                    _replyParentId == null
+                                    ? null
+                                    : _replyParentId,
+                              );
+
+                          if (!mounted) return;
+                          _marketCommentController.clear();
+                          setState(() {
+                            _replyParentId = null;
+                            _replyToUserName = null;
+                            _isSecretComment = false; // 비밀댓글 상태 초기화
+                          });
+                          // 전송 후에도 맨 아래로 스크롤
+                          Future.delayed(const Duration(milliseconds: 80), () {
+                            if (!_scrollController.hasClients) return;
+                            _scrollController.animateTo(
+                              _scrollController.position.maxScrollExtent,
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeOut,
+                            );
+                          });
+                        },
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: BUTTON,
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          child: Icon(Icons.send, color: WHITE),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -552,6 +624,36 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
         ),
       ),
     );
+  }
+
+  // 비밀댓글 텍스트 표시 처리
+  Widget _buildCommentText(
+    CommentModel comment,
+    String? currentUserId,
+    String postOwnerId,
+  ) {
+    // 비밀댓글이 아니면 그냥 표시
+    if (!comment.isSecret) {
+      return Text(
+        comment.text,
+        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+      );
+    }
+
+    // 비밀댓글인 경우: 작성자, 게시물 작성자만 볼 수 있음
+    final canView =
+        currentUserId != null &&
+        (currentUserId == comment.userId || currentUserId == postOwnerId);
+
+    if (canView) {
+      return Text(
+        comment.text,
+        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+      );
+    } else {
+      // 권한이 없는 경우 아무것도 표시하지 않음 (사용자 정보 영역에서 이미 표시함)
+      return SizedBox.shrink();
+    }
   }
 
   Widget _buildCommentWithReplies(
@@ -569,174 +671,217 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
           children: [
             Row(
               children: [
-                Consumer<ProfileProvider>(
-                  builder: (context, profileProvider, child) {
-                    // build 중 구독을 피하기 위해 postFrameCallback 사용
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      profileProvider.subscribeUserProfile(
-                        parentComment.userId,
-                      );
-                    });
-                    final url =
-                        profileProvider.userProfiles[parentComment.userId];
-                    return CircleAvatar(
-                      radius: 15,
-                      backgroundImage: url != null ? NetworkImage(url) : null,
-                      backgroundColor: GRAYSCALE_LABEL_300,
-                      child: url == null
-                          ? const Icon(
-                              Icons.person,
-                              color: Colors.black,
-                              size: 20,
-                            )
-                          : null,
-                    );
-                  },
-                ),
-                SizedBox(width: 10),
-                Consumer<ProfileProvider>(
-                  builder: (context, profileProvider, child) {
-                    // build 중 구독을 피하기 위해 postFrameCallback 사용
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      profileProvider.subscribeUserProfile(
-                        parentComment.userId,
-                      );
-                    });
-                    final nickname =
-                        profileProvider.userNicknames[parentComment.userId] ??
-                        parentComment.userName;
-                    return Text(
-                      nickname,
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    );
-                  },
-                ),
-                Spacer(),
-                Consumer<CommentProvider>(
-                  builder: (context, commentProvider, _) {
-                    final updatedComment = commentProvider
-                        .getMarketComments(widget.marketPost.postId)
-                        .firstWhere(
-                          (comment) => comment.id == parentComment.id,
-                          orElse: () => parentComment,
-                        );
-                    final bool isLiked =
-                        currentUserId != null &&
-                        updatedComment.likedBy.contains(currentUserId);
-
-                    return Row(
-                      children: [
-                        IconButton(
-                          onPressed: currentUserId != null
-                              ? () => commentProvider.commentLikeAndNotify(
-                                  commentId: parentComment.id,
-                                  comment: updatedComment,
-                                  currentUserId: currentUserId,
-                                  commentOwnerId: parentComment.userId,
-                                )
-                              : null,
-                          icon: Icon(
-                            isLiked ? Icons.favorite : Icons.favorite_border,
-                            color: isLiked ? Colors.red : null,
-                            size: 20,
-                          ),
+                // 비밀댓글 권한 체크
+                if (parentComment.isSecret &&
+                    currentUserId != null &&
+                    currentUserId != parentComment.userId &&
+                    currentUserId != widget.marketPost.userId) ...[
+                  // 권한이 없는 경우: 비밀댓글입니다 표시
+                  Row(
+                    children: [
+                      Icon(Icons.lock, size: 16, color: GRAYSCALE_LABEL_500),
+                      SizedBox(width: 6),
+                      Text(
+                        '비밀댓글입니다',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: GRAYSCALE_LABEL_500,
+                          fontStyle: FontStyle.italic,
                         ),
-                        Text('${updatedComment.likesCount}'),
-                      ],
-                    );
-                  },
-                ),
-                SizedBox(width: 5),
-                if (currentUserId != null)
-                  PopupMenuTheme(
-                    data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-                    child: PopupMenuButton<String>(
-                      icon: Icon(Icons.more_horiz),
-                      onSelected: (value) async {
-                        if (value == 'delete') {
-                          showDialog(
-                            context: context,
-                            builder: (context) => ConfirmationDialog(
-                              title: '댓글 삭제',
-                              content: '댓글을 삭제 하시겠습니까?',
-                              onConfirm: () async {
-                                await commentProvider.deleteMarketComment(
-                                  parentComment,
-                                );
-                              },
-                            ),
-                          );
-                        } else if (value == 'report') {
-                          final reporter = FirebaseAuth.instance.currentUser;
-                          if (reporter == null) {
-                            toastification.show(
-                              context: context,
-                              type: ToastificationType.error,
-                              alignment: Alignment.bottomCenter,
-                              autoCloseDuration: Duration(seconds: 2),
-                              title: Text('로그인이 필요합니다'),
-                            );
-                            return;
-                          }
-                          _showMarketCommentReportDialog(
-                            context,
-                            parentComment,
-                            commentProvider,
-                            currentUserId,
-                          );
-                        } else if (value == 'block') {
-                          final uid = FirebaseAuth.instance.currentUser?.uid;
-                          if (uid == null) return;
-                          _showBlockConfirmDialog(
-                            context,
-                            widget.comment!.userName,
-                            widget.comment!.userId,
-                            currentUserId,
-                          );
-                        }
-                      },
-                      itemBuilder: (context) {
-                        final isOwner = parentComment.userId == currentUserId;
-                        if (isOwner) {
-                          return [
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Text(
-                                '삭제하기',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ];
-                        } else {
-                          return [
-                            PopupMenuItem(
-                              value: 'report',
-                              child: Text(
-                                '신고하기',
-                                style: TextStyle(color: Colors.black),
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'block',
-                              child: Text(
-                                '사용자 차단',
-                                style: TextStyle(color: RED_DANGER_TEXT_50),
-                              ),
-                            ),
-                          ];
-                        }
-                      },
-                    ),
+                      ),
+                    ],
                   ),
+                ] else ...[
+                  // 권한이 있는 경우: 프로필 정보 표시
+                  Consumer<ProfileProvider>(
+                    builder: (context, profileProvider, child) {
+                      // build 중 구독을 피하기 위해 postFrameCallback 사용
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        profileProvider.subscribeUserProfile(
+                          parentComment.userId,
+                        );
+                      });
+                      final url =
+                          profileProvider.userProfiles[parentComment.userId];
+                      return CircleAvatar(
+                        radius: 15,
+                        backgroundImage: url != null ? NetworkImage(url) : null,
+                        backgroundColor: GRAYSCALE_LABEL_300,
+                        child: url == null
+                            ? const Icon(
+                                Icons.person,
+                                color: Colors.black,
+                                size: 20,
+                              )
+                            : null,
+                      );
+                    },
+                  ),
+                  SizedBox(width: 10),
+                  Consumer<ProfileProvider>(
+                    builder: (context, profileProvider, child) {
+                      // build 중 구독을 피하기 위해 postFrameCallback 사용
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        profileProvider.subscribeUserProfile(
+                          parentComment.userId,
+                        );
+                      });
+                      final nickname =
+                          profileProvider.userNicknames[parentComment.userId] ??
+                          parentComment.userName;
+                      return Row(
+                        children: [
+                          Text(
+                            nickname,
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          if (parentComment.isSecret) ...[
+                            SizedBox(width: 4),
+                            Icon(
+                              Icons.lock,
+                              size: 14,
+                              color: GRAYSCALE_LABEL_600,
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ],
+                Spacer(),
+                // 비밀댓글이고 권한이 없으면 좋아요/메뉴 버튼 숨김
+                if (!(parentComment.isSecret &&
+                    currentUserId != null &&
+                    currentUserId != parentComment.userId &&
+                    currentUserId != widget.marketPost.userId)) ...[
+                  Consumer<CommentProvider>(
+                    builder: (context, commentProvider, _) {
+                      final updatedComment = commentProvider
+                          .getMarketComments(widget.marketPost.postId)
+                          .firstWhere(
+                            (comment) => comment.id == parentComment.id,
+                            orElse: () => parentComment,
+                          );
+                      final bool isLiked =
+                          currentUserId != null &&
+                          updatedComment.likedBy.contains(currentUserId);
+
+                      return Row(
+                        children: [
+                          IconButton(
+                            onPressed: currentUserId != null
+                                ? () => commentProvider.commentLikeAndNotify(
+                                    commentId: parentComment.id,
+                                    comment: updatedComment,
+                                    currentUserId: currentUserId,
+                                    commentOwnerId: parentComment.userId,
+                                  )
+                                : null,
+                            icon: Icon(
+                              isLiked ? Icons.favorite : Icons.favorite_border,
+                              color: isLiked ? Colors.red : null,
+                              size: 20,
+                            ),
+                          ),
+                          Text('${updatedComment.likesCount}'),
+                        ],
+                      );
+                    },
+                  ),
+                  SizedBox(width: 5),
+                  if (currentUserId != null)
+                    PopupMenuTheme(
+                      data: PopupMenuThemeData(color: BACKGROUND_COLOR),
+                      child: PopupMenuButton<String>(
+                        icon: Icon(Icons.more_horiz),
+                        onSelected: (value) async {
+                          if (value == 'delete') {
+                            showDialog(
+                              context: context,
+                              builder: (context) => ConfirmationDialog(
+                                title: '댓글 삭제',
+                                content: '댓글을 삭제 하시겠습니까?',
+                                onConfirm: () async {
+                                  await commentProvider.deleteMarketComment(
+                                    parentComment,
+                                  );
+                                },
+                              ),
+                            );
+                          } else if (value == 'report') {
+                            final reporter = FirebaseAuth.instance.currentUser;
+                            if (reporter == null) {
+                              toastification.show(
+                                context: context,
+                                type: ToastificationType.error,
+                                alignment: Alignment.bottomCenter,
+                                autoCloseDuration: Duration(seconds: 2),
+                                title: Text('로그인이 필요합니다'),
+                              );
+                              return;
+                            }
+                            _showMarketCommentReportDialog(
+                              context,
+                              parentComment,
+                              commentProvider,
+                              currentUserId,
+                            );
+                          } else if (value == 'block') {
+                            final uid = FirebaseAuth.instance.currentUser?.uid;
+                            if (uid == null) return;
+                            _showBlockConfirmDialog(
+                              context,
+                              widget.comment!.userName,
+                              widget.comment!.userId,
+                              currentUserId,
+                            );
+                          }
+                        },
+                        itemBuilder: (context) {
+                          final isOwner = parentComment.userId == currentUserId;
+                          if (isOwner) {
+                            return [
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text(
+                                  '삭제하기',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ];
+                          } else {
+                            return [
+                              PopupMenuItem(
+                                value: 'report',
+                                child: Text(
+                                  '신고하기',
+                                  style: TextStyle(color: Colors.black),
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: 'block',
+                                child: Text(
+                                  '사용자 차단',
+                                  style: TextStyle(color: RED_DANGER_TEXT_50),
+                                ),
+                              ),
+                            ];
+                          }
+                        },
+                      ),
+                    ),
+                ],
               ],
             ),
             Padding(
               padding: const EdgeInsets.only(left: 40.0),
               child: Transform.translate(
                 offset: Offset(0, -10),
-                child: Text(
-                  parentComment.text,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+                child: _buildCommentText(
+                  parentComment,
+                  currentUserId,
+                  widget.marketPost.userId,
                 ),
               ),
             ),
@@ -746,23 +891,28 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                 offset: Offset(0, -5),
                 child: Column(
                   children: [
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _replyParentId = parentComment.id;
-                          _replyToUserName = parentComment.userName;
-                        });
-                        _commentFocusNode.requestFocus();
-                      },
-                      child: Text(
-                        '답글달기',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: GRAYSCALE_LABEL_500,
-                          fontWeight: FontWeight.bold,
+                    // 비밀댓글이고 권한이 없으면 답글달기 버튼 숨김
+                    if (!(parentComment.isSecret &&
+                        currentUserId != null &&
+                        currentUserId != parentComment.userId &&
+                        currentUserId != widget.marketPost.userId))
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _replyParentId = parentComment.id;
+                            _replyToUserName = parentComment.userName;
+                          });
+                          _commentFocusNode.requestFocus();
+                        },
+                        child: Text(
+                          '답글달기',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: GRAYSCALE_LABEL_500,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
                     if (replies.isNotEmpty) ...[
                       SizedBox(width: 10),
                       TextButton(
@@ -772,31 +922,28 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                                 !(_replyVisibility[parentComment.id] ?? true);
                           });
                         },
-                        child: Transform.translate(
-                          offset: Offset(15, -15),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                (_replyVisibility[parentComment.id] ?? true)
-                                    ? Icons.keyboard_arrow_down
-                                    : Icons.keyboard_arrow_right,
-                                size: 16,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              (_replyVisibility[parentComment.id] ?? true)
+                                  ? Icons.keyboard_arrow_down
+                                  : Icons.keyboard_arrow_right,
+                              size: 16,
+                              color: GRAYSCALE_LABEL_500,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              (_replyVisibility[parentComment.id] ?? true)
+                                  ? '답글 숨기기'
+                                  : '답글${replies.length}개 보기',
+                              style: TextStyle(
+                                fontSize: 14,
                                 color: GRAYSCALE_LABEL_500,
+                                fontWeight: FontWeight.bold,
                               ),
-                              SizedBox(width: 4),
-                              Text(
-                                (_replyVisibility[parentComment.id] ?? true)
-                                    ? '답글 숨기기'
-                                    : '답글${replies.length}개 보기',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: GRAYSCALE_LABEL_500,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -837,121 +984,167 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
         children: [
           Row(
             children: [
-              Consumer<ProfileProvider>(
-                builder: (context, profileProvider, child) {
-                  // build 중 구독을 피하기 위해 postFrameCallback 사용
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    profileProvider.subscribeUserProfile(reply.userId);
-                  });
-                  final url = profileProvider.userProfiles[reply.userId];
-                  return CircleAvatar(
-                    radius: 12,
-                    backgroundImage: url != null ? NetworkImage(url) : null,
-                    backgroundColor: GRAYSCALE_LABEL_300,
-                    child: url == null
-                        ? const Icon(
-                            Icons.person,
-                            color: Colors.black,
-                            size: 16,
-                          )
-                        : null,
-                  );
-                },
-              ),
-              SizedBox(width: 8),
-              Consumer<ProfileProvider>(
-                builder: (context, profileProvider, child) {
-                  // build 중 구독을 피하기 위해 postFrameCallback 사용
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    profileProvider.subscribeUserProfile(reply.userId);
-                  });
-                  final nickname =
-                      profileProvider.userNicknames[reply.userId] ??
-                      reply.userName;
-                  return Text(
-                    nickname,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  );
-                },
-              ),
-              Spacer(),
-              Consumer<CommentProvider>(
-                builder: (context, commentProvider, _) {
-                  final updatedReply = commentProvider
-                      .getMarketComments(widget.marketPost.postId)
-                      .firstWhere(
-                        (comment) => comment.id == reply.id,
-                        orElse: () => reply,
-                      );
-                  final bool isLiked =
-                      currentUserId != null &&
-                      updatedReply.likedBy.contains(currentUserId);
-
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        onPressed: currentUserId != null
-                            ? () => commentProvider.commentLikeAndNotify(
-                                commentId: reply.id,
-                                comment: updatedReply,
-                                currentUserId: currentUserId,
-                                commentOwnerId: reply.userId,
-                              )
-                            : null,
-                        icon: Icon(
-                          isLiked ? Icons.favorite : Icons.favorite_border,
-                          color: isLiked ? Colors.red : null,
-                          size: 16,
-                        ),
+              // 비밀댓글 권한 체크
+              if (reply.isSecret &&
+                  currentUserId != null &&
+                  currentUserId != reply.userId &&
+                  currentUserId != widget.marketPost.userId) ...[
+                // 권한이 없는 경우: 비밀댓글입니다 표시
+                Row(
+                  children: [
+                    Icon(Icons.lock, size: 14, color: GRAYSCALE_LABEL_500),
+                    SizedBox(width: 6),
+                    Text(
+                      '비밀댓글입니다',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: GRAYSCALE_LABEL_500,
+                        fontStyle: FontStyle.italic,
                       ),
-                      Text(
-                        '${updatedReply.likesCount}',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              SizedBox(width: 5),
-              if (currentUserId != null && reply.userId == currentUserId)
-                PopupMenuTheme(
-                  data: PopupMenuThemeData(color: BACKGROUND_COLOR),
-                  child: PopupMenuButton<String>(
-                    icon: Icon(Icons.more_horiz, size: 16),
-                    onSelected: (value) async {
-                      showDialog(
-                        context: context,
-                        builder: (context) => ConfirmationDialog(
-                          title: '답글 삭제',
-                          content: '답글을 삭제 하시겠습니까?',
-                          onConfirm: () async {
-                            await commentProvider.deleteMarketComment(reply);
-                            if (!mounted) return;
-                          },
-                        ),
-                      );
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Text(
-                          '삭제하기',
-                          style: TextStyle(color: Colors.red, fontSize: 12),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+              ] else ...[
+                // 권한이 있는 경우: 프로필 정보 표시
+                Consumer<ProfileProvider>(
+                  builder: (context, profileProvider, child) {
+                    // build 중 구독을 피하기 위해 postFrameCallback 사용
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      profileProvider.subscribeUserProfile(reply.userId);
+                    });
+                    final url = profileProvider.userProfiles[reply.userId];
+                    return CircleAvatar(
+                      radius: 12,
+                      backgroundImage: url != null ? NetworkImage(url) : null,
+                      backgroundColor: GRAYSCALE_LABEL_300,
+                      child: url == null
+                          ? const Icon(
+                              Icons.person,
+                              color: Colors.black,
+                              size: 16,
+                            )
+                          : null,
+                    );
+                  },
+                ),
+                SizedBox(width: 8),
+                Consumer<ProfileProvider>(
+                  builder: (context, profileProvider, child) {
+                    // build 중 구독을 피하기 위해 postFrameCallback 사용
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      profileProvider.subscribeUserProfile(reply.userId);
+                    });
+                    final nickname =
+                        profileProvider.userNicknames[reply.userId] ??
+                        reply.userName;
+                    return Row(
+                      children: [
+                        Text(
+                          nickname,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        if (reply.isSecret) ...[
+                          SizedBox(width: 4),
+                          Icon(
+                            Icons.lock,
+                            size: 12,
+                            color: GRAYSCALE_LABEL_600,
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ],
+              Spacer(),
+              // 비밀댓글이고 권한이 없으면 좋아요/메뉴 버튼 숨김
+              if (!(reply.isSecret &&
+                  currentUserId != null &&
+                  currentUserId != reply.userId &&
+                  currentUserId != widget.marketPost.userId)) ...[
+                Consumer<CommentProvider>(
+                  builder: (context, commentProvider, _) {
+                    final updatedReply = commentProvider
+                        .getMarketComments(widget.marketPost.postId)
+                        .firstWhere(
+                          (comment) => comment.id == reply.id,
+                          orElse: () => reply,
+                        );
+                    final bool isLiked =
+                        currentUserId != null &&
+                        updatedReply.likedBy.contains(currentUserId);
+
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: currentUserId != null
+                              ? () => commentProvider.commentLikeAndNotify(
+                                  commentId: reply.id,
+                                  comment: updatedReply,
+                                  currentUserId: currentUserId,
+                                  commentOwnerId: reply.userId,
+                                )
+                              : null,
+                          icon: Icon(
+                            isLiked ? Icons.favorite : Icons.favorite_border,
+                            color: isLiked ? Colors.red : null,
+                            size: 16,
+                          ),
+                        ),
+                        Text(
+                          '${updatedReply.likesCount}',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                SizedBox(width: 5),
+                if (currentUserId != null && reply.userId == currentUserId)
+                  PopupMenuTheme(
+                    data: PopupMenuThemeData(color: BACKGROUND_COLOR),
+                    child: PopupMenuButton<String>(
+                      icon: Icon(Icons.more_horiz, size: 16),
+                      onSelected: (value) async {
+                        showDialog(
+                          context: context,
+                          builder: (context) => ConfirmationDialog(
+                            title: '답글 삭제',
+                            content: '답글을 삭제 하시겠습니까?',
+                            onConfirm: () async {
+                              await commentProvider.deleteMarketComment(reply);
+                              if (!mounted) return;
+                            },
+                          ),
+                        );
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            '삭제하기',
+                            style: TextStyle(color: Colors.red, fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ],
           ),
           Padding(
             padding: const EdgeInsets.only(left: 32.0),
             child: Transform.translate(
               offset: Offset(0, -8),
-              child: Text(
-                reply.text,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w400),
+              child: _buildCommentText(
+                reply,
+                currentUserId,
+                widget.marketPost.userId,
               ),
             ),
           ),
@@ -1371,148 +1564,209 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
     ];
     String selectedReason = reportReasons[0];
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: BACKGROUND_COLOR,
-        title: Text('게시물 신고'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '신고 사유를 선택해주세요',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 12),
-              StatefulBuilder(
-                builder: (context, setState) {
-                  return Column(
-                    children: reportReasons.map((reason) {
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedReason = reason;
-                          });
-                        },
-                        child: Container(
-                          margin: EdgeInsets.symmetric(vertical: 4),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: selectedReason == reason
-                                  ? BUTTON
-                                  : GRAYSCALE_LABEL_400,
-                              width: selectedReason == reason ? 2 : 1,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                            color: selectedReason == reason
-                                ? BUTTON.withOpacity(0.1)
-                                : Colors.transparent,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(child: Text(reason)),
-                              if (selectedReason == reason)
-                                Icon(Icons.check, color: BUTTON),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                },
-              ),
-              SizedBox(height: 16),
-              Text(
-                '추가 설명 (선택사항)',
-                style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
-              ),
-              SizedBox(height: 8),
-              TextField(
-                controller: reportController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: '자세한 내용을 입력해주세요',
-                  hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: BUTTON),
+      isScrollControlled: true,
+      backgroundColor: BACKGROUND_COLOR,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 상단 바
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: GRAYSCALE_LABEL_400,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-            ],
+                SizedBox(height: 20),
+                Text(
+                  '게시물 신고',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  '신고 사유를 선택해주세요',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 12),
+                ...reportReasons.map((reason) {
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedReason = reason;
+                      });
+                    },
+                    child: Container(
+                      margin: EdgeInsets.symmetric(vertical: 4),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: selectedReason == reason
+                              ? BUTTON
+                              : GRAYSCALE_LABEL_400,
+                          width: selectedReason == reason ? 2 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        color: selectedReason == reason
+                            ? BUTTON.withOpacity(0.1)
+                            : Colors.transparent,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(child: Text(reason)),
+                          if (selectedReason == reason)
+                            Icon(Icons.check, color: BUTTON),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+                SizedBox(height: 16),
+                Text(
+                  '추가 설명 (선택사항)',
+                  style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+                ),
+                SizedBox(height: 8),
+                TextField(
+                  controller: reportController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: '자세한 내용을 입력해주세요',
+                    hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: BUTTON),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: GRAYSCALE_LABEL_300),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '취소',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: GRAYSCALE_LABEL_900,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          final description = reportController.text.trim();
+                          final reason =
+                              selectedReason +
+                              (description.isNotEmpty ? '\n$description' : '');
+
+                          try {
+                            final user = FirebaseAuth.instance.currentUser;
+                            if (user == null) {
+                              Navigator.pop(context);
+                              toastification.show(
+                                context: context,
+                                type: ToastificationType.error,
+                                alignment: Alignment.bottomCenter,
+                                autoCloseDuration: Duration(seconds: 2),
+                                title: Text('로그인이 필요합니다'),
+                              );
+                              return;
+                            }
+
+                            await marketFeedProvider.reportMarketPost(
+                              marketPost: marketPost,
+                              reporterUserId: user.uid,
+                              reporterUserNickName: user.displayName ?? '익명',
+                              reason: reason,
+                            );
+
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                            toastification.show(
+                              context: context,
+                              type: ToastificationType.success,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: Duration(seconds: 2),
+                              title: Text('신고가 접수되었습니다'),
+                            );
+                          } catch (e) {
+                            Navigator.pop(context);
+                            toastification.show(
+                              context: context,
+                              type: ToastificationType.error,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: Duration(seconds: 2),
+                              title: Text('신고 중 오류가 발생했습니다'),
+                            );
+                          }
+                        },
+                        child: Container(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: RED_DANGER_TEXT_50,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '신고하기',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: WHITE,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('취소', style: TextStyle(color: Colors.black)),
-          ),
-          TextButton(
-            onPressed: () async {
-              final description = reportController.text.trim();
-              final reason =
-                  selectedReason +
-                  (description.isNotEmpty ? '\n$description' : '');
-
-              try {
-                final user = FirebaseAuth.instance.currentUser;
-                if (user == null) {
-                  if (!mounted) return;
-                  toastification.show(
-                    context: context,
-                    type: ToastificationType.error,
-                    alignment: Alignment.bottomCenter,
-                    autoCloseDuration: Duration(seconds: 2),
-                    title: Text('로그인이 필요합니다'),
-                  );
-
-                  return;
-                }
-
-                await marketFeedProvider.reportMarketPost(
-                  marketPost: marketPost,
-                  reporterUserId: user.uid,
-                  reporterUserNickName: user.displayName ?? '익명',
-                  reason: reason,
-                );
-
-                if (!mounted) return;
-                Navigator.pop(context);
-                toastification.show(
-                  context: context,
-                  type: ToastificationType.success,
-                  alignment: Alignment.bottomCenter,
-                  autoCloseDuration: Duration(seconds: 2),
-                  title: Text('신고가 접수되었습니다'),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                Navigator.pop(context);
-                toastification.show(
-                  context: context,
-                  type: ToastificationType.error,
-                  alignment: Alignment.bottomCenter,
-                  autoCloseDuration: Duration(seconds: 2),
-                  title: Text('신고 중 오류가 발생했습니다'),
-                );
-              }
-            },
-            child: Text('신고하기', style: TextStyle(color: Colors.red)),
-          ),
-        ],
       ),
     );
   }
