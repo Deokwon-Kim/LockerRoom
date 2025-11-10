@@ -301,4 +301,73 @@ class IntutionRecordProvider extends ChangeNotifier {
     _selectedImage = null;
     notifyListeners();
   }
+
+  // 직관기록 수정 업데이트
+  Future<bool> updateRecord({
+    required String gameId,
+    required int newMyscore,
+    required int newOppScore,
+    String? newMemo,
+    File? newImage,
+  }) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // 이미지 업로드
+      String? imageUrl;
+      if (newImage != null) {
+        try {
+          final fileName =
+              '${DateTime.now().millisecondsSinceEpoch}_${newImage.path.split('/').last}';
+          final ref = FirebaseStorage.instance.ref().child(
+            'intution_records/${user.uid}/$fileName',
+          );
+
+          await ref.putFile(newImage);
+          imageUrl = await ref.getDownloadURL();
+        } catch (e) {
+          print('직관 이미지 업로드 실패: $e');
+        }
+      }
+
+      // 업데이트할 데이터 준비
+      final updateData = <String, dynamic>{
+        'myScore': newMyscore,
+        'opponentScore': newOppScore,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (newMemo != null) {
+        updateData['memo'] = newMemo.trim().isNotEmpty ? newMemo.trim() : null;
+      }
+
+      if (imageUrl != null) {
+        updateData['imageUrl'] = imageUrl;
+      }
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('attendances')
+          .doc(gameId)
+          .update(updateData);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('직관기록 업데이트 실패: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
 }
