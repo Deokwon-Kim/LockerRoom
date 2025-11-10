@@ -1,6 +1,11 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:lockerroom/model/attendance_model.dart';
 import 'package:lockerroom/model/schedule_model.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
@@ -9,6 +14,7 @@ import 'package:provider/provider.dart';
 class IntutionRecordProvider extends ChangeNotifier {
   final TextEditingController myScoreController = TextEditingController();
   final TextEditingController oppScoreContreller = TextEditingController();
+  final TextEditingController memoController = TextEditingController();
 
   bool _isLoading = true;
   bool _saving = false;
@@ -29,6 +35,7 @@ class IntutionRecordProvider extends ChangeNotifier {
   void dispose() {
     myScoreController.dispose();
     oppScoreContreller.dispose();
+    memoController.dispose();
     super.dispose();
   }
 
@@ -57,6 +64,7 @@ class IntutionRecordProvider extends ChangeNotifier {
     // 컨트롤러 초기화 - 페이지 진입 시마다 빈 상태로 시작
     myScoreController.clear();
     oppScoreContreller.clear();
+    memoController.clear();
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -88,7 +96,7 @@ class IntutionRecordProvider extends ChangeNotifier {
       match = filtered.isNotEmpty ? filtered.first : null;
     }
 
-    // 기존기록 있으면 불러오기
+    // 기존기록 있으면 불러오기 (모델 사용)
     if (match != null) {
       final doc = await FirebaseFirestore.instance
           .collection('users')
@@ -97,16 +105,13 @@ class IntutionRecordProvider extends ChangeNotifier {
           .doc(match.gameId)
           .get();
       if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
-        // 오타 보정: myScore 키를 우선 사용하고, 문자열일 경우 파싱
-        final int? myScore = data['myScore'] is int
-            ? data['myScore'] as int
-            : int.tryParse('${data['myScore']}');
-        final int? oppScore = data['opponentScore'] is int
-            ? data['opponentScore'] as int
-            : int.tryParse('${data['opponentScore']}');
-        if (myScore != null) myScoreController.text = myScore.toString();
-        if (oppScore != null) oppScoreContreller.text = oppScore.toString();
+        final attendance = AttendanceModel.fromDoc(doc);
+        myScoreController.text = attendance.myScore.toString();
+        oppScoreContreller.text = attendance.opponentScore.toString();
+        if (attendance.memo != null && attendance.memo!.isNotEmpty) {
+          memoController.text = attendance.memo!;
+        }
+        // 이미지는 UI에서 별도로 처리 (필요시 추가)
       }
     }
 
@@ -154,9 +159,10 @@ class IntutionRecordProvider extends ChangeNotifier {
       match = filtered.isNotEmpty ? filtered.first : null;
     }
 
-    // 점수 입력값 초기화 후 기존 기록 프리필
+    // 점수 입력값 초기화 후 기존 기록 프리필 (모델 사용)
     myScoreController.clear();
     oppScoreContreller.clear();
+    memoController.clear();
     if (match != null) {
       final doc = await FirebaseFirestore.instance
           .collection('users')
@@ -165,15 +171,13 @@ class IntutionRecordProvider extends ChangeNotifier {
           .doc(match.gameId)
           .get();
       if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
-        final int? myScore = data['myScore'] is int
-            ? data['myScore'] as int
-            : int.tryParse('${data['myScore']}');
-        final int? oppScore = data['opponentScore'] is int
-            ? data['opponentScore'] as int
-            : int.tryParse('${data['opponentScore']}');
-        if (myScore != null) myScoreController.text = myScore.toString();
-        if (oppScore != null) oppScoreContreller.text = oppScore.toString();
+        final attendance = AttendanceModel.fromDoc(doc);
+        myScoreController.text = attendance.myScore.toString();
+        oppScoreContreller.text = attendance.opponentScore.toString();
+        if (attendance.memo != null && attendance.memo!.isNotEmpty) {
+          memoController.text = attendance.memo!;
+        }
+        // 이미지는 UI에서 별도로 처리 (필요시 추가)
       }
     }
 
@@ -216,33 +220,60 @@ class IntutionRecordProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // 이미지 업로드
+      String? imageUrl;
+      if (_selectedImage != null) {
+        try {
+          final fileName =
+              '${DateTime.now().millisecondsSinceEpoch}_${_selectedImage!.path.split('/').last}';
+          final ref = FirebaseStorage.instance.ref().child(
+            'intution_records/${user.uid}/$fileName',
+          );
+
+          await ref.putFile(_selectedImage!);
+          imageUrl = await ref.getDownloadURL();
+        } catch (e) {
+          print('직관 이미지 업로드 실패: $e');
+        }
+      }
+
+      // 모델 생성 및 저장
+      final attendance = AttendanceModel(
+        gameId: g.gameId,
+        season: g.season,
+        date: _yyyyMmDd(g.dateTimeKst),
+        time:
+            '${g.dateTimeKst.hour.toString().padLeft(2, '0')}:${g.dateTimeKst.minute.toString().padLeft(2, '0')}',
+        stadium: g.stadium,
+        homeTeam: g.homeTeam,
+        awayTeam: g.awayTeam,
+        myTeam: _myTeamSymple!,
+        oppTeam: _oppTeamSymple,
+        myScore: myScore,
+        opponentScore: oppScore,
+        imageUrl: imageUrl,
+        memo: memoController.text.trim().isNotEmpty
+            ? memoController.text.trim()
+            : null,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .collection('attendances')
           .doc(g.gameId)
-          .set({
-            'season': g.season,
-            'gameId': g.gameId,
-            'date': _yyyyMmDd(g.dateTimeKst),
-            'time':
-                '${g.dateTimeKst.hour.toString().padLeft(2, '0')}:${g.dateTimeKst.minute.toString().padLeft(2, '0')}',
-            'stadium': g.stadium,
-            'homeTeam': g.homeTeam,
-            'awayTeam': g.awayTeam,
-            'myTeam': _myTeamSymple,
-            'oppTeam': _oppTeamSymple,
-            'myScore': myScore,
-            'opponentScore': oppScore,
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+          .set(attendance.toMap(), SetOptions(merge: true));
 
       // 저장 완료 후 UploadProvider 초기화
 
       // 입력 필드 초기화
       myScoreController.clear();
       oppScoreContreller.clear();
+      memoController.clear();
+      _selectedImage = null;
+      notifyListeners();
 
       return true;
     } catch (_) {
@@ -251,5 +282,23 @@ class IntutionRecordProvider extends ChangeNotifier {
       _saving = false;
       notifyListeners();
     }
+  }
+
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
+
+  File? get selectedImage => _selectedImage;
+
+  Future<void> pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      _selectedImage = File(pickedFile.path);
+      notifyListeners();
+    }
+  }
+
+  void removeImage() {
+    _selectedImage = null;
+    notifyListeners();
   }
 }
