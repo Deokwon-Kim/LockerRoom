@@ -6,6 +6,7 @@ import 'package:lockerroom/model/attendance_model.dart';
 import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:toastification/toastification.dart';
 
 class IntutionRecordDetailPage extends StatefulWidget {
   final AttendanceModel? attendanceModel;
@@ -113,6 +114,82 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         scrolledUnderElevation: 0,
+        actions: [
+          Consumer2<IntutionRecordProvider, TeamProvider>(
+            builder: (context, irp, tp, child) {
+              return TextButton(
+                onPressed: irp.isLoding
+                    ? null
+                    : () async {
+                        // 점수 검증
+                        final myScoreText = _myTeamScore.text.trim();
+                        final oppScoreText = _oppTeamScore.text.trim();
+
+                        if (myScoreText.isEmpty || oppScoreText.isEmpty) {
+                          toastification.show(
+                            context: context,
+                            alignment: Alignment.bottomCenter,
+                            type: ToastificationType.error,
+                            autoCloseDuration: Duration(seconds: 2),
+                            title: Text('점수를 입력해주세요'),
+                          );
+                          return;
+                        }
+
+                        final myScore = int.tryParse(myScoreText);
+                        final oppScore = int.tryParse(oppScoreText);
+
+                        if (myScore == null || oppScore == null) {
+                          toastification.show(
+                            context: context,
+                            alignment: Alignment.bottomCenter,
+                            type: ToastificationType.error,
+                            autoCloseDuration: Duration(seconds: 2),
+                            title: Text('점수를 입력해주세요'),
+                          );
+                          return;
+                        }
+
+                        final success = await irp.updateRecord(
+                          gameId: widget.gameId,
+                          newMyscore: myScore,
+                          newOppScore: oppScore,
+                          newMemo: _memoController.text.trim(),
+                          newImage: irp.selectedImage,
+                        );
+
+                        if (success) {
+                          toastification.show(
+                            context: context,
+                            alignment: Alignment.bottomCenter,
+                            type: ToastificationType.success,
+                            autoCloseDuration: Duration(seconds: 2),
+                            title: Text('직관기록이 수정되었습니다'),
+                          );
+                          Navigator.of(context).pop(true);
+                        } else {
+                          toastification.show(
+                            context: context,
+                            alignment: Alignment.bottomCenter,
+                            type: ToastificationType.error,
+                            autoCloseDuration: Duration(seconds: 2),
+                            title: Text('직관기록 수정실패'),
+                          );
+                        }
+                      },
+                child: irp.isLoding
+                    ? CircularProgressIndicator(color: tp.selectedTeam?.color)
+                    : Text(
+                        '저장',
+                        style: TextStyle(
+                          color: tp.selectedTeam?.color,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              );
+            },
+          ),
+        ],
       ),
       body: FutureBuilder<AttendanceModel?>(
         future: _loadAttendance(),
