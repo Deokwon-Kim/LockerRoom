@@ -1456,7 +1456,8 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                       child: GestureDetector(
                         onTap: () async {
                           final description = reportController.text.trim();
-                          final reason = selectedReason +
+                          final reason =
+                              selectedReason +
                               (description.isNotEmpty ? '\n$description' : '');
 
                           try {
