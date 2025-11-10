@@ -124,6 +124,7 @@ class _NoticeListPageState extends State<NoticeListPage> {
                         initialContent: data['content'],
                         noticeId: doc.id,
                         isAdmin: _isAdmin(),
+                        createdAt: timestamp?.toDate(),
                       ),
                     ),
                   );

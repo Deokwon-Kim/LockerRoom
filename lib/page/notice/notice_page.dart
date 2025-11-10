@@ -10,12 +10,14 @@ class NoticePage extends StatefulWidget {
   final String? initialContent;
   final String? noticeId;
   final bool isAdmin;
+  final DateTime? createdAt;
   const NoticePage({
     super.key,
     this.initialTitle,
     this.initialContent,
     this.noticeId,
     this.isAdmin = false,
+    this.createdAt,
   });
 
   @override
@@ -31,7 +33,9 @@ class _NoticePageState extends State<NoticePage> {
   @override
   void initState() {
     super.initState();
-    _noticeDate = DateFormat('yyyy.MM.dd').format(DateTime.now());
+    _noticeDate = DateFormat(
+      'yyyy.MM.dd',
+    ).format(widget.createdAt ?? DateTime.now());
 
     if (widget.initialTitle != null) {
       _savedTitle = widget.initialTitle!;
