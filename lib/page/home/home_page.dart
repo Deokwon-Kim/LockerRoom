@@ -482,6 +482,7 @@ class _HomePageState extends State<HomePage> {
                                             style: TextStyle(
                                               fontWeight: FontWeight.w500,
                                               fontSize: 16,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
                                           SizedBox(height: 3),
