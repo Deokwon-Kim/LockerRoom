@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/page/myPage/user_detail_page.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -132,63 +133,117 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           final imageUrl =
                               (data['profileImage'] as String?) ?? '';
 
-                          final tile = ListTile(
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 6,
-                            ),
-                            leading: CircleAvatar(
-                              radius: 20,
-                              backgroundColor: GRAYSCALE_LABEL_300,
-                              backgroundImage: imageUrl.isNotEmpty
-                                  ? NetworkImage(imageUrl)
-                                  : null,
-                              child: imageUrl.isEmpty
-                                  ? Icon(
-                                      Icons.person,
-                                      color: GRAYSCALE_LABEL_500,
-                                    )
-                                  : null,
-                            ),
-                            title: RichText(
-                              text: TextSpan(
-                                style: TextStyle(color: BLACK, fontSize: 14),
-                                children: [
-                                  TextSpan(
-                                    text: name,
+                          final tile = Padding(
+                            padding: const EdgeInsets.only(left: 10.0),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: GRAYSCALE_LABEL_300,
+                                  backgroundImage: imageUrl.isNotEmpty
+                                      ? NetworkImage(imageUrl)
+                                      : null,
+                                  child: imageUrl.isEmpty
+                                      ? Icon(
+                                          Icons.person,
+                                          color: GRAYSCALE_LABEL_500,
+                                        )
+                                      : null,
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => UserDetailPage(
+                                          userId: n.fromUserId,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Text(
+                                    name,
                                     style: TextStyle(
-                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: BLACK,
                                     ),
                                   ),
-                                  if (isFollow) ...[
-                                    TextSpan(text: ' 님이 회원님을 팔로우하기 시작했습니다.'),
-                                  ] else if (isFeedLike) ...[
-                                    TextSpan(text: ' 님이 회원님의 게시글을 좋아합니다.'),
-                                  ] else if (commentLike) ...[
-                                    TextSpan(text: ' 님이 회원님의 댓글을 좋아합니다.'),
-                                  ] else if (isComment) ...[
-                                    TextSpan(text: ' 님이 회원님의 게시글에 댓글을 남겼습니다.'),
-                                  ] else if (isMarketComment) ...[
-                                    TextSpan(
-                                      text: ' 님이 회원님의 마켓 게시글에 댓글을 남겼습니다.',
+                                ),
+                                if (isFollow) ...[
+                                  Transform.translate(
+                                    offset: Offset(-10, 0),
+                                    child: Text(
+                                      '님이 회원님을 팔로우하기 시작했습니다.',
+                                      style: TextStyle(fontSize: 14),
                                     ),
-                                  ] else if (isReport ||
-                                      isCommentReport ||
-                                      isMarketCommentReport ||
-                                      isMarketPostReport) ...[
-                                    TextSpan(text: '신고가 접수되었습니다.'),
-                                  ] else ...[
-                                    TextSpan(text: '새로운 알림이 있습니다.'),
-                                  ],
+                                  ),
+                                ] else if (isFeedLike) ...[
+                                  Transform.translate(
+                                    offset: Offset(-10, 0),
+                                    child: Text(
+                                      '님이 회원님의 댓글을 좋아합니다.',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ] else if (isComment) ...[
+                                  Transform.translate(
+                                    offset: Offset(-10, 0),
+                                    child: Text(
+                                      '님이 회원님의 게시글에 댓글을 남겼습니다.',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ] else if (commentLike) ...[
+                                  Transform.translate(
+                                    offset: Offset(-10, 0),
+                                    child: Text(
+                                      '님이 회원님의 댓글을 좋아합니다.',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ] else if (isMarketComment) ...[
+                                  Transform.translate(
+                                    offset: Offset(-10, 0),
+                                    child: Text(
+                                      '님이 회원님의 마켓 게시글에 댓글을 남겼습니다.',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ] else if (isMarketPostReport) ...[
+                                  Transform.translate(
+                                    offset: Offset(-10, 0),
+                                    child: Text(
+                                      '마켓 게시글 신고발생 🚨',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ] else if (isReport) ...[
+                                  Transform.translate(
+                                    offset: Offset(-10, 0),
+                                    child: Text(
+                                      '게시글 신고발생 🚨',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ] else if (isMarketCommentReport) ...[
+                                  Transform.translate(
+                                    offset: Offset(-10, 0),
+                                    child: Text(
+                                      '마켓 댓글 신고발생 🚨',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ] else if (isCommentReport) ...[
+                                  Transform.translate(
+                                    offset: Offset(-10, 0),
+                                    child: Text(
+                                      '피드 댓글 신고발생 🚨',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
                                 ],
-                              ),
-                            ),
-                            subtitle: Text(
-                              _formatRelative(createdAt),
-                              style: TextStyle(
-                                color: GRAYSCALE_LABEL_500,
-                                fontSize: 12,
-                              ),
+                              ],
                             ),
                           );
 
