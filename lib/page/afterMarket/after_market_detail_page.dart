@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/market_post_model.dart';
+import 'package:lockerroom/page/afterMarket/after_market_edit_page.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
@@ -33,6 +34,8 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
   final TextEditingController _marketCommentController =
       TextEditingController();
   late final CommentProvider _commentProvider;
+  late final MarketFeedProvider _marketFeedProvider;
+  late final ProfileProvider _profileProvider;
   BlockProvider? _blockProvider;
   VoidCallback? _blockListener;
   int _currentIndex = 0;
@@ -41,18 +44,11 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
   String? _replyParentId;
   String? _replyToUserName;
   final Map<String, bool> _replyVisibility = {}; // 답글 표시/숨김 상태 관리
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Provider 참조를 보관해 두고 사용 (dispose에서 context 조회 방지)
-    _commentProvider = context.read<CommentProvider>();
-    // postId별 구독 시작
-    _commentProvider.subscribeMarketComments(widget.marketPost.postId);
-    // 작성자 프로필은 빌드 외부에서 1회만 구독
-    context.read<ProfileProvider>().subscribeUserProfile(
-      widget.marketPost.userId,
-    );
 
     // 입력창 포커스 시 스크롤을 맨 아래로 이동
     _commentFocusNode.addListener(() {
@@ -66,26 +62,48 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
           );
         });
       }
-
-      // 페이지 진입 시 조회수 증가
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<MarketFeedProvider>().viewPost(widget.postId);
-      });
     });
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // 한 번만 실행되도록 체크
+    if (!_isInitialized) {
+      // Provider 참조를 보관해 두고 사용 (dispose에서 context 조회 방지)
+      _commentProvider = context.read<CommentProvider>();
+      _marketFeedProvider = context.read<MarketFeedProvider>();
+      _profileProvider = context.read<ProfileProvider>();
       _blockProvider = context.read<BlockProvider>();
-      // 초기 동기화
-      _commentProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
-      _commentProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
-      // 차단 목록 변경 리스너
-      _blockListener = () {
+
+      // build 완료 후 초기화 (notifyListeners 호출 방지)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        // postId별 구독 시작
+        _commentProvider.subscribeMarketComments(widget.marketPost.postId);
+
+        // 작성자 프로필 구독
+        _profileProvider.subscribeUserProfile(widget.marketPost.userId);
+
+        // 초기 동기화
         _commentProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
         _commentProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
-      };
-      _blockProvider!.addListener(_blockListener!);
-    });
+
+        // 차단 목록 변경 리스너
+        _blockListener = () {
+          _commentProvider.setBlockedUsers(_blockProvider!.blockedUserIds);
+          _commentProvider.setBlockedByUsers(_blockProvider!.blockedByUserIds);
+        };
+        _blockProvider!.addListener(_blockListener!);
+
+        // 페이지 진입 시 조회수 증가
+        _marketFeedProvider.viewPost(widget.postId);
+      });
+
+      _isInitialized = true;
+    }
   }
 
   @override
@@ -128,7 +146,6 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final isOwner =
         currentUserId != null && widget.marketPost.userId == currentUserId;
-    final marketFeedProvider = Provider.of<MarketFeedProvider>(context);
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -150,7 +167,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                   FirebaseAuth.instance.currentUser?.uid != null &&
                   post.likedBy.contains(FirebaseAuth.instance.currentUser!.uid);
               return IconButton(
-                onPressed: () => marketFeedProvider.toggleLike(post),
+                onPressed: () => _marketFeedProvider.toggleLike(post),
                 icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border),
                 color: isLiked ? Colors.red : null,
               );
@@ -159,7 +176,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
 
           IconButton(
             onPressed: () {
-              _showPostOptionBottomSheet(context, marketFeedProvider, isOwner);
+              _showPostOptionBottomSheet(context, _marketFeedProvider, isOwner);
             },
             icon: Icon(Icons.more_horiz),
           ),
@@ -253,9 +270,12 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                         SizedBox(width: 10),
                         Consumer<ProfileProvider>(
                           builder: (context, profileProvider, child) {
-                            profileProvider.subscribeUserProfile(
-                              widget.marketPost.postId,
-                            );
+                            // build 중 구독을 피하기 위해 postFrameCallback 사용
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              profileProvider.subscribeUserProfile(
+                                widget.marketPost.postId,
+                              );
+                            });
                             final nickname =
                                 profileProvider.userNicknames[widget
                                     .marketPost
@@ -551,7 +571,12 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
               children: [
                 Consumer<ProfileProvider>(
                   builder: (context, profileProvider, child) {
-                    profileProvider.subscribeUserProfile(parentComment.userId);
+                    // build 중 구독을 피하기 위해 postFrameCallback 사용
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      profileProvider.subscribeUserProfile(
+                        parentComment.userId,
+                      );
+                    });
                     final url =
                         profileProvider.userProfiles[parentComment.userId];
                     return CircleAvatar(
@@ -571,7 +596,12 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                 SizedBox(width: 10),
                 Consumer<ProfileProvider>(
                   builder: (context, profileProvider, child) {
-                    profileProvider.subscribeUserProfile(parentComment.userId);
+                    // build 중 구독을 피하기 위해 postFrameCallback 사용
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      profileProvider.subscribeUserProfile(
+                        parentComment.userId,
+                      );
+                    });
                     final nickname =
                         profileProvider.userNicknames[parentComment.userId] ??
                         parentComment.userName;
@@ -809,7 +839,10 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
             children: [
               Consumer<ProfileProvider>(
                 builder: (context, profileProvider, child) {
-                  profileProvider.subscribeUserProfile(reply.userId);
+                  // build 중 구독을 피하기 위해 postFrameCallback 사용
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    profileProvider.subscribeUserProfile(reply.userId);
+                  });
                   final url = profileProvider.userProfiles[reply.userId];
                   return CircleAvatar(
                     radius: 12,
@@ -828,7 +861,10 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
               SizedBox(width: 8),
               Consumer<ProfileProvider>(
                 builder: (context, profileProvider, child) {
-                  profileProvider.subscribeUserProfile(reply.userId);
+                  // build 중 구독을 피하기 위해 postFrameCallback 사용
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    profileProvider.subscribeUserProfile(reply.userId);
+                  });
                   final nickname =
                       profileProvider.userNicknames[reply.userId] ??
                       reply.userName;
@@ -1122,12 +1158,13 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                 GestureDetector(
                   onTap: () {
                     Navigator.pop(context); // 바텀시트 닫기
-                    // Navigator.push(
-                    //   context,
-                    //   MaterialPageRoute(
-                    //     builder: (context) => FeedEditPage(post: post),
-                    //   ),
-                    // );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            AfterMarketEditPage(marketPost: widget.marketPost),
+                      ),
+                    );
                   },
                   child: Container(
                     padding: EdgeInsets.all(10),
@@ -1152,21 +1189,49 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                 SizedBox(height: 10),
                 GestureDetector(
                   onTap: () {
+                    final pageContext = context; // 페이지 context 저장
                     Navigator.pop(context); // 바텀시트 닫기
                     showDialog(
-                      context: context,
-                      builder: (context) => ConfirmationDialog(
+                      context: pageContext,
+                      builder: (dialogContext) => ConfirmationDialog(
                         title: '삭제 확인',
                         content: '게시물을 삭제 하시겠습니까?',
                         onConfirm: () async {
+                          // 다이얼로그 닫기
+                          Navigator.pop(dialogContext);
+
+                          // 게시물 삭제
                           await mfp.deletePost(widget.marketPost);
-                          toastification.show(
-                            context: context,
-                            type: ToastificationType.success,
-                            alignment: Alignment.bottomCenter,
-                            autoCloseDuration: Duration(seconds: 2),
-                            title: Text('게시물을 삭제했습니다'),
-                          );
+
+                          // mounted 체크
+                          if (!mounted) return;
+
+                          // 토스트 메시지 표시 (페이지 닫기 전)
+                          try {
+                            toastification.show(
+                              context: pageContext,
+                              type: ToastificationType.success,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: Duration(seconds: 2),
+                              title: Text('게시물을 삭제했습니다'),
+                            );
+                          } catch (e) {
+                            // context가 유효하지 않은 경우 무시
+                            print('토스트 표시 실패: $e');
+                          }
+
+                          // Detail 페이지 닫기 (리스트로 돌아가기)
+                          // 약간의 딜레이를 주어 토스트가 표시된 후 페이지 닫기
+                          Future.delayed(Duration(milliseconds: 50), () {
+                            try {
+                              if (mounted) {
+                                Navigator.pop(pageContext);
+                              }
+                            } catch (e) {
+                              // 이미 닫힌 경우 무시
+                              print('페이지 닫기 실패: $e');
+                            }
+                          });
                         },
                       ),
                     );
