@@ -1324,148 +1324,208 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
     ];
     String selectedReason = reportReasons[0];
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: BACKGROUND_COLOR,
-        title: Text('게시물 신고'),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '신고 사유를 선택해주세요',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 12),
-              StatefulBuilder(
-                builder: (context, setState) {
-                  return Column(
-                    children: reportReasons.map((reason) {
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedReason = reason;
-                          });
-                        },
-                        child: Container(
-                          margin: EdgeInsets.symmetric(vertical: 4),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: selectedReason == reason
-                                  ? BUTTON
-                                  : GRAYSCALE_LABEL_400,
-                              width: selectedReason == reason ? 2 : 1,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                            color: selectedReason == reason
-                                ? BUTTON.withOpacity(0.1)
-                                : Colors.transparent,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(child: Text(reason)),
-                              if (selectedReason == reason)
-                                Icon(Icons.check, color: BUTTON),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                },
-              ),
-              SizedBox(height: 16),
-              Text(
-                '추가 설명 (선택사항)',
-                style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
-              ),
-              SizedBox(height: 8),
-              TextField(
-                controller: reportController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: '자세한 내용을 입력해주세요',
-                  hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: BUTTON),
+      isScrollControlled: true,
+      backgroundColor: BACKGROUND_COLOR,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 상단 바
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: GRAYSCALE_LABEL_400,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-            ],
+                SizedBox(height: 20),
+                Text(
+                  '게시물 신고',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  '신고 사유를 선택해주세요',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 12),
+                ...reportReasons.map((reason) {
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedReason = reason;
+                      });
+                    },
+                    child: Container(
+                      margin: EdgeInsets.symmetric(vertical: 4),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: selectedReason == reason
+                              ? BUTTON
+                              : GRAYSCALE_LABEL_400,
+                          width: selectedReason == reason ? 2 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        color: selectedReason == reason
+                            ? BUTTON.withOpacity(0.1)
+                            : Colors.transparent,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(child: Text(reason)),
+                          if (selectedReason == reason)
+                            Icon(Icons.check, color: BUTTON),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+                SizedBox(height: 16),
+                Text(
+                  '추가 설명 (선택사항)',
+                  style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+                ),
+                SizedBox(height: 8),
+                TextField(
+                  controller: reportController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: '자세한 내용을 입력해주세요',
+                    hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: BUTTON),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: GRAYSCALE_LABEL_300),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '취소',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: GRAYSCALE_LABEL_900,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          final description = reportController.text.trim();
+                          final reason = selectedReason +
+                              (description.isNotEmpty ? '\n$description' : '');
+
+                          try {
+                            final user = FirebaseAuth.instance.currentUser;
+                            if (user == null) {
+                              Navigator.pop(context);
+                              toastification.show(
+                                context: context,
+                                type: ToastificationType.error,
+                                alignment: Alignment.bottomCenter,
+                                autoCloseDuration: Duration(seconds: 2),
+                                title: Text('로그인이 필요합니다'),
+                              );
+                              return;
+                            }
+
+                            await feedProvider.reportPost(
+                              post: post,
+                              reporterUserId: user.uid,
+                              reporterUserName: user.displayName ?? '익명',
+                              reason: reason,
+                            );
+
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                            toastification.show(
+                              context: context,
+                              type: ToastificationType.success,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: Duration(seconds: 2),
+                              title: Text('신고가 접수되었습니다'),
+                            );
+                          } catch (e) {
+                            Navigator.pop(context);
+                            toastification.show(
+                              context: context,
+                              type: ToastificationType.error,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: Duration(seconds: 2),
+                              title: Text('신고 중 오류가 발생했습니다'),
+                            );
+                          }
+                        },
+                        child: Container(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: RED_DANGER_TEXT_50,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '신고하기',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: WHITE,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('취소', style: TextStyle(color: Colors.black)),
-          ),
-          TextButton(
-            onPressed: () async {
-              final description = reportController.text.trim();
-              final reason =
-                  selectedReason +
-                  (description.isNotEmpty ? '\n$description' : '');
-
-              try {
-                final user = FirebaseAuth.instance.currentUser;
-                if (user == null) {
-                  if (!mounted) return;
-                  toastification.show(
-                    context: context,
-                    type: ToastificationType.error,
-                    alignment: Alignment.bottomCenter,
-                    autoCloseDuration: Duration(seconds: 2),
-                    title: Text('로그인이 필요합니다'),
-                  );
-
-                  return;
-                }
-
-                await feedProvider.reportPost(
-                  post: post,
-                  reporterUserId: user.uid,
-                  reporterUserName: user.displayName ?? '익명',
-                  reason: reason,
-                );
-
-                if (!mounted) return;
-                Navigator.pop(context);
-                toastification.show(
-                  context: context,
-                  type: ToastificationType.success,
-                  alignment: Alignment.bottomCenter,
-                  autoCloseDuration: Duration(seconds: 2),
-                  title: Text('신고가 접수되었습니다'),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                Navigator.pop(context);
-                toastification.show(
-                  context: context,
-                  type: ToastificationType.error,
-                  alignment: Alignment.bottomCenter,
-                  autoCloseDuration: Duration(seconds: 2),
-                  title: Text('신고 중 오류가 발생했습니다'),
-                );
-              }
-            },
-            child: Text('신고하기', style: TextStyle(color: Colors.red)),
-          ),
-        ],
       ),
     );
   }
