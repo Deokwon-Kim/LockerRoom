@@ -111,7 +111,6 @@ class IntutionRecordListPage extends StatelessWidget {
                               '승 $wins',
                               style: TextStyle(
                                 fontSize: 18,
-                                color: Colors.green.shade800,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -120,7 +119,6 @@ class IntutionRecordListPage extends StatelessWidget {
                               '패 $losses',
                               style: TextStyle(
                                 fontSize: 18,
-                                color: Colors.red.shade800,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -129,7 +127,6 @@ class IntutionRecordListPage extends StatelessWidget {
                               '무 $draws',
                               style: TextStyle(
                                 fontSize: 18,
-                                color: Colors.grey.shade800,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -139,7 +136,6 @@ class IntutionRecordListPage extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade800,
                               ),
                             ),
                           ],
