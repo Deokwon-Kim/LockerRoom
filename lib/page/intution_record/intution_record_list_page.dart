@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/page/intution_record/intution_record_detail_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_upload_page.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -163,101 +164,121 @@ class IntutionRecordListPage extends StatelessWidget {
                           left: 16.0,
                           right: 16.0,
                         ),
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: GRAYSCALE_LABEL_100,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(top: 20.0),
-                                child: Row(
+                        child: GestureDetector(
+                          onTap: () {
+                            final gameId = d['gameId'] as String;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    IntutionRecordDetailPage(gameId: gameId),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: GRAYSCALE_LABEL_100,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 20.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        '${d['myScore']}',
+                                        style: TextStyle(
+                                          color: GRAYSCALE_LABEL_600,
+                                          fontSize: 40,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(width: 20),
+                                      Image.asset(
+                                        myLogo,
+                                        width: 50,
+                                        height: 50,
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        myTeam,
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        'VS',
+                                        style: TextStyle(
+                                          color: GRAYSCALE_LABEL_600,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        oppTeam,
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Image.asset(
+                                        oppLogo,
+                                        width: 50,
+                                        height: 50,
+                                      ),
+                                      SizedBox(width: 20),
+                                      Text(
+                                        '${d['opponentScore']}',
+                                        style: TextStyle(
+                                          color: GRAYSCALE_LABEL_600,
+                                          fontSize: 40,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Text(
-                                      '${d['myScore']}',
-                                      style: TextStyle(
-                                        color: GRAYSCALE_LABEL_600,
-                                        fontSize: 40,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(width: 20),
-                                    Image.asset(myLogo, width: 50, height: 50),
-                                    SizedBox(width: 10),
-                                    Text(
-                                      myTeam,
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text(
-                                      'VS',
-                                      style: TextStyle(
-                                        color: GRAYSCALE_LABEL_600,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text(
-                                      oppTeam,
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Image.asset(oppLogo, width: 50, height: 50),
-                                    SizedBox(width: 20),
-                                    Text(
-                                      '${d['opponentScore']}',
-                                      style: TextStyle(
-                                        color: GRAYSCALE_LABEL_600,
-                                        fontSize: 40,
-                                        fontWeight: FontWeight.bold,
+                                    Transform.translate(
+                                      offset: Offset(0, -10),
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            '${d['date'] ?? ''}',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: GRAYSCALE_LABEL_500,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${d['stadium'] ?? ''}',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: GRAYSCALE_LABEL_500,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Transform.translate(
-                                    offset: Offset(0, -10),
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          '${d['date'] ?? ''}',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: GRAYSCALE_LABEL_500,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${d['stadium'] ?? ''}',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: GRAYSCALE_LABEL_500,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       );
