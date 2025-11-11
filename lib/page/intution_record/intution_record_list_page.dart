@@ -371,7 +371,7 @@ class IntutionRecordListPage extends StatelessWidget {
                                 d['imageUrl'] != null &&
                                         d['imageUrl'].toString().isNotEmpty
                                     ? Stack(
-                                        alignment: Alignment.bottomLeft,
+                                        alignment: Alignment.bottomCenter,
                                         children: [
                                           ClipRRect(
                                             borderRadius:
@@ -399,6 +399,71 @@ class IntutionRecordListPage extends StatelessWidget {
                                                   },
                                             ),
                                           ),
+                                          if (d['memo'] != null &&
+                                              d['memo']
+                                                  .toString()
+                                                  .trim()
+                                                  .isNotEmpty)
+                                            Positioned(
+                                              bottom: 16,
+                                              left: 16,
+                                              right: 16,
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 8,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
+                                                    colors: [
+                                                      Colors.transparent,
+                                                      Colors.black.withOpacity(
+                                                        0.6,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  color: Colors.white
+                                                      .withOpacity(0.9),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.1),
+                                                      blurRadius: 4,
+                                                      offset: Offset(0, 2),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.edit_note,
+                                                      size: 20,
+                                                      color: recordedTeamColor,
+                                                    ),
+                                                    SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        d['memo'].toString(),
+                                                        style:
+                                                            GoogleFonts.nanumPenScript(
+                                                              fontSize: 18,
+                                                              color:
+                                                                  Colors.white,
+                                                              height: 1.3,
+                                                            ),
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
                                           // Padding(
                                           //   padding: const EdgeInsets.all(8.0),
                                           //   child: Row(
@@ -472,6 +537,71 @@ class IntutionRecordListPage extends StatelessWidget {
                                               recordedTeam!.logoPath,
                                             ),
                                           ),
+                                          if (d['memo'] != null &&
+                                              d['memo']
+                                                  .toString()
+                                                  .trim()
+                                                  .isNotEmpty)
+                                            Positioned(
+                                              bottom: 16,
+                                              left: 16,
+                                              right: 16,
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 8,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.topCenter,
+                                                    end: Alignment.bottomCenter,
+                                                    colors: [
+                                                      Colors.transparent,
+                                                      Colors.black.withOpacity(
+                                                        0.6,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  color: Colors.white
+                                                      .withOpacity(0.9),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.1),
+                                                      blurRadius: 4,
+                                                      offset: Offset(0, 2),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.edit_note,
+                                                      size: 20,
+                                                      color: Colors.white,
+                                                    ),
+                                                    SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        d['memo'].toString(),
+                                                        style:
+                                                            GoogleFonts.nanumPenScript(
+                                                              fontSize: 18,
+                                                              color:
+                                                                  Colors.white,
+                                                              height: 1.3,
+                                                            ),
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
 
                                           // Padding(
                                           //   padding: const EdgeInsets.only(
