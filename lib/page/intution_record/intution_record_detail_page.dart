@@ -73,6 +73,9 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<IntutionRecordProvider>().resetState();
+    });
     // 초기값 설정 (attendanceModel이 있으면 사용, 없으면 빈 문자열)
     _myTeamScore = TextEditingController(
       text: widget.attendanceModel?.myScore.toString() ?? '',
