@@ -12,6 +12,7 @@ import 'package:lockerroom/page/legal/privacy_policy_page.dart';
 import 'package:lockerroom/page/legal/terms_of_service_page.dart';
 import 'package:lockerroom/page/login/login_page.dart';
 import 'package:lockerroom/page/login/signup_page.dart';
+import 'package:lockerroom/page/my_post/likedPosts_page.dart';
 import 'package:lockerroom/page/notice/notice_list_page.dart';
 import 'package:lockerroom/page/setting/change_password_page.dart';
 import 'package:lockerroom/page/setting/custormer_center_page.dart';
@@ -193,6 +194,7 @@ class MyApp extends StatelessWidget {
           'policy': (context) => const PrivacyPolicyPage(),
           'changePassword': (context) => const ChangePasswordPage(),
           'blockList': (context) => const BlockListPage(),
+          'likedPost': (context) => const LikedPostsPage(),
         },
       ),
     );
