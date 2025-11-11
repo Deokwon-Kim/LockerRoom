@@ -160,10 +160,46 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
             appBar: AppBar(
               title: Text(
                 '직관 기록 추가',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               backgroundColor: BACKGROUND_COLOR,
               scrolledUnderElevation: 0,
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 20.0),
+                  child: GestureDetector(
+                    onTap: intutionProvider.saving
+                        ? null
+                        : () async {
+                            if (!_formKey.currentState!.validate()) return;
+                            final ok = await intutionProvider.save(context);
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                            toastification.show(
+                              context: context,
+                              type: ToastificationType.success,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: Duration(seconds: 2),
+                              title: Text(ok ? '직관 기록이 저장 되었습니다' : '저장 실패'),
+                            );
+                          },
+
+                    child: intutionProvider.saving
+                        ? CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: BUTTON,
+                          )
+                        : Text(
+                            '저장',
+                            style: TextStyle(
+                              color: teamProvider.selectedTeam?.color,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
             ),
             body: Padding(
               padding: const EdgeInsets.only(
@@ -465,48 +501,6 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                               ),
                             ),
                           ),
-
-                    const SizedBox(height: 40),
-                    GestureDetector(
-                      onTap: intutionProvider.saving
-                          ? null
-                          : () async {
-                              if (!_formKey.currentState!.validate()) return;
-                              final ok = await intutionProvider.save(context);
-                              if (!mounted) return;
-                              Navigator.pop(context);
-                              toastification.show(
-                                context: context,
-                                type: ToastificationType.success,
-                                alignment: Alignment.bottomCenter,
-                                autoCloseDuration: Duration(seconds: 2),
-                                title: Text(ok ? '직관 기록이 저장 되었습니다' : '저장 실패'),
-                              );
-                            },
-
-                      child: intutionProvider.saving
-                          ? CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: BUTTON,
-                            )
-                          : Container(
-                              alignment: Alignment.center,
-                              width: double.infinity,
-                              height: 58,
-                              decoration: BoxDecoration(
-                                color: BUTTON,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '저장',
-                                style: TextStyle(
-                                  color: WHITE,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                    ),
                   ],
                 ),
               ),
