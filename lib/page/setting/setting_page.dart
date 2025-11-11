@@ -40,138 +40,154 @@ class SettingPage extends StatelessWidget {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              GestureDetector(
-                onTap: () {},
-                child: Container(
-                  width: double.infinity,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: GRAYSCALE_LABEL_50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 20.0),
-                    child: Column(
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, 'changeNickname');
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '닉네임 변경',
-                                style: TextStyle(
-                                  color: GRAYSCALE_LABEL_950,
-                                  fontSize: 16,
-                                ),
+              Container(
+                width: double.infinity,
+                height: 260,
+                decoration: BoxDecoration(
+                  color: GRAYSCALE_LABEL_50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 20.0),
+                  child: Column(
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, 'changeNickname');
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '닉네임 변경',
+                              style: TextStyle(
+                                color: GRAYSCALE_LABEL_950,
+                                fontSize: 16,
                               ),
-                              IconButton(
-                                onPressed: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    'changeNickname',
-                                  );
-                                },
-                                icon: Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  color: GRAYSCALE_LABEL_950,
-                                  size: 16,
-                                ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, 'changeNickname');
+                              },
+                              icon: Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: GRAYSCALE_LABEL_950,
+                                size: 16,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, 'changePassword');
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '비밀번호 변경',
-                                style: TextStyle(
-                                  color: GRAYSCALE_LABEL_950,
-                                  fontSize: 16,
-                                ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, 'changePassword');
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '비밀번호 변경',
+                              style: TextStyle(
+                                color: GRAYSCALE_LABEL_950,
+                                fontSize: 16,
                               ),
-                              IconButton(
-                                onPressed: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    'changePassword',
-                                  );
-                                },
-                                icon: Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  color: GRAYSCALE_LABEL_950,
-                                  size: 16,
-                                ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, 'changePassword');
+                              },
+                              icon: Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: GRAYSCALE_LABEL_950,
+                                size: 16,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        TextButton(
-                          onPressed: () async {
-                            final changed = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    TeamSelectPage(isChanging: true),
-                              ),
-                            );
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          final changed = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  TeamSelectPage(isChanging: true),
+                            ),
+                          );
 
-                            toastification.show(
-                              context: context,
-                              type: ToastificationType.success,
-                              alignment: Alignment.bottomCenter,
-                              autoCloseDuration: const Duration(seconds: 2),
-                              title: Text('팀이 변경되었습니다: $changed'),
-                            );
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '응원팀 변경',
-                                style: TextStyle(
-                                  color: GRAYSCALE_LABEL_950,
-                                  fontSize: 16,
-                                ),
+                          toastification.show(
+                            context: context,
+                            type: ToastificationType.success,
+                            alignment: Alignment.bottomCenter,
+                            autoCloseDuration: const Duration(seconds: 2),
+                            title: Text('팀이 변경되었습니다: $changed'),
+                          );
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '응원팀 변경',
+                              style: TextStyle(
+                                color: GRAYSCALE_LABEL_950,
+                                fontSize: 16,
                               ),
-                              IconButton(
-                                onPressed: () async {
-                                  final changed = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          TeamSelectPage(isChanging: true),
-                                    ),
-                                  );
+                            ),
+                            IconButton(
+                              onPressed: () async {
+                                final changed = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        TeamSelectPage(isChanging: true),
+                                  ),
+                                );
 
-                                  toastification.show(
-                                    context: context,
-                                    type: ToastificationType.success,
-                                    alignment: Alignment.bottomCenter,
-                                    autoCloseDuration: const Duration(
-                                      seconds: 2,
-                                    ),
-                                    title: Text('팀이 변경되었습니다: $changed'),
-                                  );
-                                },
-                                icon: Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  color: GRAYSCALE_LABEL_950,
-                                  size: 16,
-                                ),
+                                toastification.show(
+                                  context: context,
+                                  type: ToastificationType.success,
+                                  alignment: Alignment.bottomCenter,
+                                  autoCloseDuration: const Duration(seconds: 2),
+                                  title: Text('팀이 변경되었습니다: $changed'),
+                                );
+                              },
+                              icon: Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: GRAYSCALE_LABEL_950,
+                                size: 16,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, 'likedPost');
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '좋아요',
+                              style: TextStyle(
+                                color: GRAYSCALE_LABEL_950,
+                                fontSize: 16,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, 'likedPost');
+                              },
+                              icon: Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: GRAYSCALE_LABEL_950,
+                                size: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
