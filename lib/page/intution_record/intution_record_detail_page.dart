@@ -450,30 +450,110 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                     SizedBox(height: 20),
                     Consumer<IntutionRecordProvider>(
                       builder: (context, intutionProvider, child) {
-                        // 기존 이미지가 있으면 표시
-                        if (attendance.imageUrl != null) {
-                          return Container(
-                            width: double.infinity,
-                            height: 450,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: GRAYSCALE_LABEL_300),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                attendance.imageUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: Colors.grey[300],
-                                    child: Center(
-                                      child: Text('이미지를 불러올 수 없습니다'),
-                                    ),
-                                  );
-                                },
+                        if (intutionProvider.shouldDeleteImage) {
+                          return GestureDetector(
+                            onTap: () {
+                              intutionProvider.pickImage();
+                            },
+                            child: Container(
+                              padding: EdgeInsets.only(left: 10),
+                              width: double.infinity,
+                              height: 50,
+                              alignment: Alignment.centerLeft,
+                              decoration: BoxDecoration(
+                                color: BACKGROUND_COLOR,
+                                border: Border.all(color: GRAYSCALE_LABEL_300),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '+ 이미지 추가하기',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
+                          );
+                        }
+                        // 새로 선택한 이미지가 있으면 표시
+                        if (intutionProvider.selectedImage != null) {
+                          return Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  intutionProvider.selectedImage!,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: 450,
+                                ),
+                              ),
+                              Positioned(
+                                top: 16,
+                                right: 16,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    intutionProvider.removeImage();
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.7),
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    child: Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 22,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                        // 기존 이미지가 있으면 표시
+                        if (attendance.imageUrl != null) {
+                          return Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  attendance.imageUrl!,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: 450,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey[300],
+                                      child: Center(
+                                        child: Text('이미지를 불러올 수 없습니다'),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              Positioned(
+                                top: 16,
+                                right: 16,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    intutionProvider.removeImage();
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.7),
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    child: Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 22,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           );
                         }
                         // 새로 추가한 이미지가 있으면 표시
@@ -482,19 +562,13 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                             onTap: () {
                               intutionProvider.pickImage();
                             },
-                            child: Container(
-                              width: double.infinity,
-                              height: 450,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: GRAYSCALE_LABEL_300),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.file(
-                                  intutionProvider.selectedImage!,
-                                  fit: BoxFit.cover,
-                                ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(
+                                intutionProvider.selectedImage!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: 450,
                               ),
                             ),
                           );
@@ -527,13 +601,6 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                         }
                       },
                     ),
-                    // Text('${attendance.myScore} : ${attendance.opponentScore}'),
-                    // Text('날짜: ${attendance.date}'),
-                    // Text('경기장: ${attendance.stadium}'),
-                    // if (attendance.memo != null && attendance.memo!.isNotEmpty)
-                    //   Text('메모: ${attendance.memo}'),
-                    // if (attendance.imageUrl != null)
-                    //   Image.network(attendance.imageUrl!),
                   ],
                 ),
               );
