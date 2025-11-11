@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/attendance_model.dart';
 import 'package:lockerroom/page/intution_record/intution_record_detail_page.dart';
@@ -14,15 +15,15 @@ import 'package:toastification/toastification.dart';
 class IntutionRecordListPage extends StatelessWidget {
   const IntutionRecordListPage({super.key});
 
-  String _logoForTeam(TeamProvider tp, String nameOrSymple) {
-    final bySymple = tp.findTeamByName(nameOrSymple);
-    if (bySymple != null) return bySymple.calenderLogo;
-    final list = tp.getTeam('team');
-    final byFull = list.where((t) => t.name == nameOrSymple).toList();
-    return byFull.isNotEmpty
-        ? byFull.first.calenderLogo
-        : 'assets/images/applogo/app_logo.png';
-  }
+  // String _logoForTeam(TeamProvider tp, String nameOrSymple) {
+  //   final bySymple = tp.findTeamByName(nameOrSymple);
+  //   if (bySymple != null) return bySymple.calenderLogo;
+  //   final list = tp.getTeam('team');
+  //   final byFull = list.where((t) => t.name == nameOrSymple).toList();
+  //   return byFull.isNotEmpty
+  //       ? byFull.first.calenderLogo
+  //       : 'assets/images/applogo/app_logo.png';
+  // }
 
   // Map 데이터를 AttendanceModel로 변환
   AttendanceModel _mapToAttendanceModel(Map<String, dynamic> data) {
@@ -51,6 +52,21 @@ class IntutionRecordListPage extends StatelessWidget {
     );
   }
 
+  String _formatDate(String dateStr) {
+    try {
+      final parts = dateStr.split('.');
+      if (parts.length == 3) {
+        final year = parts[0];
+        final month = int.parse(parts[1]);
+        final day = int.parse(parts[2]);
+        return '$year년 $month월 $day일';
+      }
+    } catch (e) {
+      // 파싱 실패 시 원본 반환
+    }
+    return dateStr;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,7 +77,7 @@ class IntutionRecordListPage extends StatelessWidget {
           '나의 직관기록',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-        centerTitle: false,
+        centerTitle: true,
         scrolledUnderElevation: 0,
         actions: [
           IconButton(
@@ -120,61 +136,198 @@ class IntutionRecordListPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                     decoration: BoxDecoration(
-                      color: BACKGROUND_COLOR,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: GRAYSCALE_LABEL_300),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '총 ${items.length} 경기',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Text(
-                              '승 $wins',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              '패 $losses',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              '무 $draws',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Spacer(),
-                            Text(
-                              '승률: ${winRate.toStringAsFixed(1)}%',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                      color: WHITE,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: [
+                        BoxShadow(
+                          offset: Offset(2, 3),
+                          color: BLACK.withOpacity(0.1),
+                          blurRadius: 4,
                         ),
                       ],
                     ),
+
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Column(
+                            children: [
+                              Icon(Icons.stadium_outlined),
+                              SizedBox(height: 5),
+                              Text(
+                                '총 경기',
+                                style: TextStyle(
+                                  color: GRAYSCALE_LABEL_500,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                              Text(
+                                '${items.length}',
+                                style: GoogleFonts.robotoMono(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(width: 20),
+                          Container(
+                            width: 0.6,
+                            height: 80,
+                            color: GRAYSCALE_LABEL_300,
+                          ),
+                          SizedBox(width: 20),
+                          Column(
+                            children: [
+                              Icon(
+                                Icons.emoji_events_outlined,
+                                color: Colors.blueAccent,
+                              ),
+                              SizedBox(height: 5),
+                              Text(
+                                '승',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                              Text(
+                                '$wins',
+                                style: GoogleFonts.robotoMono(
+                                  color: Colors.blueAccent,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(width: 20),
+                          Container(
+                            width: 0.6,
+                            height: 80,
+                            color: GRAYSCALE_LABEL_300,
+                          ),
+                          SizedBox(width: 20),
+
+                          Column(
+                            children: [
+                              Icon(
+                                Icons.sentiment_dissatisfied_rounded,
+                                color: Colors.redAccent,
+                              ),
+                              SizedBox(height: 5),
+                              Text(
+                                '패',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                              Text(
+                                '$losses',
+                                style: GoogleFonts.robotoMono(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.redAccent,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(width: 20),
+                          Container(
+                            width: 0.6,
+                            height: 80,
+                            color: GRAYSCALE_LABEL_300,
+                          ),
+                          SizedBox(width: 20),
+                          Column(
+                            children: [
+                              Transform.translate(
+                                offset: Offset(0, -10),
+                                child: Icon(Icons.minimize_outlined),
+                              ),
+                              SizedBox(height: 5),
+                              Text(
+                                '무',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                              Text(
+                                '$draws',
+                                style: GoogleFonts.robotoMono(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(width: 20),
+                          Container(
+                            width: 0.6,
+                            height: 80,
+                            color: GRAYSCALE_LABEL_300,
+                          ),
+                          SizedBox(width: 10),
+                          Column(
+                            children: [
+                              Icon(Icons.percent_outlined),
+                              SizedBox(height: 5),
+                              Text(
+                                '승률',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                              Text(
+                                winRate.toStringAsFixed(1),
+                                style: GoogleFonts.robotoMono(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
+                ),
+                SizedBox(height: 10),
+                Consumer<IntutionRecordListProvider>(
+                  builder: (context, lp, child) {
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 10.0),
+                      child: GestureDetector(
+                        onTap: () {
+                          lp.toggleSortOrder();
+                        },
+                        child: Row(
+                          children: [
+                            Icon(
+                              lp.isDescending
+                                  ? Icons.swap_vert_outlined
+                                  : Icons.swap_vert_outlined,
+                              size: 24,
+                            ),
+
+                            Text(lp.isDescending ? '최신순' : '이전순'),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 Expanded(
                   child: ListView.builder(
@@ -183,9 +336,19 @@ class IntutionRecordListPage extends StatelessWidget {
                       final d = items[i];
                       final myTeam = (d['myTeam'] ?? '') as String;
                       final oppTeam = (d['oppTeam'] ?? '') as String;
-                      final myLogo = _logoForTeam(tp, myTeam);
-                      final oppLogo = _logoForTeam(tp, oppTeam);
+                      // final myLogo = _logoForTeam(tp, myTeam);
+                      // final oppLogo = _logoForTeam(tp, oppTeam);
                       final attendance = _mapToAttendanceModel(d);
+
+                      // 승패 여부 체크 추가
+                      final myScore = d['myScore'] as int? ?? 0;
+                      final oppScore = d['opponentScore'] as int? ?? 0;
+                      final isWin = myScore > oppScore;
+
+                      // 기록 당시 응원했던 팀의 색상 가져오기
+                      final recordedTeam = tp.findTeamByName(myTeam);
+                      final recordedTeamColor =
+                          recordedTeam?.color ?? GRAYSCALE_LABEL_600;
 
                       final tile = GestureDetector(
                         onTap: () {
@@ -198,101 +361,260 @@ class IntutionRecordListPage extends StatelessWidget {
                             ),
                           );
                         },
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: GRAYSCALE_LABEL_100,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(top: 20.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      '${d['myScore']}',
-                                      style: TextStyle(
-                                        color: GRAYSCALE_LABEL_600,
-                                        fontSize: 40,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(width: 20),
-                                    Image.asset(myLogo, width: 50, height: 50),
-                                    SizedBox(width: 10),
-                                    Text(
-                                      myTeam,
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text(
-                                      'VS',
-                                      style: TextStyle(
-                                        color: GRAYSCALE_LABEL_600,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text(
-                                      oppTeam,
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Image.asset(oppLogo, width: 50, height: 50),
-                                    SizedBox(width: 20),
-                                    Text(
-                                      '${d['opponentScore']}',
-                                      style: TextStyle(
-                                        color: GRAYSCALE_LABEL_600,
-                                        fontSize: 40,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Transform.translate(
-                                    offset: Offset(0, -10),
-                                    child: Column(
-                                      children: [
-                                        Text(
-                                          '${d['date'] ?? ''}',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: GRAYSCALE_LABEL_500,
-                                            fontWeight: FontWeight.bold,
+                        child: Card(
+                          color: Color(0xffF9F9FA),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 460,
+                            child: Column(
+                              children: [
+                                d['imageUrl'] != null &&
+                                        d['imageUrl'].toString().isNotEmpty
+                                    ? Stack(
+                                        alignment: Alignment.bottomLeft,
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius:
+                                                BorderRadiusGeometry.vertical(
+                                                  top: Radius.circular(12),
+                                                ),
+                                            child: Image.network(
+                                              d['imageUrl'],
+                                              width: double.infinity,
+                                              height: 350,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                    return Container(
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                            horizontal: 10,
+                                                            vertical: 10,
+                                                          ),
+                                                      color: recordedTeamColor,
+                                                      child: Image.asset(
+                                                        recordedTeam!.logoPath,
+                                                      ),
+                                                    );
+                                                  },
+                                            ),
                                           ),
-                                        ),
-                                        Text(
-                                          '${d['stadium'] ?? ''}',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: GRAYSCALE_LABEL_500,
-                                            fontWeight: FontWeight.bold,
+                                          // Padding(
+                                          //   padding: const EdgeInsets.all(8.0),
+                                          //   child: Row(
+                                          //     mainAxisAlignment:
+                                          //         MainAxisAlignment.center,
+                                          //     children: [
+                                          //       Text(
+                                          //         myTeam,
+                                          //         style: TextStyle(
+                                          //           color: WHITE,
+                                          //           fontSize: 25,
+                                          //           fontWeight: FontWeight.bold,
+                                          //         ),
+                                          //       ),
+                                          //       SizedBox(width: 50),
+                                          //       Text(
+                                          //         '$myScore',
+                                          //         style: TextStyle(
+                                          //           fontSize: 35,
+                                          //           fontWeight: FontWeight.bold,
+                                          //           color: WHITE,
+                                          //         ),
+                                          //       ),
+                                          //       SizedBox(width: 10),
+                                          //       Text(
+                                          //         ':',
+                                          //         style: TextStyle(
+                                          //           color: WHITE,
+                                          //           fontWeight: FontWeight.bold,
+                                          //           fontSize: 25,
+                                          //         ),
+                                          //       ),
+                                          //       SizedBox(width: 10),
+                                          //       Text(
+                                          //         '$oppScore',
+                                          //         style: TextStyle(
+                                          //           fontSize: 35,
+                                          //           fontWeight: FontWeight.bold,
+                                          //           color: WHITE,
+                                          //         ),
+                                          //       ),
+                                          //       SizedBox(width: 50),
+                                          //       Text(
+                                          //         oppTeam,
+                                          //         style: TextStyle(
+                                          //           fontSize: 25,
+                                          //           fontWeight: FontWeight.bold,
+                                          //           color: WHITE,
+                                          //         ),
+                                          //       ),
+                                          //     ],
+                                          //   ),
+                                          // ),
+                                        ],
+                                      )
+                                    : Stack(
+                                        alignment: Alignment.bottomLeft,
+                                        children: [
+                                          Container(
+                                            width: double.infinity,
+                                            height: 350,
+                                            decoration: BoxDecoration(
+                                              color: recordedTeamColor,
+                                              borderRadius:
+                                                  BorderRadius.vertical(
+                                                    top: Radius.circular(12),
+                                                  ),
+                                            ),
+
+                                            child: Image.asset(
+                                              recordedTeam!.logoPath,
+                                            ),
                                           ),
+
+                                          // Padding(
+                                          //   padding: const EdgeInsets.only(
+                                          //     top: 10.0,
+                                          //   ),
+                                          //   child: Row(
+                                          //     mainAxisAlignment:
+                                          //         MainAxisAlignment.center,
+                                          //     children: [
+                                          //       Text(
+                                          //         myTeam,
+                                          //         style: TextStyle(
+                                          //           color: WHITE,
+                                          //           fontSize: 25,
+                                          //           fontWeight: FontWeight.bold,
+                                          //         ),
+                                          //       ),
+                                          //       SizedBox(width: 50),
+                                          //       Text(
+                                          //         '$myScore',
+                                          //         style: TextStyle(
+                                          //           fontSize: 35,
+                                          //           fontWeight: FontWeight.bold,
+                                          //           color: WHITE,
+                                          //         ),
+                                          //       ),
+                                          //       SizedBox(width: 10),
+                                          //       Text(
+                                          //         ':',
+                                          //         style: TextStyle(
+                                          //           color: WHITE,
+                                          //           fontWeight: FontWeight.bold,
+                                          //           fontSize: 25,
+                                          //         ),
+                                          //       ),
+                                          //       SizedBox(width: 10),
+                                          //       Text(
+                                          //         '$oppScore',
+                                          //         style: TextStyle(
+                                          //           fontSize: 35,
+                                          //           fontWeight: FontWeight.bold,
+                                          //           color: WHITE,
+                                          //         ),
+                                          //       ),
+                                          //       SizedBox(width: 50),
+                                          //       Text(
+                                          //         oppTeam,
+                                          //         style: TextStyle(
+                                          //           fontSize: 25,
+                                          //           fontWeight: FontWeight.bold,
+                                          //           color: WHITE,
+                                          //         ),
+                                          //       ),
+                                          //     ],
+                                          //   ),
+                                          // ),
+                                        ],
+                                      ),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 13.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            '$myScore',
+                                            style: GoogleFonts.roboto(
+                                              fontSize: 35,
+                                              fontWeight: FontWeight.bold,
+                                              color: isWin
+                                                  ? recordedTeamColor
+                                                  : GRAYSCALE_LABEL_500,
+                                            ),
+                                          ),
+                                          SizedBox(width: 40),
+                                          Text(
+                                            myTeam,
+                                            style: TextStyle(
+                                              color: BLACK,
+                                              fontSize: 25,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+
+                                          SizedBox(width: 10),
+                                          Text(
+                                            'vs',
+                                            style: TextStyle(
+                                              color: GRAYSCALE_LABEL_500,
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 25,
+                                            ),
+                                          ),
+                                          SizedBox(width: 10),
+                                          Text(
+                                            oppTeam,
+                                            style: TextStyle(
+                                              fontSize: 25,
+                                              fontWeight: FontWeight.bold,
+                                              color: BLACK,
+                                            ),
+                                          ),
+                                          SizedBox(width: 40),
+                                          Text(
+                                            '$oppScore',
+                                            style: GoogleFonts.roboto(
+                                              fontSize: 35,
+                                              fontWeight: FontWeight.bold,
+                                              color: GRAYSCALE_LABEL_500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Transform.translate(
+                                        offset: Offset(0, -5),
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              _formatDate(d['date']),
+                                              style: GoogleFonts.roboto(
+                                                color: GRAYSCALE_LABEL_500,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            Text(
+                                              d['stadium'],
+                                              style: TextStyle(
+                                                color: GRAYSCALE_LABEL_500,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
