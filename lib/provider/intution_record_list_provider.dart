@@ -8,8 +8,10 @@ class IntutionRecordListProvider extends ChangeNotifier {
   final List<QueryDocumentSnapshot<Map<String, dynamic>>> _docs = [];
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _sub;
   bool _isLoading = true;
+  bool _isDescending = true;
 
   bool get isLoading => _isLoading;
+  bool get isDescending => _isDescending;
   List<Map<String, dynamic>> get records => _docs.map((d) => d.data()).toList();
 
   void subscribe() {
@@ -27,7 +29,7 @@ class IntutionRecordListProvider extends ChangeNotifier {
         .collection('users')
         .doc(uid)
         .collection('attendances')
-        .orderBy('date', descending: true)
+        .orderBy('date', descending: _isDescending)
         .snapshots()
         .listen((snap) {
           _docs
@@ -36,6 +38,11 @@ class IntutionRecordListProvider extends ChangeNotifier {
           _isLoading = false;
           notifyListeners();
         });
+  }
+
+  void toggleSortOrder() {
+    _isDescending = !_isDescending;
+    subscribe();
   }
 
   @override
