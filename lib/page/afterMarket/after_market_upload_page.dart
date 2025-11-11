@@ -73,7 +73,7 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
                         if (remaining <= 0) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('이미지는 최대 10장까지 선택할 수 있어요.'),
+                              content: Text('이미지는 최대 5장까지 선택할 수 있어요.'),
                               duration: Duration(seconds: 2),
                             ),
                           );
@@ -94,7 +94,7 @@ class _AfterMarketUploadPageState extends State<AfterMarketUploadPage> {
                         child: Column(
                           children: [
                             Icon(Icons.camera_alt),
-                            Text('${marketUploadProvider.images.length}/10'),
+                            Text('${marketUploadProvider.images.length}/5'),
                           ],
                         ),
                       ),

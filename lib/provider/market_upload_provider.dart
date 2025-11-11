@@ -10,7 +10,7 @@ class MarketUploadProvider extends ChangeNotifier {
   File? _camera;
   double _uploadProgress = 0.0;
   bool _isUploading = false;
-  static const int maxImages = 10;
+  static const int maxImages = 5;
 
   List<File> get images => _images;
   File? get camera => _camera;
