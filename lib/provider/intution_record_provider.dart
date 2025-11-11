@@ -285,20 +285,24 @@ class IntutionRecordProvider extends ChangeNotifier {
   }
 
   File? _selectedImage;
+  bool _shouldDeleteImage = false;
   final ImagePicker _picker = ImagePicker();
 
   File? get selectedImage => _selectedImage;
+  bool get shouldDeleteImage => _shouldDeleteImage;
 
   Future<void> pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       _selectedImage = File(pickedFile.path);
+      _shouldDeleteImage = false;
       notifyListeners();
     }
   }
 
   void removeImage() {
     _selectedImage = null;
+    _shouldDeleteImage = true;
     notifyListeners();
   }
 
@@ -306,6 +310,7 @@ class IntutionRecordProvider extends ChangeNotifier {
     _isLoading = false;
     _saving = false;
     _selectedImage = null;
+    _shouldDeleteImage = false;
     notifyListeners();
   }
 
@@ -356,8 +361,24 @@ class IntutionRecordProvider extends ChangeNotifier {
         updateData['memo'] = newMemo.trim().isNotEmpty ? newMemo.trim() : null;
       }
 
-      if (imageUrl != null) {
+      if (_shouldDeleteImage) {
         updateData['imageUrl'] = imageUrl;
+      }
+      // 새 이미지가 있으면 업로드
+      else if (newImage != null) {
+        try {
+          final fileName =
+              '${DateTime.now().millisecondsSinceEpoch}_${newImage.path.split('/').last}';
+          final ref = FirebaseStorage.instance.ref().child(
+            'intution_records/${user.uid}/$fileName',
+          );
+
+          await ref.putFile(newImage);
+          final imageUrl = await ref.getDownloadURL();
+          updateData['imageUrl'] = imageUrl;
+        } catch (e) {
+          print('직관 이미지 업로드 실패: $e');
+        }
       }
 
       await FirebaseFirestore.instance
@@ -368,11 +389,13 @@ class IntutionRecordProvider extends ChangeNotifier {
           .update(updateData);
 
       _isLoading = false;
+      _shouldDeleteImage = false;
       notifyListeners();
       return true;
     } catch (e) {
       print('직관기록 업데이트 실패: $e');
       _isLoading = false;
+      _shouldDeleteImage = false;
       notifyListeners();
       return false;
     }
