@@ -143,7 +143,7 @@ class UserProvider extends ChangeNotifier {
 
       // Firestore에 사용자 정보 저장
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
-        'username': user.userNickName,
+        'userNickName': user.userNickName,
         'name': user.name,
         'email': user.useremail,
         'uid': user.uid,
