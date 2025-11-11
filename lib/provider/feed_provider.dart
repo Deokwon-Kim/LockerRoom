@@ -130,6 +130,39 @@ class FeedProvider extends ChangeNotifier {
         );
   }
 
+  // 좋아요한 게시물 구독
+  StreamSubscription? _likedPostsSub;
+  List<PostModel> _likedPosts = [];
+  List<PostModel> get likedPosts => _likedPosts;
+
+  void subscribeLikedPosts() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    _likedPostsSub?.cancel();
+    _likedPostsSub = _postCollection
+        .where('likedBy', arrayContains: uid)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .listen(
+          (snap) {
+            _likedPosts = snap.docs
+                .map((doc) => PostModel.fromDoc(doc))
+                .toList();
+            notifyListeners();
+          },
+          onError: (e) {
+            print('좋아요 게시물 구독 에러: $e');
+          },
+        );
+  }
+
+  // 좋아요 게시물 구독 취소
+  void cancelLikedPostsSubscription() {
+    _likedPostsSub?.cancel();
+    _likedPostsSub = null;
+  }
+
   void _applyRecentPostsFilter() {
     _posts = _allRecentPosts
         .where(
@@ -148,6 +181,7 @@ class FeedProvider extends ChangeNotifier {
   void cancelAllSubscriptions() {
     _sub?.cancel();
     _subB?.cancel();
+    _likedPostsSub?.cancel();
     _sub = null;
     _subB = null;
     _postsStream = [];
@@ -158,6 +192,7 @@ class FeedProvider extends ChangeNotifier {
   void dispose() {
     _sub?.cancel();
     _subB?.cancel();
+    _likedPostsSub?.cancel();
     super.dispose();
   }
 
