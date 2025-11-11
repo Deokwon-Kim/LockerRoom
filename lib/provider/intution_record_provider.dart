@@ -16,7 +16,7 @@ class IntutionRecordProvider extends ChangeNotifier {
   final TextEditingController oppScoreContreller = TextEditingController();
   final TextEditingController memoController = TextEditingController();
 
-  bool _isLoading = true;
+  bool _isLoading = false;
   bool _saving = false;
 
   ScheduleModel? _todayGame;
@@ -298,6 +298,13 @@ class IntutionRecordProvider extends ChangeNotifier {
   }
 
   void removeImage() {
+    _selectedImage = null;
+    notifyListeners();
+  }
+
+  void resetState() {
+    _isLoading = false;
+    _saving = false;
     _selectedImage = null;
     notifyListeners();
   }
