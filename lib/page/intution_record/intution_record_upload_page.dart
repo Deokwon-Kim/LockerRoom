@@ -201,307 +201,317 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                 ),
               ],
             ),
-            body: Padding(
-              padding: const EdgeInsets.only(
-                top: 20.0,
-                left: 16.0,
-                right: 16.0,
-              ),
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  children: [
-                    Text(
-                      '경기날짜',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
+            body: GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              behavior: HitTestBehavior.translucent,
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  top: 20.0,
+                  left: 16.0,
+                  right: 16.0,
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: ListView(
+                    children: [
+                      Text(
+                        '경기날짜',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 10),
-                    Container(
-                      padding: EdgeInsets.all(10),
-                      alignment: Alignment.centerLeft,
-                      width: double.infinity,
-                      height: 58,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: GRAYSCALE_LABEL_300),
-                        borderRadius: BorderRadius.circular(12),
+                      SizedBox(height: 10),
+                      Container(
+                        padding: EdgeInsets.all(10),
+                        alignment: Alignment.centerLeft,
+                        width: double.infinity,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: GRAYSCALE_LABEL_300),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              selectedDate != null
+                                  ? '${selectedDate!.year}년 ${selectedDate!.month}월 ${selectedDate!.day}일'
+                                  : '날짜 선택',
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                            IconButton(
+                              onPressed: () => _selectedDate(intutionProvider),
+                              icon: Icon(Icons.date_range_outlined),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            selectedDate != null
-                                ? '${selectedDate!.year}년 ${selectedDate!.month}월 ${selectedDate!.day}일'
-                                : '날짜 선택',
-                            style: TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                          IconButton(
-                            onPressed: () => _selectedDate(intutionProvider),
-                            icon: Icon(Icons.date_range_outlined),
-                          ),
-                        ],
+                      SizedBox(height: 20),
+                      Text(
+                        '경기정보',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      '경기정보',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 15,
-                      ),
-                      decoration: BoxDecoration(
-                        color: BACKGROUND_COLOR,
-                        border: Border.all(color: GRAYSCALE_LABEL_300),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      SizedBox(height: 10),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 30,
+                          vertical: 15,
+                        ),
+                        decoration: BoxDecoration(
+                          color: BACKGROUND_COLOR,
+                          border: Border.all(color: GRAYSCALE_LABEL_300),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
 
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                children: [
-                                  Text(
-                                    '응원 팀',
-                                    style: TextStyle(
-                                      color: GRAYSCALE_LABEL_500,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  Image.asset(
-                                    myTeamModel?.calenderLogo ??
-                                        'assets/images/applogo/app_logo.png',
-                                    width: 80,
-                                    height: 80,
-                                    fit: BoxFit.contain,
-                                  ),
-                                  SizedBox(height: 10),
-                                  Text(
-                                    myTeamSymple,
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              Padding(
-                                padding: const EdgeInsets.only(top: 30.0),
-                                child: Column(
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
                                   children: [
                                     Text(
-                                      'VS',
+                                      '응원 팀',
                                       style: TextStyle(
-                                        fontSize: 50,
                                         color: GRAYSCALE_LABEL_500,
+                                        fontSize: 13,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     SizedBox(height: 10),
+                                    Image.asset(
+                                      myTeamModel?.calenderLogo ??
+                                          'assets/images/applogo/app_logo.png',
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.contain,
+                                    ),
+                                    SizedBox(height: 10),
                                     Text(
-                                      g.stadium,
+                                      myTeamSymple,
                                       style: TextStyle(
-                                        fontSize: 14,
+                                        fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              Column(
-                                children: [
-                                  Text(
-                                    '상대 팀',
-                                    style: TextStyle(
-                                      color: GRAYSCALE_LABEL_500,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
+
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 30.0),
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        'VS',
+                                        style: TextStyle(
+                                          fontSize: 50,
+                                          color: GRAYSCALE_LABEL_500,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(height: 10),
+                                      Text(
+                                        g.stadium,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  children: [
+                                    Text(
+                                      '상대 팀',
+                                      style: TextStyle(
+                                        color: GRAYSCALE_LABEL_500,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  Image.asset(
-                                    oppenentTeamModel?.calenderLogo ??
-                                        'assets/images/applogo/app_logo.png',
-                                    width: 80,
-                                    height: 80,
-                                    fit: BoxFit.contain,
-                                  ),
-                                  SizedBox(height: 10),
-                                  Text(
-                                    opponentSymple,
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
+                                    SizedBox(height: 10),
+                                    Image.asset(
+                                      oppenentTeamModel?.calenderLogo ??
+                                          'assets/images/applogo/app_logo.png',
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.contain,
                                     ),
+                                    SizedBox(height: 10),
+                                    Text(
+                                      opponentSymple,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        '스코어',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              cursorColor: BUTTON,
+                              controller: intutionProvider.myScoreController,
+                              keyboardType: TextInputType.number,
+
+                              decoration: InputDecoration(
+                                focusColor: BUTTON,
+                                labelText: '내 팀 스코어',
+                                labelStyle: TextStyle(
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: GRAYSCALE_LABEL_300,
                                   ),
-                                ],
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: GRAYSCALE_LABEL_300,
+                                  ),
+                                ),
                               ),
-                            ],
+
+                              validator: intutionProvider.validateScore,
+                            ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(width: 15),
+                          Expanded(
+                            child: TextFormField(
+                              cursorColor: BUTTON,
+                              controller: intutionProvider.oppScoreContreller,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: GRAYSCALE_LABEL_300,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: GRAYSCALE_LABEL_300,
+                                  ),
+                                ),
+                                labelText: '상대 스코어',
+                                labelStyle: TextStyle(
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                              validator: intutionProvider.validateScore,
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      '스코어',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
+                      SizedBox(height: 20),
+                      Text(
+                        '메모(선택)',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
+                      SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: GRAYSCALE_LABEL_300),
+                        ),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            minHeight: 100, // 최소 높이 지정 가능
+                          ),
+                          child: TextField(
+                            controller: intutionProvider.memoController,
                             cursorColor: BUTTON,
-                            controller: intutionProvider.myScoreController,
-                            keyboardType: TextInputType.number,
-
-                            decoration: InputDecoration(
-                              focusColor: BUTTON,
-                              labelText: '내 팀 스코어',
-                              labelStyle: TextStyle(color: GRAYSCALE_LABEL_500),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: GRAYSCALE_LABEL_300,
-                                ),
+                            maxLines: null,
+                            minLines: 1,
+                            textAlignVertical: TextAlignVertical.top, // 위쪽 정렬
+                            decoration: const InputDecoration(
+                              hintStyle: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey,
                               ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: GRAYSCALE_LABEL_300,
-                                ),
-                              ),
+                              border: InputBorder.none,
+                              isDense: true, // 패딩 최소화
+                              contentPadding: EdgeInsets.zero, // 내부 여백 완전히 제거
                             ),
-
-                            validator: intutionProvider.validateScore,
-                          ),
-                        ),
-                        SizedBox(width: 15),
-                        Expanded(
-                          child: TextFormField(
-                            cursorColor: BUTTON,
-                            controller: intutionProvider.oppScoreContreller,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: GRAYSCALE_LABEL_300,
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: GRAYSCALE_LABEL_300,
-                                ),
-                              ),
-                              labelText: '상대 스코어',
-                              labelStyle: TextStyle(color: GRAYSCALE_LABEL_500),
-                            ),
-                            validator: intutionProvider.validateScore,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      '메모(선택)',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: GRAYSCALE_LABEL_300),
-                      ),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          minHeight: 100, // 최소 높이 지정 가능
-                        ),
-                        child: TextField(
-                          controller: intutionProvider.memoController,
-                          cursorColor: BUTTON,
-                          maxLines: null,
-                          minLines: 1,
-                          textAlignVertical: TextAlignVertical.top, // 위쪽 정렬
-                          decoration: const InputDecoration(
-                            hintStyle: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey,
-                            ),
-                            border: InputBorder.none,
-                            isDense: true, // 패딩 최소화
-                            contentPadding: EdgeInsets.zero, // 내부 여백 완전히 제거
                           ),
                         ),
                       ),
-                    ),
-                    SizedBox(height: 20),
-                    intutionProvider.selectedImage != null
-                        ? Container(
-                            width: double.infinity,
-                            height: 450,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: GRAYSCALE_LABEL_300),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.file(
-                                intutionProvider.selectedImage!,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          )
-                        : GestureDetector(
-                            onTap: () {
-                              intutionProvider.pickImage();
-                            },
-                            child: Container(
-                              padding: EdgeInsets.only(left: 10),
+                      SizedBox(height: 20),
+                      intutionProvider.selectedImage != null
+                          ? Container(
                               width: double.infinity,
-                              height: 50,
-                              alignment: Alignment.centerLeft,
+                              height: 450,
                               decoration: BoxDecoration(
-                                color: BACKGROUND_COLOR,
                                 border: Border.all(color: GRAYSCALE_LABEL_300),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Text(
-                                '+ 이미지 추가하기',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  intutionProvider.selectedImage!,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            )
+                          : GestureDetector(
+                              onTap: () {
+                                intutionProvider.pickImage();
+                              },
+                              child: Container(
+                                padding: EdgeInsets.only(left: 10),
+                                width: double.infinity,
+                                height: 50,
+                                alignment: Alignment.centerLeft,
+                                decoration: BoxDecoration(
+                                  color: BACKGROUND_COLOR,
+                                  border: Border.all(
+                                    color: GRAYSCALE_LABEL_300,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '+ 이미지 추가하기',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
