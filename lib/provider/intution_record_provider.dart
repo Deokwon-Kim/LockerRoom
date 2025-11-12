@@ -111,7 +111,17 @@ class IntutionRecordProvider extends ChangeNotifier {
         if (attendance.memo != null && attendance.memo!.isNotEmpty) {
           memoController.text = attendance.memo!;
         }
-        // 이미지는 UI에서 별도로 처리 (필요시 추가)
+      } else if (match.status == 'COMPLETED') {
+        // 기존기록이 없고 종료된 경기면 실제 경기 결과를 자동으로 업데이트
+        if (match.homeTeam == symple) {
+          // 응원팀이 홈팀인 경우
+          myScoreController.text = match.homeScore.toString();
+          oppScoreContreller.text = match.awayScroe.toString();
+        } else {
+          // 응원팀이 원정팀인 경우
+          myScoreController.text = match.awayScroe.toString();
+          oppScoreContreller.text = match.homeScore.toString();
+        }
       }
     }
 
@@ -177,7 +187,17 @@ class IntutionRecordProvider extends ChangeNotifier {
         if (attendance.memo != null && attendance.memo!.isNotEmpty) {
           memoController.text = attendance.memo!;
         }
-        // 이미지는 UI에서 별도로 처리 (필요시 추가)
+      } else if (match.status == 'COMPLETED' && _myTeamSymple != null) {
+        // 기존기록이 없고 종료된 경기면 실제 경기 결과를 자동으로 업데이트
+        if (match.homeTeam == _myTeamSymple) {
+          // 응원팀이 홈팀인 경우
+          myScoreController.text = match.homeScore.toString();
+          oppScoreContreller.text = match.awayScroe.toString();
+        } else {
+          // 응원팀이 원정팀인 경우
+          myScoreController.text = match.awayScroe.toString();
+          oppScoreContreller.text = match.homeScore.toString();
+        }
       }
     }
 
