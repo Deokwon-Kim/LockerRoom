@@ -134,6 +134,35 @@ class IntutionRecordListPage extends StatelessWidget {
 
             return Column(
               children: [
+                // Padding(
+                //   padding: const EdgeInsets.symmetric(
+                //     horizontal: 16.0,
+                //     vertical: 8.0,
+                //   ),
+                //   child: Consumer<IntutionRecordListProvider>(
+                //     builder: (context, lp, child) {
+                //       return InkWell(
+                //         onTap: () => _showYearPicker(context, lp),
+                //         child: Row(
+                //           mainAxisAlignment: MainAxisAlignment.start,
+                //           children: [
+                //             Text(
+                //               lp.selectedYear == null
+                //                   ? '전체'
+                //                   : '${lp.selectedYear}년',
+                //               style: TextStyle(
+                //                 fontSize: 16,
+                //                 fontWeight: FontWeight.w600,
+                //               ),
+                //             ),
+
+                //             Icon(Icons.keyboard_arrow_down, size: 24),
+                //           ],
+                //         ),
+                //       );
+                //     },
+                //   ),
+                // ),
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Container(
@@ -309,13 +338,37 @@ class IntutionRecordListPage extends StatelessWidget {
                 Consumer<IntutionRecordListProvider>(
                   builder: (context, lp, child) {
                     return Padding(
-                      padding: const EdgeInsets.only(left: 10.0),
+                      padding: const EdgeInsets.only(left: 16.0, right: 16.0),
                       child: GestureDetector(
                         onTap: () {
                           lp.toggleSortOrder();
                         },
                         child: Row(
                           children: [
+                            Consumer<IntutionRecordListProvider>(
+                              builder: (context, lp, child) {
+                                return InkWell(
+                                  onTap: () => _showYearPicker(context, lp),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        lp.selectedYear == null
+                                            ? '전체'
+                                            : '${lp.selectedYear}년',
+                                        style: GoogleFonts.roboto(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+
+                                      Icon(Icons.keyboard_arrow_down, size: 24),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            Spacer(),
                             Icon(
                               lp.isDescending
                                   ? Icons.swap_vert_outlined
@@ -826,6 +879,57 @@ class IntutionRecordListPage extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+
+  void _showYearPicker(BuildContext context, IntutionRecordListProvider irp) {
+    final years = irp.availableYears;
+
+    if (years.isEmpty) {
+      years.add(DateTime.now().year);
+    }
+
+    // 전체선택 옵션
+    final allYears = [null, ...years];
+
+    int selectedIndex = allYears.indexOf(irp.selectedYear);
+    if (selectedIndex == -1) selectedIndex = 0;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 250,
+          color: CupertinoColors.systemBackground.resolveFrom(context),
+          child: Column(
+            children: [
+              // 상단 버튼
+              Expanded(
+                child: CupertinoPicker(
+                  backgroundColor: CupertinoColors.systemBackground.resolveFrom(
+                    context,
+                  ),
+                  itemExtent: 40,
+                  scrollController: FixedExtentScrollController(
+                    initialItem: selectedIndex,
+                  ),
+                  onSelectedItemChanged: (int index) {
+                    irp.setYear(allYears[index]);
+                  },
+                  children: allYears.map((year) {
+                    return Center(
+                      child: Text(
+                        year == null ? '전체' : '$year년',
+                        style: TextStyle(fontSize: 20),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
