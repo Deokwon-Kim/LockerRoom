@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -450,7 +451,7 @@ class IntutionRecordListPage extends StatelessWidget {
                                                         d['memo'].toString(),
                                                         style:
                                                             GoogleFonts.nanumPenScript(
-                                                              fontSize: 18,
+                                                              fontSize: 20,
                                                               color:
                                                                   Colors.white,
                                                               height: 1.3,
@@ -588,7 +589,7 @@ class IntutionRecordListPage extends StatelessWidget {
                                                         d['memo'].toString(),
                                                         style:
                                                             GoogleFonts.nanumPenScript(
-                                                              fontSize: 18,
+                                                              fontSize: 20,
                                                               color:
                                                                   Colors.white,
                                                               height: 1.3,
