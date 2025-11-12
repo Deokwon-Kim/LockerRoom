@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -432,12 +433,26 @@ class IntutionRecordListPage extends StatelessWidget {
                                                 BorderRadiusGeometry.vertical(
                                                   top: Radius.circular(12),
                                                 ),
-                                            child: Image.network(
-                                              d['imageUrl'],
+                                            child: CachedNetworkImage(
+                                              imageUrl: d['imageUrl'],
                                               width: double.infinity,
                                               height: 350,
                                               fit: BoxFit.cover,
-                                              errorBuilder:
+                                              placeholder: (context, url) =>
+                                                  Container(
+                                                    height: 350,
+
+                                                    color: recordedTeamColor
+                                                        .withOpacity(0.3),
+                                                    child: Center(
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                            color:
+                                                                recordedTeamColor,
+                                                          ),
+                                                    ),
+                                                  ),
+                                              errorWidget:
                                                   (context, error, stackTrace) {
                                                     return Container(
                                                       padding:
