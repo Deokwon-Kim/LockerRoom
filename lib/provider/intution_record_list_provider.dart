@@ -10,10 +10,12 @@ class IntutionRecordListProvider extends ChangeNotifier {
   bool _isLoading = true;
   bool _isDescending = true;
   int? _selectedYear;
+  bool _autoSetYear = true;
 
   bool get isLoading => _isLoading;
   bool get isDescending => _isDescending;
   int? get selectedYear => _selectedYear;
+  bool get autoSetYear => _autoSetYear;
 
   List<Map<String, dynamic>> get records {
     final allRecords = _docs.map((d) => d.data()).toList();
@@ -42,7 +44,8 @@ class IntutionRecordListProvider extends ChangeNotifier {
     return sortedYears;
   }
 
-  void subscribe() {
+  void subscribe({bool autoSetYear = true}) {
+    _autoSetYear = autoSetYear;
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {
       _isLoading = false;
@@ -65,10 +68,12 @@ class IntutionRecordListProvider extends ChangeNotifier {
             ..addAll(snap.docs);
 
           // 초기 년도 자동 설정
-          if (_selectedYear == null && _docs.isNotEmpty) {
+          if (_autoSetYear && _selectedYear == null && _docs.isNotEmpty) {
             _selectedYear = _getInitialYear();
-          } else {
+          } else if (!_autoSetYear) {
             // 선택된 년도의 기록이 없으면 자동으로 있는 년도로 조정
+            _checkAndadjustYear();
+          } else {
             _checkAndadjustYear();
           }
           _isLoading = false;
