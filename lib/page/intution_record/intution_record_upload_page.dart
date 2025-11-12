@@ -27,7 +27,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: selectedDate ?? DateTime.now(),
-      firstDate: DateTime(1982),
+      firstDate: DateTime(2023),
       lastDate: DateTime(2026),
       builder: (context, child) {
         final base = Theme.of(context);
