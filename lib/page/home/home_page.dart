@@ -555,7 +555,9 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   ChangeNotifierProvider(
-                    create: (_) => IntutionRecordListProvider()..subscribe(),
+                    create: (_) =>
+                        IntutionRecordListProvider()
+                          ..subscribe(autoSetYear: false),
                     child: Consumer2<IntutionRecordListProvider, TeamProvider>(
                       builder: (context, ip, tp, child) {
                         if (ip.isLoading) {
