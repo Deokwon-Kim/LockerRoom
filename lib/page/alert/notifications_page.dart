@@ -1,8 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/market_post_model.dart';
+import 'package:lockerroom/model/post_model.dart';
+import 'package:lockerroom/page/afterMarket/after_market_detail_page.dart';
+import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/myPage/user_detail_page.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:provider/provider.dart';
@@ -133,117 +138,263 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           final imageUrl =
                               (data['profileImage'] as String?) ?? '';
 
-                          final tile = Padding(
-                            padding: const EdgeInsets.only(left: 10.0),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 20,
-                                  backgroundColor: GRAYSCALE_LABEL_300,
-                                  backgroundImage: imageUrl.isNotEmpty
-                                      ? NetworkImage(imageUrl)
-                                      : null,
-                                  child: imageUrl.isEmpty
-                                      ? Icon(
-                                          Icons.person,
-                                          color: GRAYSCALE_LABEL_500,
-                                        )
-                                      : null,
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => UserDetailPage(
-                                          userId: n.fromUserId,
+                          final tile = GestureDetector(
+                            onTap: () async {
+                              // 알림 타입에 따라 다른 페이지로 이동
+                              if (n.postId != null) {
+                                if (isFeedLike || isComment) {
+                                  // 일반 피드 게시물로 이동
+                                  try {
+                                    final postDoc = await FirebaseFirestore
+                                        .instance
+                                        .collection('posts')
+                                        .doc(n.postId)
+                                        .get();
+
+                                    if (postDoc.exists) {
+                                      final post = PostModel.fromDoc(postDoc);
+                                      if (!context.mounted) return;
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              FeedDetailPage(post: post),
                                         ),
-                                      ),
+                                      );
+                                    } else {
+                                      // 게시물이 삭제된 경우
+                                      if (!context.mounted) return;
+                                      toastification.show(
+                                        context: context,
+                                        type: ToastificationType.error,
+                                        alignment: Alignment.bottomCenter,
+                                        autoCloseDuration: Duration(seconds: 2),
+                                        title: Text('게시물을 찾을 수 없습니다'),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (!context.mounted) return;
+                                    toastification.show(
+                                      context: context,
+                                      type: ToastificationType.error,
+                                      alignment: Alignment.bottomCenter,
+                                      autoCloseDuration: Duration(seconds: 2),
+                                      title: Text('오류가 발생했습니다'),
                                     );
-                                  },
-                                  child: Text(
-                                    name,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: BLACK,
-                                    ),
+                                  }
+                                } else if (isMarketComment) {
+                                  // 마켓 게시물로 이동
+                                  try {
+                                    final marketPostDoc =
+                                        await FirebaseFirestore.instance
+                                            .collection('market_posts')
+                                            .doc(n.postId)
+                                            .get();
+
+                                    if (marketPostDoc.exists) {
+                                      final marketPost =
+                                          MarketPostModel.fromDoc(
+                                            marketPostDoc,
+                                          );
+                                      if (!context.mounted) return;
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              AfterMarketDetailPage(
+                                                marketPost: marketPost,
+                                                postId: n.postId!,
+                                              ),
+                                        ),
+                                      );
+                                    } else {
+                                      // 마켓 게시물이 삭제 된 경우
+                                      if (!context.mounted) return;
+                                      toastification.show(
+                                        context: context,
+                                        type: ToastificationType.error,
+                                        alignment: Alignment.bottomCenter,
+                                        autoCloseDuration: Duration(seconds: 2),
+                                        title: Text('게시물을 찾을 수 없습니다'),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (!context.mounted) return;
+                                    toastification.show(
+                                      context: context,
+                                      type: ToastificationType.error,
+                                      alignment: Alignment.bottomCenter,
+                                      autoCloseDuration: Duration(seconds: 2),
+                                      title: Text('오류가 발생했습니다'),
+                                    );
+                                  }
+                                }
+                              } else if (commentLike && n.commentId != null) {
+                                // 댓글 좋아요의 경우 - 해당 댓글이 있는 게시물로 이동
+                                try {
+                                  final commentDoc = await FirebaseFirestore
+                                      .instance
+                                      .collection('comments')
+                                      .doc(n.commentId)
+                                      .get();
+
+                                  if (commentDoc.exists) {
+                                    final commentPostId =
+                                        commentDoc.data()?['postId'] as String?;
+                                    if (commentPostId != null) {
+                                      final postDoc = await FirebaseFirestore
+                                          .instance
+                                          .collection('posts')
+                                          .doc(commentPostId)
+                                          .get();
+
+                                      if (postDoc.exists) {
+                                        final post = PostModel.fromDoc(postDoc);
+                                        if (!context.mounted) return;
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                FeedDetailPage(post: post),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  } else {
+                                    if (!context.mounted) return;
+                                    toastification.show(
+                                      context: context,
+                                      type: ToastificationType.error,
+                                      alignment: Alignment.bottomCenter,
+                                      autoCloseDuration: Duration(seconds: 2),
+                                      title: Text('댓글을 찾을 수 없습니다'),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  toastification.show(
+                                    context: context,
+                                    type: ToastificationType.error,
+                                    alignment: Alignment.bottomCenter,
+                                    autoCloseDuration: Duration(seconds: 2),
+                                    title: Text('오류가 발생했습니다'),
+                                  );
+                                }
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 10.0),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 20,
+                                    backgroundColor: GRAYSCALE_LABEL_300,
+                                    backgroundImage: imageUrl.isNotEmpty
+                                        ? CachedNetworkImageProvider(imageUrl)
+                                        : null,
+                                    child: imageUrl.isEmpty
+                                        ? const Icon(
+                                            Icons.person,
+                                            color: GRAYSCALE_LABEL_500,
+                                            size: 20,
+                                          )
+                                        : null,
                                   ),
-                                ),
-                                if (isFollow) ...[
-                                  Transform.translate(
-                                    offset: Offset(-10, 0),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => UserDetailPage(
+                                            userId: n.fromUserId,
+                                          ),
+                                        ),
+                                      );
+                                    },
                                     child: Text(
-                                      '님이 회원님을 팔로우하기 시작했습니다.',
-                                      style: TextStyle(fontSize: 14),
+                                      name,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: BLACK,
+                                      ),
                                     ),
                                   ),
-                                ] else if (isFeedLike) ...[
-                                  Transform.translate(
-                                    offset: Offset(-10, 0),
-                                    child: Text(
-                                      '님이 회원님의 게시물을 좋아합니다.',
-                                      style: TextStyle(fontSize: 14),
+                                  if (isFollow) ...[
+                                    Transform.translate(
+                                      offset: Offset(-10, 0),
+                                      child: Text(
+                                        '님이 회원님을 팔로우하기 시작했습니다.',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
                                     ),
-                                  ),
-                                ] else if (isComment) ...[
-                                  Transform.translate(
-                                    offset: Offset(-10, 0),
-                                    child: Text(
-                                      '님이 회원님의 게시글에 댓글을 남겼습니다.',
-                                      style: TextStyle(fontSize: 14),
+                                  ] else if (isFeedLike) ...[
+                                    Transform.translate(
+                                      offset: Offset(-10, 0),
+                                      child: Text(
+                                        '님이 회원님의 게시물을 좋아합니다.',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
                                     ),
-                                  ),
-                                ] else if (commentLike) ...[
-                                  Transform.translate(
-                                    offset: Offset(-10, 0),
-                                    child: Text(
-                                      '님이 회원님의 댓글을 좋아합니다.',
-                                      style: TextStyle(fontSize: 14),
+                                  ] else if (isComment) ...[
+                                    Transform.translate(
+                                      offset: Offset(-10, 0),
+                                      child: Text(
+                                        '님이 회원님의 게시글에 댓글을 남겼습니다.',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
                                     ),
-                                  ),
-                                ] else if (isMarketComment) ...[
-                                  Transform.translate(
-                                    offset: Offset(-10, 0),
-                                    child: Text(
-                                      '님이 회원님의 마켓 게시글에 댓글을 남겼습니다.',
-                                      style: TextStyle(fontSize: 14),
+                                  ] else if (commentLike) ...[
+                                    Transform.translate(
+                                      offset: Offset(-10, 0),
+                                      child: Text(
+                                        '님이 회원님의 댓글을 좋아합니다.',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
                                     ),
-                                  ),
-                                ] else if (isMarketPostReport) ...[
-                                  Transform.translate(
-                                    offset: Offset(-10, 0),
-                                    child: Text(
-                                      '마켓 게시글 신고발생 🚨',
-                                      style: TextStyle(fontSize: 14),
+                                  ] else if (isMarketComment) ...[
+                                    Transform.translate(
+                                      offset: Offset(-10, 0),
+                                      child: Text(
+                                        '님이 회원님의 게시글의 댓글을 남겼습니다.',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
                                     ),
-                                  ),
-                                ] else if (isReport) ...[
-                                  Transform.translate(
-                                    offset: Offset(-10, 0),
-                                    child: Text(
-                                      '게시글 신고발생 🚨',
-                                      style: TextStyle(fontSize: 14),
+                                  ] else if (isMarketPostReport) ...[
+                                    Transform.translate(
+                                      offset: Offset(-10, 0),
+                                      child: Text(
+                                        '마켓 게시글 신고발생 🚨',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
                                     ),
-                                  ),
-                                ] else if (isMarketCommentReport) ...[
-                                  Transform.translate(
-                                    offset: Offset(-10, 0),
-                                    child: Text(
-                                      '마켓 댓글 신고발생 🚨',
-                                      style: TextStyle(fontSize: 14),
+                                  ] else if (isReport) ...[
+                                    Transform.translate(
+                                      offset: Offset(-10, 0),
+                                      child: Text(
+                                        '게시글 신고발생 🚨',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
                                     ),
-                                  ),
-                                ] else if (isCommentReport) ...[
-                                  Transform.translate(
-                                    offset: Offset(-10, 0),
-                                    child: Text(
-                                      '피드 댓글 신고발생 🚨',
-                                      style: TextStyle(fontSize: 14),
+                                  ] else if (isMarketCommentReport) ...[
+                                    Transform.translate(
+                                      offset: Offset(-10, 0),
+                                      child: Text(
+                                        '마켓 댓글 신고발생 🚨',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
                                     ),
-                                  ),
+                                  ] else if (isCommentReport) ...[
+                                    Transform.translate(
+                                      offset: Offset(-10, 0),
+                                      child: Text(
+                                        '피드 댓글 신고발생 🚨',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                    ),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           );
 
