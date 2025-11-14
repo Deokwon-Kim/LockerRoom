@@ -96,73 +96,65 @@ class _BottomTabBarState extends State<BottomTabBar> {
 
     return Scaffold(
       body: pages[_selectedIndex],
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: GRAYSCALE_LABEL_100,
-                  spreadRadius: 1,
-                  blurRadius: 7,
-                  offset: Offset(0, 2),
-                ),
-              ],
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.only(left: 0, right: 0, top: 0),
+        decoration: BoxDecoration(
+          color: WHITE,
+          boxShadow: [
+            BoxShadow(
+              color: GRAYSCALE_LABEL_100,
+              spreadRadius: 1,
+              blurRadius: 7,
+              offset: Offset(0, 2),
             ),
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                splashFactory: NoSplash.splashFactory,
-                splashColor: Colors.transparent,
-                highlightColor: Colors.transparent,
-              ),
-              child: BottomNavigationBar(
-                currentIndex: _selectedIndex,
-                onTap: _onItemTapped,
-                type: BottomNavigationBarType.fixed,
-                selectedItemColor: teamProvider.selectedTeam?.color,
-                unselectedItemColor: GRAYSCALE_LABEL_500,
-                backgroundColor: WHITE,
-                elevation: 0,
-                selectedFontSize: 0,
-                unselectedFontSize: 0,
-                iconSize: 25,
-                items: [
-                  BottomNavigationBarItem(
-                    icon: _buildSvgTabIcon(0, AppIcons.home, AppIcons.homeFill),
-                    label: '',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _buildTabIcon(
-                      1,
-                      Icons.sports_baseball_outlined,
-                      Icons.sports_baseball,
-                    ),
-                    label: '',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _buildSvgTabIcon(2, AppIcons.add, AppIcons.add),
-                    label: '',
-                  ),
-
-                  BottomNavigationBarItem(
-                    icon: _buildSvgTabIcon(3, AppIcons.shop, AppIcons.shopFill),
-                    label: '',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _buildSvgTabIcon(
-                      4,
-                      AppIcons.person,
-                      AppIcons.personFill,
-                    ),
-                    label: '',
-                  ),
-                ],
-              ),
-            ),
+          ],
+        ),
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            splashFactory: NoSplash.splashFactory,
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
           ),
-        ],
+          child: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: teamProvider.selectedTeam?.color,
+            unselectedItemColor: GRAYSCALE_LABEL_500,
+            backgroundColor: WHITE,
+            elevation: 0,
+            selectedFontSize: 0,
+            unselectedFontSize: 0,
+            iconSize: 25,
+            items: [
+              BottomNavigationBarItem(
+                icon: _buildSvgTabIcon(0, AppIcons.home, AppIcons.homeFill),
+                label: '',
+              ),
+              BottomNavigationBarItem(
+                icon: _buildTabIcon(
+                  1,
+                  Icons.sports_baseball_outlined,
+                  Icons.sports_baseball,
+                ),
+                label: '',
+              ),
+              BottomNavigationBarItem(
+                icon: _buildSvgTabIcon(2, AppIcons.add, AppIcons.add),
+                label: '',
+              ),
+
+              BottomNavigationBarItem(
+                icon: _buildSvgTabIcon(3, AppIcons.shop, AppIcons.shopFill),
+                label: '',
+              ),
+              BottomNavigationBarItem(
+                icon: _buildSvgTabIcon(4, AppIcons.person, AppIcons.personFill),
+                label: '',
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
