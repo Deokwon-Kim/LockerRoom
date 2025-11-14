@@ -66,6 +66,8 @@ dependencies:
   badges: ^3.1.2
   flutter_slidable: ^4.0.3
   cached_network_image: ^3.4.1
+  flutter_link_previewer: ^4.1.2
+  flutter_chat_types: ^3.6.2
 
 
 dev_dependencies:
