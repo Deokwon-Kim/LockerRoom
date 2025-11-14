@@ -96,6 +96,13 @@ class _HomePageState extends State<HomePage> {
     _lastFetchedTeam = team;
   }
 
+  String? extractUrl(String text) {
+    final urlPattern = RegExp(r'(https?://[^\s,]+)', caseSensitive: false);
+
+    final match = urlPattern.firstMatch(text);
+    return match?.group(0);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<TeamProvider>(
@@ -320,10 +327,24 @@ class _HomePageState extends State<HomePage> {
                     builder: (context, feedProvider, child) {
                       final posts = feedProvider.posts;
                       if (posts.isEmpty) return Text('최근 게시물이 존재하지 않습니다');
+
+                      // 미디어와 링크가 있는지 확인
                       final hasMediaPosts = posts.any(
                         (p) => p.mediaUrls.isNotEmpty,
                       );
-                      final listHeight = hasMediaPosts ? 246.0 : 100.0;
+                      final hasLinkPosts = posts.any(
+                        (p) => extractUrl(p.text) != null,
+                      );
+
+                      // 높이 계산
+                      double listHeight;
+                      if (hasMediaPosts) {
+                        listHeight = 246.0; // 미디어 있음
+                      } else if (hasLinkPosts) {
+                        listHeight = 150.0; // 링크만 있음
+                      } else {
+                        listHeight = 100.0; // 둘 다 없음
+                      }
 
                       return SizedBox(
                         height: listHeight,
@@ -332,6 +353,7 @@ class _HomePageState extends State<HomePage> {
                           itemCount: posts.length,
                           itemBuilder: (context, index) {
                             final post = posts[index];
+
                             return Align(
                               alignment: Alignment.topCenter,
                               child: GestureDetector(
@@ -346,16 +368,115 @@ class _HomePageState extends State<HomePage> {
                                 },
                                 child: Container(
                                   width: 240,
-                                  height: post.mediaUrls.isNotEmpty ? 250 : 100,
                                   margin: const EdgeInsets.only(right: 12),
                                   child: Card(
                                     color: WHITE,
                                     child: Padding(
                                       padding: EdgeInsets.all(15.0),
                                       child: Column(
+                                        mainAxisSize: MainAxisSize.min,
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
+                                          // 링크 바로가기 버튼
+                                          if (extractUrl(post.text) !=
+                                              null) ...[
+                                            InkWell(
+                                              onTap: () async {
+                                                final url = extractUrl(
+                                                  post.text,
+                                                )!;
+                                                if (await canLaunchUrl(
+                                                  Uri.parse(url),
+                                                )) {
+                                                  await launchUrl(
+                                                    Uri.parse(url),
+                                                    mode: LaunchMode
+                                                        .externalApplication,
+                                                  );
+                                                }
+                                              },
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 10,
+                                                  vertical: 8,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    colors: [
+                                                      Colors.blue[50]!,
+                                                      Colors.blue[100]!,
+                                                    ],
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  border: Border.all(
+                                                    color: Colors.blue[300]!,
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Container(
+                                                      padding: EdgeInsets.all(
+                                                        4,
+                                                      ),
+                                                      decoration: BoxDecoration(
+                                                        color: WHITE,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              4,
+                                                            ),
+                                                      ),
+                                                      child: Icon(
+                                                        Icons.link,
+                                                        size: 14,
+                                                        color: Colors.blue[700],
+                                                      ),
+                                                    ),
+                                                    SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            '링크 바로가기',
+                                                            style: TextStyle(
+                                                              fontSize: 12,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: Colors
+                                                                  .blue[900],
+                                                            ),
+                                                          ),
+                                                          SizedBox(height: 1),
+                                                          Text(
+                                                            '탭하여 열기',
+                                                            style: TextStyle(
+                                                              fontSize: 10,
+                                                              color: Colors
+                                                                  .blue[700],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    Icon(
+                                                      Icons.arrow_forward_ios,
+                                                      size: 12,
+                                                      color: Colors.blue[700],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(height: 8),
+                                          ],
                                           if (post.mediaUrls.isNotEmpty)
                                             SizedBox(
                                               height: 150,

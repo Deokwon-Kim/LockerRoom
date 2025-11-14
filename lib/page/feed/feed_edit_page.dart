@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_link_previewer/flutter_link_previewer.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/feed/fullscreen_image_viewer.dart';
@@ -38,6 +39,12 @@ class _FeedEditPageState extends State<FeedEditPage> {
   void dispose() {
     _captionEditController.dispose();
     super.dispose();
+  }
+
+  String? extractUrl(String text) {
+    final urlPattern = RegExp(r'(https?://[^\s,]+)', caseSensitive: false);
+    final match = urlPattern.firstMatch(text);
+    return match?.group(0);
   }
 
   @override
@@ -101,83 +108,143 @@ class _FeedEditPageState extends State<FeedEditPage> {
             },
           ),
         ],
+        scrolledUnderElevation: 0,
       ),
       body: GestureDetector(
         behavior: HitTestBehavior.deferToChild,
         onTap: () => FocusScope.of(context).unfocus(),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Card(
-            color: WHITE,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Consumer<ProfileProvider>(
-                        builder: (context, profileProvider, child) {
-                          final url =
-                              profileProvider.userProfiles[widget.post.userId];
-                          return CircleAvatar(
-                            radius: 25,
-                            backgroundImage: url != null
-                                ? NetworkImage(url)
-                                : null,
-                            backgroundColor: GRAYSCALE_LABEL_300,
-                            child: url == null
-                                ? const Icon(
-                                    Icons.person,
-                                    color: BLACK,
-                                    size: 25,
-                                  )
-                                : null,
-                          );
-                        },
-                      ),
-                      SizedBox(width: 10),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          widget.post.userNickName,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Card(
+              color: WHITE,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Consumer<ProfileProvider>(
+                          builder: (context, profileProvider, child) {
+                            final url = profileProvider
+                                .userProfiles[widget.post.userId];
+                            return CircleAvatar(
+                              radius: 25,
+                              backgroundImage: url != null
+                                  ? NetworkImage(url)
+                                  : null,
+                              backgroundColor: GRAYSCALE_LABEL_300,
+                              child: url == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      color: BLACK,
+                                      size: 25,
+                                    )
+                                  : null,
+                            );
+                          },
+                        ),
+                        SizedBox(width: 10),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            widget.post.userNickName,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: GRAYSCALE_LABEL_200),
+                      ),
+                      child: TextField(
+                        controller: _captionEditController,
+                        cursorColor: BUTTON,
+                        maxLines: null,
+                        minLines: 3,
+                        onChanged: (_) => setState(() {}),
+                        decoration: const InputDecoration(
+                          hintText: '내용을 입력하세요',
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    if (extractUrl(widget.post.text) != null) ...[
+                      SizedBox(height: 10),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: WHITE,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            LinkPreview(
+                              enableAnimation: true,
+                              text: extractUrl(widget.post.text)!,
+                              onLinkPreviewDataFetched: (data) {
+                                print('Preview data fetched: ${data.title}');
+                              },
+                            ),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(color: WHITE),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.link,
+                                    size: 16,
+                                    color: Colors.blue,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      extractUrl(widget.post.text)!,
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                        fontSize: 13,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                  SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: GRAYSCALE_LABEL_200),
-                    ),
-                    child: TextField(
-                      controller: _captionEditController,
-                      cursorColor: BUTTON,
-                      maxLines: null,
-                      minLines: 3,
-                      onChanged: (_) => setState(() {}),
-                      decoration: const InputDecoration(
-                        hintText: '내용을 입력하세요',
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 8),
 
-                  Consumer<FeedEditProvider>(
-                    builder: (context, feedEditProvider, child) {
-                      return _buildMediaSection(feedEditProvider);
-                    },
-                  ),
-                ],
+                    Consumer<FeedEditProvider>(
+                      builder: (context, feedEditProvider, child) {
+                        return _buildMediaSection(feedEditProvider);
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

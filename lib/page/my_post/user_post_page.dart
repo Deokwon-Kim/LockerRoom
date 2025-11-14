@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_link_previewer/flutter_link_previewer.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
@@ -33,6 +34,12 @@ class _UserPostPageState extends State<UserPostPage> {
     if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
     if (diff.inHours < 24) return '${diff.inHours}시간 전';
     return '${diff.inDays}일 전';
+  }
+
+  String? extractUrl(String text) {
+    final urlPattern = RegExp(r'(https?://[^\s,]+)', caseSensitive: false);
+    final match = urlPattern.firstMatch(text);
+    return match?.group(0);
   }
 
   @override
@@ -167,6 +174,66 @@ class _UserPostPageState extends State<UserPostPage> {
                               // 본문
                               Text(p.text),
                               SizedBox(height: 8),
+                              if (extractUrl(p.text) != null) ...[
+                                SizedBox(height: 10),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: WHITE,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.withOpacity(0.2),
+                                        blurRadius: 8,
+                                        offset: Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      LinkPreview(
+                                        enableAnimation: true,
+                                        text: extractUrl(p.text)!,
+                                        onLinkPreviewDataFetched: (data) {
+                                          print(
+                                            'Preview data fetched: ${data.title}',
+                                          );
+                                        },
+                                      ),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(color: WHITE),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.link,
+                                              size: 16,
+                                              color: Colors.blue,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                extractUrl(p.text)!,
+                                                style: TextStyle(
+                                                  color: Colors.blue,
+                                                  fontSize: 13,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
 
                               // 이미지/영상 슬라이드
                               if (p.mediaUrls.isNotEmpty)

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_link_previewer/flutter_link_previewer.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -35,10 +36,17 @@ class _UploadPageState extends State<FeedUploadPage> {
     super.dispose();
   }
 
+  String? extractUrl(String text) {
+    final urlPattern = RegExp(r'(https?://[^\s,]+)', caseSensitive: false);
+    final match = urlPattern.firstMatch(text);
+    return match?.group(0);
+  }
+
   @override
   Widget build(BuildContext context) {
     final uploadProvider = context.watch<UploadProvider>();
     final hasCaption = _captionController.text.trim().isNotEmpty;
+    final hasLink = extractUrl(_captionController.text) != null;
     final hasMedia =
         uploadProvider.images.isNotEmpty ||
         uploadProvider.video != null ||
@@ -178,6 +186,59 @@ class _UploadPageState extends State<FeedUploadPage> {
                       ),
                     ),
                   ),
+                  if (extractUrl(_captionController.text) != null) ...[
+                    SizedBox(height: 10),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: WHITE,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          LinkPreview(
+                            enableAnimation: true,
+                            text: extractUrl(_captionController.text)!,
+                            onLinkPreviewDataFetched: (data) {
+                              print('Preview data fetched: ${data.title}');
+                            },
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(color: WHITE),
+                            child: Row(
+                              children: [
+                                Icon(Icons.link, size: 16, color: Colors.blue),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    extractUrl(_captionController.text)!,
+                                    style: TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 13,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   // // 글자 수 카운터
                   // Padding(
@@ -251,27 +312,28 @@ class _UploadPageState extends State<FeedUploadPage> {
                     ),
 
                   // 미디어 선택 버튼
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12.0),
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        pickImageBottomSheet(context, uploadProvider);
-                      },
-                      icon: const Icon(Icons.perm_media),
-                      label: const Text(
-                        '미디어 추가(선택사항)',
-                        style: TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: BUTTON,
-                        side: const BorderSide(color: BUTTON),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                  if (!hasLink)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12.0),
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          pickImageBottomSheet(context, uploadProvider);
+                        },
+                        icon: const Icon(Icons.perm_media),
+                        label: const Text(
+                          '미디어 추가(선택사항)',
+                          style: TextStyle(fontWeight: FontWeight.w500),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: BUTTON,
+                          side: const BorderSide(color: BUTTON),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
                       ),
                     ),
-                  ),
 
                   const SizedBox(height: 16),
 
