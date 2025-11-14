@@ -1066,13 +1066,9 @@ class _HomePageState extends State<HomePage> {
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => FullscreenVideoPlayer(
-                                videoUrl: selectedTeam.youtubeUrl,
-                              ),
-                            ),
+                          launchUrl(
+                            Uri.parse(selectedTeam.youtubeUrl),
+                            mode: LaunchMode.externalApplication,
                           );
                         },
                         child: Text(
