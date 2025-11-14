@@ -191,6 +191,18 @@ class MarketFeedProvider extends ChangeNotifier {
     });
   }
 
+  // 특정 사용자의 마켓 게시물만 불러오기
+  Stream<List<MarketPostModel>> listenUserMarketPosts(String userId) {
+    return _marketPostCollection
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => MarketPostModel.fromDoc(doc)).toList(),
+        );
+  }
+
   // 피드 신고 기능
   Future<void> reportMarketPost({
     required MarketPostModel marketPost,
