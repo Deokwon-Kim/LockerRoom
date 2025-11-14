@@ -7,6 +7,9 @@ class AppNotification {
   final String userNickName;
   final DateTime? createdAt;
   final bool isRead;
+  final String? postId;
+  final String? commentId;
+  final String? preview;
 
   AppNotification({
     required this.id,
@@ -15,6 +18,9 @@ class AppNotification {
     required this.userNickName,
     required this.createdAt,
     required this.isRead,
+    this.postId,
+    this.commentId,
+    this.preview,
   });
 
   factory AppNotification.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -28,6 +34,9 @@ class AppNotification {
           ? DateTime.now()
           : (data['createdAt'] as Timestamp).toDate(),
       isRead: (data['isRead'] ?? false) as bool,
+      postId: data['postId'] as String?,
+      commentId: data['commentId'] as String?,
+      preview: data['preview'] as String?,
     );
   }
 }
