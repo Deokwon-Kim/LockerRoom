@@ -182,7 +182,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   Transform.translate(
                                     offset: Offset(-10, 0),
                                     child: Text(
-                                      '님이 회원님의 댓글을 좋아합니다.',
+                                      '님이 회원님의 게시물을 좋아합니다.',
                                       style: TextStyle(fontSize: 14),
                                     ),
                                   ),
