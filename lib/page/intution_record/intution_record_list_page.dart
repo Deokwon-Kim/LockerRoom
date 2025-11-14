@@ -135,35 +135,6 @@ class IntutionRecordListPage extends StatelessWidget {
 
             return Column(
               children: [
-                // Padding(
-                //   padding: const EdgeInsets.symmetric(
-                //     horizontal: 16.0,
-                //     vertical: 8.0,
-                //   ),
-                //   child: Consumer<IntutionRecordListProvider>(
-                //     builder: (context, lp, child) {
-                //       return InkWell(
-                //         onTap: () => _showYearPicker(context, lp),
-                //         child: Row(
-                //           mainAxisAlignment: MainAxisAlignment.start,
-                //           children: [
-                //             Text(
-                //               lp.selectedYear == null
-                //                   ? '전체'
-                //                   : '${lp.selectedYear}년',
-                //               style: TextStyle(
-                //                 fontSize: 16,
-                //                 fontWeight: FontWeight.w600,
-                //               ),
-                //             ),
-
-                //             Icon(Icons.keyboard_arrow_down, size: 24),
-                //           ],
-                //         ),
-                //       );
-                //     },
-                //   ),
-                // ),
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Container(
