@@ -1,10 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_link_previewer/flutter_link_previewer.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_edit_page.dart';
+import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
@@ -72,6 +74,11 @@ class MyPostWidget extends StatelessWidget {
     required this.feedProvider,
     super.key,
   });
+  String? extractUrl(String text) {
+    final urlPattern = RegExp(r'(https?://[^\s,]+)', caseSensitive: false);
+    final match = urlPattern.firstMatch(text);
+    return match?.group(0);
+  }
 
   String timeAgo(DateTime date) {
     final now = DateTime.now();
@@ -161,6 +168,59 @@ class MyPostWidget extends StatelessWidget {
               // 본문
               Text(post.text),
               const SizedBox(height: 8),
+              if (extractUrl(post.text) != null) ...[
+                SizedBox(height: 10),
+                Container(
+                  decoration: BoxDecoration(
+                    color: WHITE,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      LinkPreview(
+                        enableAnimation: true,
+                        text: extractUrl(post.text)!,
+                        onLinkPreviewDataFetched: (data) {
+                          print('Preview data fetched: ${data.title}');
+                        },
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(color: WHITE),
+                        child: Row(
+                          children: [
+                            Icon(Icons.link, size: 16, color: Colors.blue),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                extractUrl(post.text)!,
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                  fontSize: 13,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               // 이미지/영상 슬라이드
               if (post.mediaUrls.isNotEmpty)
                 LayoutBuilder(
@@ -261,6 +321,16 @@ class MyPostWidget extends StatelessWidget {
                     onPressed: () {},
                     icon: const Icon(CupertinoIcons.chat_bubble),
                   ),
+                  Consumer<CommentProvider>(
+                    builder: (context, commentProvider, child) {
+                      final comment = commentProvider.getComments(post.id);
+                      return Transform.translate(
+                        offset: Offset(-5, 0),
+                        child: Text('${comment.length}'),
+                      );
+                    },
+                  ),
+
                   const Spacer(),
                   Text(
                     '${post.mediaUrls.length}개의 이미지',
