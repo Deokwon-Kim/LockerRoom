@@ -86,7 +86,7 @@ class _UploadPageState extends State<FeedUploadPage> {
         ),
         centerTitle: true,
         backgroundColor: WHITE,
-        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -347,7 +347,7 @@ class _UploadPageState extends State<FeedUploadPage> {
                               await uploadProvider.uploadAndSavePost(
                                 userId: FirebaseAuth.instance.currentUser!.uid,
                                 userNickName: userNickName,
-                                name: name!,
+                                name: name ?? '',
                                 text: _captionController.text,
                               );
                               _captionController.clear();
