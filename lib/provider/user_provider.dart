@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lockerroom/model/user_model.dart';
 
 enum UsernameCheckState { idle, checking, available, duplicated, error }
@@ -11,6 +12,7 @@ enum UsernameCheckState { idle, checking, available, duplicated, error }
 class UserProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late var googleSignIn = GoogleSignIn();
 
   UsernameCheckState _state = UsernameCheckState.idle;
   UsernameCheckState get state => _state;
@@ -699,6 +701,55 @@ class UserProvider extends ChangeNotifier {
       }
     } catch (e) {
       print('이름 변경 실패');
+    }
+  }
+
+  Future<UserCredential> googleLogin() async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      if (googleUser == null) {
+        throw Exception('구글 로그인이 취소되었습니다.');
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Firebase 인증
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+
+      // 현재 사용자 정보 업데이트
+      _currentUser = userCredential.user;
+
+      // Firestore에 유저 정보 저장
+      if (_currentUser != null) {
+        final userDoc = _firestore.collection('users').doc(_currentUser!.uid);
+        final docSnapshot = await userDoc.get();
+
+        if (!docSnapshot.exists) {
+          // 최초 로그인 시에만 저장
+          await userDoc.set({
+            'uid': _currentUser!.uid,
+            'email': _currentUser!.email ?? '',
+            'userNickName': _currentUser!.displayName ?? '',
+            'name': _currentUser!.displayName ?? '',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
+      notifyListeners();
+      return userCredential;
+    } catch (e) {
+      debugPrint('구글 로그인 오류: $e');
+      rethrow;
     }
   }
 }
