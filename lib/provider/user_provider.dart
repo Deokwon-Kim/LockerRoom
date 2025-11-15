@@ -6,14 +6,14 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/model/user_model.dart';
 
-enum UsernameCheckState { idle, checking, available, duplicated, error }
+enum UserNickNameCheckState { idle, checking, available, duplicated, error }
 
 class UserProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  UsernameCheckState _state = UsernameCheckState.idle;
-  UsernameCheckState get state => _state;
+  UserNickNameCheckState _state = UserNickNameCheckState.idle;
+  UserNickNameCheckState get state => _state;
 
   String? _message;
   String? get message => _message;
@@ -41,14 +41,14 @@ class UserProvider extends ChangeNotifier {
     _debounce?.cancel();
 
     if (username.trim().isEmpty) {
-      _state = UsernameCheckState.idle;
+      _state = UserNickNameCheckState.idle;
       _message = null;
       notifyListeners();
       return;
     }
 
     // 새로운 입력이 들어왔으므로 상태를 idle로 초기화
-    _state = UsernameCheckState.idle;
+    _state = UserNickNameCheckState.idle;
     _message = null;
     notifyListeners();
 
@@ -76,26 +76,26 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> _checkUserName(String username) async {
-    _state = UsernameCheckState.checking;
+    _state = UserNickNameCheckState.checking;
     _message = '중복 확인 중...';
     notifyListeners();
 
     try {
       final snapshot = await _firestore
           .collection('users')
-          .where('username', isEqualTo: username)
+          .where('userNickName', isEqualTo: username)
           .limit(1)
           .get();
 
       if (snapshot.docs.isEmpty) {
-        _state = UsernameCheckState.available;
+        _state = UserNickNameCheckState.available;
         _message = '사용 가능한 닉네임 입니다.';
       } else {
-        _state = UsernameCheckState.duplicated;
+        _state = UserNickNameCheckState.duplicated;
         _message = '이미 사용 중인 닉네임 입니다.';
       }
     } catch (e) {
-      _state = UsernameCheckState.error;
+      _state = UserNickNameCheckState.error;
       _message = '확인 중 오류가 발생했습니다.';
       debugPrint('닉네임 중복 확인 오류: $e');
     }
