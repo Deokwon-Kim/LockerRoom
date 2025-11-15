@@ -94,6 +94,20 @@ class FeedProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateLocalPost(PostModel updatedPost) {
+    int index = _allPosts.indexWhere((p) => p.id == updatedPost.id);
+    if (index != -1) {
+      _allPosts[index] = updatedPost;
+    }
+
+    index = _filteredPosts.indexWhere((p) => p.id == updatedPost.id);
+    if (index != -1) {
+      _filteredPosts[index] = updatedPost;
+    }
+
+    notifyListeners();
+  }
+
   Future<void> loadAllUsers() async {
     final snapshot = await FirebaseFirestore.instance.collection('users').get();
     _allUsers = snapshot.docs.map((doc) => UserModel.fromDoc(doc)).toList();
