@@ -150,9 +150,15 @@ class UserProvider extends ChangeNotifier {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+      // UserProvider 상태 즉시 업데이트 (회원가입 직후 name이 표시되도록)
+      _nickname = user.userNickName;
+      _name = user.name;
+      _email = user.useremail;
+
       setSignUpSuccess(true);
       setErrorMessage(null);
       setLoading(false);
+      notifyListeners(); // 상태 변경 알림
       return true;
     } on FirebaseAuthException catch (e) {
       debugPrint('회원가입 오류: $e');
