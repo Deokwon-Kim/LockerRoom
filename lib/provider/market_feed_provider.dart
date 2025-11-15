@@ -81,6 +81,14 @@ class MarketFeedProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  MarketPostModel? getMarketPostById(String postId) {
+    try {
+      return _allMarketPosts.firstWhere((p) => p.postId == postId);
+    } catch (e) {
+      return null;
+    }
+  }
+
   @override
   void dispose() {
     _marketSub?.cancel();
@@ -124,6 +132,24 @@ class MarketFeedProvider extends ChangeNotifier {
       print('Error deleting post: $e');
       rethrow; // 에러를 다시 던져서 UI에서 처리할 수 있도록
     }
+  }
+
+  void updateLocalMarketPost(MarketPostModel updatedMarketPost) {
+    int index = _allMarketPosts.indexWhere(
+      (p) => p.postId == updatedMarketPost.postId,
+    );
+    if (index != -1) {
+      _allMarketPosts[index] = updatedMarketPost;
+    }
+
+    index = _marketPostsStream.indexWhere(
+      (p) => p.postId == updatedMarketPost.postId,
+    );
+    if (index != -1) {
+      _marketPostsStream[index] = updatedMarketPost;
+    }
+
+    notifyListeners();
   }
 
   // 게시글 조회 시 조회수 증가
