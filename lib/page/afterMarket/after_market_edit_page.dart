@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/market_post_model.dart';
 import 'package:lockerroom/provider/marketFeedEdit_provider.dart';
+import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
@@ -49,14 +50,16 @@ class _AfterMarketEditPageState extends State<AfterMarketEditPage> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         actions: [
-          Consumer2<MarketfeededitProvider, TeamProvider>(
-            builder: (context, mfp, tp, child) {
+          Consumer3<MarketfeededitProvider, MarketFeedProvider, TeamProvider>(
+            builder: (context, mfp, marketFeedProvider, tp, child) {
               return Padding(
                 padding: const EdgeInsets.only(right: 20.0),
                 child: GestureDetector(
                   onTap: mfp.isUploading
                       ? null
                       : () async {
+                          mfp.setUploading(true);
+
                           final success = await mfp.updateMarketPost(
                             postId: widget.marketPost.postId,
                             newtitle: _titleController.text,
@@ -64,7 +67,22 @@ class _AfterMarketEditPageState extends State<AfterMarketEditPage> {
                             newPrice: _priceController.text,
                             newType: selectedValue,
                           );
+
+                          mfp.setUploading(false);
+
                           if (success) {
+                            final updatedMarketPost = widget.marketPost
+                                .copyWith(
+                                  title: _titleController.text,
+                                  description: _descriptionController.text,
+                                  price: _priceController.text,
+                                  type: selectedValue,
+                                );
+
+                            marketFeedProvider.updateLocalMarketPost(
+                              updatedMarketPost,
+                            );
+
                             Navigator.pop(context);
                             toastification.show(
                               context: context,
