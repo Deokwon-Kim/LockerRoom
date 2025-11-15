@@ -175,7 +175,17 @@ class FeedProvider extends ChangeNotifier {
 
   void cancelSubscription() {
     _sub?.cancel();
+    _sub = null;
+  }
+
+  void cancelFeedSubscripton() {
+    _sub?.cancel();
+    _sub = null;
+  }
+
+  void cancelRecentPostSubscription() {
     _subB?.cancel();
+    _subB = null;
   }
 
   void cancelAllSubscriptions() {
