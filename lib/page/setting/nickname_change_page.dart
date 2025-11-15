@@ -128,7 +128,7 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
         .collection('users')
         .doc(uid)
         .get();
-    final nickname = doc.data()?['username'] ?? '닉네임 없음';
+    final nickname = doc.data()?['userNickName'] ?? '닉네임 없음';
 
     if (mounted) {
       setState(() {
@@ -143,6 +143,7 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
   @override
   Widget build(BuildContext context) {
     final teamProvider = Provider.of<TeamProvider>(context, listen: false);
+    final userProvider = context.watch<UserProvider>();
     const double fieldHeight = 52.0;
     const double horizontalPageMargin = 20.0;
     const double borderRadiusValue = 8.0;
@@ -193,7 +194,11 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
                     height: fieldHeight,
                     child: TextField(
                       controller: _nickNameController,
-                      onChanged: _onNicknameChanged,
+                      onChanged: (value) {
+                        _onNicknameChanged(value);
+                        context.read<UserProvider>().onUserNameChanged(value);
+                      },
+
                       cursorColor: teamProvider.selectedTeam!.color,
                       decoration: InputDecoration(
                         hintText: _currentNicknameHint,
@@ -256,7 +261,9 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
                               if (_enteredNickname.isEmpty ||
                                   _nickNameController.text == initialNickname ||
                                   _enteredNickname.length < 2 ||
-                                  _enteredNickname.length > 8) {
+                                  _enteredNickname.length > 8 ||
+                                  userProvider.state !=
+                                      UserNickNameCheckState.available) {
                                 ();
                               } else {
                                 _showConfirmationDialog();
@@ -268,7 +275,9 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
                                       _nickNameController.text ==
                                           initialNickname ||
                                       _enteredNickname.length < 2 ||
-                                      _enteredNickname.length > 8)
+                                      _enteredNickname.length > 8 ||
+                                      userProvider.state !=
+                                          UserNickNameCheckState.available)
                                   ? GRAYSCALE_LABEL_300
                                   : teamProvider.selectedTeam!.color,
                               foregroundColor: WHITE,
@@ -291,6 +300,12 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
                   ),
               ],
             ),
+            if (_enteredNickname.isNotEmpty &&
+                _enteredNickname != initialNickname)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: _buildNickNameCheckStatus(userProvider),
+              ),
             if (_enteredNickname.isEmpty)
               if (_enteredNickname.isNotEmpty && !_isNicknameChangeConfirmed)
                 Padding(
@@ -312,5 +327,45 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
         ),
       ),
     );
+  }
+
+  // 중복검사 상태 펴시 위젯
+  Widget _buildNickNameCheckStatus(UserProvider userProvider) {
+    switch (userProvider.state) {
+      case UserNickNameCheckState.idle:
+      case UserNickNameCheckState.checking:
+        return Row(
+          children: [
+            SizedBox(
+              height: 14,
+              width: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: GRAYSCALE_LABEL_700,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '중복 확인 중...',
+              style: TextStyle(fontSize: 13, color: GRAYSCALE_LABEL_700),
+            ),
+          ],
+        );
+      case UserNickNameCheckState.available:
+        return Text(
+          userProvider.message ?? '사용 가능한 닉네임 입니다.',
+          style: TextStyle(fontSize: 13, color: Colors.green),
+        );
+      case UserNickNameCheckState.duplicated:
+        return Text(
+          userProvider.message ?? '이미 사용 중인 닉네임 입니다.',
+          style: TextStyle(fontSize: 13, color: Colors.red),
+        );
+      case UserNickNameCheckState.error:
+        return Text(
+          userProvider.message ?? '확인 중 오류가 발생했습니다.',
+          style: TextStyle(fontSize: 13, color: Colors.orange),
+        );
+    }
   }
 }
