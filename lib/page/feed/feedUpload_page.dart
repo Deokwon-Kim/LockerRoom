@@ -78,14 +78,14 @@ class _UploadPageState extends State<FeedUploadPage> {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: WHITE,
       appBar: AppBar(
         title: const Text(
           '새로운 게시물',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: WHITE,
         elevation: 0,
       ),
       body: GestureDetector(

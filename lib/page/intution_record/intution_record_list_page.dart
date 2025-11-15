@@ -77,7 +77,7 @@ class IntutionRecordListPage extends StatelessWidget {
         backgroundColor: BACKGROUND_COLOR,
         title: Text(
           '나의 직관기록',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         scrolledUnderElevation: 0,

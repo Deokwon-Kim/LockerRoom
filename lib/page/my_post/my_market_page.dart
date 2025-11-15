@@ -22,7 +22,7 @@ class MyMarketPage extends StatelessWidget {
     final tp = Provider.of<TeamProvider>(context, listen: false);
     final teamColor = tp.selectedTeam?.color;
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: WHITE,
       body: StreamBuilder<List<MarketPostModel>>(
         stream: marketFeedProvider.listenMyMarketPosts(),
         builder: (context, snapshot) {
