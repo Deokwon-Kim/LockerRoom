@@ -94,6 +94,14 @@ class FeedProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  PostModel? getPostById(String postId) {
+    try {
+      return _allPosts.firstWhere((p) => p.id == postId);
+    } catch (e) {
+      return null;
+    }
+  }
+
   void updateLocalPost(PostModel updatedPost) {
     int index = _allPosts.indexWhere((p) => p.id == updatedPost.id);
     if (index != -1) {
