@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
+import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
@@ -437,6 +438,9 @@ class SettingPage extends StatelessWidget {
                             } catch (_) {}
                             try {
                               context.read<BlockProvider>().cancel();
+                            } catch (_) {}
+                            try {
+                              context.read<FollowProvider>().reset();
                             } catch (_) {}
 
                             await userProvider.signOut();
