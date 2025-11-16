@@ -710,14 +710,17 @@ class IntutionRecordListPage extends StatelessWidget {
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
-                                          Text(
-                                            '$myScore',
-                                            style: GoogleFonts.roboto(
-                                              fontSize: 35,
-                                              fontWeight: FontWeight.bold,
-                                              color: isWin
-                                                  ? recordedTeamColor
-                                                  : GRAYSCALE_LABEL_500,
+                                          Transform.translate(
+                                            offset: Offset(20, 0),
+                                            child: Text(
+                                              '$myScore',
+                                              style: GoogleFonts.roboto(
+                                                fontSize: 35,
+                                                fontWeight: FontWeight.bold,
+                                                color: isWin
+                                                    ? recordedTeamColor
+                                                    : GRAYSCALE_LABEL_500,
+                                              ),
                                             ),
                                           ),
                                           SizedBox(width: 40),
@@ -749,12 +752,15 @@ class IntutionRecordListPage extends StatelessWidget {
                                             ),
                                           ),
                                           SizedBox(width: 40),
-                                          Text(
-                                            '$oppScore',
-                                            style: GoogleFonts.roboto(
-                                              fontSize: 35,
-                                              fontWeight: FontWeight.bold,
-                                              color: GRAYSCALE_LABEL_500,
+                                          Transform.translate(
+                                            offset: Offset(-20, 0),
+                                            child: Text(
+                                              '$oppScore',
+                                              style: GoogleFonts.roboto(
+                                                fontSize: 35,
+                                                fontWeight: FontWeight.bold,
+                                                color: GRAYSCALE_LABEL_500,
+                                              ),
                                             ),
                                           ),
                                         ],
