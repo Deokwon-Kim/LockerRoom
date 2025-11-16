@@ -240,6 +240,7 @@ class FeedProvider extends ChangeNotifier {
 
     final postRef = _postCollection.doc(post.id);
 
+    bool shouldNotify = false;
     await FirebaseFirestore.instance.runTransaction((tx) async {
       final snap = await tx.get(postRef);
       if (!snap.exists) return;
@@ -253,6 +254,7 @@ class FeedProvider extends ChangeNotifier {
         likedByList.remove(uid);
       } else {
         likedByList.add(uid);
+        shouldNotify = true;
       }
 
       final newLikes = isLiked
@@ -263,6 +265,7 @@ class FeedProvider extends ChangeNotifier {
     });
     notifyListeners();
 
+    if (!shouldNotify) return;
     // 알림 대상 결정
     final targetUserId = postOwnerId;
 
