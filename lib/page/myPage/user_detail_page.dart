@@ -42,6 +42,16 @@ class _UserDetailPageState extends State<UserDetailPage> {
     );
   }
 
+  // @override
+  // void didUpdateWidget(covariant UserDetailPage oldWidget) {
+  //   super.didUpdateWidget(oldWidget);
+  //   if (oldWidget.userId != widget.userId) {
+  //     Future.microtask(
+  //       () => context.read<FollowProvider>().loadFollowingStatus(widget.userId),
+  //     );
+  //   }
+  // }
+
   @override
   Widget build(BuildContext context) {
     final fp = context.watch<FollowProvider>();
