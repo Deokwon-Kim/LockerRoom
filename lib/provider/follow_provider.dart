@@ -47,6 +47,7 @@ class FollowProvider extends ChangeNotifier {
   Future<void> loadFollowingStatus(String targetUserId) async {
     final v = await _repository.isFollowing(currentUserId, targetUserId);
     _followingByUserId[targetUserId] = v;
+    debugPrint('[FollowProvider] load $targetUserId -> $v');
     notifyListeners();
   }
 
@@ -121,5 +122,11 @@ class FollowProvider extends ChangeNotifier {
           final ids = snap.docs.map((d) => d.id).toList();
           return _fetchUsersByIds(ids);
         });
+  }
+
+  void reset() {
+    _followingByUserId.clear();
+    debugPrint('[FollowProvider] reset: $_followingByUserId');
+    notifyListeners();
   }
 }
