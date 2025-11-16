@@ -282,7 +282,7 @@ class CommentProvider with ChangeNotifier {
 
     // Firestore에 알림문서 추가
     await FirebaseFirestore.instance.collection('notifications').add({
-      'type': 'coment_report',
+      'type': 'comment_report',
       'commentId': comment.id,
       'reportedUserId': comment.userId,
       'reportedUserName': comment.userName,
