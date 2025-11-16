@@ -54,6 +54,11 @@ class _FeedMypageState extends State<FeedMypage> {
         widget.targetUserId,
       ),
     );
+    // Future.microtask(
+    //   () => context.read<FollowProvider>().loadFollowingStatus(
+    //     widget.post.userId,
+    //   ),
+    // );
   }
 
   String? extractUrl(String text) {
