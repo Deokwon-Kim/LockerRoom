@@ -37,7 +37,7 @@ class UserProvider extends ChangeNotifier {
   String? get name => _name;
   String? get email => _email;
 
-  void onUserNameChanged(String username) {
+  void onUserNickNameChanged(String username) {
     _debounce?.cancel();
 
     if (username.trim().isEmpty) {
@@ -269,6 +269,21 @@ class UserProvider extends ChangeNotifier {
     _currentUser = FirebaseAuth.instance.currentUser;
 
     _nickname = newNickname;
+    notifyListeners(); // 갱신 알림
+  }
+
+  Future<void> updateName(String newName) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      'name': newName,
+    });
+    await FirebaseAuth.instance.currentUser?.reload();
+
+    _currentUser = FirebaseAuth.instance.currentUser;
+
+    _name = newName;
     notifyListeners(); // 갱신 알림
   }
 
