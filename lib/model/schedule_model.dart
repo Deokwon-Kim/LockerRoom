@@ -10,6 +10,7 @@ class ScheduleModel {
   final String? broadcast;
   final String? doubleHeaderNo;
   final String? note;
+  final String gameType;
   final int homeScore;
   final int awayScroe;
 
@@ -25,6 +26,7 @@ class ScheduleModel {
     this.broadcast,
     this.doubleHeaderNo,
     this.note,
+    required this.gameType,
     required this.homeScore,
     required this.awayScroe,
   });
