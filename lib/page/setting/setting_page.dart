@@ -43,7 +43,7 @@ class SettingPage extends StatelessWidget {
             children: [
               Container(
                 width: double.infinity,
-                height: 260,
+                height: 320,
                 decoration: BoxDecoration(
                   color: GRAYSCALE_LABEL_50,
                   borderRadius: BorderRadius.circular(12),
@@ -52,6 +52,33 @@ class SettingPage extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 20.0),
                   child: Column(
                     children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, 'changeName');
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '이름 변경',
+                              style: TextStyle(
+                                color: GRAYSCALE_LABEL_950,
+                                fontSize: 16,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, 'changeName');
+                              },
+                              icon: Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: GRAYSCALE_LABEL_950,
+                                size: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       TextButton(
                         onPressed: () {
                           Navigator.pushNamed(context, 'changeNickname');
