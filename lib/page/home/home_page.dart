@@ -233,6 +233,13 @@ class _HomePageState extends State<HomePage> {
                           ? futureGames.first
                           : null;
 
+                      // 특정 팀만 cover로 설정, 나머지는 contain
+                      final teamsWithCover = ['대한민국'];
+                      final imageFit =
+                          teamsWithCover.contains(selectedTeam.name)
+                          ? BoxFit.cover
+                          : BoxFit.contain;
+
                       return Stack(
                         children: [
                           Container(
@@ -242,7 +249,13 @@ class _HomePageState extends State<HomePage> {
                               color: selectedTeam.color,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Image.asset(selectedTeam.logoPath),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.asset(
+                                selectedTeam.logoPath,
+                                fit: imageFit,
+                              ),
+                            ),
                           ),
                           Container(
                             width: double.infinity,
