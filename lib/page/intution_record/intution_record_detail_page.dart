@@ -4,8 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/attendance_model.dart';
+import 'package:lockerroom/model/schedule_model.dart';
 import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/services/schedule_service.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -64,6 +66,26 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
       // 파싱 실패 시 원본 반환
     }
     return dateStr;
+  }
+
+  // gameId로 스케줄 정보 찾기
+  Future<ScheduleModel?> _findScheduleByGameId(String gameId) async {
+    try {
+      final schedules = await ScheduleService().loadSchedules();
+      return schedules.firstWhere(
+        (s) => s.gameId == gameId,
+        orElse: () => schedules.first,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 취소된 경기인지 확인
+  bool _isCancelledGame(ScheduleModel? schedule) {
+    if (schedule == null) return false;
+    final statusUpper = schedule.status.toUpperCase();
+    return schedule.status == '경기취소' || statusUpper.startsWith('CANCELLED');
   }
 
   late final TextEditingController _myTeamScore;
@@ -298,25 +320,102 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.only(top: 30.0),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        'VS',
-                                        style: TextStyle(
-                                          fontSize: 40,
-                                          color: GRAYSCALE_LABEL_500,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      SizedBox(height: 10),
-                                      Text(
-                                        attendance.stadium,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
+                                  child: FutureBuilder<ScheduleModel?>(
+                                    future: _findScheduleByGameId(
+                                      widget.gameId,
+                                    ),
+                                    builder: (context, snapshot) {
+                                      final schedule = snapshot.data;
+                                      return Column(
+                                        children: [
+                                          Text(
+                                            'VS',
+                                            style: TextStyle(
+                                              fontSize: 40,
+                                              color: GRAYSCALE_LABEL_500,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          SizedBox(height: 10),
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                attendance.stadium,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              // DH1, DH2 표시
+                                              if (schedule?.doubleHeaderNo !=
+                                                      null &&
+                                                  schedule!
+                                                      .doubleHeaderNo!
+                                                      .isNotEmpty) ...[
+                                                SizedBox(width: 8),
+                                                Container(
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 3,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: BUTTON.withOpacity(
+                                                      0.1,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          6,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: BUTTON.withOpacity(
+                                                        0.3,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  child: Text(
+                                                    '${schedule.doubleHeaderNo}',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: BUTTON,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          // 경기취소 표시
+                                          if (_isCancelledGame(schedule)) ...[
+                                            SizedBox(height: 8),
+                                            Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 6,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: RED_DANGER_SURFACE_5,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: RED_DANGER_BORDER_10,
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                '경기취소',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: RED_DANGER_TEXT_50,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ),
                                 Column(
