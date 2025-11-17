@@ -9,6 +9,7 @@ class ScheduleService {
     'assets/schedules/kbo_2023.csv',
     'assets/schedules/kbo_2024.csv',
     'assets/schedules/kbo_2025_results.csv',
+    'assets/schedules/kbo_2026.csv',
   ];
 
   Future<List<ScheduleModel>> loadSchedules({
