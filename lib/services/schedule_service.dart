@@ -51,6 +51,7 @@ class ScheduleService {
     final int idxBroadcast = header.indexOf('broadcast');
     final int idxDoubleHeader = header.indexOf('doubleheader_no');
     final int idxNote = header.indexOf('note');
+    final int idxGameType = header.indexOf('gametype');
     final int idxScore = header.indexOf('score');
 
     String normalizeToHHmm(String rawTime) {
@@ -112,26 +113,73 @@ class ScheduleService {
       try {
         int awayScore = 0;
         int homeScore = 0;
+        bool doubleHeaderUsedAsScore = false;
+        // score 컬럼이 있으면 사용, 없으면 doubleheader_no 위치 확인
+        String? scoreStr;
         if (idxScore >= 0 && idxScore < r.length) {
-          final parsed = _parseScore(r[idxScore]?.toString());
+          scoreStr = r[idxScore]?.toString();
+        } else if (idxDoubleHeader >= 0 && idxDoubleHeader < r.length) {
+          // score가 없을 때 doubleheader_no 위치의 값이 score일 수 있음
+          final doubleHeaderValue = r[idxDoubleHeader]?.toString();
+          if (doubleHeaderValue != null &&
+              doubleHeaderValue.isNotEmpty &&
+              doubleHeaderValue.contains('-')) {
+            scoreStr = doubleHeaderValue;
+            doubleHeaderUsedAsScore = true;
+          }
+        }
+        if (scoreStr != null) {
+          final parsed = _parseScore(scoreStr);
           awayScore = parsed.$1;
           homeScore = parsed.$2;
         }
+        // 필수 필드들이 존재하는지 확인
+        if (idxSeason < 0 ||
+            idxSeason >= r.length ||
+            idxGameId < 0 ||
+            idxGameId >= r.length ||
+            idxDate < 0 ||
+            idxDate >= r.length ||
+            idxTime < 0 ||
+            idxTime >= r.length ||
+            idxHomeTeam < 0 ||
+            idxHomeTeam >= r.length ||
+            idxAwayTeam < 0 ||
+            idxAwayTeam >= r.length ||
+            idxStadium < 0 ||
+            idxStadium >= r.length ||
+            idxStatus < 0 ||
+            idxStatus >= r.length) {
+          continue; // 필수 필드가 없으면 스킵
+        }
+
         schedules.add(
           ScheduleModel(
             season: int.tryParse(r[idxSeason].toString()) ?? 2025,
             gameId: r[idxGameId].toString(),
             dateTimeKst: parseKst(r[idxDate].toString(), r[idxTime].toString()),
-            weekday: idxWeekday >= 0 ? r[idxWeekday]?.toString() : null,
+            weekday: idxWeekday >= 0 && idxWeekday < r.length
+                ? r[idxWeekday]?.toString()
+                : null,
             homeTeam: r[idxHomeTeam].toString(),
             awayTeam: r[idxAwayTeam].toString(),
             stadium: r[idxStadium].toString(),
             status: r[idxStatus].toString(),
-            broadcast: idxBroadcast >= 0 ? r[idxBroadcast]?.toString() : null,
-            doubleHeaderNo: idxDoubleHeader >= 0
+            broadcast: idxBroadcast >= 0 && idxBroadcast < r.length
+                ? r[idxBroadcast]?.toString()
+                : null,
+            doubleHeaderNo:
+                (idxDoubleHeader >= 0 &&
+                    idxDoubleHeader < r.length &&
+                    !doubleHeaderUsedAsScore)
                 ? r[idxDoubleHeader]?.toString()
                 : null,
-            note: idxNote >= 0 ? r[idxNote]?.toString() : null,
+            note: idxNote >= 0 && idxNote < r.length
+                ? r[idxNote]?.toString()
+                : null,
+            gameType: idxGameType >= 0 && idxGameType < r.length
+                ? r[idxGameType]?.toString() ?? ''
+                : '',
             homeScore: homeScore,
             awayScroe: awayScore,
           ),
