@@ -777,7 +777,7 @@ class _SignupPageState extends State<SignupPage> {
             ),
             onChanged: (value) {
               _validateNickname();
-              context.read<UserProvider>().onUserNameChanged(value);
+              context.read<UserProvider>().onUserNickNameChanged(value);
             },
           ),
         ),

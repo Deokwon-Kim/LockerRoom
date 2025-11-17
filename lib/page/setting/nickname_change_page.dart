@@ -196,7 +196,9 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
                       controller: _nickNameController,
                       onChanged: (value) {
                         _onNicknameChanged(value);
-                        context.read<UserProvider>().onUserNameChanged(value);
+                        context.read<UserProvider>().onUserNickNameChanged(
+                          value,
+                        );
                       },
 
                       cursorColor: teamProvider.selectedTeam!.color,
