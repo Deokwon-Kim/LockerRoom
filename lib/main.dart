@@ -17,6 +17,7 @@ import 'package:lockerroom/page/notice/notice_list_page.dart';
 import 'package:lockerroom/page/setting/change_password_page.dart';
 import 'package:lockerroom/page/setting/custormer_center_page.dart';
 import 'package:lockerroom/page/setting/find_password_page.dart';
+import 'package:lockerroom/page/setting/name_change_page.dart';
 import 'package:lockerroom/page/setting/nickname_change_page.dart';
 import 'package:lockerroom/page/setting/setting_page.dart';
 import 'package:lockerroom/page/setting/block_list_page.dart';
@@ -191,6 +192,7 @@ class MyApp extends StatelessWidget {
           'signIn': (context) => const LoginPage(),
           'setting': (context) => const SettingPage(),
           'changeNickname': (context) => const NicknameChangePage(),
+          'changeName': (context) => const NameChangePage(),
           'findPassword': (context) => const FindPasswordPage(),
           'notifications': (context) => const NotificationsPage(),
           'customer': (context) => const CustormerCenterPage(),
