@@ -642,62 +642,6 @@ class IntutionRecordListPage extends StatelessWidget {
                                                 ),
                                               ),
                                             ),
-
-                                          // Padding(
-                                          //   padding: const EdgeInsets.only(
-                                          //     top: 10.0,
-                                          //   ),
-                                          //   child: Row(
-                                          //     mainAxisAlignment:
-                                          //         MainAxisAlignment.center,
-                                          //     children: [
-                                          //       Text(
-                                          //         myTeam,
-                                          //         style: TextStyle(
-                                          //           color: WHITE,
-                                          //           fontSize: 25,
-                                          //           fontWeight: FontWeight.bold,
-                                          //         ),
-                                          //       ),
-                                          //       SizedBox(width: 50),
-                                          //       Text(
-                                          //         '$myScore',
-                                          //         style: TextStyle(
-                                          //           fontSize: 35,
-                                          //           fontWeight: FontWeight.bold,
-                                          //           color: WHITE,
-                                          //         ),
-                                          //       ),
-                                          //       SizedBox(width: 10),
-                                          //       Text(
-                                          //         ':',
-                                          //         style: TextStyle(
-                                          //           color: WHITE,
-                                          //           fontWeight: FontWeight.bold,
-                                          //           fontSize: 25,
-                                          //         ),
-                                          //       ),
-                                          //       SizedBox(width: 10),
-                                          //       Text(
-                                          //         '$oppScore',
-                                          //         style: TextStyle(
-                                          //           fontSize: 35,
-                                          //           fontWeight: FontWeight.bold,
-                                          //           color: WHITE,
-                                          //         ),
-                                          //       ),
-                                          //       SizedBox(width: 50),
-                                          //       Text(
-                                          //         oppTeam,
-                                          //         style: TextStyle(
-                                          //           fontSize: 25,
-                                          //           fontWeight: FontWeight.bold,
-                                          //           color: WHITE,
-                                          //         ),
-                                          //       ),
-                                          //     ],
-                                          //   ),
-                                          // ),
                                         ],
                                       ),
                                 Padding(
