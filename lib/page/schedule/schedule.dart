@@ -41,14 +41,14 @@ class _SchedulePageState extends State<SchedulePage> {
         final teamName = teamProvider.selectedTeam?.name;
 
         return Scaffold(
-          backgroundColor: GRAYSCALE_LABEL_50,
+          backgroundColor: WHITE,
           appBar: AppBar(
             backgroundColor: selectedTeam.color,
             leading: IconButton(
               onPressed: () {
                 Navigator.pop(context);
               },
-              icon: Icon(Icons.arrow_back, color: WHITE),
+              icon: Icon(Icons.arrow_back_ios, color: WHITE),
             ),
             title: Text(
               '$teamName 경기일정',
@@ -194,20 +194,44 @@ class _SchedulePageState extends State<SchedulePage> {
                               }
                               final headerLine = '$timeStr  ${s.stadium}';
 
-                              // 경기 전 여부 확인 (SCHEDULED 상태이거나 스코어가 0-0인 경우)
-                              final isScheduled =
-                                  statusUpper == 'SCHEDULED' ||
-                                  (s.homeScore == 0 &&
-                                      s.awayScroe == 0 &&
-                                      !statusUpper.startsWith('FINAL') &&
-                                      !statusUpper.startsWith('IN_PLAY'));
+                              // status에 따라 UI 분기
+                              final isCancelled =
+                                  s.status == '우천취소' ||
+                                  statusUpper.startsWith('CANCELLED');
+                              final isInPlay =
+                                  statusUpper.contains('MS-T') ||
+                                  statusUpper.contains('SS-T') ||
+                                  statusUpper.contains('IN_PLAY');
+                              final isCompleted =
+                                  s.status == '종료' ||
+                                  statusUpper.startsWith('FINAL');
 
                               final homeTeamModel = nameToTeam[s.homeTeam];
                               final awayTeamModel = nameToTeam[s.awayTeam];
 
-                              // 스코어가 있을 때와 없을 때 완전히 다른 UI 렌더링
-                              if (isScheduled) {
-                                return _buildScheduledGameCard(
+                              // status에 따라 다른 UI 렌더링
+                              if (isCancelled) {
+                                return _buildCancelledGameCard(
+                                  s,
+                                  headerLine,
+                                  badges,
+                                  statusUpper,
+                                  homeTeamModel,
+                                  awayTeamModel,
+                                  selectedTeam.color,
+                                );
+                              } else if (isInPlay) {
+                                return _buildInPlayGameCard(
+                                  s,
+                                  headerLine,
+                                  badges,
+                                  statusUpper,
+                                  homeTeamModel,
+                                  awayTeamModel,
+                                  selectedTeam.color,
+                                );
+                              } else if (isCompleted) {
+                                return _buildCompletedGameCard(
                                   s,
                                   headerLine,
                                   badges,
@@ -217,7 +241,8 @@ class _SchedulePageState extends State<SchedulePage> {
                                   selectedTeam.color,
                                 );
                               } else {
-                                return _buildCompletedGameCard(
+                                // SCHEDULED 상태 (경기 예정)
+                                return _buildScheduledGameCard(
                                   s,
                                   headerLine,
                                   badges,
@@ -256,10 +281,21 @@ class _SchedulePageState extends State<SchedulePage> {
       padding: const EdgeInsets.all(15),
       child: Container(
         width: double.infinity,
-        height: 150,
+        height: 200,
         decoration: BoxDecoration(
           color: WHITE,
-          border: Border.all(color: borderColor, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              offset: Offset(0, 4),
+              blurRadius: 4,
+              color: Colors.black.withOpacity(0.1),
+            ),
+            BoxShadow(
+              offset: Offset(0, -2),
+              blurRadius: 4,
+              color: Colors.black.withOpacity(0.1),
+            ),
+          ],
           borderRadius: BorderRadius.circular(12),
         ),
         child: Padding(
@@ -268,25 +304,36 @@ class _SchedulePageState extends State<SchedulePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    headerLine,
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    s.gameType,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: GRAYSCALE_LABEL_500,
+                      fontSize: 12,
+                    ),
                   ),
-                  if (badges.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      badges.join('  '),
+                  SizedBox(width: 10),
+                  Transform.translate(
+                    offset: Offset(0, 1),
+                    child: Text(
+                      s.status,
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: statusUpper.startsWith('CANCELLED')
-                            ? Colors.red
-                            : GRAYSCALE_LABEL_500,
+                        fontWeight: FontWeight.bold,
+                        color: GRAYSCALE_LABEL_500,
                       ),
                     ),
-                  ],
+                  ),
+                  Spacer(),
+                  Text(
+                    '${s.dateTimeKst.hour.toString().padLeft(2, '0')}:${s.dateTimeKst.minute.toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: GRAYSCALE_LABEL_500,
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
               const Spacer(),
@@ -323,15 +370,16 @@ class _SchedulePageState extends State<SchedulePage> {
                               ),
                             ],
                           ),
-                        const SizedBox(width: 20),
+                        const SizedBox(width: 40),
                         const Text(
                           'vs',
                           style: TextStyle(
                             fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w500,
+                            color: GRAYSCALE_LABEL_500,
                           ),
                         ),
-                        const SizedBox(width: 20),
+                        const SizedBox(width: 40),
                         if (homeTeamModel != null)
                           Column(
                             mainAxisSize: MainAxisSize.min,
@@ -360,6 +408,17 @@ class _SchedulePageState extends State<SchedulePage> {
                 },
               ),
               const Spacer(),
+              Divider(color: GRAYSCALE_LABEL_100),
+              SizedBox(height: 5),
+              Row(
+                children: [
+                  Icon(Icons.location_on, color: GRAYSCALE_LABEL_500, size: 17),
+                  Text(
+                    s.stadium,
+                    style: TextStyle(color: GRAYSCALE_LABEL_600, fontSize: 13),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
@@ -381,11 +440,22 @@ class _SchedulePageState extends State<SchedulePage> {
       padding: const EdgeInsets.all(15),
       child: Container(
         width: double.infinity,
-        height: 150,
+        height: 200,
         decoration: BoxDecoration(
           color: WHITE,
-          border: Border.all(color: borderColor, width: 1.5),
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              offset: Offset(0, 4),
+              blurRadius: 4,
+              color: Colors.black.withOpacity(0.1),
+            ),
+            BoxShadow(
+              offset: Offset(0, -2),
+              blurRadius: 4,
+              color: Colors.black.withOpacity(0.1),
+            ),
+          ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(10.0),
@@ -393,25 +463,44 @@ class _SchedulePageState extends State<SchedulePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    headerLine,
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  if (badges.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      badges.join('  '),
+                  Container(
+                    child: Text(
+                      s.gameType,
                       style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: GRAYSCALE_LABEL_500,
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: statusUpper.startsWith('CANCELLED')
-                            ? Colors.red
-                            : GRAYSCALE_LABEL_500,
                       ),
                     ),
-                  ],
+                  ),
+                  SizedBox(width: 10),
+                  Container(
+                    padding: EdgeInsets.all(3),
+                    alignment: Alignment.center,
+                    width: 40,
+                    decoration: BoxDecoration(
+                      color: GRAYSCALE_LABEL_600,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Text(
+                      s.status,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: WHITE,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  Spacer(),
+                  Text(
+                    '${s.dateTimeKst.hour.toString().padLeft(2, '0')}:${s.dateTimeKst.minute.toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: GRAYSCALE_LABEL_500,
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
               const Spacer(),
@@ -434,7 +523,7 @@ class _SchedulePageState extends State<SchedulePage> {
                               children: [
                                 Column(
                                   mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     SizedBox(
                                       width: clampedLogo,
@@ -470,9 +559,9 @@ class _SchedulePageState extends State<SchedulePage> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: Text(
-                            ':',
+                            'VS',
                             style: TextStyle(
-                              fontSize: 32,
+                              fontSize: 20,
                               color: GRAYSCALE_LABEL_500,
                               fontWeight: FontWeight.bold,
                             ),
@@ -495,7 +584,7 @@ class _SchedulePageState extends State<SchedulePage> {
                                 const SizedBox(width: 12),
                                 Column(
                                   mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     SizedBox(
                                       width: clampedLogo,
@@ -524,6 +613,406 @@ class _SchedulePageState extends State<SchedulePage> {
                 },
               ),
               const Spacer(),
+              Divider(color: GRAYSCALE_LABEL_100),
+              SizedBox(height: 5),
+              Row(
+                children: [
+                  Icon(Icons.location_on, color: GRAYSCALE_LABEL_500, size: 17),
+                  Text(
+                    s.stadium,
+                    style: TextStyle(color: GRAYSCALE_LABEL_600, fontSize: 13),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 취소된 경기 UI
+  Widget _buildCancelledGameCard(
+    ScheduleModel s,
+    String headerLine,
+    List<String> badges,
+    String statusUpper,
+    TeamModel? homeTeamModel,
+    TeamModel? awayTeamModel,
+    Color borderColor,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(15),
+      child: Container(
+        width: double.infinity,
+        height: 200,
+        decoration: BoxDecoration(
+          color: GRAYSCALE_LABEL_50,
+          border: Border.all(color: RED_DANGER_BORDER_10, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              offset: Offset(0, 2),
+              blurRadius: 4,
+              color: Colors.black.withOpacity(0.05),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    s.gameType,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: GRAYSCALE_LABEL_500,
+                      fontSize: 12,
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: RED_DANGER_SURFACE_5,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: RED_DANGER_BORDER_10, width: 1),
+                    ),
+                    child: Text(
+                      s.status,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: RED_DANGER_TEXT_50,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  Spacer(),
+                  Text(
+                    '${s.dateTimeKst.hour.toString().padLeft(2, '0')}:${s.dateTimeKst.minute.toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: GRAYSCALE_LABEL_500,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final double availableWidth = constraints.maxWidth;
+                  final double logoSize = availableWidth * 0.20;
+                  final double clampedLogo = logoSize.clamp(28.0, 64.0);
+
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 60.0, right: 50.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (awayTeamModel != null)
+                          Opacity(
+                            opacity: 0.5,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: clampedLogo,
+                                  height: clampedLogo,
+                                  child: Image.asset(
+                                    awayTeamModel.calenderLogo,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  s.awayTeam,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: GRAYSCALE_LABEL_500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(width: 30),
+                        Text(
+                          'vs',
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: GRAYSCALE_LABEL_500,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 30),
+                        if (homeTeamModel != null)
+                          Opacity(
+                            opacity: 0.5,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: clampedLogo,
+                                  height: clampedLogo,
+                                  child: Image.asset(
+                                    homeTeamModel.calenderLogo,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  s.homeTeam,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: GRAYSCALE_LABEL_500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const Spacer(),
+              Divider(color: GRAYSCALE_LABEL_200),
+              SizedBox(height: 5),
+              Row(
+                children: [
+                  Icon(Icons.location_on, color: GRAYSCALE_LABEL_400, size: 17),
+                  Text(
+                    s.stadium,
+                    style: TextStyle(color: GRAYSCALE_LABEL_500, fontSize: 13),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 경기 중 UI
+  Widget _buildInPlayGameCard(
+    ScheduleModel s,
+    String headerLine,
+    List<String> badges,
+    String statusUpper,
+    TeamModel? homeTeamModel,
+    TeamModel? awayTeamModel,
+    Color borderColor,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(15),
+      child: Container(
+        width: double.infinity,
+        height: 200,
+        decoration: BoxDecoration(
+          color: WHITE,
+          border: Border.all(color: ORANGE_PRIMARY_400, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              offset: Offset(0, 4),
+              blurRadius: 8,
+              color: ORANGE_PRIMARY_400.withOpacity(0.2),
+            ),
+            BoxShadow(
+              offset: Offset(0, -2),
+              blurRadius: 4,
+              color: Colors.black.withOpacity(0.1),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    s.gameType,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: GRAYSCALE_LABEL_500,
+                      fontSize: 12,
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: ORANGE_PRIMARY_200,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: ORANGE_PRIMARY_400, width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: ORANGE_PRIMARY_500,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          '경기중',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: ORANGE_PRIMARY_700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Spacer(),
+                  Text(
+                    '${s.dateTimeKst.hour.toString().padLeft(2, '0')}:${s.dateTimeKst.minute.toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: GRAYSCALE_LABEL_500,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final double availableWidth = constraints.maxWidth;
+                  final double logoSize = availableWidth * 0.18;
+                  final double clampedLogo = logoSize.clamp(32.0, 56.0);
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // 원정팀
+                        if (awayTeamModel != null)
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: clampedLogo,
+                                      height: clampedLogo,
+                                      child: Image.asset(
+                                        awayTeamModel.calenderLogo,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      s.awayTeam,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  '${s.awayScroe}',
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    color: GRAYSCALE_LABEL_900,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        // 스코어 구분선
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text(
+                            'VS',
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: ORANGE_PRIMARY_500,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        // 홈팀
+                        if (homeTeamModel != null)
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${s.homeScore}',
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    color: GRAYSCALE_LABEL_900,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: clampedLogo,
+                                      height: clampedLogo,
+                                      child: Image.asset(
+                                        homeTeamModel.calenderLogo,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      s.homeTeam,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const Spacer(),
+              Divider(color: GRAYSCALE_LABEL_100),
+              SizedBox(height: 5),
+              Row(
+                children: [
+                  Icon(Icons.location_on, color: ORANGE_PRIMARY_500, size: 17),
+                  Text(
+                    s.stadium,
+                    style: TextStyle(
+                      color: GRAYSCALE_LABEL_600,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
