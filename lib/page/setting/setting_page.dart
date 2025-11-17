@@ -42,8 +42,7 @@ class SettingPage extends StatelessWidget {
           child: Column(
             children: [
               Container(
-                width: double.infinity,
-                height: 320,
+                padding: EdgeInsets.symmetric(vertical: 5),
                 decoration: BoxDecoration(
                   color: GRAYSCALE_LABEL_50,
                   borderRadius: BorderRadius.circular(12),
@@ -221,8 +220,7 @@ class SettingPage extends StatelessWidget {
               ),
               SizedBox(height: 20),
               Container(
-                width: double.infinity,
-                height: 60,
+                padding: EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
                   color: GRAYSCALE_LABEL_50,
                   borderRadius: BorderRadius.circular(12),
@@ -254,8 +252,7 @@ class SettingPage extends StatelessWidget {
               GestureDetector(
                 onTap: () {},
                 child: Container(
-                  width: double.infinity,
-                  height: 442,
+                  padding: EdgeInsets.symmetric(vertical: 5),
                   decoration: BoxDecoration(
                     color: GRAYSCALE_LABEL_50,
                     borderRadius: BorderRadius.circular(12),
