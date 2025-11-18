@@ -22,15 +22,6 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>youtube</string>
-		<string>youtube-staging</string>
-		<string>https</string>
-		<string>http</string>
-	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -41,19 +32,40 @@
 				<string>com.googleusercontent.apps.522222120326-4s4d7d34noaqm4rhr3pc87clajn28lfs</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>kakao71c8ab0d692ecbaa94a2e029ce6b3af6</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>youtube</string>
+		<string>youtube-staging</string>
+		<string>https</string>
+		<string>http</string>
+		<string>kakaokompassauth</string>
+		<string>kakaolink</string>
+		<string>kakaoplus</string>
+		<string>kakaotalk</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>피드에 사진·동영상을 촬영·업로드하고 프로필을 설정하기 위해 카메라 접근이 필요합니다.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>동영상 촬영 시 현장 음성을 녹음하여 함께 업로드하기 위해 마이크 접근이 필요합니다.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>게시물 업로드와 프로필 설정을 위해 사진·영상을 선택합니다. </string>
-	<key>NSPhotoLibraryAddOnlyUsageDescription</key>
-	<string>촬영한 사진·영상을 기기에 저장하기 위해 사진 보관함 쓰기 권한이 필요합니다.</string>
 	<key>NSCloudPhotoLibraryUsageDescription</key>
 	<string>iCloud 사진과 동기화된 미디어에 접근하여 게시물 업로드를 돕습니다.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>동영상 촬영 시 현장 음성을 녹음하여 함께 업로드하기 위해 마이크 접근이 필요합니다.</string>
+	<key>NSPhotoLibraryAddOnlyUsageDescription</key>
+	<string>촬영한 사진·영상을 기기에 저장하기 위해 사진 보관함 쓰기 권한이 필요합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>게시물 업로드와 프로필 설정을 위해 사진·영상을 선택합니다. </string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
