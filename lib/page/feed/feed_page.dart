@@ -127,7 +127,6 @@ class PostWidget extends StatefulWidget {
 
 class _PostWidgetState extends State<PostWidget> {
   late final CommentProvider _commentProvider;
-  late final FeedProvider _feedProvider;
   BlockProvider? _blockProvider;
   VoidCallback? _blockListener;
 
@@ -149,11 +148,7 @@ class _PostWidgetState extends State<PostWidget> {
   @override
   void initState() {
     super.initState();
-    _feedProvider = context.read<FeedProvider>();
-    // 구독시작
-    WidgetsBinding.instance.addPersistentFrameCallback((_) {
-      _feedProvider.postStream;
-    });
+
     _commentProvider = context.read<CommentProvider>();
     _commentProvider.subscribeComments(widget.post.id);
 
@@ -178,7 +173,7 @@ class _PostWidgetState extends State<PostWidget> {
     if (_blockProvider != null && _blockListener != null) {
       _blockProvider!.removeListener(_blockListener!);
     }
-    _feedProvider.cancelFeedSubscripton();
+
     super.dispose();
   }
 
