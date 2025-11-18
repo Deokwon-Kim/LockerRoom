@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide User;
 import 'package:lockerroom/model/user_model.dart';
 
 enum UsernameCheckState { idle, checking, available, duplicated, error }
@@ -188,16 +189,25 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await FirebaseAuth.instance.signOut();
+    try {
+      await UserApi.instance.logout();
+    } catch (e) {
+      print('카카오 로그아웃 실패 :$e');
+    }
 
-    // 사용자 관련 모든 상태 초기화
-    _currentUser = null;
-    _nickname = null;
-    _name = null;
-    _email = null;
-    _errorMessage = null;
-    _isSignUpSuccess = false;
-    notifyListeners();
+    try {
+      await FirebaseAuth.instance.signOut();
+      // 사용자 관련 모든 상태 초기화
+      _currentUser = null;
+      _nickname = null;
+      _name = null;
+      _email = null;
+      _errorMessage = null;
+      _isSignUpSuccess = false;
+      notifyListeners();
+    } catch (e) {
+      print('Firebase 로그아웃 실패 : $e');
+    }
   }
 
   Future<void> loadNickname() async {
