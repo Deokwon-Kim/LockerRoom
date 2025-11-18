@@ -1261,6 +1261,8 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                             autoCloseDuration: Duration(seconds: 2),
                             title: Text('게시물을 삭제했습니다'),
                           );
+                          if (!mounted) return;
+                          Navigator.pop(context);
                         },
                       ),
                     );
