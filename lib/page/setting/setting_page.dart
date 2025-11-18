@@ -238,7 +238,7 @@ class SettingPage extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '1.1.3',
+                        '1.1.4',
                         style: TextStyle(
                           color: GRAYSCALE_LABEL_950,
                           fontSize: 16,
