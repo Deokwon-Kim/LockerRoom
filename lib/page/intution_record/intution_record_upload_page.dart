@@ -427,6 +427,48 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                         ),
                       ),
                       SizedBox(height: 20),
+                      intutionProvider.selectedImage != null
+                          ? Container(
+                              width: double.infinity,
+                              height: 450,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: GRAYSCALE_LABEL_300),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.file(
+                                  intutionProvider.selectedImage!,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            )
+                          : GestureDetector(
+                              onTap: () {
+                                intutionProvider.pickImage();
+                              },
+                              child: Container(
+                                padding: EdgeInsets.only(left: 10),
+                                width: double.infinity,
+                                height: 50,
+                                alignment: Alignment.centerLeft,
+                                decoration: BoxDecoration(
+                                  color: BACKGROUND_COLOR,
+                                  border: Border.all(
+                                    color: GRAYSCALE_LABEL_300,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '+ 이미지 추가하기',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                      SizedBox(height: 20),
                       Text(
                         '스코어',
                         style: TextStyle(
@@ -537,47 +579,47 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                         ),
                       ),
                       SizedBox(height: 20),
-                      intutionProvider.selectedImage != null
-                          ? Container(
-                              width: double.infinity,
-                              height: 450,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: GRAYSCALE_LABEL_300),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.file(
-                                  intutionProvider.selectedImage!,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            )
-                          : GestureDetector(
-                              onTap: () {
-                                intutionProvider.pickImage();
-                              },
-                              child: Container(
-                                padding: EdgeInsets.only(left: 10),
-                                width: double.infinity,
-                                height: 50,
-                                alignment: Alignment.centerLeft,
-                                decoration: BoxDecoration(
-                                  color: BACKGROUND_COLOR,
-                                  border: Border.all(
-                                    color: GRAYSCALE_LABEL_300,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '+ 이미지 추가하기',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
+                      // intutionProvider.selectedImage != null
+                      //     ? Container(
+                      //         width: double.infinity,
+                      //         height: 450,
+                      //         decoration: BoxDecoration(
+                      //           border: Border.all(color: GRAYSCALE_LABEL_300),
+                      //           borderRadius: BorderRadius.circular(12),
+                      //         ),
+                      //         child: ClipRRect(
+                      //           borderRadius: BorderRadius.circular(12),
+                      //           child: Image.file(
+                      //             intutionProvider.selectedImage!,
+                      //             fit: BoxFit.cover,
+                      //           ),
+                      //         ),
+                      //       )
+                      //     : GestureDetector(
+                      //         onTap: () {
+                      //           intutionProvider.pickImage();
+                      //         },
+                      //         child: Container(
+                      //           padding: EdgeInsets.only(left: 10),
+                      //           width: double.infinity,
+                      //           height: 50,
+                      //           alignment: Alignment.centerLeft,
+                      //           decoration: BoxDecoration(
+                      //             color: BACKGROUND_COLOR,
+                      //             border: Border.all(
+                      //               color: GRAYSCALE_LABEL_300,
+                      //             ),
+                      //             borderRadius: BorderRadius.circular(12),
+                      //           ),
+                      //           child: Text(
+                      //             '+ 이미지 추가하기',
+                      //             style: TextStyle(
+                      //               fontSize: 15,
+                      //               fontWeight: FontWeight.bold,
+                      //             ),
+                      //           ),
+                      //         ),
+                      //       ),
                     ],
                   ),
                 ),
