@@ -15,6 +15,17 @@ class SchedulePage extends StatefulWidget {
 }
 
 class _SchedulePageState extends State<SchedulePage> {
+  final ScrollController _scrollController = ScrollController();
+  final Map<String, GlobalKey> _dateKeys = {};
+  DateTime? _pendingScrollDate;
+  int _pendingScrollIndex = -1;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   DateTime _currentMonth = DateTime(
     DateTime.now().year,
     DateTime.now().month,
@@ -24,14 +35,68 @@ class _SchedulePageState extends State<SchedulePage> {
   void _prevMonth() {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
+      _dateKeys.clear();
+      _pendingScrollDate = null;
+      _pendingScrollIndex = -1;
     });
   }
 
   void _nextMonth() {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
+      _dateKeys.clear();
+      _pendingScrollDate = null;
+      _pendingScrollIndex = -1;
     });
   }
+
+  Future<void> _openMonthPicker(Color teamColor) async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _currentMonth,
+      firstDate: DateTime(2023, 1),
+      lastDate: DateTime(2026, 12),
+      builder: (context, child) {
+        final base = Theme.of(context);
+        return Localizations.override(
+          context: context,
+          locale: const Locale('ko', 'KR'),
+          child: Theme(
+            data: base.copyWith(
+              datePickerTheme: DatePickerThemeData(
+                backgroundColor: BACKGROUND_COLOR,
+                headerBackgroundColor: BACKGROUND_COLOR,
+              ),
+              colorScheme: base.colorScheme.copyWith(
+                primary: teamColor, // 팀 컬러 적용
+                surface: BACKGROUND_COLOR,
+                onSurface: Colors.black,
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  foregroundColor: teamColor,
+                ), // 팀 컬러 적용
+              ),
+            ),
+            child: child!,
+          ),
+        );
+      },
+    );
+
+    if (pickedDate != null) {
+      print('🔍 선택한 날짜: $pickedDate');
+      setState(() {
+        _currentMonth = DateTime(pickedDate.year, pickedDate.month, 1);
+        _pendingScrollDate = pickedDate;
+        _dateKeys.clear();
+        print('🔍 _pendingScrollDate 설정: $_pendingScrollDate');
+      });
+    }
+  }
+
+  String _dateKey(DateTime date) =>
+      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
@@ -62,17 +127,22 @@ class _SchedulePageState extends State<SchedulePage> {
           body: Column(
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
                     onPressed: _prevMonth,
                     icon: Icon(Icons.arrow_back_ios, color: Colors.black),
                   ),
-
+                  SizedBox(width: 20),
                   Text(
                     '${_currentMonth.year}년 ${_currentMonth.month.toString().padLeft(2, '0')}월',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
+                  IconButton(
+                    onPressed: () => _openMonthPicker(selectedTeam.color),
+                    icon: Icon(Icons.date_range_outlined),
+                  ),
+                  SizedBox(width: 10),
                   IconButton(
                     onPressed: _nextMonth,
                     icon: Icon(
@@ -131,6 +201,9 @@ class _SchedulePageState extends State<SchedulePage> {
                     // 날짜순으로 정렬
                     final sortedDates = schedulesByDate.keys.toList()..sort();
 
+                    // 새로운 리스트를 그리기 전에 키를 초기화
+                    _dateKeys.clear();
+
                     // 팀 이름 → TeamModel 매핑을 만들어 로고 경로를 찾는다
                     final nameToTeam = {
                       for (final t in context.read<TeamProvider>().getTeam(
@@ -139,123 +212,180 @@ class _SchedulePageState extends State<SchedulePage> {
                         t.symplename: t,
                     };
 
-                    return ListView.builder(
-                      itemCount: sortedDates.length,
-                      itemBuilder: (context, dateIndex) {
-                        final dateKey = sortedDates[dateIndex];
-                        final schedulesForDate = schedulesByDate[dateKey]!;
+                    final sections = sortedDates.map((dateKey) {
+                      final schedulesForDate = schedulesByDate[dateKey]!;
 
-                        // 날짜 파싱
-                        final dateParts = dateKey.split('-');
-                        final year = int.parse(dateParts[0]);
-                        final month = int.parse(dateParts[1]);
-                        final day = int.parse(dateParts[2]);
-                        final date = DateTime(year, month, day);
+                      // 날짜 파싱
+                      final dateParts = dateKey.split('-');
+                      final year = int.parse(dateParts[0]);
+                      final month = int.parse(dateParts[1]);
+                      final day = int.parse(dateParts[2]);
+                      final date = DateTime(year, month, day);
 
-                        // 요일 계산
-                        final weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-                        final weekday = weekdays[date.weekday - 1];
+                      // 요일 계산
+                      final weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+                      final weekday = weekdays[date.weekday - 1];
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 날짜 헤더
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                top: 10.0,
-                                left: 10.0,
-                              ),
-                              child: Text(
-                                '$year년 $month월 $day일 ($weekday)',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: GRAYSCALE_LABEL_900,
-                                ),
+                      final sectionKey = _dateKeys.putIfAbsent(
+                        dateKey,
+                        () => GlobalKey(),
+                      );
+
+                      return Column(
+                        key: sectionKey,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 날짜 헤더
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              top: 10.0,
+                              left: 10.0,
+                            ),
+                            child: Text(
+                              '$year년 $month월 $day일 ($weekday)',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: GRAYSCALE_LABEL_900,
                               ),
                             ),
-                            // 해당 날짜의 일정들
-                            ...schedulesForDate.map((s) {
-                              final scheduleDate = s.dateTimeKst;
-                              final timeStr =
-                                  '${scheduleDate.hour.toString().padLeft(2, '0')}:${scheduleDate.minute.toString().padLeft(2, '0')}';
+                          ),
+                          // 해당 날짜의 일정들
+                          ...schedulesForDate.map((s) {
+                            final scheduleDate = s.dateTimeKst;
+                            final timeStr =
+                                '${scheduleDate.hour.toString().padLeft(2, '0')}:${scheduleDate.minute.toString().padLeft(2, '0')}';
 
-                              // 상태/더블헤더 배지 텍스트 구성
-                              final List<String> badges = [];
-                              final statusUpper = s.status
-                                  .toString()
-                                  .toUpperCase();
-                              if (statusUpper.startsWith('CANCELLED')) {
-                                badges.add('경기취소');
-                              }
-                              final dh = s.doubleHeaderNo?.toString().trim();
-                              if (dh != null && dh.isNotEmpty) {
-                                badges.add('DH $dh');
-                              }
-                              final headerLine = '$timeStr  ${s.stadium}';
+                            // 상태/더블헤더 배지 텍스트 구성
+                            final List<String> badges = [];
+                            final statusUpper = s.status.toUpperCase();
+                            if (statusUpper.startsWith('CANCELLED')) {
+                              badges.add('경기취소');
+                            }
+                            final dh = s.doubleHeaderNo?.toString().trim();
+                            if (dh != null && dh.isNotEmpty) {
+                              badges.add('DH $dh');
+                            }
+                            final headerLine = '$timeStr  ${s.stadium}';
 
-                              // status에 따라 UI 분기
-                              final isCancelled =
-                                  s.status == '우천취소' ||
-                                  statusUpper.startsWith('CANCELLED');
-                              final isInPlay =
-                                  statusUpper.contains('MS-T') ||
-                                  statusUpper.contains('SS-T') ||
-                                  statusUpper.contains('IN_PLAY');
-                              final isCompleted =
-                                  s.status == '종료' ||
-                                  statusUpper.startsWith('FINAL');
+                            // status에 따라 UI 분기
+                            final isCancelled =
+                                s.status == '우천취소' ||
+                                statusUpper.startsWith('CANCELLED');
+                            final isInPlay =
+                                statusUpper.contains('MS-T') ||
+                                statusUpper.contains('SS-T') ||
+                                statusUpper.contains('IN_PLAY');
+                            final isCompleted =
+                                s.status == '종료' ||
+                                statusUpper.startsWith('FINAL');
 
-                              final homeTeamModel = nameToTeam[s.homeTeam];
-                              final awayTeamModel = nameToTeam[s.awayTeam];
+                            final homeTeamModel = nameToTeam[s.homeTeam];
+                            final awayTeamModel = nameToTeam[s.awayTeam];
 
-                              // status에 따라 다른 UI 렌더링
-                              if (isCancelled) {
-                                return _buildCancelledGameCard(
-                                  s,
-                                  headerLine,
-                                  badges,
-                                  statusUpper,
-                                  homeTeamModel,
-                                  awayTeamModel,
-                                  selectedTeam.color,
-                                );
-                              } else if (isInPlay) {
-                                return _buildInPlayGameCard(
-                                  s,
-                                  headerLine,
-                                  badges,
-                                  statusUpper,
-                                  homeTeamModel,
-                                  awayTeamModel,
-                                  selectedTeam.color,
-                                );
-                              } else if (isCompleted) {
-                                return _buildCompletedGameCard(
-                                  s,
-                                  headerLine,
-                                  badges,
-                                  statusUpper,
-                                  homeTeamModel,
-                                  awayTeamModel,
-                                  selectedTeam.color,
-                                );
-                              } else {
-                                // SCHEDULED 상태 (경기 예정)
-                                return _buildScheduledGameCard(
-                                  s,
-                                  headerLine,
-                                  badges,
-                                  statusUpper,
-                                  homeTeamModel,
-                                  awayTeamModel,
-                                  selectedTeam.color,
-                                );
-                              }
-                            }).toList(),
-                          ],
-                        );
-                      },
+                            // status에 따라 다른 UI 렌더링
+                            if (isCancelled) {
+                              return _buildCancelledGameCard(
+                                s,
+                                headerLine,
+                                badges,
+                                statusUpper,
+                                homeTeamModel,
+                                awayTeamModel,
+                                selectedTeam.color,
+                              );
+                            } else if (isInPlay) {
+                              return _buildInPlayGameCard(
+                                s,
+                                headerLine,
+                                badges,
+                                statusUpper,
+                                homeTeamModel,
+                                awayTeamModel,
+                                selectedTeam.color,
+                              );
+                            } else if (isCompleted) {
+                              return _buildCompletedGameCard(
+                                s,
+                                headerLine,
+                                badges,
+                                statusUpper,
+                                homeTeamModel,
+                                awayTeamModel,
+                                selectedTeam.color,
+                              );
+                            } else {
+                              // SCHEDULED 상태 (경기 예정)
+                              return _buildScheduledGameCard(
+                                s,
+                                headerLine,
+                                badges,
+                                statusUpper,
+                                homeTeamModel,
+                                awayTeamModel,
+                                selectedTeam.color,
+                              );
+                            }
+                          }).toList(),
+                        ],
+                      );
+                    }).toList();
+
+                    // 스크롤할 인덱스 찾기
+                    if (_pendingScrollDate != null &&
+                        _pendingScrollIndex == -1) {
+                      final pendingDate = _pendingScrollDate!;
+                      final targetKey = _dateKey(pendingDate);
+                      print(
+                        '🔍 스크롤 시도: pendingDate=$pendingDate, targetKey=$targetKey',
+                      );
+                      print('🔍 sortedDates: $sortedDates');
+
+                      final index = sortedDates.indexOf(targetKey);
+                      if (index >= 0) {
+                        _pendingScrollIndex = index;
+                        print('🔍 찾은 인덱스: $index');
+                      } else {
+                        print('❌ sortedDates에 targetKey가 없습니다');
+                        _pendingScrollDate = null;
+                      }
+                    }
+
+                    // 스크롤 실행
+                    if (_pendingScrollIndex >= 0) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        Future.delayed(const Duration(milliseconds: 100), () {
+                          if (_scrollController.hasClients) {
+                            // 각 섹션의 대략적인 높이 (날짜 헤더 + 경기 카드들)
+                            // 평균적으로 날짜당 1-2경기 * 230px(카드 높이) + 헤더 40px 정도
+                            final estimatedItemHeight = 260.0;
+                            final targetOffset =
+                                _pendingScrollIndex * estimatedItemHeight;
+                            final maxScroll =
+                                _scrollController.position.maxScrollExtent;
+                            final scrollTo = targetOffset > maxScroll
+                                ? maxScroll
+                                : targetOffset;
+
+                            print('✅ 스크롤 실행! offset: $scrollTo');
+                            _scrollController.animateTo(
+                              scrollTo,
+                              duration: const Duration(milliseconds: 500),
+                              curve: Curves.easeInOut,
+                            );
+
+                            _pendingScrollDate = null;
+                            _pendingScrollIndex = -1;
+                          } else {
+                            print('❌ ScrollController가 아직 준비되지 않음');
+                          }
+                        });
+                      });
+                    }
+
+                    return ListView(
+                      controller: _scrollController,
+                      children: sections,
                     );
                   },
                 ),
