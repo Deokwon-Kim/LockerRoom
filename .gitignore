@@ -53,6 +53,9 @@ firebase.json
 # Youtube API 키 
 youtube_key.env
 
+# kakao App Key
+kakao_key.env
+
 # node-moduels 
 functions/node_modules/
 
