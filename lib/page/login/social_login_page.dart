@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/page/login/login_page.dart';
+import 'package:lockerroom/provider/social_login_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -10,6 +12,7 @@ class SocialLoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userProvider = context.read<UserProvider>();
+    final socialProvider = context.read<SocialLoginProvider>();
     final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
@@ -30,7 +33,50 @@ class SocialLoginPage extends StatelessWidget {
                 // Text('더베이스에 오신걸 환영합니다'),
                 //구글 로그인
                 GestureDetector(
-                  onTap: () {},
+                  onTap: () async {
+                    try {
+                      // 로딩 표시
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) =>
+                            Center(child: CircularProgressIndicator()),
+                      );
+
+                      await userProvider.googleLogin();
+
+                      // 로딩 닫기
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+
+                      // 성공 시 화면 이동
+                      if (context.mounted) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BottomTabBar(),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      // 로딩 닫기
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+
+                      // 에러 메시지 표시
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('로그인에 실패했습니다. 다시 시도해주세요.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                      print('구글 로그인 에러: $e');
+                    }
+                  },
                   child: Container(
                     width: double.infinity,
                     height: 58,
@@ -113,14 +159,45 @@ class SocialLoginPage extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 10),
-                // GestureDetector(
-                //   onTap: () {},
-                //   child: Image.asset(
-                //     'assets/images/logo/kakao_login_large_narrow.png',
-                //     height: 58,
-                //     width: double.infinity,
-                //   ),
-                // ),
+                GestureDetector(
+                  onTap: () async {
+                    try {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) =>
+                            Center(child: CircularProgressIndicator()),
+                      );
+
+                      await socialProvider.kakaoLogin();
+
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+
+                      if (context.mounted) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => BottomTabBar(),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      print('카카오 로그인 실패 :$e');
+                    }
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => BottomTabBar()),
+                    );
+                  },
+                  child: Image.asset(
+                    'assets/images/kakao_login_large_wide.png',
+                    height: 58,
+                    width: double.infinity,
+                  ),
+                ),
                 SizedBox(height: 30),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -142,49 +219,11 @@ class SocialLoginPage extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 GestureDetector(
-                  onTap: () async {
-                    try {
-                      // 로딩 표시
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (context) =>
-                            Center(child: CircularProgressIndicator()),
-                      );
-
-                      await userProvider.googleLogin();
-
-                      // 로딩 닫기
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                      }
-
-                      // 성공 시 화면 이동
-                      if (context.mounted) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BottomTabBar(),
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      // 로딩 닫기
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                      }
-
-                      // 에러 메시지 표시
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('로그인에 실패했습니다. 다시 시도해주세요.'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                      print('구글 로그인 에러: $e');
-                    }
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => LoginPage()),
+                    );
                   },
                   child: Container(
                     width: double.infinity,
@@ -196,12 +235,10 @@ class SocialLoginPage extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image.asset(
-                          'assets/images/logo/google.png',
-                          height: 30,
-                        ),
+                        Icon(Icons.email),
+                        SizedBox(width: 10),
                         Text(
-                          '구글로 시작하기',
+                          '이메일로 시작하기',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
