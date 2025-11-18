@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide User;
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
@@ -13,6 +14,7 @@ import 'package:lockerroom/page/legal/terms_of_service_page.dart';
 import 'package:lockerroom/page/login/login_page.dart';
 import 'package:lockerroom/page/login/signup_page.dart';
 import 'package:lockerroom/page/login/social_login_page.dart';
+import 'package:lockerroom/page/login/social_profile_setting.dart';
 import 'package:lockerroom/page/my_post/likedPosts_page.dart';
 import 'package:lockerroom/page/notice/notice_list_page.dart';
 import 'package:lockerroom/page/setting/change_password_page.dart';
@@ -35,6 +37,7 @@ import 'package:lockerroom/provider/marketFeedEdit_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/market_upload_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
+import 'package:lockerroom/provider/social_login_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
@@ -56,7 +59,13 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // env 파일 로드 (카카오 SDK 초기화 전에 필요)
   await dotenv.load(fileName: 'lib/api_key/youtube_key.env');
+  //kakao 로그인 초기화
+  KakaoSdk.init(
+    nativeAppKey: dotenv.env['KAKAO_NATIVE_APP_KEY'],
+    javaScriptAppKey: dotenv.env['KAKAO_JAVASCRIPT_APP_KEY'],
+  );
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // 로컬 알림 초기화
@@ -158,6 +167,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => FoodStoreProvider()),
         ChangeNotifierProvider(create: (context) => FeedEditProvider()),
         ChangeNotifierProvider(create: (context) => MarketfeededitProvider()),
+        ChangeNotifierProvider(create: (context) => SocialLoginProvider()),
       ],
       child: const MyApp(),
     ),
@@ -181,10 +191,10 @@ class MyApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
-        home: const SocialLoginPage(),
+        home: const SocialProfileSetting(),
         routes: {
           'signUp': (context) => const SignupPage(),
-          'signIn': (context) => const LoginPage(),
+          'signIn': (context) => const SocialLoginPage(),
           'setting': (context) => const SettingPage(),
           'changeNickname': (context) => const NicknameChangePage(),
           'findPassword': (context) => const FindPasswordPage(),
