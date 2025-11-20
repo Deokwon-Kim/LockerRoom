@@ -18,6 +18,11 @@ class FeedEditProvider extends ChangeNotifier {
   bool _isUploading = false;
   bool get isUploading => _isUploading;
 
+  void setUploading(bool value) {
+    _isUploading = value;
+    notifyListeners();
+  }
+
   // 초기화 (기존 게시물 데이터 로드)
   void initializeEdit(PostModel post) {
     _editableMediaUrls = List.from(post.mediaUrls);
@@ -62,7 +67,6 @@ class FeedEditProvider extends ChangeNotifier {
 
       // 삭제된 미디어 정리
       await _cleanupDeletedMedia();
-
       return true;
     } catch (e) {
       print('게시물 업데이트 실패: $e');

@@ -65,66 +65,154 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
       }
     }
 
+    // 선택 목록에서 제외할 팀 이름들
+    final excludedTeamNames = <String>[
+      '일본',
+      '체코',
+      '대만',
+      '쿠바',
+      '호주',
+      '도미니카',
+      '태국',
+      '홍콩',
+      '중국',
+      'LAD',
+      'SD',
+    ]; // 여기에 제외할 팀 추가
+
+    // 제외할 팀을 제외한 선택 가능한 팀들
+    final selectableTeams = teamProvider
+        .where((t) => !excludedTeamNames.contains(t.name))
+        .toList();
+
+    // 대한민국 팀을 featuredTeam으로 설정
+    final featuredTeam = selectableTeams.firstWhere(
+      (t) => t.name == "대한민국",
+      orElse: () => selectableTeams[0],
+    );
+
+    // featuredTeam을 제외한 나머지 팀들
+    final otherTeams = selectableTeams.where((t) => t != featuredTeam).toList();
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          SizedBox(height: 50),
-          Text(
+          const SizedBox(height: 50),
+          const Text(
             '응원하는 팀을 선택해주세요',
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 10),
-          Text(
+          const SizedBox(height: 10),
+          const Text(
             '선택한 팀의 소식을 가장 먼저 받아보세요.',
             style: TextStyle(fontSize: 13, color: Colors.blueGrey),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
+
+          // -------------------------------
+          // 1) 가로로 긴 대한민국 팀 카드
+          // -------------------------------
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: GestureDetector(
+              onTap: () =>
+                  context.read<TeamProvider>().selectTeam(featuredTeam),
+              child: Container(
+                height: 120,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: featuredTeam.color,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color:
+                        context.watch<TeamProvider>().selectedTeam ==
+                            featuredTeam
+                        ? const Color.fromARGB(255, 255, 188, 2)
+                        : featuredTeam.color,
+                    width: 3,
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.asset(
+                          featuredTeam.logoPath,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+
+                    if (context.watch<TeamProvider>().selectedTeam ==
+                        featuredTeam)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Icon(
+                          Icons.check_circle,
+                          color: const Color.fromARGB(255, 255, 188, 2),
+                          size: 24,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // -------------------------------
+          // 2) 다른 팀들: 정사각형 Grid
+          // -------------------------------
           Expanded(
             child: GridView.builder(
-              padding: const EdgeInsets.only(left: 10, right: 10),
-              itemCount: teamProvider.length,
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 200,
-                mainAxisSpacing: 15,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              itemCount: otherTeams.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, // 정사각형 2개씩
                 crossAxisSpacing: 12,
-                childAspectRatio: 1,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1, // 정사각형
               ),
               itemBuilder: (context, index) {
-                final team = teamProvider[index];
+                final team = otherTeams[index];
+                final isSelected =
+                    context.watch<TeamProvider>().selectedTeam == team;
 
-                return ThemeTile(
-                  teamModel: team,
-                  isSelected:
-                      context.watch<TeamProvider>().selectedTeam == team,
-                  onTap: () {
-                    context.read<TeamProvider>().selectTeam(team);
-                  },
+                return GestureDetector(
+                  onTap: () => context.read<TeamProvider>().selectTeam(team),
+                  child: ThemeTile(
+                    teamModel: team,
+                    isSelected: isSelected,
+                    onTap: () => context.read<TeamProvider>().selectTeam(team),
+                  ),
                 );
               },
             ),
           ),
+
+          // 기존 완료 버튼은 여기 그대로 유지
           Padding(
             padding: const EdgeInsets.all(10.0),
             child: SizedBox(
               width: double.infinity,
               height: 58,
-              child: ElevatedButton.icon(
+              child: ElevatedButton(
                 onPressed: selectedTeam == null
                     ? null
-                    : () {
-                        _selectTeam(context, selectedTeam.name);
-                      },
+                    : () => _selectTeam(context, selectedTeam.name),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: selectedTeam == null ? Colors.grey : BUTTON,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  elevation: 2,
                 ),
-                icon: Icon(widget.isChanging ? Icons.swap_horiz : Icons.check),
-                label: Text(
+                child: Text(
                   widget.isChanging ? '변경하기' : '선택완료',
                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),

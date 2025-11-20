@@ -33,16 +33,23 @@ class FeedDetailPage extends StatefulWidget {
 class _FeedDetailPageState extends State<FeedDetailPage> {
   final TextEditingController _commentsController = TextEditingController();
   late final CommentProvider _commentProvider;
+  late final FeedProvider _feedProvider;
   BlockProvider? _blockProvider;
   VoidCallback? _blockListener;
   final FocusNode _commentFocusNode = FocusNode();
   String? _replyParentId;
   String? _replyToUserName;
   final Map<String, bool> _replyVisibility = {}; // 답글 표시/ 숨김 상태관리
+  late PostModel _currentPost; // 현재 게시물 상태 관리
 
   @override
   void initState() {
     super.initState();
+    _feedProvider = context.read<FeedProvider>();
+    // 현재 게시물 초기화
+    _currentPost = widget.post;
+    // final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    _feedProvider.postStream(widget.post.userId);
     // Provider 참조를 보관해 두고 사용 (dispose에서 context 조회 방지)
     _commentProvider = context.read<CommentProvider>();
     // postId별 구독 시작
@@ -101,11 +108,25 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
   Widget build(BuildContext context) {
     final selectedColor =
         Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
-    final feedProvider = Provider.of<FeedProvider>(context, listen: false);
+    final feedProvider = Provider.of<FeedProvider>(context, listen: true);
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     Provider.of<CommentProvider>(context, listen: false);
     final isOwner =
-        currentUserId != null && widget.post.userId == currentUserId;
+        currentUserId != null && _currentPost.userId == currentUserId;
+
+    // FeedProvider에서 최신 게시물 가져오기
+    final latestPost =
+        feedProvider.getPostById(_currentPost.id) ?? _currentPost;
+    if (latestPost != _currentPost) {
+      // 최신 게시물로 업데이트
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _currentPost = latestPost;
+          });
+        }
+      });
+    }
 
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
@@ -145,8 +166,8 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => FeedMypage(
-                                  post: widget.post,
-                                  targetUserId: widget.post.userId,
+                                  post: _currentPost,
+                                  targetUserId: _currentPost.userId,
                                 ),
                               ),
                             );
@@ -154,7 +175,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                           child: Consumer<ProfileProvider>(
                             builder: (context, profileProvider, child) {
                               final url = profileProvider
-                                  .userProfiles[widget.post.userId];
+                                  .userProfiles[_currentPost.userId];
                               return CircleAvatar(
                                 radius: 25,
                                 backgroundImage: url != null
@@ -175,59 +196,41 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Consumer<ProfileProvider>(
-                              builder: (context, profileProvider, child) {
-                                profileProvider.subscribeUserProfile(
-                                  widget.post.userId,
-                                );
-                                final nickname =
-                                    profileProvider.userNicknames[widget
-                                        .post
-                                        .userId] ??
-                                    widget.post.userNickName;
-
-                                return TextButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => FeedMypage(
-                                          post: widget.post,
-                                          targetUserId: widget.post.userId,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: Text(
-                                    nickname,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black,
+                            TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FeedMypage(
+                                      post: _currentPost,
+                                      targetUserId: _currentPost.userId,
                                     ),
                                   ),
                                 );
                               },
-                            ),
-                            Transform.translate(
-                              offset: Offset(10, -10),
                               child: Text(
-                                timeAgo(widget.post.createdAt),
+                                _currentPost.userNickName,
                                 style: TextStyle(
-                                  color: GRAYSCALE_LABEL_500,
-                                  fontSize: 13,
+                                  color: Colors.black,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
+                            Transform.translate(
+                              offset: Offset(10, -10),
+                              child: Text(timeAgo(_currentPost.createdAt)),
+                            ),
                           ],
                         ),
+
                         Spacer(),
 
                         IconButton(
                           onPressed: () {
                             _showPostOptionBottomSheet(
                               context,
-                              widget.post,
+                              _currentPost,
                               feedProvider,
                               isOwner,
                             );
@@ -238,10 +241,10 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     ),
                     const SizedBox(height: 8),
                     // 본문
-                    Text(widget.post.text),
+                    Text(_currentPost.text),
                     const SizedBox(height: 8),
                     // URL프리뷰 표시
-                    if (extractUrl(widget.post.text) != null) ...[
+                    if (extractUrl(_currentPost.text) != null) ...[
                       SizedBox(height: 10),
                       Container(
                         decoration: BoxDecoration(
@@ -261,7 +264,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                           children: [
                             LinkPreview(
                               enableAnimation: true,
-                              text: extractUrl(widget.post.text)!,
+                              text: extractUrl(_currentPost.text)!,
                               onLinkPreviewDataFetched: (data) {
                                 print('Preview data fetched: ${data.title}');
                               },
@@ -282,7 +285,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                   SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      extractUrl(widget.post.text)!,
+                                      extractUrl(_currentPost.text)!,
                                       style: TextStyle(
                                         color: Colors.blue,
                                         fontSize: 13,
@@ -300,11 +303,11 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     ],
                     SizedBox(height: 8),
                     // 이미지/ 영상 슬라이드
-                    if (widget.post.mediaUrls.isNotEmpty)
+                    if (_currentPost.mediaUrls.isNotEmpty)
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final bool inSingle =
-                              widget.post.mediaUrls.length == 1;
+                              _currentPost.mediaUrls.length == 1;
                           final double availableWidth = constraints.maxWidth;
 
                           // 싱글일 때는 16:9 비율, 멀티일 때는 정사각형
@@ -325,11 +328,11 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                             height: listHeight,
                             child: ListView.builder(
                               scrollDirection: Axis.horizontal,
-                              itemCount: widget.post.mediaUrls.length,
+                              itemCount: _currentPost.mediaUrls.length,
                               itemBuilder: (_, i) {
-                                final url = widget.post.mediaUrls[i];
+                                final url = _currentPost.mediaUrls[i];
                                 final isVideo = MediaUtils.isVideoFromPost(
-                                  widget.post,
+                                  _currentPost,
                                   i,
                                 );
                                 return Padding(
@@ -369,8 +372,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                                 MaterialPageRoute(
                                                   builder: (context) =>
                                                       FullscreenImageViewer(
-                                                        imageUrls: widget
-                                                            .post
+                                                        imageUrls: _currentPost
                                                             .mediaUrls,
                                                         initialIndex: i,
                                                       ),
@@ -417,14 +419,14 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     StreamBuilder<DocumentSnapshot>(
                       stream: FirebaseFirestore.instance
                           .collection('posts')
-                          .doc(widget.post.id)
+                          .doc(_currentPost.id)
                           .snapshots(),
                       builder: (context, snap) {
                         final currentUserId =
                             FirebaseAuth.instance.currentUser?.uid;
                         // 스냅샷 데이터가 준비되지 않은 경우 기존 값 사용
-                        List<String> likedBy = widget.post.likedBy;
-                        int likesCount = widget.post.likesCount;
+                        List<String> likedBy = _currentPost.likedBy;
+                        int likesCount = _currentPost.likesCount;
                         if (snap.hasData && snap.data!.exists) {
                           final data =
                               snap.data!.data() as Map<String, dynamic>;
@@ -441,10 +443,10 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                           children: [
                             IconButton(
                               onPressed: () => feedProvider.toggleLikeAndNotify(
-                                postId: widget.post.id,
-                                post: widget.post,
+                                postId: _currentPost.id,
+                                post: _currentPost,
                                 currentUserId: currentUserId!,
-                                postOwnerId: widget.post.userId,
+                                postOwnerId: _currentPost.userId,
                               ),
                               icon: Icon(
                                 isLiked
@@ -466,7 +468,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                 Consumer<CommentProvider>(
                                   builder: (context, cp, _) {
                                     final count = cp
-                                        .getComments(widget.post.id)
+                                        .getComments(_currentPost.id)
                                         .length;
                                     return Transform.translate(
                                       offset: Offset(-5, 0),
@@ -480,7 +482,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                         );
                       },
                     ),
-                    if (widget.post.mediaUrls.isNotEmpty)
+                    if (_currentPost.mediaUrls.isNotEmpty)
                       Builder(
                         builder: (context) {
                           int videoCount = 0;
@@ -488,10 +490,10 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
 
                           for (
                             int i = 0;
-                            i < widget.post.mediaUrls.length;
+                            i < _currentPost.mediaUrls.length;
                             i++
                           ) {
-                            if (MediaUtils.isVideoFromPost(widget.post, i)) {
+                            if (MediaUtils.isVideoFromPost(_currentPost, i)) {
                               videoCount++;
                             } else {
                               imageCount++;
@@ -520,7 +522,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     SizedBox(height: 10),
                     Consumer<CommentProvider>(
                       builder: (context, cp, _) {
-                        final count = cp.getComments(widget.post.id).length;
+                        final count = cp.getComments(_currentPost.id).length;
                         return Text(
                           '$count개의 댓글',
                           style: TextStyle(fontWeight: FontWeight.w500),
@@ -531,7 +533,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     Consumer<CommentProvider>(
                       builder: (context, commentProvider, child) {
                         final comments = commentProvider.getComments(
-                          widget.post.id,
+                          _currentPost.id,
                         );
                         if (comments.isEmpty) {
                           return Center(child: Text('댓글이 없습니다.'));
@@ -626,7 +628,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     final currentUser = FirebaseAuth.instance.currentUser!;
                     final comment = CommentModel(
                       id: '', // Firestore에서 자동생성
-                      postId: widget.post.id,
+                      postId: _currentPost.id,
                       userId: currentUser.uid,
                       userName: currentUser.displayName ?? '익명',
                       text: text,
@@ -635,10 +637,10 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                       likesCount: 0,
                     );
                     await context.read<CommentProvider>().addCommentAndNotify(
-                      postId: widget.post.id,
+                      postId: _currentPost.id,
                       comment: comment,
                       currentUserId: currentUser.uid,
-                      postOwnerId: widget.post.userId,
+                      postOwnerId: _currentPost.userId,
                       parentCommentOwnerId: _replyParentId == null
                           ? null
                           : _replyParentId,
@@ -726,7 +728,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                 Consumer<CommentProvider>(
                   builder: (context, commentProvider, _) {
                     final updatedComment = commentProvider
-                        .getComments(widget.post.id)
+                        .getComments(_currentPost.id)
                         .firstWhere(
                           (comment) => comment.id == c.id,
                           orElse: () => c,
@@ -1013,7 +1015,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                         Consumer<CommentProvider>(
                           builder: (context, commentProvider, _) {
                             final updatedReply = commentProvider
-                                .getComments(widget.post.id)
+                                .getComments(_currentPost.id)
                                 .firstWhere(
                                   (comment) => comment.id == reply.id,
                                   orElse: () => reply,
@@ -1137,7 +1139,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
           ),
           Builder(
             builder: (context) {
-              final all = commentProvider.getComments(widget.post.id);
+              final all = commentProvider.getComments(_currentPost.id);
               final childReplies = all
                   .where((c) => c.reComments == reply.id)
                   .toList();
@@ -1203,14 +1205,23 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
               SizedBox(height: 20),
               if (isOwner) ...[
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context); // 바텀시트 닫기
-                    Navigator.push(
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => FeedEditPage(post: post),
                       ),
                     );
+                    // 편집 페이지에서 돌아온 후 최신 게시물 정보 가져오기
+                    if (mounted) {
+                      final updatedPost = _feedProvider.getPostById(post.id);
+                      if (updatedPost != null) {
+                        setState(() {
+                          _currentPost = updatedPost;
+                        });
+                      }
+                    }
                   },
                   child: Container(
                     padding: EdgeInsets.all(10),
@@ -1242,7 +1253,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                         title: '삭제 확인',
                         content: '게시물을 삭제 하시겠습니까?',
                         onConfirm: () async {
-                          await feedProvider.deletePost(widget.post);
+                          await feedProvider.deletePost(_currentPost);
                           toastification.show(
                             context: context,
                             type: ToastificationType.success,
@@ -1250,6 +1261,8 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                             autoCloseDuration: Duration(seconds: 2),
                             title: Text('게시물을 삭제했습니다'),
                           );
+                          if (!mounted) return;
+                          Navigator.pop(context);
                         },
                       ),
                     );
@@ -1333,8 +1346,8 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     Navigator.pop(context); // 바텀시트 닫기
                     _showBlockConfirmDialog(
                       context,
-                      widget.post.userNickName,
-                      widget.post.userId,
+                      _currentPost.userNickName,
+                      _currentPost.userId,
                       uid,
                     );
                   },

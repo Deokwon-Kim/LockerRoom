@@ -54,12 +54,16 @@ class MarketPostModel {
       userId: userId ?? this.userId,
       userNickName: userNickName ?? this.userNickName,
       title: title ?? this.title,
+      description: description ?? this.description,
       imageUrls: imageUrls ?? this.imageUrls,
       price: price ?? this.price,
       type: type ?? this.type,
+      viewCount: viewCount ?? this.viewCount,
+      viewdBy: viewdBy ?? this.viewdBy,
       createdAt: createdAt ?? this.createdAt,
       likesCount: likesCount ?? this.likesCount,
       likedBy: likedBy ?? this.likedBy,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 

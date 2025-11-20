@@ -46,10 +46,13 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
   final Map<String, bool> _replyVisibility = {}; // 답글 표시/숨김 상태 관리
   bool _isInitialized = false;
   bool _isSecretComment = false; // 비밀댓글 여부
+  late MarketPostModel _currentMarketPost; // 현재 게시물 상태 관리
 
   @override
   void initState() {
     super.initState();
+    // 현재 게시물 초기화
+    _currentMarketPost = widget.marketPost;
 
     // 입력창 포커스 시 스크롤을 맨 아래로 이동
     _commentFocusNode.addListener(() {
@@ -145,8 +148,27 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final marketFeedProvider = Provider.of<MarketFeedProvider>(
+      context,
+      listen: true,
+    );
     final isOwner =
-        currentUserId != null && widget.marketPost.userId == currentUserId;
+        currentUserId != null && _currentMarketPost.userId == currentUserId;
+
+    // MarketFeedProvider에서 최신 게시물 가져오기
+    final latestMarketPost =
+        marketFeedProvider.getMarketPostById(_currentMarketPost.postId) ??
+        _currentMarketPost;
+    if (latestMarketPost != _currentMarketPost) {
+      // 최신 게시물로 업데이트
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _currentMarketPost = latestMarketPost;
+          });
+        }
+      });
+    }
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -155,7 +177,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
         backgroundColor: BACKGROUND_COLOR,
         scrolledUnderElevation: 0,
         title: Text(
-          widget.marketPost.title,
+          _currentMarketPost.title,
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -191,9 +213,9 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
               Stack(
                 children: [
                   CarouselSlider.builder(
-                    itemCount: widget.marketPost.imageUrls.length,
+                    itemCount: _currentMarketPost.imageUrls.length,
                     itemBuilder: (context, index, realIndex) {
-                      final url = widget.marketPost.imageUrls[index];
+                      final url = _currentMarketPost.imageUrls[index];
                       return Image.network(url, fit: BoxFit.cover, width: 1000);
                     },
                     options: CarouselOptions(
@@ -202,8 +224,8 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                       enlargeCenterPage: false,
                       autoPlay: false,
                       enableInfiniteScroll:
-                          widget.marketPost.imageUrls.length > 1, // 무한 스크롤 막기
-                      scrollPhysics: widget.marketPost.imageUrls.length > 1
+                          _currentMarketPost.imageUrls.length > 1, // 무한 스크롤 막기
+                      scrollPhysics: _currentMarketPost.imageUrls.length > 1
                           ? const PageScrollPhysics() // 이미지가 여러개일때만 스와이프 허용
                           : const NeverScrollableScrollPhysics(), // 이미지 하나일땐 스와이프 막음
                       onPageChanged: (index, reason) {
@@ -213,7 +235,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                       },
                     ),
                   ),
-                  if (widget.marketPost.imageUrls.length > 1)
+                  if (_currentMarketPost.imageUrls.length > 1)
                     Padding(
                       padding: const EdgeInsets.only(top: 315.0, right: 10.0),
                       child: Row(
@@ -229,7 +251,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              '${_currentIndex + 1} / ${widget.marketPost.imageUrls.length}',
+                              '${_currentIndex + 1} / ${_currentMarketPost.imageUrls.length}',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w500,
@@ -251,7 +273,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                         Consumer<ProfileProvider>(
                           builder: (context, profileProvider, child) {
                             final url = profileProvider
-                                .userProfiles[widget.marketPost.userId];
+                                .userProfiles[_currentMarketPost.userId];
                             return CircleAvatar(
                               radius: 23,
                               backgroundImage: url != null
@@ -274,14 +296,13 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                             // build 중 구독을 피하기 위해 postFrameCallback 사용
                             WidgetsBinding.instance.addPostFrameCallback((_) {
                               profileProvider.subscribeUserProfile(
-                                widget.marketPost.postId,
+                                _currentMarketPost.userId,
                               );
                             });
                             final nickname =
-                                profileProvider.userNicknames[widget
-                                    .marketPost
-                                    .postId] ??
-                                widget.marketPost.userNickName;
+                                profileProvider.userNicknames[_currentMarketPost
+                                    .userId] ??
+                                _currentMarketPost.userNickName;
                             return Text(
                               nickname,
                               style: TextStyle(
@@ -303,7 +324,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                         Row(
                           children: [
                             Text(
-                              widget.marketPost.title,
+                              _currentMarketPost.title,
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -356,7 +377,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                           ],
                         ),
                         Text(
-                          timeAgo(widget.marketPost.createdAt),
+                          timeAgo(_currentMarketPost.createdAt),
                           style: TextStyle(
                             color: GRAYSCALE_LABEL_500,
                             fontSize: 13,
@@ -365,7 +386,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                         ),
                         SizedBox(height: 5),
                         Text(
-                          '${widget.marketPost.price}원',
+                          '${_currentMarketPost.price}원',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -373,7 +394,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                         ),
                         SizedBox(height: 5),
                         Text(
-                          '${widget.marketPost.description}',
+                          '${_currentMarketPost.description}',
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 15,
@@ -391,7 +412,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                             ),
                             SizedBox(width: 10),
                             Text(
-                              widget.marketPost.type,
+                              _currentMarketPost.type,
                               style: TextStyle(
                                 color: GRAYSCALE_LABEL_500,
                                 fontWeight: FontWeight.w500,
@@ -403,7 +424,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                         Consumer<CommentProvider>(
                           builder: (context, commentProvider, child) {
                             final comments = commentProvider.getMarketComments(
-                              widget.marketPost.postId,
+                              _currentMarketPost.postId,
                             );
                             if (comments.isEmpty) {
                               return Center(child: Text('댓글이 없습니다.'));
@@ -564,7 +585,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                           final user = FirebaseAuth.instance.currentUser!;
                           final marketComment = CommentModel(
                             id: '', // Firestore에서 자동생성
-                            postId: widget.marketPost.postId,
+                            postId: _currentMarketPost.postId,
                             userId: user.uid,
                             userName: user.displayName ?? '익명',
                             text: text,
@@ -576,10 +597,10 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                           await context
                               .read<CommentProvider>()
                               .addMarketCommentAndNotify(
-                                marketPostId: widget.marketPost.postId,
+                                marketPostId: _currentMarketPost.postId,
                                 marketComment: marketComment,
                                 currentUserId: user.uid,
-                                marketPostOwnerId: widget.marketPost.userId,
+                                marketPostOwnerId: _currentMarketPost.userId,
                                 parentMarketCommentOwnerId:
                                     _replyParentId == null
                                     ? null
@@ -675,7 +696,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                 if (parentComment.isSecret &&
                     currentUserId != null &&
                     currentUserId != parentComment.userId &&
-                    currentUserId != widget.marketPost.userId) ...[
+                    currentUserId != _currentMarketPost.userId) ...[
                   // 권한이 없는 경우: 비밀댓글입니다 표시
                   Row(
                     children: [
@@ -754,11 +775,11 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                 if (!(parentComment.isSecret &&
                     currentUserId != null &&
                     currentUserId != parentComment.userId &&
-                    currentUserId != widget.marketPost.userId)) ...[
+                    currentUserId != _currentMarketPost.userId)) ...[
                   Consumer<CommentProvider>(
                     builder: (context, commentProvider, _) {
                       final updatedComment = commentProvider
-                          .getMarketComments(widget.marketPost.postId)
+                          .getMarketComments(_currentMarketPost.postId)
                           .firstWhere(
                             (comment) => comment.id == parentComment.id,
                             orElse: () => parentComment,
@@ -881,7 +902,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                 child: _buildCommentText(
                   parentComment,
                   currentUserId,
-                  widget.marketPost.userId,
+                  _currentMarketPost.userId,
                 ),
               ),
             ),
@@ -895,7 +916,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                     if (!(parentComment.isSecret &&
                         currentUserId != null &&
                         currentUserId != parentComment.userId &&
-                        currentUserId != widget.marketPost.userId))
+                        currentUserId != _currentMarketPost.userId))
                       TextButton(
                         onPressed: () {
                           setState(() {
@@ -988,7 +1009,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
               if (reply.isSecret &&
                   currentUserId != null &&
                   currentUserId != reply.userId &&
-                  currentUserId != widget.marketPost.userId) ...[
+                  currentUserId != _currentMarketPost.userId) ...[
                 // 권한이 없는 경우: 비밀댓글입니다 표시
                 Row(
                   children: [
@@ -1065,11 +1086,11 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
               if (!(reply.isSecret &&
                   currentUserId != null &&
                   currentUserId != reply.userId &&
-                  currentUserId != widget.marketPost.userId)) ...[
+                  currentUserId != _currentMarketPost.userId)) ...[
                 Consumer<CommentProvider>(
                   builder: (context, commentProvider, _) {
                     final updatedReply = commentProvider
-                        .getMarketComments(widget.marketPost.postId)
+                        .getMarketComments(_currentMarketPost.postId)
                         .firstWhere(
                           (comment) => comment.id == reply.id,
                           orElse: () => reply,
@@ -1144,7 +1165,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
               child: _buildCommentText(
                 reply,
                 currentUserId,
-                widget.marketPost.userId,
+                _currentMarketPost.userId,
               ),
             ),
           ),
@@ -1349,15 +1370,25 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
               SizedBox(height: 20),
               if (isOwner) ...[
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context); // 바텀시트 닫기
-                    Navigator.push(
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            AfterMarketEditPage(marketPost: widget.marketPost),
+                            AfterMarketEditPage(marketPost: _currentMarketPost),
                       ),
                     );
+                    // 편집 페이지에서 돌아온 후 최신 게시물 정보 가져오기
+                    if (mounted) {
+                      final updatedMarketPost = _marketFeedProvider
+                          .getMarketPostById(_currentMarketPost.postId);
+                      if (updatedMarketPost != null) {
+                        setState(() {
+                          _currentMarketPost = updatedMarketPost;
+                        });
+                      }
+                    }
                   },
                   child: Container(
                     padding: EdgeInsets.all(10),
@@ -1394,7 +1425,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                           Navigator.pop(dialogContext);
 
                           // 게시물 삭제
-                          await mfp.deletePost(widget.marketPost);
+                          await mfp.deletePost(_currentMarketPost);
 
                           // mounted 체크
                           if (!mounted) return;
@@ -1472,7 +1503,7 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                     Navigator.pop(context); // 바텀시트 닫기
                     _showMarketFeedReportDialog(
                       context,
-                      widget.marketPost,
+                      _currentMarketPost,
                       mfp,
                       reporter.uid,
                     );
@@ -1508,8 +1539,8 @@ class _AfterMarketDetailPageState extends State<AfterMarketDetailPage> {
                     Navigator.pop(context); // 바텀시트 닫기
                     _showBlockConfirmDialog(
                       context,
-                      widget.marketPost.userNickName,
-                      widget.marketPost.userId,
+                      _currentMarketPost.userNickName,
+                      _currentMarketPost.userId,
                       uid,
                     );
                   },

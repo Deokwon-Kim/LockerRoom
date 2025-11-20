@@ -57,4 +57,44 @@ class PostModel {
       likedBy: List<String>.from(data['likedBy'] ?? const []),
     );
   }
+
+  PostModel copyWith({
+    String? text,
+    List<String>? mediaUrls,
+    List<Map<String, dynamic>>? mediaInfo,
+    DateTime? updatedAt,
+    int? likesCount,
+    String? userNickName,
+    String? userName,
+    List<String>? likedBy,
+  }) {
+    return PostModel(
+      id: id, // id, userId, createdAt 등 필수 변경 불가 필드는 그대로
+      userId: userId,
+      createdAt: createdAt,
+      text: text ?? this.text,
+      mediaUrls: mediaUrls ?? this.mediaUrls,
+      mediaInfo: mediaInfo ?? this.mediaInfo,
+      updateAt: updatedAt ?? updateAt,
+      likesCount: likesCount ?? this.likesCount,
+      userNickName: userNickName ?? this.userNickName,
+      userName: userName ?? this.userName,
+      likedBy: likedBy ?? this.likedBy,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'text': text,
+      'mediaUrls': mediaUrls,
+      'mediaInfo': mediaInfo,
+      'userId': userId,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': updateAt != null ? Timestamp.fromDate(updateAt!) : null,
+      'likesCount': likesCount,
+      'userNickName': userNickName,
+      'userName': userName,
+      'likedBy': likedBy,
+    };
+  }
 }

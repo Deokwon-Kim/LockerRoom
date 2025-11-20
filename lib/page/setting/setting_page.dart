@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
+import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
@@ -41,8 +42,7 @@ class SettingPage extends StatelessWidget {
           child: Column(
             children: [
               Container(
-                width: double.infinity,
-                height: 260,
+                padding: EdgeInsets.symmetric(vertical: 5),
                 decoration: BoxDecoration(
                   color: GRAYSCALE_LABEL_50,
                   borderRadius: BorderRadius.circular(12),
@@ -51,6 +51,33 @@ class SettingPage extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 20.0),
                   child: Column(
                     children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, 'changeName');
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '이름 변경',
+                              style: TextStyle(
+                                color: GRAYSCALE_LABEL_950,
+                                fontSize: 16,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                Navigator.pushNamed(context, 'changeName');
+                              },
+                              icon: Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: GRAYSCALE_LABEL_950,
+                                size: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       TextButton(
                         onPressed: () {
                           Navigator.pushNamed(context, 'changeNickname');
@@ -193,8 +220,7 @@ class SettingPage extends StatelessWidget {
               ),
               SizedBox(height: 20),
               Container(
-                width: double.infinity,
-                height: 60,
+                padding: EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
                   color: GRAYSCALE_LABEL_50,
                   borderRadius: BorderRadius.circular(12),
@@ -212,7 +238,7 @@ class SettingPage extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '1.1.3',
+                        '1.1.4',
                         style: TextStyle(
                           color: GRAYSCALE_LABEL_950,
                           fontSize: 16,
@@ -226,8 +252,7 @@ class SettingPage extends StatelessWidget {
               GestureDetector(
                 onTap: () {},
                 child: Container(
-                  width: double.infinity,
-                  height: 442,
+                  padding: EdgeInsets.symmetric(vertical: 5),
                   decoration: BoxDecoration(
                     color: GRAYSCALE_LABEL_50,
                     borderRadius: BorderRadius.circular(12),
@@ -437,6 +462,9 @@ class SettingPage extends StatelessWidget {
                             } catch (_) {}
                             try {
                               context.read<BlockProvider>().cancel();
+                            } catch (_) {}
+                            try {
+                              context.read<FollowProvider>().reset();
                             } catch (_) {}
 
                             await userProvider.signOut();

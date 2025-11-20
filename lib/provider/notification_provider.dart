@@ -13,6 +13,7 @@ class NotificationProvider extends ChangeNotifier {
   List<AppNotification> _notifications = [];
   List<AppNotification> get notifications => _notifications;
   bool isLoading = true;
+  int get unreadCount => _notifications.where((n) => !n.isRead).length;
   final Map<String, String> _userNameCache = {};
 
   void listen(String userId) {
@@ -125,6 +126,48 @@ class NotificationProvider extends ChangeNotifier {
     await _firestore.collection('notifications').doc(notificationId).update({
       'isRead': true,
     });
+  }
+
+  Future<void> markAllAsRead(String userId) async {
+    try {
+      // 로컬 리스트가 아니라 Firestore에서 직접 조회
+      final snapshot = await _firestore
+          .collection('notifications')
+          .where('toUserId', isEqualTo: userId)
+          .where('isRead', isEqualTo: false) // 읽지 않은 것만
+          .get();
+
+      if (snapshot.docs.isEmpty) return;
+
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.update(doc.reference, {'isRead': true});
+      }
+
+      await batch.commit();
+
+      // 로컬 리스트도 업데이트 (Stream이 업데이트하기 전에)
+      _notifications = _notifications.map((n) {
+        if (!n.isRead) {
+          return AppNotification(
+            id: n.id,
+            type: n.type,
+            fromUserId: n.fromUserId,
+            userNickName: n.userNickName,
+            createdAt: n.createdAt,
+            isRead: true,
+            postId: n.postId,
+            commentId: n.commentId,
+            preview: n.preview,
+          );
+        }
+        return n;
+      }).toList();
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('모든 알림 읽음 처리 오류: $e');
+    }
   }
 
   Future<void> deleteNotification(String notificationId) async {

@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 
 // 두산베어스
+const korea = Color(0xff00022E);
+
 const Doosan = Color(0xff181928);
 
 // SSG 랜더스

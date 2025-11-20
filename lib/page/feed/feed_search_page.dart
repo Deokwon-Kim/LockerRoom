@@ -84,9 +84,9 @@ class _FeedSearchPageState extends State<FeedSearchPage> {
         Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
     final feedProvider = _feedProvider;
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: WHITE,
       appBar: AppBar(
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: WHITE,
         title: Text(
           '검색',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),

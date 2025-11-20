@@ -42,6 +42,16 @@ class _UserDetailPageState extends State<UserDetailPage> {
     );
   }
 
+  // @override
+  // void didUpdateWidget(covariant UserDetailPage oldWidget) {
+  //   super.didUpdateWidget(oldWidget);
+  //   if (oldWidget.userId != widget.userId) {
+  //     Future.microtask(
+  //       () => context.read<FollowProvider>().loadFollowingStatus(widget.userId),
+  //     );
+  //   }
+  // }
+
   @override
   Widget build(BuildContext context) {
     final fp = context.watch<FollowProvider>();
@@ -135,9 +145,9 @@ class _UserDetailPageState extends State<UserDetailPage> {
             final imageUrl = (data['profileImage'] as String?) ?? '';
 
             return Scaffold(
-              backgroundColor: BACKGROUND_COLOR,
+              backgroundColor: WHITE,
               appBar: AppBar(
-                backgroundColor: BACKGROUND_COLOR,
+                backgroundColor: WHITE,
                 title: Row(
                   children: [
                     Transform.translate(
@@ -165,223 +175,217 @@ class _UserDetailPageState extends State<UserDetailPage> {
                   ],
                 ),
               ),
-              body: Padding(
-                padding: const EdgeInsets.all(15.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Column(
+              body: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(15.0),
+                    child: Row(
                       children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: GRAYSCALE_LABEL_300,
-                              radius: 40,
-                              backgroundImage: imageUrl.isNotEmpty
-                                  ? NetworkImage(imageUrl)
-                                  : null,
-                              child: imageUrl.isEmpty
-                                  ? const Icon(
-                                      Icons.person,
-                                      color: Colors.black,
-                                    )
-                                  : null,
-                            ),
-                            SizedBox(width: 20),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                        CircleAvatar(
+                          backgroundColor: GRAYSCALE_LABEL_300,
+                          radius: 40,
+                          backgroundImage: imageUrl.isNotEmpty
+                              ? NetworkImage(imageUrl)
+                              : null,
+                          child: imageUrl.isEmpty
+                              ? const Icon(Icons.person, color: Colors.black)
+                              : null,
+                        ),
+                        SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                userName,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                              Row(
                                 children: [
-                                  Text(
-                                    userName,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                  StreamBuilder<List<PostModel>>(
+                                    stream: context
+                                        .read<FeedProvider>()
+                                        .listenUserPosts(widget.userId),
+                                    builder: (context, snapshot) {
+                                      final count =
+                                          (snapshot.data ?? const []).length;
+                                      return Column(
+                                        children: [
+                                          Text(
+                                            '$count',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          Text(
+                                            '게시물',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
                                   ),
-                                  SizedBox(height: 5),
-                                  Row(
-                                    children: [
-                                      StreamBuilder<List<PostModel>>(
-                                        stream: context
-                                            .read<FeedProvider>()
-                                            .listenUserPosts(widget.userId),
-                                        builder: (context, snapshot) {
-                                          final count =
-                                              (snapshot.data ?? const [])
-                                                  .length;
-                                          return Column(
-                                            children: [
-                                              Text(
-                                                '$count',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                              Text(
-                                                '게시물',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      ),
-                                      SizedBox(width: 50),
-                                      StreamBuilder<int>(
-                                        stream: fp.getFollowersCountStream(
-                                          widget.userId,
-                                        ),
-                                        builder: (context, snpshot) {
-                                          if (!snpshot.hasData) {
-                                            final teamColor =
-                                                context
-                                                    .read<TeamProvider>()
-                                                    .selectedTeam
-                                                    ?.color ??
-                                                BUTTON;
-                                            return Center(
-                                              child: SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      color: teamColor,
-                                                      strokeWidth: 2,
-                                                    ),
-                                              ),
-                                            );
-                                          }
-                                          return GestureDetector(
-                                            onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      FollowListPage(
-                                                        userId: widget.userId,
-                                                        initialIndex: 0,
-                                                      ),
-                                                ),
-                                              );
-                                            },
-                                            child: Column(
-                                              children: [
-                                                Text(
-                                                  '${snpshot.data}',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w500,
+                                  SizedBox(width: 50),
+                                  StreamBuilder<int>(
+                                    stream: fp.getFollowersCountStream(
+                                      widget.userId,
+                                    ),
+                                    builder: (context, snpshot) {
+                                      if (!snpshot.hasData) {
+                                        final teamColor =
+                                            context
+                                                .read<TeamProvider>()
+                                                .selectedTeam
+                                                ?.color ??
+                                            BUTTON;
+                                        return Center(
+                                          child: SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              color: teamColor,
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      return GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  FollowListPage(
+                                                    userId: widget.userId,
+                                                    initialIndex: 0,
                                                   ),
-                                                ),
-                                                Text(
-                                                  '팔로워',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                              ],
                                             ),
                                           );
                                         },
-                                      ),
-                                      SizedBox(width: 50),
-                                      StreamBuilder<int>(
-                                        stream: fp.getFollowCountStream(
-                                          widget.userId,
-                                        ),
-                                        builder: (context, snpshot) {
-                                          if (!snpshot.hasData) {
-                                            final teamColor =
-                                                context
-                                                    .read<TeamProvider>()
-                                                    .selectedTeam
-                                                    ?.color ??
-                                                BUTTON;
-                                            return Center(
-                                              child: SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      color: teamColor,
-                                                      strokeWidth: 2,
-                                                    ),
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              '${snpshot.data}',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w500,
                                               ),
-                                            );
-                                          }
-                                          return GestureDetector(
-                                            onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      FollowListPage(
-                                                        userId: widget.userId,
-                                                        initialIndex: 1,
-                                                      ),
-                                                ),
-                                              );
-                                            },
-                                            child: Column(
-                                              children: [
-                                                Text(
-                                                  '${snpshot.data}',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w500,
+                                            ),
+                                            Text(
+                                              '팔로워',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  SizedBox(width: 50),
+                                  StreamBuilder<int>(
+                                    stream: fp.getFollowCountStream(
+                                      widget.userId,
+                                    ),
+                                    builder: (context, snpshot) {
+                                      if (!snpshot.hasData) {
+                                        final teamColor =
+                                            context
+                                                .read<TeamProvider>()
+                                                .selectedTeam
+                                                ?.color ??
+                                            BUTTON;
+                                        return Center(
+                                          child: SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              color: teamColor,
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      return GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  FollowListPage(
+                                                    userId: widget.userId,
+                                                    initialIndex: 1,
                                                   ),
-                                                ),
-                                                Text(
-                                                  '팔로잉',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                              ],
                                             ),
                                           );
                                         },
-                                      ),
-                                    ],
+                                        child: Column(
+                                          children: [
+                                            Text(
+                                              '${snpshot.data}',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            Text(
+                                              '팔로잉',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                    SizedBox(height: 10),
-                    if (widget.userId != FirebaseAuth.instance.currentUser?.uid)
-                      StreamBuilder<bool>(
-                        stream: context
-                            .read<BlockProvider>()
-                            .getBlockedByStream(
-                              FirebaseAuth.instance.currentUser?.uid ?? '',
-                              widget.userId,
-                            ),
-                        builder: (context, snapshot) {
-                          final isBlockedByTarget = snapshot.data ?? false;
-                          return isBlockedByTarget
-                              ? Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
+                  ),
+                  SizedBox(height: 10),
+                  if (widget.userId != FirebaseAuth.instance.currentUser?.uid)
+                    StreamBuilder<bool>(
+                      stream: context.read<BlockProvider>().getBlockedByStream(
+                        FirebaseAuth.instance.currentUser?.uid ?? '',
+                        widget.userId,
+                      ),
+                      builder: (context, snapshot) {
+                        final isBlockedByTarget = snapshot.data ?? false;
+                        return isBlockedByTarget
+                            ? Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: GRAYSCALE_LABEL_100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '이 사용자가 회원님을 차단했습니다',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: GRAYSCALE_LABEL_600,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: GRAYSCALE_LABEL_100,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    '이 사용자가 회원님을 차단했습니다',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: GRAYSCALE_LABEL_600,
-                                    ),
-                                  ),
-                                )
-                              : Row(
+                                ),
+                              )
+                            : Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 10.0,
+                                  right: 10.0,
+                                ),
+                                child: Row(
                                   children: [
                                     Expanded(
                                       child: GestureDetector(
@@ -397,7 +401,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                                 fp.isFollowingUser(
                                                   widget.userId,
                                                 )
-                                                ? GRAYSCALE_LABEL_300
+                                                ? GRAYSCALE_LABEL_100
                                                 : teamColor,
                                             borderRadius: BorderRadius.circular(
                                               8,
@@ -469,7 +473,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                             vertical: 8,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: GRAYSCALE_LABEL_300,
+                                            color: GRAYSCALE_LABEL_100,
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
@@ -488,37 +492,37 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                       ),
                                     ),
                                   ],
-                                );
-                        },
-                      ),
+                                ),
+                              );
+                      },
+                    ),
 
-                    SizedBox(height: 10),
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: BACKGROUND_COLOR,
-                          borderRadius: BorderRadius.circular(10),
+                  SizedBox(height: 10),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: WHITE,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ContainedTabBarView(
+                        tabs: [
+                          Text('게시글', style: TextStyle(color: BLACK)),
+                          Text('마켓', style: TextStyle(color: BLACK)),
+                        ],
+                        tabBarProperties: TabBarProperties(
+                          indicatorColor: teamColor,
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          indicatorWeight: 3.0,
+                          unselectedLabelColor: GRAYSCALE_LABEL_500,
                         ),
-                        child: ContainedTabBarView(
-                          tabs: [
-                            Text('게시글', style: TextStyle(color: BLACK)),
-                            Text('마켓', style: TextStyle(color: BLACK)),
-                          ],
-                          tabBarProperties: TabBarProperties(
-                            indicatorColor: teamColor,
-                            indicatorSize: TabBarIndicatorSize.tab,
-                            indicatorWeight: 3.0,
-                            unselectedLabelColor: GRAYSCALE_LABEL_500,
-                          ),
-                          views: [
-                            UserPostPage(userId: widget.userId),
-                            UserMarketPostPage(userId: widget.userId),
-                          ],
-                        ),
+                        views: [
+                          UserPostPage(userId: widget.userId),
+                          UserMarketPostPage(userId: widget.userId),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
           },

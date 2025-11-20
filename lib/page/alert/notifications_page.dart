@@ -29,6 +29,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
     if (userId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.read<NotificationProvider>().listen(userId);
+        // 페이지 진입시 모든 알림을 읽음 처리
+        context.read<NotificationProvider>().markAllAsRead(userId);
       });
     }
   }

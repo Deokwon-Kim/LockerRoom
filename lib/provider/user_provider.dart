@@ -8,15 +8,15 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide User;
 import 'package:lockerroom/model/user_model.dart';
 
-enum UsernameCheckState { idle, checking, available, duplicated, error }
+enum UserNickNameCheckState { idle, checking, available, duplicated, error }
 
 class UserProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   late var googleSignIn = GoogleSignIn();
 
-  UsernameCheckState _state = UsernameCheckState.idle;
-  UsernameCheckState get state => _state;
+  UserNickNameCheckState _state = UserNickNameCheckState.idle;
+  UserNickNameCheckState get state => _state;
 
   String? _message;
   String? get message => _message;
@@ -40,18 +40,18 @@ class UserProvider extends ChangeNotifier {
   String? get name => _name;
   String? get email => _email;
 
-  void onUserNameChanged(String username) {
+  void onUserNickNameChanged(String username) {
     _debounce?.cancel();
 
     if (username.trim().isEmpty) {
-      _state = UsernameCheckState.idle;
+      _state = UserNickNameCheckState.idle;
       _message = null;
       notifyListeners();
       return;
     }
 
     // 새로운 입력이 들어왔으므로 상태를 idle로 초기화
-    _state = UsernameCheckState.idle;
+    _state = UserNickNameCheckState.idle;
     _message = null;
     notifyListeners();
 
@@ -79,7 +79,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> _checkUserName(String username) async {
-    _state = UsernameCheckState.checking;
+    _state = UserNickNameCheckState.checking;
     _message = '중복 확인 중...';
     notifyListeners();
 
@@ -87,18 +87,19 @@ class UserProvider extends ChangeNotifier {
       final snapshot = await _firestore
           .collection('users')
           .where('userNickName', isEqualTo: username)
+          .where('userNickName', isEqualTo: username)
           .limit(1)
           .get();
 
       if (snapshot.docs.isEmpty) {
-        _state = UsernameCheckState.available;
+        _state = UserNickNameCheckState.available;
         _message = '사용 가능한 닉네임 입니다.';
       } else {
-        _state = UsernameCheckState.duplicated;
+        _state = UserNickNameCheckState.duplicated;
         _message = '이미 사용 중인 닉네임 입니다.';
       }
     } catch (e) {
-      _state = UsernameCheckState.error;
+      _state = UserNickNameCheckState.error;
       _message = '확인 중 오류가 발생했습니다.';
       debugPrint('닉네임 중복 확인 오류: $e');
     }
@@ -153,9 +154,15 @@ class UserProvider extends ChangeNotifier {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+      // UserProvider 상태 즉시 업데이트 (회원가입 직후 name이 표시되도록)
+      _nickname = user.userNickName;
+      _name = user.name;
+      _email = user.useremail;
+
       setSignUpSuccess(true);
       setErrorMessage(null);
       setLoading(false);
+      notifyListeners(); // 상태 변경 알림
       return true;
     } on FirebaseAuthException catch (e) {
       debugPrint('회원가입 오류: $e');
@@ -275,6 +282,21 @@ class UserProvider extends ChangeNotifier {
     _currentUser = FirebaseAuth.instance.currentUser;
 
     _nickname = newNickname;
+    notifyListeners(); // 갱신 알림
+  }
+
+  Future<void> updateName(String newName) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    await FirebaseFirestore.instance.collection('users').doc(uid).update({
+      'name': newName,
+    });
+    await FirebaseAuth.instance.currentUser?.reload();
+
+    _currentUser = FirebaseAuth.instance.currentUser;
+
+    _name = newName;
     notifyListeners(); // 갱신 알림
   }
 

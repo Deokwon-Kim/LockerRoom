@@ -71,10 +71,10 @@ class _NoticePageState extends State<NoticePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: WHITE,
       appBar: AppBar(
-        backgroundColor: BACKGROUND_COLOR,
-        elevation: 0,
+        backgroundColor: WHITE,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: GRAYSCALE_LABEL_950),
           onPressed: () => Navigator.pop(context),

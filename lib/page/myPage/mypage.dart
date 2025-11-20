@@ -165,7 +165,7 @@ class _MypageState extends State<Mypage> {
     final fp = context.watch<FollowProvider>();
 
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: WHITE,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Row(
@@ -201,7 +201,7 @@ class _MypageState extends State<Mypage> {
           ),
         ],
         centerTitle: false,
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: WHITE,
       ),
       body: Center(
         child: Column(
@@ -436,7 +436,7 @@ class _MypageState extends State<Mypage> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: BACKGROUND_COLOR,
+                  color: WHITE,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: ContainedTabBarView(

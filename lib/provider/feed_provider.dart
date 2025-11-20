@@ -94,6 +94,28 @@ class FeedProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  PostModel? getPostById(String postId) {
+    try {
+      return _allPosts.firstWhere((p) => p.id == postId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  void updateLocalPost(PostModel updatedPost) {
+    int index = _allPosts.indexWhere((p) => p.id == updatedPost.id);
+    if (index != -1) {
+      _allPosts[index] = updatedPost;
+    }
+
+    index = _filteredPosts.indexWhere((p) => p.id == updatedPost.id);
+    if (index != -1) {
+      _filteredPosts[index] = updatedPost;
+    }
+
+    notifyListeners();
+  }
+
   Future<void> loadAllUsers() async {
     final snapshot = await FirebaseFirestore.instance.collection('users').get();
     _allUsers = snapshot.docs.map((doc) => UserModel.fromDoc(doc)).toList();
@@ -175,7 +197,17 @@ class FeedProvider extends ChangeNotifier {
 
   void cancelSubscription() {
     _sub?.cancel();
+    _sub = null;
+  }
+
+  void cancelFeedSubscripton() {
+    _sub?.cancel();
+    _sub = null;
+  }
+
+  void cancelRecentPostSubscription() {
     _subB?.cancel();
+    _subB = null;
   }
 
   void cancelAllSubscriptions() {
@@ -208,6 +240,7 @@ class FeedProvider extends ChangeNotifier {
 
     final postRef = _postCollection.doc(post.id);
 
+    bool shouldNotify = false;
     await FirebaseFirestore.instance.runTransaction((tx) async {
       final snap = await tx.get(postRef);
       if (!snap.exists) return;
@@ -221,6 +254,7 @@ class FeedProvider extends ChangeNotifier {
         likedByList.remove(uid);
       } else {
         likedByList.add(uid);
+        shouldNotify = true;
       }
 
       final newLikes = isLiked
@@ -231,6 +265,7 @@ class FeedProvider extends ChangeNotifier {
     });
     notifyListeners();
 
+    if (!shouldNotify) return;
     // 알림 대상 결정
     final targetUserId = postOwnerId;
 

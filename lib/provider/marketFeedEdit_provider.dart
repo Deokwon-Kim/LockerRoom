@@ -20,6 +20,11 @@ class MarketfeededitProvider extends ChangeNotifier {
   bool _isUploading = false;
   bool get isUploading => _isUploading;
 
+  void setUploading(bool value) {
+    _isUploading = value;
+    notifyListeners();
+  }
+
   // 초기화 (기존 게시물 데이터 로드)
   void initializeEdit(MarketPostModel marketPost) {
     _editImageUrls = List.from(marketPost.imageUrls);

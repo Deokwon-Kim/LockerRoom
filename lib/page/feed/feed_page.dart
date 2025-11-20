@@ -148,6 +148,7 @@ class _PostWidgetState extends State<PostWidget> {
   @override
   void initState() {
     super.initState();
+
     _commentProvider = context.read<CommentProvider>();
     _commentProvider.subscribeComments(widget.post.id);
 
@@ -172,6 +173,7 @@ class _PostWidgetState extends State<PostWidget> {
     if (_blockProvider != null && _blockListener != null) {
       _blockProvider!.removeListener(_blockListener!);
     }
+
     super.dispose();
   }
 

@@ -78,15 +78,15 @@ class _UploadPageState extends State<FeedUploadPage> {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: WHITE,
       appBar: AppBar(
         title: const Text(
           '새로운 게시물',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: BACKGROUND_COLOR,
-        elevation: 0,
+        backgroundColor: WHITE,
+        scrolledUnderElevation: 0,
       ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -347,7 +347,7 @@ class _UploadPageState extends State<FeedUploadPage> {
                               await uploadProvider.uploadAndSavePost(
                                 userId: FirebaseAuth.instance.currentUser!.uid,
                                 userNickName: userNickName,
-                                name: name!,
+                                name: name ?? '',
                                 text: _captionController.text,
                               );
                               _captionController.clear();

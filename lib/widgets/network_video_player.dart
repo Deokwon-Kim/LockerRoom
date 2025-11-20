@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lockerroom/provider/team_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:lockerroom/const/color.dart';
@@ -171,6 +173,12 @@ class _NetworkVideoPlayerState extends State<NetworkVideoPlayer>
   }
 
   Widget _buildLoadingWidget() {
+    final selectedTeam = Provider.of<TeamProvider>(
+      context,
+      listen: false,
+    ).selectedTeam;
+    final teamColor = selectedTeam?.color ?? BUTTON;
+
     return Container(
       width: widget.width,
       height: widget.height,
@@ -178,12 +186,12 @@ class _NetworkVideoPlayerState extends State<NetworkVideoPlayer>
         color: Colors.grey[300],
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Column(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: BUTTON, strokeWidth: 2),
-          SizedBox(height: 8),
-          Text(
+          CircularProgressIndicator(color: teamColor, strokeWidth: 2),
+          const SizedBox(height: 8),
+          const Text(
             '동영상 로딩 중...',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),

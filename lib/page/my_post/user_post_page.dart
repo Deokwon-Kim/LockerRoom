@@ -63,7 +63,7 @@ class _UserPostPageState extends State<UserPostPage> {
 
         final imageUrl = (data['profileImage'] as String?) ?? '';
         return Scaffold(
-          backgroundColor: BACKGROUND_COLOR,
+          backgroundColor: WHITE,
           body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: FirebaseFirestore.instance
                 .collection('posts')

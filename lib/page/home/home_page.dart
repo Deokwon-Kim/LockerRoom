@@ -53,13 +53,16 @@ class _HomePageState extends State<HomePage> {
   TeamModel? _lastFetchedTeam;
   BlockProvider? _blockProvider;
   VoidCallback? _blockListener;
+  late final FeedProvider _feedProvider;
 
   @override
   void initState() {
     super.initState();
+    _feedProvider = context.read<FeedProvider>();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<FeedProvider>().listenRecentPosts();
+      _feedProvider.listenRecentPosts();
 
       // BlockProvider와 동기화
       _blockProvider = context.read<BlockProvider>();
@@ -83,6 +86,7 @@ class _HomePageState extends State<HomePage> {
     if (_blockProvider != null && _blockListener != null) {
       _blockProvider!.removeListener(_blockListener!);
     }
+    _feedProvider.cancelRecentPostSubscription();
     super.dispose();
   }
 
@@ -137,14 +141,14 @@ class _HomePageState extends State<HomePage> {
                       badgeAnimation: const badges.BadgeAnimation.slide(
                         animationDuration: Duration(milliseconds: 300),
                       ),
-                      showBadge: ntp.notifications.isNotEmpty,
+                      showBadge: ntp.unreadCount > 0,
                       badgeStyle: const badges.BadgeStyle(
                         badgeColor: RED_DANGER_TEXT_50,
                         padding: EdgeInsets.all(5),
                       ),
                       badgeContent: Text(
-                        '${ntp.notifications.length}',
-                        style: TextStyle(color: WHITE, fontSize: 15),
+                        '${ntp.unreadCount}',
+                        style: TextStyle(color: WHITE, fontSize: 12),
                       ),
                       child: IconButton(
                         onPressed: () {
@@ -229,6 +233,13 @@ class _HomePageState extends State<HomePage> {
                           ? futureGames.first
                           : null;
 
+                      // 특정 팀만 cover로 설정, 나머지는 contain
+                      final teamsWithCover = ['대한민국'];
+                      final imageFit =
+                          teamsWithCover.contains(selectedTeam.name)
+                          ? BoxFit.cover
+                          : BoxFit.contain;
+
                       return Stack(
                         children: [
                           Container(
@@ -238,7 +249,13 @@ class _HomePageState extends State<HomePage> {
                               color: selectedTeam.color,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Image.asset(selectedTeam.logoPath),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.asset(
+                                selectedTeam.logoPath,
+                                fit: imageFit,
+                              ),
+                            ),
                           ),
                           Container(
                             width: double.infinity,

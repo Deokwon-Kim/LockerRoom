@@ -6,11 +6,13 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/attendance_model.dart';
+import 'package:lockerroom/model/schedule_model.dart';
 import 'package:lockerroom/page/intution_record/intution_record_detail_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_upload_page.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/services/schedule_service.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -69,6 +71,26 @@ class IntutionRecordListPage extends StatelessWidget {
     return dateStr;
   }
 
+  // gameId로 스케줄 정보 찾기
+  Future<ScheduleModel?> _findScheduleByGameId(String gameId) async {
+    try {
+      final schedules = await ScheduleService().loadSchedules();
+      return schedules.firstWhere(
+        (s) => s.gameId == gameId,
+        orElse: () => schedules.first, // 임시 더미 반환
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 취소된 경기인지 확인
+  bool _isCancelledGame(ScheduleModel? schedule) {
+    if (schedule == null) return false;
+    final statusUpper = schedule.status.toUpperCase();
+    return schedule.status == '경기취소' || statusUpper.startsWith('CANCELLED');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,7 +99,7 @@ class IntutionRecordListPage extends StatelessWidget {
         backgroundColor: BACKGROUND_COLOR,
         title: Text(
           '나의 직관기록',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         scrolledUnderElevation: 0,
@@ -504,59 +526,6 @@ class IntutionRecordListPage extends StatelessWidget {
                                                 ),
                                               ),
                                             ),
-                                          // Padding(
-                                          //   padding: const EdgeInsets.all(8.0),
-                                          //   child: Row(
-                                          //     mainAxisAlignment:
-                                          //         MainAxisAlignment.center,
-                                          //     children: [
-                                          //       Text(
-                                          //         myTeam,
-                                          //         style: TextStyle(
-                                          //           color: WHITE,
-                                          //           fontSize: 25,
-                                          //           fontWeight: FontWeight.bold,
-                                          //         ),
-                                          //       ),
-                                          //       SizedBox(width: 50),
-                                          //       Text(
-                                          //         '$myScore',
-                                          //         style: TextStyle(
-                                          //           fontSize: 35,
-                                          //           fontWeight: FontWeight.bold,
-                                          //           color: WHITE,
-                                          //         ),
-                                          //       ),
-                                          //       SizedBox(width: 10),
-                                          //       Text(
-                                          //         ':',
-                                          //         style: TextStyle(
-                                          //           color: WHITE,
-                                          //           fontWeight: FontWeight.bold,
-                                          //           fontSize: 25,
-                                          //         ),
-                                          //       ),
-                                          //       SizedBox(width: 10),
-                                          //       Text(
-                                          //         '$oppScore',
-                                          //         style: TextStyle(
-                                          //           fontSize: 35,
-                                          //           fontWeight: FontWeight.bold,
-                                          //           color: WHITE,
-                                          //         ),
-                                          //       ),
-                                          //       SizedBox(width: 50),
-                                          //       Text(
-                                          //         oppTeam,
-                                          //         style: TextStyle(
-                                          //           fontSize: 25,
-                                          //           fontWeight: FontWeight.bold,
-                                          //           color: WHITE,
-                                          //         ),
-                                          //       ),
-                                          //     ],
-                                          //   ),
-                                          // ),
                                         ],
                                       )
                                     : Stack(
@@ -642,62 +611,6 @@ class IntutionRecordListPage extends StatelessWidget {
                                                 ),
                                               ),
                                             ),
-
-                                          // Padding(
-                                          //   padding: const EdgeInsets.only(
-                                          //     top: 10.0,
-                                          //   ),
-                                          //   child: Row(
-                                          //     mainAxisAlignment:
-                                          //         MainAxisAlignment.center,
-                                          //     children: [
-                                          //       Text(
-                                          //         myTeam,
-                                          //         style: TextStyle(
-                                          //           color: WHITE,
-                                          //           fontSize: 25,
-                                          //           fontWeight: FontWeight.bold,
-                                          //         ),
-                                          //       ),
-                                          //       SizedBox(width: 50),
-                                          //       Text(
-                                          //         '$myScore',
-                                          //         style: TextStyle(
-                                          //           fontSize: 35,
-                                          //           fontWeight: FontWeight.bold,
-                                          //           color: WHITE,
-                                          //         ),
-                                          //       ),
-                                          //       SizedBox(width: 10),
-                                          //       Text(
-                                          //         ':',
-                                          //         style: TextStyle(
-                                          //           color: WHITE,
-                                          //           fontWeight: FontWeight.bold,
-                                          //           fontSize: 25,
-                                          //         ),
-                                          //       ),
-                                          //       SizedBox(width: 10),
-                                          //       Text(
-                                          //         '$oppScore',
-                                          //         style: TextStyle(
-                                          //           fontSize: 35,
-                                          //           fontWeight: FontWeight.bold,
-                                          //           color: WHITE,
-                                          //         ),
-                                          //       ),
-                                          //       SizedBox(width: 50),
-                                          //       Text(
-                                          //         oppTeam,
-                                          //         style: TextStyle(
-                                          //           fontSize: 25,
-                                          //           fontWeight: FontWeight.bold,
-                                          //           color: WHITE,
-                                          //         ),
-                                          //       ),
-                                          //     ],
-                                          //   ),
-                                          // ),
                                         ],
                                       ),
                                 Padding(
@@ -710,14 +623,17 @@ class IntutionRecordListPage extends StatelessWidget {
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
-                                          Text(
-                                            '$myScore',
-                                            style: GoogleFonts.roboto(
-                                              fontSize: 35,
-                                              fontWeight: FontWeight.bold,
-                                              color: isWin
-                                                  ? recordedTeamColor
-                                                  : GRAYSCALE_LABEL_500,
+                                          Transform.translate(
+                                            offset: Offset(20, 0),
+                                            child: Text(
+                                              '$myScore',
+                                              style: GoogleFonts.roboto(
+                                                fontSize: 35,
+                                                fontWeight: FontWeight.bold,
+                                                color: isWin
+                                                    ? recordedTeamColor
+                                                    : GRAYSCALE_LABEL_500,
+                                              ),
                                             ),
                                           ),
                                           SizedBox(width: 40),
@@ -749,35 +665,127 @@ class IntutionRecordListPage extends StatelessWidget {
                                             ),
                                           ),
                                           SizedBox(width: 40),
-                                          Text(
-                                            '$oppScore',
-                                            style: GoogleFonts.roboto(
-                                              fontSize: 35,
-                                              fontWeight: FontWeight.bold,
-                                              color: GRAYSCALE_LABEL_500,
+                                          Transform.translate(
+                                            offset: Offset(-20, 0),
+                                            child: Text(
+                                              '$oppScore',
+                                              style: GoogleFonts.roboto(
+                                                fontSize: 35,
+                                                fontWeight: FontWeight.bold,
+                                                color: GRAYSCALE_LABEL_500,
+                                              ),
                                             ),
                                           ),
                                         ],
                                       ),
                                       Transform.translate(
                                         offset: Offset(0, -5),
-                                        child: Column(
-                                          children: [
-                                            Text(
-                                              _formatDate(d['date']),
-                                              style: GoogleFonts.roboto(
-                                                color: GRAYSCALE_LABEL_500,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            Text(
-                                              d['stadium'],
-                                              style: TextStyle(
-                                                color: GRAYSCALE_LABEL_500,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
+                                        child: FutureBuilder<ScheduleModel?>(
+                                          future: _findScheduleByGameId(
+                                            d['gameId'] as String,
+                                          ),
+                                          builder: (context, snapshot) {
+                                            final schedule = snapshot.data;
+                                            return Column(
+                                              children: [
+                                                Text(
+                                                  _formatDate(d['date']),
+                                                  style: GoogleFonts.roboto(
+                                                    color: GRAYSCALE_LABEL_500,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      d['stadium'],
+                                                      style: TextStyle(
+                                                        color:
+                                                            GRAYSCALE_LABEL_500,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                    // DH1, DH2 표시
+                                                    if (schedule?.doubleHeaderNo !=
+                                                            null &&
+                                                        schedule!
+                                                            .doubleHeaderNo!
+                                                            .isNotEmpty) ...[
+                                                      SizedBox(width: 6),
+                                                      Container(
+                                                        padding:
+                                                            EdgeInsets.symmetric(
+                                                              horizontal: 6,
+                                                              vertical: 2,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: BUTTON
+                                                              .withOpacity(0.1),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                4,
+                                                              ),
+                                                          border: Border.all(
+                                                            color: BUTTON
+                                                                .withOpacity(
+                                                                  0.3,
+                                                                ),
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          '${schedule.doubleHeaderNo}',
+                                                          style: TextStyle(
+                                                            fontSize: 10,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            color: BUTTON,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                    // 경기취소 표시
+                                                    if (_isCancelledGame(
+                                                      schedule,
+                                                    )) ...[
+                                                      SizedBox(width: 6),
+                                                      Container(
+                                                        padding:
+                                                            EdgeInsets.symmetric(
+                                                              horizontal: 6,
+                                                              vertical: 2,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color:
+                                                              RED_DANGER_SURFACE_5,
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                4,
+                                                              ),
+                                                          border: Border.all(
+                                                            color:
+                                                                RED_DANGER_BORDER_10,
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          '취소',
+                                                          style: TextStyle(
+                                                            fontSize: 10,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            color:
+                                                                RED_DANGER_TEXT_50,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                              ],
+                                            );
+                                          },
                                         ),
                                       ),
                                     ],

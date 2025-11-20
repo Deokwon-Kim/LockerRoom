@@ -22,7 +22,7 @@ class MypostPage extends StatelessWidget {
     final feedProvider = Provider.of<FeedProvider>(context, listen: false);
 
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: WHITE,
       body: StreamBuilder<List<PostModel>>(
         stream: feedProvider.listenMyPosts(),
         builder: (context, snapshot) {

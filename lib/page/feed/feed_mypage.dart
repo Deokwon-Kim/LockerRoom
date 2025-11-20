@@ -54,6 +54,11 @@ class _FeedMypageState extends State<FeedMypage> {
         widget.targetUserId,
       ),
     );
+    // Future.microtask(
+    //   () => context.read<FollowProvider>().loadFollowingStatus(
+    //     widget.post.userId,
+    //   ),
+    // );
   }
 
   String? extractUrl(String text) {
@@ -71,9 +76,9 @@ class _FeedMypageState extends State<FeedMypage> {
     final isOwner =
         currentUserId != null && widget.post.userId == currentUserId;
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: WHITE,
       appBar: AppBar(
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: WHITE,
         scrolledUnderElevation: 0,
         title: Transform.translate(
           offset: Offset(-20, 0),
@@ -131,12 +136,16 @@ class _FeedMypageState extends State<FeedMypage> {
         ),
         centerTitle: false,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+      body: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+            child: Padding(
+              padding: const EdgeInsets.only(
+                top: 16.0,
+                left: 16.0,
+                right: 16.0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -326,36 +335,42 @@ class _FeedMypageState extends State<FeedMypage> {
                 ],
               ),
             ),
-            SizedBox(height: 10),
-            if (widget.post.userId != FirebaseAuth.instance.currentUser?.uid)
-              if (currentUserId != null)
-                StreamBuilder<bool>(
-                  stream: context.read<BlockProvider>().getBlockedByStream(
-                    currentUserId,
-                    widget.targetUserId,
-                  ),
-                  builder: (context, snapshot) {
-                    final isBlockedByTarget = snapshot.data ?? false;
-                    return isBlockedByTarget
-                        ? Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
+          ),
+          SizedBox(height: 10),
+          if (widget.post.userId != FirebaseAuth.instance.currentUser?.uid)
+            if (currentUserId != null)
+              StreamBuilder<bool>(
+                stream: context.read<BlockProvider>().getBlockedByStream(
+                  currentUserId,
+                  widget.targetUserId,
+                ),
+                builder: (context, snapshot) {
+                  final isBlockedByTarget = snapshot.data ?? false;
+                  return isBlockedByTarget
+                      ? Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: GRAYSCALE_LABEL_100,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '이 사용자가 회원님을 차단했습니다',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: GRAYSCALE_LABEL_600,
                             ),
-                            decoration: BoxDecoration(
-                              color: GRAYSCALE_LABEL_100,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              '이 사용자가 회원님을 차단했습니다',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: GRAYSCALE_LABEL_600,
-                              ),
-                            ),
-                          )
-                        : Row(
+                          ),
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.only(
+                            left: 10.0,
+                            right: 10.0,
+                          ),
+                          child: Row(
                             children: [
                               Expanded(
                                 child: GestureDetector(
@@ -367,7 +382,7 @@ class _FeedMypageState extends State<FeedMypage> {
                                     decoration: BoxDecoration(
                                       color:
                                           fp.isFollowingUser(widget.post.userId)
-                                          ? GRAYSCALE_LABEL_300
+                                          ? GRAYSCALE_LABEL_100
                                           : teamColor,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
@@ -442,7 +457,7 @@ class _FeedMypageState extends State<FeedMypage> {
                                   child: Container(
                                     padding: EdgeInsets.symmetric(vertical: 8),
                                     decoration: BoxDecoration(
-                                      color: GRAYSCALE_LABEL_300,
+                                      color: GRAYSCALE_LABEL_100,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Center(
@@ -459,45 +474,45 @@ class _FeedMypageState extends State<FeedMypage> {
                                 ),
                               ),
                             ],
-                          );
-                  },
-                ),
+                          ),
+                        );
+                },
+              ),
 
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: BACKGROUND_COLOR,
-                  borderRadius: BorderRadius.circular(10),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: WHITE,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: ContainedTabBarView(
+                tabs: [
+                  Text('게시글', style: TextStyle(color: BLACK)),
+                  Text('마켓', style: TextStyle(color: BLACK)),
+                ],
+                tabBarProperties: TabBarProperties(
+                  indicatorColor: teamColor ?? BUTTON,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicatorWeight: 3.0,
+                  unselectedLabelColor: GRAYSCALE_LABEL_500,
                 ),
-                child: ContainedTabBarView(
-                  tabs: [
-                    Text('게시글', style: TextStyle(color: BLACK)),
-                    Text('마켓', style: TextStyle(color: BLACK)),
-                  ],
-                  tabBarProperties: TabBarProperties(
-                    indicatorColor: teamColor ?? BUTTON,
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    indicatorWeight: 3.0,
-                    unselectedLabelColor: GRAYSCALE_LABEL_500,
+                views: [
+                  UserPostsTab(
+                    targetUserId: widget.targetUserId,
+                    postUserId: widget.post.userId,
+                    isOwner: isOwner,
                   ),
-                  views: [
-                    UserPostsTab(
-                      targetUserId: widget.targetUserId,
-                      postUserId: widget.post.userId,
-                      isOwner: isOwner,
-                    ),
-                    UserMarketPostsTab(
-                      targetUserId: widget.targetUserId,
-                      postUserId: widget.post.userId,
-                      isOwner: isOwner,
-                    ),
-                  ],
-                  onChange: (index) => print(index),
-                ),
+                  UserMarketPostsTab(
+                    targetUserId: widget.targetUserId,
+                    postUserId: widget.post.userId,
+                    isOwner: isOwner,
+                  ),
+                ],
+                onChange: (index) => print(index),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1044,7 +1059,7 @@ class UserPostsTab extends StatelessWidget {
                             const Spacer(),
                             if (p.mediaUrls.isNotEmpty)
                               Text(
-                                '${p.mediaUrls.length}개의 ${p.mediaUrls.length == 1 ? "미디어" : "미디어"}',
+                                '${p.mediaUrls.length}개의 ${p.mediaUrls.length == 1 ? "미디어" : "이미지"}',
                                 style: TextStyle(
                                   color: GRAYSCALE_LABEL_500,
                                   fontSize: 13,

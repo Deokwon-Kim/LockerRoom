@@ -23,6 +23,9 @@ class IntutionRecordProvider extends ChangeNotifier {
   String? _myTeamSymple;
   String? _oppTeamSymple;
   String? _todayStr;
+  String? _selectedTeamSympleForRecord;
+  String? _selectedGameIdForRecord;
+  List<ScheduleModel>? _availableGamesForDate;
 
   bool get isLoding => _isLoading;
   bool get saving => _saving;
@@ -30,6 +33,24 @@ class IntutionRecordProvider extends ChangeNotifier {
   String? get myTeamSymple => _myTeamSymple;
   String? get oppTeamSymple => _oppTeamSymple;
   String? get todayStr => _todayStr;
+  String? get selectedTeamSympleForRecord => _selectedTeamSympleForRecord;
+  String? get selectedGameIdForRecord => _selectedGameIdForRecord;
+  List<ScheduleModel>? get availableGamesForDate => _availableGamesForDate;
+  List<ScheduleModel> get gamesForSelectedTeam {
+    final teamSymple = _selectedTeamSympleForRecord ?? _myTeamSymple;
+    if (teamSymple == null || _availableGamesForDate == null) {
+      return const <ScheduleModel>[];
+    }
+    final games =
+        _availableGamesForDate!
+            .where(
+              (game) =>
+                  game.homeTeam == teamSymple || game.awayTeam == teamSymple,
+            )
+            .toList()
+          ..sort((a, b) => a.dateTimeKst.compareTo(b.dateTimeKst));
+    return List.unmodifiable(games);
+  }
 
   @override
   void dispose() {
@@ -44,6 +65,17 @@ class IntutionRecordProvider extends ChangeNotifier {
     final m = dt.month.toString().padLeft(2, '0');
     final d = dt.day.toString().padLeft(2, '0');
     return '$y.$m.$d';
+  }
+
+  DateTime? _parseYyyyMmDd(String? value) {
+    if (value == null || value.isEmpty) return null;
+    final parts = value.split('.');
+    if (parts.length != 3) return null;
+    final year = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final day = int.tryParse(parts[2]);
+    if (year == null || month == null || day == null) return null;
+    return DateTime(year, month, day);
   }
 
   String? _normalizeToCsvTeamName(BuildContext context, String saved) {
@@ -87,13 +119,20 @@ class IntutionRecordProvider extends ChangeNotifier {
 
     if (symple != null) {
       final schedules = await ScheduleService().loadSchedules();
-      final todays = schedules.where((s) => _yyyyMmDd(s.dateTimeKst) == today);
+      final todays = schedules
+          .where((s) => _yyyyMmDd(s.dateTimeKst) == today)
+          .toList();
+
+      todays.sort((a, b) => a.dateTimeKst.compareTo(b.dateTimeKst));
 
       final filtered = todays.where(
         (s) => s.homeTeam == symple || s.awayTeam == symple,
       );
 
-      match = filtered.isNotEmpty ? filtered.first : null;
+      final filteredList = filtered.toList()
+        ..sort((a, b) => a.dateTimeKst.compareTo(b.dateTimeKst));
+
+      match = filteredList.isNotEmpty ? filteredList.first : null;
     }
 
     // 기존기록 있으면 불러오기 (모델 사용)
@@ -111,16 +150,22 @@ class IntutionRecordProvider extends ChangeNotifier {
         if (attendance.memo != null && attendance.memo!.isNotEmpty) {
           memoController.text = attendance.memo!;
         }
-      } else if (match.status == 'COMPLETED') {
-        // 기존기록이 없고 종료된 경기면 실제 경기 결과를 자동으로 업데이트
-        if (match.homeTeam == symple) {
-          // 응원팀이 홈팀인 경우
-          myScoreController.text = match.homeScore.toString();
-          oppScoreContreller.text = match.awayScroe.toString();
-        } else {
-          // 응원팀이 원정팀인 경우
-          myScoreController.text = match.awayScroe.toString();
-          oppScoreContreller.text = match.homeScore.toString();
+      } else {
+        // 종료된 경기 체크 (종료 또는 FINAL)
+        final statusUpper = match.status.toUpperCase();
+        final isCompleted =
+            match.status == '종료' || statusUpper.startsWith('FINAL');
+        if (isCompleted) {
+          // 기존기록이 없고 종료된 경기면 실제 경기 결과를 자동으로 업데이트
+          if (match.homeTeam == symple) {
+            // 응원팀이 홈팀인 경우
+            myScoreController.text = match.homeScore.toString();
+            oppScoreContreller.text = match.awayScroe.toString();
+          } else {
+            // 응원팀이 원정팀인 경우
+            myScoreController.text = match.awayScroe.toString();
+            oppScoreContreller.text = match.homeScore.toString();
+          }
         }
       }
     }
@@ -128,10 +173,132 @@ class IntutionRecordProvider extends ChangeNotifier {
     _todayStr = today;
     _myTeamSymple = symple;
     _todayGame = match;
+    _selectedGameIdForRecord = match?.gameId;
     _oppTeamSymple = (match != null && symple != null)
         ? (match.homeTeam == symple ? match.awayTeam : match.homeTeam)
         : null;
+
+    // 초기에는 선택한 팀을 null로 설정하여 응원팀이 기본으로 표시되도록
+    _selectedTeamSympleForRecord = null;
+
+    // 오늘 날짜의 모든 경기 가져오기
+    final todayDate = DateTime.now();
+    await loadGamesByDate(todayDate);
+
     _isLoading = false;
+    notifyListeners();
+  }
+
+  // 선택한 날짜의 모든 경기 가져오기
+  Future<void> loadGamesByDate(DateTime date) async {
+    final String dateStr = _yyyyMmDd(date);
+    final schedules = await ScheduleService().loadSchedules();
+    final gamesForDate =
+        schedules.where((s) => _yyyyMmDd(s.dateTimeKst) == dateStr).toList()
+          ..sort((a, b) => a.dateTimeKst.compareTo(b.dateTimeKst));
+    _availableGamesForDate = gamesForDate;
+    notifyListeners();
+  }
+
+  // 기록할 팀 선택하기
+  Future<void> selectTeamForRecord(
+    BuildContext context,
+    String teamSymple, {
+    String? gameId,
+  }) async {
+    _selectedTeamSympleForRecord = teamSymple;
+
+    if (_todayStr == null) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    if (_availableGamesForDate == null) {
+      final targetDate = _parseYyyyMmDd(_todayStr);
+      if (targetDate != null) {
+        await loadGamesByDate(targetDate);
+      }
+    }
+
+    List<ScheduleModel> matches = const <ScheduleModel>[];
+    if (_availableGamesForDate != null) {
+      matches =
+          _availableGamesForDate!
+              .where(
+                (s) => s.homeTeam == teamSymple || s.awayTeam == teamSymple,
+              )
+              .toList()
+            ..sort((a, b) => a.dateTimeKst.compareTo(b.dateTimeKst));
+    }
+
+    ScheduleModel? match;
+    if (matches.isNotEmpty) {
+      if (gameId != null) {
+        match = matches.firstWhere(
+          (g) => g.gameId == gameId,
+          orElse: () => matches.first,
+        );
+      } else if (_selectedGameIdForRecord != null) {
+        match = matches.firstWhere(
+          (g) => g.gameId == _selectedGameIdForRecord,
+          orElse: () => matches.first,
+        );
+      } else {
+        match = matches.first;
+      }
+    }
+    _selectedGameIdForRecord = match?.gameId;
+
+    // 점수 입력값 초기화
+    myScoreController.clear();
+    oppScoreContreller.clear();
+    memoController.clear();
+
+    if (match != null) {
+      // 기존 기록 확인
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('attendances')
+          .doc(match.gameId)
+          .get();
+
+      if (doc.exists) {
+        final attendance = AttendanceModel.fromDoc(doc);
+        myScoreController.text = attendance.myScore.toString();
+        oppScoreContreller.text = attendance.opponentScore.toString();
+        if (attendance.memo != null && attendance.memo!.isNotEmpty) {
+          memoController.text = attendance.memo!;
+        }
+      } else {
+        // 종료된 경기 체크 (종료 또는 FINAL)
+        final statusUpper = match.status.toUpperCase();
+        final isCompleted =
+            match.status == '종료' || statusUpper.startsWith('FINAL');
+        if (isCompleted) {
+          // 기존기록이 없고 종료된 경기면 실제 경기 결과를 자동으로 업데이트
+          if (match.homeTeam == teamSymple) {
+            // 선택한 팀이 홈팀인 경우
+            myScoreController.text = match.homeScore.toString();
+            oppScoreContreller.text = match.awayScroe.toString();
+          } else {
+            // 선택한 팀이 원정팀인 경우
+            myScoreController.text = match.awayScroe.toString();
+            oppScoreContreller.text = match.homeScore.toString();
+          }
+        }
+      }
+
+      _todayGame = match;
+      _oppTeamSymple = (match.homeTeam == teamSymple
+          ? match.awayTeam
+          : match.homeTeam);
+    } else {
+      _todayGame = null;
+      _oppTeamSymple = null;
+      _selectedGameIdForRecord = null;
+    }
+
     notifyListeners();
   }
 
@@ -160,13 +327,20 @@ class IntutionRecordProvider extends ChangeNotifier {
     final String dateStr = _yyyyMmDd(date);
     ScheduleModel? match;
 
-    if (_myTeamSymple != null) {
+    // 선택한 팀이 있으면 그 팀의 경기, 없으면 응원팀의 경기
+    final teamToUse = _selectedTeamSympleForRecord ?? _myTeamSymple;
+
+    if (teamToUse != null) {
       final schedules = await ScheduleService().loadSchedules();
-      final inDay = schedules.where((s) => _yyyyMmDd(s.dateTimeKst) == dateStr);
+      final inDay =
+          schedules.where((s) => _yyyyMmDd(s.dateTimeKst) == dateStr).toList()
+            ..sort((a, b) => a.dateTimeKst.compareTo(b.dateTimeKst));
       final filtered = inDay.where(
-        (s) => s.homeTeam == _myTeamSymple || s.awayTeam == _myTeamSymple,
+        (s) => s.homeTeam == teamToUse || s.awayTeam == teamToUse,
       );
-      match = filtered.isNotEmpty ? filtered.first : null;
+      final filteredList = filtered.toList()
+        ..sort((a, b) => a.dateTimeKst.compareTo(b.dateTimeKst));
+      match = filteredList.isNotEmpty ? filteredList.first : null;
     }
 
     // 점수 입력값 초기화 후 기존 기록 프리필 (모델 사용)
@@ -187,26 +361,37 @@ class IntutionRecordProvider extends ChangeNotifier {
         if (attendance.memo != null && attendance.memo!.isNotEmpty) {
           memoController.text = attendance.memo!;
         }
-      } else if (match.status == 'COMPLETED' && _myTeamSymple != null) {
-        // 기존기록이 없고 종료된 경기면 실제 경기 결과를 자동으로 업데이트
-        if (match.homeTeam == _myTeamSymple) {
-          // 응원팀이 홈팀인 경우
-          myScoreController.text = match.homeScore.toString();
-          oppScoreContreller.text = match.awayScroe.toString();
-        } else {
-          // 응원팀이 원정팀인 경우
-          myScoreController.text = match.awayScroe.toString();
-          oppScoreContreller.text = match.homeScore.toString();
+      } else {
+        // 종료된 경기 체크 (종료 또는 FINAL)
+        final teamToUse = _selectedTeamSympleForRecord ?? _myTeamSymple;
+        if (teamToUse != null) {
+          final statusUpper = match.status.toUpperCase();
+          final isCompleted =
+              match.status == '종료' || statusUpper.startsWith('FINAL');
+          if (isCompleted) {
+            // 기존기록이 없고 종료된 경기면 실제 경기 결과를 자동으로 업데이트
+            if (match.homeTeam == teamToUse) {
+              // 선택한 팀이 홈팀인 경우
+              myScoreController.text = match.homeScore.toString();
+              oppScoreContreller.text = match.awayScroe.toString();
+            } else {
+              // 선택한 팀이 원정팀인 경우
+              myScoreController.text = match.awayScroe.toString();
+              oppScoreContreller.text = match.homeScore.toString();
+            }
+          }
         }
       }
     }
 
     _todayStr = dateStr;
     _todayGame = match;
-    if (_myTeamSymple != null) {
-      _oppTeamSymple = (match != null)
-          ? (match.homeTeam == _myTeamSymple ? match.awayTeam : match.homeTeam)
-          : null;
+    _selectedGameIdForRecord = match?.gameId;
+    final teamToUseForOpp = _selectedTeamSympleForRecord ?? _myTeamSymple;
+    if (teamToUseForOpp != null && match != null) {
+      _oppTeamSymple = (match.homeTeam == teamToUseForOpp
+          ? match.awayTeam
+          : match.homeTeam);
     } else {
       _oppTeamSymple = null;
     }
@@ -222,7 +407,9 @@ class IntutionRecordProvider extends ChangeNotifier {
   }
 
   Future<bool> save(BuildContext context) async {
-    if (_todayGame == null || _myTeamSymple == null || _todayStr == null)
+    // 선택한 팀이 있으면 그 팀 사용, 없으면 응원팀 사용
+    final teamToUse = _selectedTeamSympleForRecord ?? _myTeamSymple;
+    if (_todayGame == null || teamToUse == null || _todayStr == null)
       return false;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return false;
@@ -258,6 +445,10 @@ class IntutionRecordProvider extends ChangeNotifier {
       }
 
       // 모델 생성 및 저장
+      final teamToUse = _selectedTeamSympleForRecord ?? _myTeamSymple!;
+      final oppTeam =
+          _oppTeamSymple ?? (g.homeTeam == teamToUse ? g.awayTeam : g.homeTeam);
+
       final attendance = AttendanceModel(
         gameId: g.gameId,
         season: g.season,
@@ -267,8 +458,8 @@ class IntutionRecordProvider extends ChangeNotifier {
         stadium: g.stadium,
         homeTeam: g.homeTeam,
         awayTeam: g.awayTeam,
-        myTeam: _myTeamSymple!,
-        oppTeam: _oppTeamSymple,
+        myTeam: teamToUse,
+        oppTeam: oppTeam,
         myScore: myScore,
         opponentScore: oppScore,
         imageUrl: imageUrl,
@@ -331,6 +522,13 @@ class IntutionRecordProvider extends ChangeNotifier {
     _saving = false;
     _selectedImage = null;
     _shouldDeleteImage = false;
+    notifyListeners();
+  }
+
+  // 팀 선택 리셋 (응원팀으로 되돌리기)
+  void resetTeamSelection() {
+    _selectedTeamSympleForRecord = null;
+    _selectedGameIdForRecord = null;
     notifyListeners();
   }
 

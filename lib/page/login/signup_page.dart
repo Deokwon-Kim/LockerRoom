@@ -408,7 +408,7 @@ class _SignupPageState extends State<SignupPage> {
     bool isNicknameValid =
         nickname.isNotEmpty &&
         byteLength >= 6 &&
-        userProvider.state == UsernameCheckState.available;
+        userProvider.state == UserNickNameCheckState.available;
 
     setState(() {
       _allFieldsFilled =
@@ -777,7 +777,7 @@ class _SignupPageState extends State<SignupPage> {
             ),
             onChanged: (value) {
               _validateNickname();
-              context.read<UserProvider>().onUserNameChanged(value);
+              context.read<UserProvider>().onUserNickNameChanged(value);
             },
           ),
         ),
@@ -808,9 +808,9 @@ class _SignupPageState extends State<SignupPage> {
 
     // 바이트 길이 충분 → 중복 확인 상태 표시
     switch (userProvider.state) {
-      case UsernameCheckState.idle:
+      case UserNickNameCheckState.idle:
         return const Text('닉네임을 확인 중입니다...');
-      case UsernameCheckState.checking:
+      case UserNickNameCheckState.checking:
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -823,17 +823,17 @@ class _SignupPageState extends State<SignupPage> {
             const Text('중복 확인 중...'),
           ],
         );
-      case UsernameCheckState.available:
+      case UserNickNameCheckState.available:
         return Text(
           userProvider.message ?? '사용 가능한 닉네임입니다.',
           style: const TextStyle(color: Colors.green),
         );
-      case UsernameCheckState.duplicated:
+      case UserNickNameCheckState.duplicated:
         return Text(
           userProvider.message ?? '이미 사용 중인 닉네임입니다.',
           style: const TextStyle(color: Colors.red),
         );
-      case UsernameCheckState.error:
+      case UserNickNameCheckState.error:
         return Text(
           userProvider.message ?? '확인 중 오류가 발생했습니다.',
           style: const TextStyle(color: Colors.orange),

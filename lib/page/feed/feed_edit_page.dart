@@ -4,7 +4,8 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/feed/fullscreen_image_viewer.dart';
 import 'package:lockerroom/page/feed/fullscreen_video_player.dart';
-import 'package:lockerroom/provider/feedEdit_provider.dart';
+import 'package:lockerroom/provider/feed_edit_provider.dart';
+import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
@@ -72,17 +73,30 @@ class _FeedEditPageState extends State<FeedEditPage> {
           ),
         ),
         actions: [
-          Consumer2<FeedEditProvider, TeamProvider>(
-            builder: (context, feedEditProvider, tp, child) {
+          Consumer3<FeedEditProvider, FeedProvider, TeamProvider>(
+            builder: (context, feedEditProvider, feedProvider, tp, child) {
               return TextButton(
                 onPressed: feedEditProvider.isUploading
                     ? null
                     : () async {
+                        feedEditProvider.setUploading(true);
+
                         final success = await feedEditProvider.updatePost(
                           postId: widget.post.id,
                           newText: _captionEditController.text,
                         );
+
+                        feedEditProvider.setUploading(false);
+
                         if (success) {
+                          final updatedPost = widget.post.copyWith(
+                            text: _captionEditController.text,
+                            mediaUrls: feedEditProvider.editableMediaUrls,
+                            updatedAt: DateTime.now(),
+                          );
+
+                          feedProvider.updateLocalPost(updatedPost);
+
                           Navigator.pop(context);
                           toastification.show(
                             context: context,
