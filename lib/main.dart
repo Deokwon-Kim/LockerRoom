@@ -13,7 +13,7 @@ import 'package:lockerroom/page/legal/privacy_policy_page.dart';
 import 'package:lockerroom/page/legal/terms_of_service_page.dart';
 import 'package:lockerroom/page/login/signup_page.dart';
 import 'package:lockerroom/page/login/social_login_page.dart';
-import 'package:lockerroom/page/login/social_profile_setting.dart';
+import 'package:lockerroom/page/login/social_profile_setting_page.dart';
 import 'package:lockerroom/page/my_post/likedPosts_page.dart';
 import 'package:lockerroom/page/notice/notice_list_page.dart';
 import 'package:lockerroom/page/setting/change_password_page.dart';
@@ -290,7 +290,7 @@ class AuthWrapper extends StatelessWidget {
               final hasName =
                   data['name'] != null && (data['name'] as String).isNotEmpty;
               if (!hasNickName || !hasName) {
-                return const SocialProfileSetting();
+                return const SocialProfileSettingPage();
               }
 
               final doc = userSnap.data!;
