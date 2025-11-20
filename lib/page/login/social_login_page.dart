@@ -1,11 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/login/login_page.dart';
 import 'package:lockerroom/provider/social_login_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
+import 'package:lockerroom/services/navigation_service.dart';
 import 'package:provider/provider.dart';
 
 class SocialLoginPage extends StatelessWidget {
@@ -84,7 +83,7 @@ class SocialLoginPage extends StatelessWidget {
                     height: 58,
                     decoration: BoxDecoration(
                       color: WHITE,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -112,7 +111,7 @@ class SocialLoginPage extends StatelessWidget {
                     height: 58,
                     decoration: BoxDecoration(
                       color: Color(0xff1178F2),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -142,7 +141,7 @@ class SocialLoginPage extends StatelessWidget {
                     height: 58,
                     decoration: BoxDecoration(
                       color: BLACK,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -163,27 +162,37 @@ class SocialLoginPage extends StatelessWidget {
                 SizedBox(height: 10),
                 GestureDetector(
                   onTap: () async {
-                    Center(child: CircularProgressIndicator());
                     try {
+                      // 로딩 표시
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => Center(
+                          child: CircularProgressIndicator(color: BUTTON),
+                        ),
+                      );
+
                       await socialProvider.kakaoLogin();
 
+                      // navigatorKey를 사용하여 다이얼로그 확실히 닫기
+                      navigatorKey.currentState?.pop();
+
+                      // AuthWrapper의 StreamBuilder가 자동으로 재빌드되어 적절한 화면 표시
+                    } catch (e) {
+                      print('카카오 로그인 실패 :$e');
+                      // 로딩 닫기
                       if (context.mounted) {
                         Navigator.pop(context);
                       }
 
-                      final currentUser = FirebaseAuth.instance.currentUser;
-                      if (currentUser == null) return;
-
-                      await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(currentUser.uid)
-                          .get();
-
-                      if (!context.mounted) return;
-                    } catch (e) {
-                      print('카카오 로그인 실패 :$e');
+                      // 에러 메시지 표시
                       if (context.mounted) {
-                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('로그인에 실패했습니다. 다시 시도해주세요.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
                       }
                     }
                   },
@@ -225,7 +234,7 @@ class SocialLoginPage extends StatelessWidget {
                     height: 58,
                     decoration: BoxDecoration(
                       color: WHITE,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,

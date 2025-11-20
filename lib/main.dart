@@ -11,7 +11,6 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
 import 'package:lockerroom/page/legal/privacy_policy_page.dart';
 import 'package:lockerroom/page/legal/terms_of_service_page.dart';
-import 'package:lockerroom/page/login/login_page.dart';
 import 'package:lockerroom/page/login/signup_page.dart';
 import 'package:lockerroom/page/login/social_login_page.dart';
 import 'package:lockerroom/page/login/social_profile_setting.dart';
@@ -278,9 +277,12 @@ class AuthWrapper extends StatelessWidget {
                 );
               }
               final data = userSnap.data?.data() ?? {};
-              final isProfileCompleted =
-                  data['isProfileCompleted'] as bool? ?? false;
-              if (!isProfileCompleted) {
+              final hasNickName =
+                  data['userNickName'] != null &&
+                  (data['userNickName'] as String).isNotEmpty;
+              final hasName =
+                  data['name'] != null && (data['name'] as String).isNotEmpty;
+              if (!hasNickName || !hasName) {
                 return const SocialProfileSetting();
               }
 
