@@ -124,44 +124,49 @@ class _TermsGatePageState extends State<TermsGatePage> {
                     '불법/유해 콘텐츠와 학대·혐오 표출, 괴롭힘, 스팸·사기, 저작권 침해에 무관용. 위반 시 게시물 삭제·계정 정지 또는 영구 차단.',
               ),
               const Spacer(),
-              GestureDetector(
-                onTap: () async {
-                  if (!allChecked) return;
-                  await _saveAgreements();
-                  final uid = FirebaseAuth.instance.currentUser?.uid;
-                  if (!mounted || uid == null) return;
-                  final doc = await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(uid)
-                      .get();
-                  final team = doc.data()?['team'] as String?;
-                  if (!mounted) return;
-                  if (team != null && team.isNotEmpty) {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const BottomTabBar()),
-                      (route) => false,
-                    );
-                  } else {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const TeamSelectPage()),
-                      (route) => false,
-                    );
-                  }
-                },
-                child: Container(
-                  alignment: Alignment.center,
-                  width: double.infinity,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: allChecked ? BUTTON : Colors.grey,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '동의하고 계속',
-                    style: TextStyle(
-                      color: WHITE,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20.0),
+                child: GestureDetector(
+                  onTap: () async {
+                    if (!allChecked) return;
+                    await _saveAgreements();
+                    final uid = FirebaseAuth.instance.currentUser?.uid;
+                    if (!mounted || uid == null) return;
+                    final doc = await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(uid)
+                        .get();
+                    final team = doc.data()?['team'] as String?;
+                    if (!mounted) return;
+                    if (team != null && team.isNotEmpty) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (_) => const BottomTabBar()),
+                        (route) => false,
+                      );
+                    } else {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => const TeamSelectPage(),
+                        ),
+                        (route) => false,
+                      );
+                    }
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    width: double.infinity,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: allChecked ? BUTTON : Colors.grey,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '동의하고 계속',
+                      style: TextStyle(
+                        color: WHITE,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
                   ),
                 ),
