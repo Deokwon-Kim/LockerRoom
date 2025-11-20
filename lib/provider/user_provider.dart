@@ -86,7 +86,7 @@ class UserProvider extends ChangeNotifier {
     try {
       final snapshot = await _firestore
           .collection('users')
-          .where('username', isEqualTo: username)
+          .where('userNickName', isEqualTo: username)
           .limit(1)
           .get();
 
@@ -276,6 +276,60 @@ class UserProvider extends ChangeNotifier {
 
     _nickname = newNickname;
     notifyListeners(); // 갱신 알림
+  }
+
+  // 카카오 연동해제
+  Future<void> deleteKakaoAccount() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw FirebaseAuthException(
+          code: 'no-user',
+          message: '사용자가 로그인 되어 있지 않습니다.',
+        );
+      }
+
+      final uid = user.uid;
+
+      // 1. 카카오 연동 해제
+      try {
+        await UserApi.instance.unlink();
+      } catch (e) {
+        debugPrint('카카오 unlink 실패(이미 해제일 수 있음): $e');
+      }
+
+      // 2. Firestore/Storage 등 사용자 데이터 삭제
+      await _deleteUserData(uid);
+
+      // 3. Firebase Auth 계정 삭제 (재인증 필요 시 처리)
+      try {
+        await user.delete();
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'requires-recent-login') {
+          final provider = OAuthProvider('oidc.thebase'); // 실제 Provider ID 사용
+          final token = await UserApi.instance.loginWithKakaoAccount();
+          final credential = provider.credential(
+            idToken: token.idToken,
+            accessToken: token.accessToken,
+          );
+          await user.reauthenticateWithCredential(credential);
+          await user.delete();
+        } else {
+          rethrow;
+        }
+      }
+
+      clearUserData();
+    } catch (e) {
+      debugPrint('카카오 계정 탈퇴 중 오류: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // 일반 이메일 계정 회원탈퇴

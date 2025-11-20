@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/page/login/terms_gate_page.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -72,22 +75,6 @@ class _SocialProfileSettingState extends State<SocialProfileSetting> {
         _nameErrorMessage = '';
       }
     });
-  }
-
-  void _checkTextAndValidate() {
-    // 입력 필드에 텍스트 존재 여부 상태는 제거됨
-
-    // 각 필드별 유효성 검사
-    if (_currentFocusField == 'nickname' ||
-        _nickNameController.text.isNotEmpty) {
-      _validateNickname();
-    }
-
-    if (_currentFocusField == 'name' || _nameController.text.isNotEmpty) {
-      _validateName();
-    }
-    // 모든 필드 확인
-    _checkFields();
   }
 
   // 현재 표시할 에러 메시지 가져오기
@@ -214,43 +201,65 @@ class _SocialProfileSettingState extends State<SocialProfileSetting> {
               ),
             ),
             Spacer(),
-            SizedBox(
-              width: double.infinity,
-              height: 48.0,
-              child: Consumer<UserProvider>(
-                builder: (context, userProvider, child) {
-                  return ElevatedButton(
-                    onPressed: () {},
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20.0),
+              child: SizedBox(
+                width: double.infinity,
+                height: 58.0,
+                child: Consumer<UserProvider>(
+                  builder: (context, userProvider, child) {
+                    return ElevatedButton(
+                      onPressed: () async {
+                        final currentUser = FirebaseAuth.instance.currentUser;
+                        if (currentUser != null) {
+                          final userDoc = FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(currentUser.uid);
+                          await userDoc.set({
+                            'userNickName': _nickNameController.text,
+                            'name': _nameController.text,
+                            'isProfileCompleted': true,
+                          }, SetOptions(merge: true));
+                          if (!mounted) return;
+                          await context.read<UserProvider>().loadNickname();
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (context) => TermsGatePage(),
+                            ),
+                          );
+                        }
+                      },
 
-                    style: ElevatedButton.styleFrom(
-                      overlayColor: Colors.transparent,
-                      backgroundColor: BUTTON,
-                      disabledBackgroundColor: GRAYSCALE_LABEL_300,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8.0),
+                      style: ElevatedButton.styleFrom(
+                        overlayColor: Colors.transparent,
+                        backgroundColor: BUTTON,
+                        disabledBackgroundColor: GRAYSCALE_LABEL_300,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
                       ),
-                    ),
-                    child: userProvider.isLoading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 3,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
+                      child: userProvider.isLoading
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Text(
+                              '회원가입',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16.0,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          )
-                        : const Text(
-                            '회원가입',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16.0,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ],

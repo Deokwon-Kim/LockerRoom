@@ -1,19 +1,48 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide User;
 
 class SocialLoginProvider extends ChangeNotifier {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  User? _currentUser;
   Future<void> kakaoLogin() async {
     if (await isKakaoTalkInstalled()) {
       try {
-        var provider = OAuthProvider('oidc.thbase');
+        var provider = OAuthProvider('oidc.thebase');
         OAuthToken token = await UserApi.instance.loginWithKakaoTalk();
         var credential = provider.credential(
           idToken: token.idToken,
           accessToken: token.accessToken,
         );
-        FirebaseAuth.instance.signInWithCredential(credential);
+
+        final userCredential = await FirebaseAuth.instance.signInWithCredential(
+          credential,
+        );
+
+        // 현재 사용자 정보 업데이트
+        _currentUser = userCredential.user;
+
+        // Firestore에 유저 정보 저장
+        if (_currentUser != null) {
+          final userDoc = _firestore.collection('users').doc(_currentUser!.uid);
+          final docSnapshot = await userDoc.get();
+
+          if (!docSnapshot.exists) {
+            // 최초 로그인 시에만 저정
+            final user = await UserApi.instance.me();
+            final kakaoAccount = user.kakaoAccount;
+            String? kakaoEmail = kakaoAccount?.email;
+            await userDoc.set({
+              'uid': _currentUser!.uid,
+              'email': kakaoEmail ?? '',
+              'isProfileCompleted': false,
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+          }
+        }
+
         print('카카오톡으로 로그인 성공');
       } catch (error) {
         print('카카오톡으로 로그인 실패 $error');
@@ -31,7 +60,32 @@ class SocialLoginProvider extends ChangeNotifier {
             idToken: token.idToken,
             accessToken: token.accessToken,
           );
-          FirebaseAuth.instance.signInWithCredential(credential);
+          final userCredential = await FirebaseAuth.instance
+              .signInWithCredential(credential);
+
+          // 현재 사용자 정보 업데이트
+          _currentUser = userCredential.user;
+
+          // Firestore에 유저 정보 저장
+          if (_currentUser != null) {
+            final userDoc = _firestore
+                .collection('users')
+                .doc(_currentUser!.uid);
+            final docSnapshot = await userDoc.get();
+
+            if (!docSnapshot.exists) {
+              // 최초 로그인 시에만 저정
+              final user = await UserApi.instance.me();
+              final kakaoAccount = user.kakaoAccount;
+              String? kakaoEmail = kakaoAccount?.email;
+              await userDoc.set({
+                'uid': _currentUser!.uid,
+                'email': kakaoEmail ?? '',
+                'isProfileCompleted': false,
+                'createdAt': FieldValue.serverTimestamp(),
+              });
+            }
+          }
           print('카카오계정으로 로그인 성공');
         } catch (error) {
           print('카카오계정으로 로그인 실패 $error');
@@ -45,7 +99,31 @@ class SocialLoginProvider extends ChangeNotifier {
           idToken: token.idToken,
           accessToken: token.accessToken,
         );
-        FirebaseAuth.instance.signInWithCredential(credential);
+        final userCredential = await FirebaseAuth.instance.signInWithCredential(
+          credential,
+        );
+
+        // 현재 사용자 정보 업데이트
+        _currentUser = userCredential.user;
+
+        // Firestore에 유저 정보 저장
+        if (_currentUser != null) {
+          final userDoc = _firestore.collection('users').doc(_currentUser!.uid);
+          final docSnapshot = await userDoc.get();
+
+          if (!docSnapshot.exists) {
+            // 최초 로그인 시에만 저정
+            final user = await UserApi.instance.me();
+            final kakaoAccount = user.kakaoAccount;
+            String? kakaoEmail = kakaoAccount?.email;
+            await userDoc.set({
+              'uid': _currentUser!.uid,
+              'email': kakaoEmail ?? '',
+              'isProfileCompleted': false,
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+          }
+        }
         print('카카오계정으로 로그인 성공');
       } catch (error) {
         print('카카오계정으로 로그인 실패 $error');

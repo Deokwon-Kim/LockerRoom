@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
@@ -69,9 +70,19 @@ class CustormerCenterPage extends StatelessWidget {
               ),
               _buildSettingItem(
                 text: '회원탈퇴',
+
                 onTap: () async {
-                  final password = await _showPasswordDialog(context);
-                  if (password == null || password.isEmpty) return;
+                  final user = FirebaseAuth.instance.currentUser;
+                  final providers =
+                      user?.providerData.map((p) => p.providerId).toList() ??
+                      [];
+                  final isKakaoUser = providers.contains('oidc.thebase');
+
+                  String? password;
+                  if (!isKakaoUser) {
+                    password = await _showPasswordDialog(context);
+                    if (password == null || password.isEmpty) return;
+                  }
 
                   try {
                     // print('=== 회원탈퇴 시작: 모든 구독 취소 ===');
@@ -88,59 +99,51 @@ class CustormerCenterPage extends StatelessWidget {
                     } catch (_) {}
 
                     try {
+                      context.read<CommentProvider>().cancelAllSubscriptions();
+                      context.read<FeedProvider>().cancelAllSubscriptions();
                       context
                           .read<MarketFeedProvider>()
                           .cancelAllSubscriptions();
-                      // print('✓ MarketFeedProvider 구독 취소됨');
-                    } catch (_) {}
-
-                    try {
                       context.read<ProfileProvider>().cancelAllSubscriptions();
-                      // print('✓ ProfileProvider 구독 취소됨');
-                    } catch (_) {}
-
-                    try {
                       context.read<NotificationProvider>().cancel();
-                      // print('✓ NotificationProvider 구독 취소됨');
-                    } catch (_) {}
-
-                    try {
                       context.read<BlockProvider>().cancel();
-                      // print('✓ BlockProvider 구독 취소됨');
-                    } catch (_) {}
 
-                    // 2. 회원탈퇴 (데이터 삭제 + Auth 삭제)
-                    // print('회원탈퇴 시작...');
-                    await up.deleteEmailAccount(password);
-                    // print('✓ 회원탈퇴 완료');
+                      if (isKakaoUser) {
+                        await up.deleteKakaoAccount();
+                      } else {
+                        await up.deleteEmailAccount(password!);
+                      }
 
-                    toastification.show(
-                      context: context,
-                      type: ToastificationType.success,
-                      alignment: Alignment.bottomCenter,
-                      autoCloseDuration: Duration(seconds: 2),
-                      title: Text('회원 탈퇴 완료'),
-                    );
+                      toastification.show(
+                        context: context,
+                        type: ToastificationType.success,
+                        alignment: Alignment.bottomCenter,
+                        autoCloseDuration: Duration(seconds: 2),
+                        title: Text('회원 탈퇴 완료'),
+                      );
 
-                    // 3. AuthWrapper로 돌아가기
-                    if (context.mounted) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => const AuthWrapper(),
-                        ),
-                        (route) => false,
+                      // 3. AuthWrapper로 돌아가기
+                      if (context.mounted) {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => const AuthWrapper(),
+                          ),
+                          (route) => false,
+                        );
+                      }
+                    } catch (e) {
+                      // print('회원탈퇴 에러: $e');
+                      toastification.show(
+                        context: context,
+                        type: ToastificationType.error,
+                        alignment: Alignment.bottomCenter,
+                        autoCloseDuration: Duration(seconds: 2),
+                        title: Text('회원 탈퇴 실패: ${e.toString()}'),
                       );
                     }
-                  } catch (e) {
-                    // print('회원탈퇴 에러: $e');
-                    toastification.show(
-                      context: context,
-                      type: ToastificationType.error,
-                      alignment: Alignment.bottomCenter,
-                      autoCloseDuration: Duration(seconds: 2),
-                      title: Text('회원 탈퇴 실패: ${e.toString()}'),
-                    );
-                  }
+
+                    // print('✓ BlockProvider 구독 취소됨');
+                  } catch (_) {}
                 },
               ),
             ],

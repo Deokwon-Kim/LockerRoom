@@ -31,19 +31,11 @@ class _MypageState extends State<Mypage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       // 프로필 이미지 로드
-      Future.microtask(
-        () => Provider.of<ProfileProvider>(
-          context,
-          listen: false,
-        ).loadProfileImage(user.uid),
-      );
-      // 팀 정보 로드
-      Future.microtask(
-        () => Provider.of<TeamProvider>(
-          context,
-          listen: false,
-        ).loadTeam(user.uid),
-      );
+      Future.microtask(() async {
+        await context.read<ProfileProvider>().loadProfileImage(user.uid);
+        await context.read<TeamProvider>().loadTeam(user.uid);
+        await context.read<UserProvider>().loadNickname();
+      });
     }
   }
 

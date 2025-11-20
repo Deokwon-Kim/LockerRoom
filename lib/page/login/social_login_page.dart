@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
@@ -161,36 +163,29 @@ class SocialLoginPage extends StatelessWidget {
                 SizedBox(height: 10),
                 GestureDetector(
                   onTap: () async {
+                    Center(child: CircularProgressIndicator());
                     try {
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (context) =>
-                            Center(child: CircularProgressIndicator()),
-                      );
-
                       await socialProvider.kakaoLogin();
 
                       if (context.mounted) {
                         Navigator.pop(context);
                       }
 
-                      if (context.mounted) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BottomTabBar(),
-                          ),
-                        );
-                      }
+                      final currentUser = FirebaseAuth.instance.currentUser;
+                      if (currentUser == null) return;
+
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(currentUser.uid)
+                          .get();
+
+                      if (!context.mounted) return;
                     } catch (e) {
                       print('카카오 로그인 실패 :$e');
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
                     }
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => BottomTabBar()),
-                    );
                   },
                   child: Image.asset(
                     'assets/images/kakao_login_large_wide.png',

@@ -191,7 +191,7 @@ class MyApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
-        home: const SocialProfileSetting(),
+        home: const AuthWrapper(),
         routes: {
           'signUp': (context) => const SignupPage(),
           'signIn': (context) => const SocialLoginPage(),
@@ -261,29 +261,34 @@ class AuthWrapper extends StatelessWidget {
             }
           });
           final user = snapshot.data!;
-          return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            future: FirebaseFirestore.instance
+          return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
                 .collection('users')
                 .doc(user.uid)
-                .get(),
+                .snapshots(),
             builder: (context, userSnap) {
               if (userSnap.connectionState == ConnectionState.waiting) {
                 return Center(
                   child: CircularProgressIndicator(color: selectedColor),
                 );
               }
-              if (userSnap.hasError) {
-                return const Center(child: Text('유저 정보를 불러오지 못했습니다.'));
+              if (!userSnap.hasData || userSnap.data == null) {
+                return Center(
+                  child: CircularProgressIndicator(color: selectedColor),
+                );
+              }
+              final data = userSnap.data?.data() ?? {};
+              final isProfileCompleted =
+                  data['isProfileCompleted'] as bool? ?? false;
+              if (!isProfileCompleted) {
+                return const SocialProfileSetting();
               }
 
-              // 사용자 데이터가 없거나 비어있으면 TeamSelectPage로 이동
-              if (!userSnap.hasData ||
-                  userSnap.data == null ||
-                  !userSnap.data!.exists) {
+              final doc = userSnap.data!;
+              if (!doc.exists) {
                 return const TeamSelectPage();
               }
 
-              final data = userSnap.data?.data() ?? {};
               final savedTeamName = data['team'] as String?;
               final agreedTermsAt = data['agreedTermsAt'];
               final agreedPolicyAt = data['agreedPolicyAt'];
@@ -320,12 +325,24 @@ class AuthWrapper extends StatelessWidget {
                 });
                 return const BottomTabBar();
               } else {
-                return const TeamSelectPage();
+                final route = ModalRoute.of(context);
+                final isCurrentRoute = route?.isCurrent ?? false;
+                if (isCurrentRoute) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => const TeamSelectPage(),
+                        settings: const RouteSettings(name: 'team_select'),
+                      ),
+                    );
+                  });
+                }
+                return const SizedBox.shrink();
               }
             },
           );
         } else {
-          return const LoginPage();
+          return const SocialLoginPage();
         }
       },
     );
