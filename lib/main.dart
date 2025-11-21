@@ -284,12 +284,25 @@ class AuthWrapper extends StatelessWidget {
                 );
               }
               final data = userSnap.data?.data() ?? {};
+
+              // 디버깅: 필드 값 확인
+              print('=== AuthWrapper 디버깅 ===');
+              print('userNickName: ${data['userNickName']}');
+              print('name: ${data['name']}');
+              print('전체 데이터: $data');
+              print('=======================');
+
               final hasNickName =
                   data['userNickName'] != null &&
                   (data['userNickName'] as String).isNotEmpty;
               final hasName =
                   data['name'] != null && (data['name'] as String).isNotEmpty;
+
+              print('hasNickName: $hasNickName');
+              print('hasName: $hasName');
+
               if (!hasNickName || !hasName) {
+                print('프로필 설정 화면으로 이동');
                 return const SocialProfileSettingPage();
               }
 
