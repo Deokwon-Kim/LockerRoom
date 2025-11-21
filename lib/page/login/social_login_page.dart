@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/login/login_page.dart';
@@ -101,61 +103,104 @@ class SocialLoginPage extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 10),
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    width: double.infinity,
-                    height: 58,
-                    decoration: BoxDecoration(
-                      color: Color(0xff1178F2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          'assets/images/logo/facebook.png',
-                          height: 30,
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          '페이스북으로 시작하기',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: WHITE,
+
+                // GestureDetector(
+                //   onTap: () {},
+                //   child: Container(
+                //     width: double.infinity,
+                //     height: 58,
+                //     decoration: BoxDecoration(
+                //       color: Color(0xff03c75a),
+                //       borderRadius: BorderRadius.circular(8),
+                //     ),
+                //     child: Row(
+                //       mainAxisAlignment: MainAxisAlignment.center,
+                //       children: [
+                //         Image.asset('assets/images/naver.png', height: 30),
+                //         SizedBox(width: 10),
+                //         Text(
+                //           '네이버로 시작하기',
+                //           style: TextStyle(
+                //             fontSize: 15,
+                //             fontWeight: FontWeight.bold,
+                //             color: WHITE,
+                //           ),
+                //         ),
+                //       ],
+                //     ),
+                //   ),
+                // ),
+                if (Platform.isIOS) ...[
+                  SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () async {
+                      try {
+                        // 로딩 표시
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (context) => Center(
+                            child: CircularProgressIndicator(color: BUTTON),
                           ),
-                        ),
-                      ],
+                        );
+
+                        await socialProvider.signWithApple();
+
+                        // 다이얼 로그 닫기
+                        navigatorKey.currentState?.pop();
+
+                        // AuthWrapper로 명시적 이동
+                        if (context.mounted) {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                              builder: (context) => const AuthWrapper(),
+                            ),
+                            (route) => false,
+                          );
+                        }
+                      } catch (e) {
+                        print('애플 로그인 실패: $e');
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('로그인에 실패했습니다. 다시 시도해주세요.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        color: BLACK,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            'assets/images/logo/apple.jpg',
+                            height: 30,
+                          ),
+                          Text(
+                            '애플로 시작하기',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: WHITE,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(height: 10),
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    width: double.infinity,
-                    height: 58,
-                    decoration: BoxDecoration(
-                      color: BLACK,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset('assets/images/logo/apple.jpg', height: 30),
-                        Text(
-                          '애플로 시작하기',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: WHITE,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                ],
+
                 SizedBox(height: 10),
                 GestureDetector(
                   onTap: () async {
@@ -211,18 +256,20 @@ class SocialLoginPage extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 150,
-                      height: 1,
-                      color: const Color.fromARGB(255, 2, 2, 2),
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        color: const Color.fromARGB(255, 2, 2, 2),
+                      ),
                     ),
                     SizedBox(width: 10),
                     Text('OR'),
                     SizedBox(width: 10),
-                    Container(
-                      width: 150,
-                      height: 1,
-                      color: const Color.fromARGB(255, 2, 2, 2),
+                    Expanded(
+                      child: Container(
+                        height: 1,
+                        color: const Color.fromARGB(255, 2, 2, 2),
+                      ),
                     ),
                   ],
                 ),

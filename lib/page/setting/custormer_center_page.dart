@@ -79,10 +79,11 @@ class CustormerCenterPage extends StatelessWidget {
                       [];
                   final isKakaoUser = providers.contains('oidc.thebase');
                   final isGoogleUser = providers.contains('google.com');
+                  final isAppleUser = providers.contains('apple.com');
 
                   String? password;
                   // 이메일 로그인 사용자만 비밀번호 입력 필요
-                  if (!isKakaoUser && !isGoogleUser) {
+                  if (!isKakaoUser && !isGoogleUser && !isAppleUser) {
                     password = await _showPasswordDialog(context);
                     if (password == null || password.isEmpty) return;
                   }
@@ -120,6 +121,10 @@ class CustormerCenterPage extends StatelessWidget {
                         await context
                             .read<SocialLoginProvider>()
                             .deleteGoogleAccount();
+                      } else if (isAppleUser) {
+                        await context
+                            .read<SocialLoginProvider>()
+                            .deleteAppleAccount();
                       } else {
                         await up.deleteEmailAccount(password!);
                       }

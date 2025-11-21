@@ -325,4 +325,71 @@ class SocialLoginProvider extends ChangeNotifier {
       rethrow;
     }
   }
+
+  Future<void> signWithApple() async {
+    try {
+      final appleProvider = AppleAuthProvider();
+
+      final userCredential = await FirebaseAuth.instance.signInWithProvider(
+        appleProvider,
+      );
+
+      _currentUser = userCredential.user;
+
+      if (_currentUser != null) {
+        final userDoc = _firestore.collection('users').doc(_currentUser!.uid);
+        final docSnapshot = await userDoc.get();
+
+        if (!docSnapshot.exists) {
+          // 최초 로그인 시에만 저장
+          await userDoc.set({
+            'uid': _currentUser!.uid,
+            'email': _currentUser!.email ?? '',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('애플 로그인 오류: $e');
+      rethrow;
+    }
+  }
+
+  // 애플 계정 탈퇴
+  Future<void> deleteAppleAccount() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw FirebaseAuthException(
+          code: 'no-user',
+          message: '사용자가 로그인 되어 있지 않습니다.',
+        );
+      }
+
+      final uid = user.uid;
+
+      // Firestore 및 Storage 데이터 삭제
+      await _deleteUserData(uid);
+
+      // FirebaseAuth 계정 삭제
+      try {
+        await user.delete();
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'requires-recent-login') {
+          // 재인증 필요
+          final appleProvider = AppleAuthProvider();
+          final userCredential = await FirebaseAuth.instance.signInWithProvider(
+            appleProvider,
+          );
+          await userCredential.user?.delete();
+        } else {
+          rethrow;
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('애플 계정 탈퇴 중 오류: $e');
+      rethrow;
+    }
+  }
 }
