@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/provider/user_provider.dart';
+import 'package:lockerroom/provider/social_login_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
@@ -77,9 +78,11 @@ class CustormerCenterPage extends StatelessWidget {
                       user?.providerData.map((p) => p.providerId).toList() ??
                       [];
                   final isKakaoUser = providers.contains('oidc.thebase');
+                  final isGoogleUser = providers.contains('google.com');
 
                   String? password;
-                  if (!isKakaoUser) {
+                  // 이메일 로그인 사용자만 비밀번호 입력 필요
+                  if (!isKakaoUser && !isGoogleUser) {
                     password = await _showPasswordDialog(context);
                     if (password == null || password.isEmpty) return;
                   }
@@ -108,8 +111,15 @@ class CustormerCenterPage extends StatelessWidget {
                       context.read<NotificationProvider>().cancel();
                       context.read<BlockProvider>().cancel();
 
+                      // 로그인 방식에 따라 적절한 탈퇴 메서드 호출
                       if (isKakaoUser) {
                         await up.deleteKakaoAccount();
+                      } else if (isGoogleUser) {
+                        // 구글 로그인: SocialLoginProvider의 deleteGoogleAccount 호출
+                        // 참고: Firestore 데이터 삭제는 수동으로 처리 필요 (UserProvider의 _deleteUserData는 private)
+                        await context
+                            .read<SocialLoginProvider>()
+                            .deleteGoogleAccount();
                       } else {
                         await up.deleteEmailAccount(password!);
                       }
