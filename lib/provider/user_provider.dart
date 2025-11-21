@@ -202,6 +202,18 @@ class UserProvider extends ChangeNotifier {
     }
 
     try {
+      // 구글 로그아웃: signOut()과 disconnect() 모두 호출
+      final googleSignIn = GoogleSignIn();
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.signOut();
+        // disconnect()를 호출하면 다음 로그인 시 계정 선택 화면이 다시 나타남
+        await googleSignIn.disconnect();
+      }
+    } catch (e) {
+      print('구글 로그아웃 실패 :$e');
+    }
+
+    try {
       await FirebaseAuth.instance.signOut();
       // 사용자 관련 모든 상태 초기화
       _currentUser = null;
