@@ -32,12 +32,14 @@ class NoticeViewPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        title.isNotEmpty ? title : "제목 없음",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: GRAYSCALE_LABEL_950,
+                      Expanded(
+                        child: Text(
+                          title.isNotEmpty ? title : "제목 없음",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: GRAYSCALE_LABEL_950,
+                          ),
                         ),
                       ),
                       // 관리자만 메뉴 버튼 표시

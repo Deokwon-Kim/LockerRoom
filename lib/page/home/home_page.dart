@@ -130,6 +130,7 @@ class _HomePageState extends State<HomePage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            centerTitle: true,
 
             actions: [
               Padding(
@@ -785,150 +786,163 @@ class _HomePageState extends State<HomePage> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Column(
-                                      children: [
-                                        Icon(Icons.stadium_outlined),
-                                        SizedBox(height: 5),
-                                        Text(
-                                          '총 경기',
-                                          style: TextStyle(
-                                            color: GRAYSCALE_LABEL_500,
-                                            fontSize: 12,
+                                    Expanded(
+                                      child: Column(
+                                        children: [
+                                          Icon(Icons.stadium_outlined),
+                                          SizedBox(height: 5),
+                                          Text(
+                                            '총 경기',
+                                            style: TextStyle(
+                                              color: GRAYSCALE_LABEL_500,
+                                              fontSize: 12,
+                                            ),
                                           ),
-                                        ),
-                                        SizedBox(height: 5),
-                                        Text(
-                                          '${items.length}',
-                                          style: GoogleFonts.robotoMono(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
+                                          SizedBox(height: 5),
+                                          Text(
+                                            '${items.length}',
+                                            style: GoogleFonts.robotoMono(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                    SizedBox(width: 20),
+                                    SizedBox(width: 5),
                                     Container(
                                       width: 0.6,
                                       height: 80,
                                       color: GRAYSCALE_LABEL_300,
                                     ),
-                                    SizedBox(width: 20),
-                                    Column(
-                                      children: [
-                                        Icon(
-                                          Icons.emoji_events_outlined,
-                                          color: Colors.blueAccent,
-                                        ),
-                                        SizedBox(height: 5),
-                                        Text(
-                                          '승',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: GRAYSCALE_LABEL_500,
-                                          ),
-                                        ),
-                                        SizedBox(height: 5),
-                                        Text(
-                                          '$wins',
-                                          style: GoogleFonts.robotoMono(
+                                    SizedBox(width: 5),
+                                    Expanded(
+                                      child: Column(
+                                        children: [
+                                          Icon(
+                                            Icons.emoji_events_outlined,
                                             color: Colors.blueAccent,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
                                           ),
-                                        ),
-                                      ],
+                                          SizedBox(height: 5),
+                                          Text(
+                                            '승',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: GRAYSCALE_LABEL_500,
+                                            ),
+                                          ),
+                                          SizedBox(height: 5),
+                                          Text(
+                                            '$wins',
+                                            style: GoogleFonts.robotoMono(
+                                              color: Colors.blueAccent,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    SizedBox(width: 20),
+                                    SizedBox(width: 5),
                                     Container(
                                       width: 0.6,
                                       height: 80,
                                       color: GRAYSCALE_LABEL_300,
                                     ),
-                                    SizedBox(width: 20),
+                                    SizedBox(width: 5),
 
-                                    Column(
-                                      children: [
-                                        Icon(
-                                          Icons.sentiment_dissatisfied_rounded,
-                                          color: Colors.redAccent,
-                                        ),
-                                        SizedBox(height: 5),
-                                        Text(
-                                          '패',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: GRAYSCALE_LABEL_500,
-                                          ),
-                                        ),
-                                        SizedBox(height: 5),
-                                        Text(
-                                          '$losses',
-                                          style: GoogleFonts.robotoMono(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
+                                    Expanded(
+                                      child: Column(
+                                        children: [
+                                          Icon(
+                                            Icons
+                                                .sentiment_dissatisfied_rounded,
                                             color: Colors.redAccent,
                                           ),
-                                        ),
-                                      ],
+                                          SizedBox(height: 5),
+                                          Text(
+                                            '패',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: GRAYSCALE_LABEL_500,
+                                            ),
+                                          ),
+                                          SizedBox(height: 5),
+                                          Text(
+                                            '$losses',
+                                            style: GoogleFonts.robotoMono(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.redAccent,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    SizedBox(width: 20),
+                                    SizedBox(width: 5),
                                     Container(
                                       width: 0.6,
                                       height: 80,
                                       color: GRAYSCALE_LABEL_300,
                                     ),
-                                    SizedBox(width: 20),
-                                    Column(
-                                      children: [
-                                        Transform.translate(
-                                          offset: Offset(0, -10),
-                                          child: Icon(Icons.minimize_outlined),
-                                        ),
-                                        SizedBox(height: 5),
-                                        Text(
-                                          '무',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: GRAYSCALE_LABEL_500,
+                                    SizedBox(width: 5),
+                                    Expanded(
+                                      child: Column(
+                                        children: [
+                                          Transform.translate(
+                                            offset: Offset(0, -10),
+                                            child: Icon(
+                                              Icons.minimize_outlined,
+                                            ),
                                           ),
-                                        ),
-                                        SizedBox(height: 5),
-                                        Text(
-                                          '$draws',
-                                          style: GoogleFonts.robotoMono(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
+                                          SizedBox(height: 5),
+                                          Text(
+                                            '무',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: GRAYSCALE_LABEL_500,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                          SizedBox(height: 5),
+                                          Text(
+                                            '$draws',
+                                            style: GoogleFonts.robotoMono(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    SizedBox(width: 20),
+                                    SizedBox(width: 5),
                                     Container(
                                       width: 0.6,
                                       height: 80,
                                       color: GRAYSCALE_LABEL_300,
                                     ),
-                                    SizedBox(width: 10),
-                                    Column(
-                                      children: [
-                                        Icon(Icons.percent_outlined),
-                                        SizedBox(height: 5),
-                                        Text(
-                                          '승률',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: GRAYSCALE_LABEL_500,
+                                    SizedBox(width: 5),
+                                    Expanded(
+                                      child: Column(
+                                        children: [
+                                          Icon(Icons.percent_outlined),
+                                          SizedBox(height: 5),
+                                          Text(
+                                            '승률',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: GRAYSCALE_LABEL_500,
+                                            ),
                                           ),
-                                        ),
-                                        SizedBox(height: 5),
-                                        Text(
-                                          winRate.toStringAsFixed(1),
-                                          style: GoogleFonts.robotoMono(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
+                                          SizedBox(height: 5),
+                                          Text(
+                                            winRate.toStringAsFixed(0),
+                                            style: GoogleFonts.robotoMono(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),

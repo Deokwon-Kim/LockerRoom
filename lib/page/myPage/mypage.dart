@@ -333,6 +333,7 @@ class _MypageState extends State<Mypage> {
                       Transform.translate(
                         offset: Offset(-10, 0),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             StreamBuilder<int>(
                               stream: context
@@ -359,7 +360,7 @@ class _MypageState extends State<Mypage> {
                               },
                             ),
 
-                            SizedBox(width: 50),
+                            SizedBox(width: 30),
                             StreamBuilder<int>(
                               stream: fp.getFollowersCountStream(widget.userId),
                               builder: (context, snapshot) {
@@ -391,7 +392,7 @@ class _MypageState extends State<Mypage> {
                                 );
                               },
                             ),
-                            SizedBox(width: 50),
+                            SizedBox(width: 30),
                             StreamBuilder<int>(
                               stream: fp.getFollowCountStream(widget.userId),
                               builder: (context, snapshot) {
