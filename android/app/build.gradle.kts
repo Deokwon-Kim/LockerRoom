@@ -26,9 +26,9 @@ android {
     }
 
     defaultConfig {
-        mainfestPlaceholders = [
-            KAKAO_NATIVE_APP_KEY: System.getenv("KAKAO_NATIVE_APP_KEY") ?: ""
-        ]
+        manifestPlaceholders.putAll(mutableMapOf(
+            "KAKAO_NATIVE_APP_KEY" to (System.getenv("KAKAO_NATIVE_APP_KEY") ?: "")
+        ))
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.codegrove.thebase"
         // You can update the following values to match your application needs.
