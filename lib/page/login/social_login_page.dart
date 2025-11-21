@@ -3,6 +3,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/login/login_page.dart';
 import 'package:lockerroom/provider/social_login_provider.dart';
 import 'package:lockerroom/services/navigation_service.dart';
+import 'package:lockerroom/main.dart';
 import 'package:provider/provider.dart';
 
 class SocialLoginPage extends StatelessWidget {
@@ -47,7 +48,15 @@ class SocialLoginPage extends StatelessWidget {
                       // navigatorKey를 사용하여 다이얼로그 확실히 닫기
                       navigatorKey.currentState?.pop();
 
-                      // AuthWrapper의 StreamBuilder가 자동으로 재빌드되어 적절한 화면 표시
+                      // AuthWrapper로 명시적으로 이동 (authStateChanges가 발생하지 않을 수 있으므로)
+                      if (context.mounted) {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => const AuthWrapper(),
+                          ),
+                          (route) => false,
+                        );
+                      }
                     } catch (e) {
                       print('구글 로그인 실패: $e');
                       // 로딩 닫기
@@ -165,7 +174,15 @@ class SocialLoginPage extends StatelessWidget {
                       // navigatorKey를 사용하여 다이얼로그 확실히 닫기
                       navigatorKey.currentState?.pop();
 
-                      // AuthWrapper의 StreamBuilder가 자동으로 재빌드되어 적절한 화면 표시
+                      // AuthWrapper로 명시적으로 이동 (authStateChanges가 발생하지 않을 수 있으므로)
+                      if (context.mounted) {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => const AuthWrapper(),
+                          ),
+                          (route) => false,
+                        );
+                      }
                     } catch (e) {
                       print('카카오 로그인 실패 :$e');
                       // 로딩 닫기
