@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide User;
 
 class SocialLoginProvider extends ChangeNotifier {
@@ -31,13 +32,8 @@ class SocialLoginProvider extends ChangeNotifier {
 
           if (!docSnapshot.exists) {
             // 최초 로그인 시에만 저정
-            final user = await UserApi.instance.me();
-            final kakaoAccount = user.kakaoAccount;
-            String? kakaoEmail = kakaoAccount?.email;
             await userDoc.set({
               'uid': _currentUser!.uid,
-              'email': kakaoEmail ?? '',
-              'isProfileCompleted': false,
               'createdAt': FieldValue.serverTimestamp(),
             });
           }
@@ -75,13 +71,9 @@ class SocialLoginProvider extends ChangeNotifier {
 
             if (!docSnapshot.exists) {
               // 최초 로그인 시에만 저정
-              final user = await UserApi.instance.me();
-              final kakaoAccount = user.kakaoAccount;
-              String? kakaoEmail = kakaoAccount?.email;
+
               await userDoc.set({
                 'uid': _currentUser!.uid,
-                'email': kakaoEmail ?? '',
-                'isProfileCompleted': false,
                 'createdAt': FieldValue.serverTimestamp(),
               });
             }
@@ -113,13 +105,9 @@ class SocialLoginProvider extends ChangeNotifier {
 
           if (!docSnapshot.exists) {
             // 최초 로그인 시에만 저정
-            final user = await UserApi.instance.me();
-            final kakaoAccount = user.kakaoAccount;
-            String? kakaoEmail = kakaoAccount?.email;
+
             await userDoc.set({
               'uid': _currentUser!.uid,
-              'email': kakaoEmail ?? '',
-              'isProfileCompleted': false,
               'createdAt': FieldValue.serverTimestamp(),
             });
           }
@@ -128,6 +116,54 @@ class SocialLoginProvider extends ChangeNotifier {
       } catch (error) {
         print('카카오계정으로 로그인 실패 $error');
       }
+    }
+  }
+
+  // 구글 로그인
+  Future<UserCredential> googleLogin() async {
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      if (googleUser == null) {
+        throw Exception('구글 로그인이 취소되었습니다.');
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Firebase 인증
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+
+      // 현재 사용자 정보 업데이트
+      _currentUser = userCredential.user;
+
+      // Firestore에 유저 정보 저장
+      if (_currentUser != null) {
+        final userDoc = _firestore.collection('users').doc(_currentUser!.uid);
+        final docSnapshot = await userDoc.get();
+
+        if (!docSnapshot.exists) {
+          // 최초 로그인 시에만 저장
+          await userDoc.set({
+            'uid': _currentUser!.uid,
+            'email': _currentUser!.email ?? '',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
+      notifyListeners();
+      return userCredential;
+    } catch (e) {
+      debugPrint('구글 로그인 오류: $e');
+      rethrow;
     }
   }
 }
