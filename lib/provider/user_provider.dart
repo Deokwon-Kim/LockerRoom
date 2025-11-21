@@ -87,7 +87,6 @@ class UserProvider extends ChangeNotifier {
       final snapshot = await _firestore
           .collection('users')
           .where('userNickName', isEqualTo: username)
-          .where('userNickName', isEqualTo: username)
           .limit(1)
           .get();
 
@@ -787,55 +786,6 @@ class UserProvider extends ChangeNotifier {
       }
     } catch (e) {
       print('이름 변경 실패');
-    }
-  }
-
-  Future<UserCredential> googleLogin() async {
-    try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
-      if (googleUser == null) {
-        throw Exception('구글 로그인이 취소되었습니다.');
-      }
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Firebase 인증
-      final userCredential = await FirebaseAuth.instance.signInWithCredential(
-        credential,
-      );
-
-      // 현재 사용자 정보 업데이트
-      _currentUser = userCredential.user;
-
-      // Firestore에 유저 정보 저장
-      if (_currentUser != null) {
-        final userDoc = _firestore.collection('users').doc(_currentUser!.uid);
-        final docSnapshot = await userDoc.get();
-
-        if (!docSnapshot.exists) {
-          // 최초 로그인 시에만 저장
-          await userDoc.set({
-            'uid': _currentUser!.uid,
-            'email': _currentUser!.email ?? '',
-            'userNickName': _currentUser!.displayName ?? '',
-            'name': _currentUser!.displayName ?? '',
-            'createdAt': FieldValue.serverTimestamp(),
-          });
-        }
-      }
-
-      notifyListeners();
-      return userCredential;
-    } catch (e) {
-      debugPrint('구글 로그인 오류: $e');
-      rethrow;
     }
   }
 }
