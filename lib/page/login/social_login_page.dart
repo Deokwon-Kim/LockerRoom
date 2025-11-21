@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/login/login_page.dart';
 import 'package:lockerroom/provider/social_login_provider.dart';
-import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/services/navigation_service.dart';
 import 'package:provider/provider.dart';
 
@@ -12,7 +10,6 @@ class SocialLoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = context.read<UserProvider>();
     final socialProvider = context.read<SocialLoginProvider>();
     final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
@@ -40,27 +37,19 @@ class SocialLoginPage extends StatelessWidget {
                       showDialog(
                         context: context,
                         barrierDismissible: false,
-                        builder: (context) =>
-                            Center(child: CircularProgressIndicator()),
+                        builder: (context) => Center(
+                          child: CircularProgressIndicator(color: BUTTON),
+                        ),
                       );
 
-                      await userProvider.googleLogin();
+                      await socialProvider.googleLogin();
 
-                      // 로딩 닫기
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                      }
+                      // navigatorKey를 사용하여 다이얼로그 확실히 닫기
+                      navigatorKey.currentState?.pop();
 
-                      // 성공 시 화면 이동
-                      if (context.mounted) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => BottomTabBar(),
-                          ),
-                        );
-                      }
+                      // AuthWrapper의 StreamBuilder가 자동으로 재빌드되어 적절한 화면 표시
                     } catch (e) {
+                      print('구글 로그인 실패: $e');
                       // 로딩 닫기
                       if (context.mounted) {
                         Navigator.pop(context);
@@ -75,7 +64,6 @@ class SocialLoginPage extends StatelessWidget {
                           ),
                         );
                       }
-                      print('구글 로그인 에러: $e');
                     }
                   },
                   child: Container(
