@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "522222120326",
+    "project_id": "lockerroom-e9f39",
+    "storage_bucket": "lockerroom-e9f39.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:522222120326:android:80e2fa2559e28c7f519007",
+        "android_client_info": {
+          "package_name": "com.codegrove.thebase"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "522222120326-15iu6t90hbut9lgla647tbceca584f9h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.codegrove.thebase",
+            "certificate_hash": "76eed88707c94cbe737c1ee4b9f72a57af3755dc"
+          }
+        },
+        {
+          "client_id": "522222120326-pa3v5hjmg5vvn7pa76r3jh9mp67i9a3t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.codegrove.thebase",
+            "certificate_hash": "e31d029c9dc90d29c9697e34ec6d0b56df78e544"
+          }
+        },
+        {
+          "client_id": "522222120326-srnrmpfa0gtt99q0ugcvedmn9phv4bpg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7vFsNKPyqEhU6yPP5v2WnxSkg5ox1uWc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "522222120326-srnrmpfa0gtt99q0ugcvedmn9phv4bpg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "522222120326-4s4d7d34noaqm4rhr3pc87clajn28lfs.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.codegrove.thebase"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
