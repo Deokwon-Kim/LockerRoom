@@ -54,7 +54,7 @@ class _SchedulePageState extends State<SchedulePage> {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: _currentMonth,
-      firstDate: DateTime(2023, 1),
+      firstDate: DateTime(2010, 1),
       lastDate: DateTime(2026, 12),
       builder: (context, child) {
         final base = Theme.of(context);
