@@ -4,6 +4,7 @@ class TeamModel {
   final String name;
   final String symplename;
   final String stadium;
+  final String? stadium3d;
   final String logoPath;
   final String calenderLogo;
   final String symbolPath;
@@ -23,5 +24,6 @@ class TeamModel {
     required this.youtubeName,
     required this.youtubeUrl,
     required this.channelId,
+    this.stadium3d,
   });
 }
