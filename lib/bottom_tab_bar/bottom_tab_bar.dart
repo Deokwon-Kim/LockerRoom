@@ -4,7 +4,7 @@ import 'package:lockerroom/page/afterMarket/after_market.dart';
 import 'package:lockerroom/page/feed/feed_page.dart';
 import 'package:lockerroom/page/home/home_page.dart';
 import 'package:lockerroom/page/myPage/mypage.dart';
-import 'package:lockerroom/page/feed/%08feedUpload_page.dart';
+import 'package:lockerroom/page/feed/feed_upload_page.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/widgets/svg_icon.dart';
