@@ -161,12 +161,6 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               ),
-              // IconButton(
-              //   onPressed: () {
-              //     Navigator.pushNamed(context, 'notifications');
-              //   },
-              //   icon: Icon(CupertinoIcons.bell, color: WHITE),
-              // ),
             ],
           ),
           body: SingleChildScrollView(
@@ -321,6 +315,22 @@ class _HomePageState extends State<HomePage> {
                     },
                   ),
                   SizedBox(height: 20),
+                  // 작고 세련된 카드
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      // 눈에 띄는 그라데이션
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.quiz), // 퀴즈 아이콘
+                        Text('오늘의 야구 퀴즈 도전! 🏆'),
+                        Spacer(),
+                        Icon(Icons.arrow_forward_ios),
+                      ],
+                    ),
+                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
