@@ -27,7 +27,7 @@ class UserModel {
       userNickName: userNickName,
       name: name,
       useremail: data['email'] ?? 'Unknown',
-      uid: data['uid'],
+      uid: data['uid'] ?? 'Unknown',
       profileImage: data['profileImage'] ?? '',
       followersCount: data['followersCount'] ?? 0,
       followingCount: data['followingCount'] ?? 0,
