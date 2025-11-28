@@ -87,6 +87,7 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
       '베네수엘라',
       '파키스탄',
       '네덜란드',
+      '캐나다',
     ]; // 여기에 제외할 팀 추가
 
     // 제외할 팀을 제외한 선택 가능한 팀들
