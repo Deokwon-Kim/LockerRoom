@@ -5,13 +5,15 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide User;
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
 import 'package:lockerroom/page/legal/privacy_policy_page.dart';
 import 'package:lockerroom/page/legal/terms_of_service_page.dart';
-import 'package:lockerroom/page/login/login_page.dart';
 import 'package:lockerroom/page/login/signup_page.dart';
+import 'package:lockerroom/page/login/social_login_page.dart';
+import 'package:lockerroom/page/login/social_profile_setting_page.dart';
 import 'package:lockerroom/page/my_post/likedPosts_page.dart';
 import 'package:lockerroom/page/notice/notice_list_page.dart';
 import 'package:lockerroom/page/setting/change_password_page.dart';
@@ -35,6 +37,7 @@ import 'package:lockerroom/provider/marketFeedEdit_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/market_upload_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
+import 'package:lockerroom/provider/social_login_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
@@ -56,7 +59,13 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // env 파일 로드 (카카오 SDK 초기화 전에 필요)
   await dotenv.load(fileName: 'lib/api_key/youtube_key.env');
+  //kakao 로그인 초기화
+  KakaoSdk.init(
+    nativeAppKey: dotenv.env['KAKAO_NATIVE_APP_KEY'],
+    javaScriptAppKey: dotenv.env['KAKAO_JAVASCRIPT_APP_KEY'],
+  );
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // 로컬 알림 초기화
@@ -158,6 +167,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => FoodStoreProvider()),
         ChangeNotifierProvider(create: (context) => FeedEditProvider()),
         ChangeNotifierProvider(create: (context) => MarketfeededitProvider()),
+        ChangeNotifierProvider(create: (context) => SocialLoginProvider()),
       ],
       child: const MyApp(),
     ),
@@ -189,7 +199,7 @@ class MyApp extends StatelessWidget {
         home: const AuthWrapper(),
         routes: {
           'signUp': (context) => const SignupPage(),
-          'signIn': (context) => const LoginPage(),
+          'signIn': (context) => const SocialLoginPage(),
           'setting': (context) => const SettingPage(),
           'changeNickname': (context) => const NicknameChangePage(),
           'changeName': (context) => const NameChangePage(),
@@ -257,29 +267,50 @@ class AuthWrapper extends StatelessWidget {
             }
           });
           final user = snapshot.data!;
-          return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            future: FirebaseFirestore.instance
+          return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
                 .collection('users')
                 .doc(user.uid)
-                .get(),
+                .snapshots(),
             builder: (context, userSnap) {
               if (userSnap.connectionState == ConnectionState.waiting) {
                 return Center(
                   child: CircularProgressIndicator(color: selectedColor),
                 );
               }
-              if (userSnap.hasError) {
-                return const Center(child: Text('유저 정보를 불러오지 못했습니다.'));
+              if (!userSnap.hasData || userSnap.data == null) {
+                return Center(
+                  child: CircularProgressIndicator(color: selectedColor),
+                );
+              }
+              final data = userSnap.data?.data() ?? {};
+
+              // 디버깅: 필드 값 확인
+              print('=== AuthWrapper 디버깅 ===');
+              print('userNickName: ${data['userNickName']}');
+              print('name: ${data['name']}');
+              print('전체 데이터: $data');
+              print('=======================');
+
+              final hasNickName =
+                  data['userNickName'] != null &&
+                  (data['userNickName'] as String).isNotEmpty;
+              final hasName =
+                  data['name'] != null && (data['name'] as String).isNotEmpty;
+
+              print('hasNickName: $hasNickName');
+              print('hasName: $hasName');
+
+              if (!hasNickName || !hasName) {
+                print('프로필 설정 화면으로 이동');
+                return const SocialProfileSettingPage();
               }
 
-              // 사용자 데이터가 없거나 비어있으면 TeamSelectPage로 이동
-              if (!userSnap.hasData ||
-                  userSnap.data == null ||
-                  !userSnap.data!.exists) {
+              final doc = userSnap.data!;
+              if (!doc.exists) {
                 return const TeamSelectPage();
               }
 
-              final data = userSnap.data?.data() ?? {};
               final savedTeamName = data['team'] as String?;
               final agreedTermsAt = data['agreedTermsAt'];
               final agreedPolicyAt = data['agreedPolicyAt'];
@@ -316,12 +347,24 @@ class AuthWrapper extends StatelessWidget {
                 });
                 return const BottomTabBar();
               } else {
-                return const TeamSelectPage();
+                final route = ModalRoute.of(context);
+                final isCurrentRoute = route?.isCurrent ?? false;
+                if (isCurrentRoute) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => const TeamSelectPage(),
+                        settings: const RouteSettings(name: 'team_select'),
+                      ),
+                    );
+                  });
+                }
+                return const SizedBox.shrink();
               }
             },
           );
         } else {
-          return const LoginPage();
+          return const SocialLoginPage();
         }
       },
     );

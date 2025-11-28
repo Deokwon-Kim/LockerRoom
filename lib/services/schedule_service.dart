@@ -6,6 +6,19 @@ class ScheduleService {
   static const String defaultAssetPath =
       'assets/schedules/kbo_2025_results.csv';
   static const List<String> defaultAssetPaths = [
+    'assets/schedules/kbo_2010_results.csv',
+    'assets/schedules/kbo_2011_results.csv',
+    'assets/schedules/kbo_2012_results.csv',
+    'assets/schedules/kbo_2013_results.csv',
+    'assets/schedules/kbo_2014_results.csv',
+    'assets/schedules/kbo_2015_results.csv',
+    'assets/schedules/kbo_2016_results.csv',
+    'assets/schedules/kbo_2017_results.csv',
+    'assets/schedules/kbo_2018_results.csv',
+    'assets/schedules/kbo_2019_results.csv',
+    'assets/schedules/kbo_2020_results.csv',
+    'assets/schedules/kbo_2021_results.csv',
+    'assets/schedules/kbo_2022_results.csv',
     'assets/schedules/kbo_2023.csv',
     'assets/schedules/kbo_2024.csv',
     'assets/schedules/kbo_2025_results.csv',

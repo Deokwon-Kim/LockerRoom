@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide User;
 import 'package:lockerroom/model/user_model.dart';
 
 enum UserNickNameCheckState { idle, checking, available, duplicated, error }
@@ -11,6 +13,7 @@ enum UserNickNameCheckState { idle, checking, available, duplicated, error }
 class UserProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late var googleSignIn = GoogleSignIn();
 
   UserNickNameCheckState _state = UserNickNameCheckState.idle;
   UserNickNameCheckState get state => _state;
@@ -192,16 +195,37 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await FirebaseAuth.instance.signOut();
+    try {
+      await UserApi.instance.logout();
+    } catch (e) {
+      print('카카오 로그아웃 실패 :$e');
+    }
 
-    // 사용자 관련 모든 상태 초기화
-    _currentUser = null;
-    _nickname = null;
-    _name = null;
-    _email = null;
-    _errorMessage = null;
-    _isSignUpSuccess = false;
-    notifyListeners();
+    try {
+      // 구글 로그아웃: signOut()과 disconnect() 모두 호출
+      final googleSignIn = GoogleSignIn();
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.signOut();
+        // disconnect()를 호출하면 다음 로그인 시 계정 선택 화면이 다시 나타남
+        await googleSignIn.disconnect();
+      }
+    } catch (e) {
+      print('구글 로그아웃 실패 :$e');
+    }
+
+    try {
+      await FirebaseAuth.instance.signOut();
+      // 사용자 관련 모든 상태 초기화
+      _currentUser = null;
+      _nickname = null;
+      _name = null;
+      _email = null;
+      _errorMessage = null;
+      _isSignUpSuccess = false;
+      notifyListeners();
+    } catch (e) {
+      print('Firebase 로그아웃 실패 : $e');
+    }
   }
 
   Future<void> loadNickname() async {
@@ -285,6 +309,60 @@ class UserProvider extends ChangeNotifier {
 
     _name = newName;
     notifyListeners(); // 갱신 알림
+  }
+
+  // 카카오 연동해제
+  Future<void> deleteKakaoAccount() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw FirebaseAuthException(
+          code: 'no-user',
+          message: '사용자가 로그인 되어 있지 않습니다.',
+        );
+      }
+
+      final uid = user.uid;
+
+      // 1. 카카오 연동 해제
+      try {
+        await UserApi.instance.unlink();
+      } catch (e) {
+        debugPrint('카카오 unlink 실패(이미 해제일 수 있음): $e');
+      }
+
+      // 2. Firestore/Storage 등 사용자 데이터 삭제
+      await _deleteUserData(uid);
+
+      // 3. Firebase Auth 계정 삭제 (재인증 필요 시 처리)
+      try {
+        await user.delete();
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'requires-recent-login') {
+          final provider = OAuthProvider('oidc.thebase'); // 실제 Provider ID 사용
+          final token = await UserApi.instance.loginWithKakaoAccount();
+          final credential = provider.credential(
+            idToken: token.idToken,
+            accessToken: token.accessToken,
+          );
+          await user.reauthenticateWithCredential(credential);
+          await user.delete();
+        } else {
+          rethrow;
+        }
+      }
+
+      clearUserData();
+    } catch (e) {
+      debugPrint('카카오 계정 탈퇴 중 오류: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // 일반 이메일 계정 회원탈퇴
