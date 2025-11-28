@@ -25,6 +25,13 @@ class ThemeTile extends StatelessWidget {
                 padding: EdgeInsets.all(15),
                 margin: EdgeInsets.symmetric(horizontal: 0),
                 decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 8,
+                      offset: Offset(2, 2),
+                    ),
+                  ],
                   color: teamModel.color,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
