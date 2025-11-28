@@ -293,20 +293,20 @@ class _NetworkVideoPlayerState extends State<NetworkVideoPlayer>
             // 무음 표시 아이콘
             if (widget.muted)
               Positioned(
-                top: 8,
-                right: 8,
+                bottom: 15,
+                right: 15,
                 child: GestureDetector(
                   onTap: _toggleMute,
                   child: Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(4),
+                      shape: BoxShape.circle,
                     ),
                     child: Icon(
                       _isMuted ? Icons.volume_off : Icons.volume_up,
                       color: Colors.white,
-                      size: 16,
+                      size: 20,
                     ),
                   ),
                 ),
