@@ -227,17 +227,23 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                     // 이전 버튼
                     if (quizProvider.currentQuestionsIndex > 0)
                       Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => quizProvider.previousQuestion(),
-                          style: OutlinedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            side: BorderSide(color: GRAYSCALE_LABEL_300),
-                          ),
-                          child: Text(
-                            '이전',
-                            style: TextStyle(
-                              fontFamily: 'kbo',
-                              color: Colors.black,
+                        child: GestureDetector(
+                          onTap: () => quizProvider.previousQuestion(),
+                          child: Container(
+                            alignment: Alignment.center,
+                            width: double.infinity,
+                            height: 58,
+                            decoration: BoxDecoration(
+                              color: WHITE,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: GRAYSCALE_LABEL_300),
+                            ),
+                            child: Text(
+                              '이전',
+                              style: TextStyle(
+                                fontFamily: 'kbo',
+                                color: Colors.black,
+                              ),
                             ),
                           ),
                         ),
@@ -249,25 +255,33 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                     // 다음 또는 완료 버튼
                     Expanded(
                       flex: quizProvider.currentQuestionsIndex > 0 ? 1 : 2,
-                      child: ElevatedButton(
-                        onPressed: quizProvider.showExplanation
+                      child: GestureDetector(
+                        onTap: quizProvider.showExplanation
                             ? () => _handleNextOrFinish(context, quizProvider)
                             : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: BUTTON,
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          disabledBackgroundColor: GRAYSCALE_LABEL_200,
-                        ),
-                        child: Text(
-                          quizProvider.currentQuestionsIndex ==
-                                  quizProvider.totalQuestions - 1
-                              ? '완료'
-                              : '다음',
-                          style: TextStyle(
-                            color: WHITE,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'kbo',
+                        child: Container(
+                          alignment: Alignment.center,
+                          width: double.infinity,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            color: quizProvider.showExplanation
+                                ? BUTTON
+                                : GRAYSCALE_LABEL_200,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            quizProvider.currentQuestionsIndex ==
+                                    quizProvider.totalQuestions - 1
+                                ? '완료'
+                                : '다음',
+                            style: TextStyle(
+                              color: quizProvider.showExplanation
+                                  ? WHITE
+                                  : GRAYSCALE_LABEL_500,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'kbo',
+                            ),
                           ),
                         ),
                       ),
