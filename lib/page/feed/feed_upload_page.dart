@@ -28,6 +28,17 @@ class _UploadPageState extends State<FeedUploadPage> {
   void initState() {
     super.initState();
     _captionController = TextEditingController();
+
+    // 초기 캡션 확인 (퀴즈 결과 등에서 전달된 경우)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final uploadProvider = context.read<UploadProvider>();
+      final initialCaption = uploadProvider.consumeInitialCaption();
+      if (initialCaption != null) {
+        setState(() {
+          _captionController.text = initialCaption;
+        });
+      }
+    });
   }
 
   @override
