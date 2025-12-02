@@ -6,7 +6,10 @@ import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/quiz_result_model.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
+import 'package:lockerroom/main.dart';
+import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:toastification/toastification.dart';
@@ -430,6 +433,16 @@ class _QuizResultPageState extends State<QuizResultPage>
               },
             ),
             _ShareOption(
+              icon: Icons.post_add,
+              iconColor: BUTTON,
+              title: '게시물로 공유',
+              subtitle: 'Feed에 올리기',
+              onTap: () {
+                Navigator.pop(context);
+                _shareToFeed();
+              },
+            ),
+            _ShareOption(
               icon: Icons.share,
               iconColor: ORANGE_PRIMARY_500,
               title: '다른 앱으로 공유',
@@ -476,6 +489,44 @@ class _QuizResultPageState extends State<QuizResultPage>
     } else {
       _showToast('저장 실패');
     }
+  }
+
+  // Feed에 공유
+  Future<void> _shareToFeed() async {
+    setState(() => _isCapturing = true);
+    await Future.delayed(Duration(milliseconds: 100));
+
+    final Uint8List? image = await _screenshotController.capture();
+    setState(() => _isCapturing = false);
+
+    if (image == null) {
+      _showToast('이미지 생성 실패');
+      return;
+    }
+
+    // UploadProvider에 이미지와 캡션 설정
+    if (mounted) {
+      final uploadProvider = context.read<UploadProvider>();
+
+      // 저장된 이미지 파일 경로 찾기 (ImageGallerySaver는 경로를 직접 반환하지 않을 수 있어서 임시 파일 사용)
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/quiz_result_temp.png');
+      await tempFile.writeAsBytes(image);
+
+      uploadProvider.setImages([tempFile]);
+      uploadProvider.setInitialCaption(
+        '야구 퀴즈 ${widget.result.score}점 달성! 🎉\n\n#야구퀴즈 #야빠 #${widget.result.category}',
+      );
+
+      // AuthWrapper를 통해 이동하여 사용자 정보 로드 및 초기화 보장
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => AuthWrapper(initialIndex: 2)),
+        (route) => false, // 모든 이전 라우트 제거
+      );
+    }
+
+    _showToast('이미지가 선택되었습니다');
   }
 
   Future<void> _shareToOtherApps() async {
