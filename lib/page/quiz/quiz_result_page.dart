@@ -353,26 +353,6 @@ class _QuizResultPageState extends State<QuizResultPage>
                   ),
                 ),
               ),
-              // child: ElevatedButton(
-              //   onPressed: () {
-              //     Navigator.pushReplacement(
-              //       context,
-              //       MaterialPageRoute(builder: (context) => QuizStartPage()),
-              //     );
-              //   },
-              //   style: ElevatedButton.styleFrom(
-              //     backgroundColor: BUTTON,
-              //     padding: EdgeInsets.symmetric(vertical: 16),
-              //   ),
-              //   child: Text(
-              //     '다시하기',
-              //     style: TextStyle(
-              //       fontFamily: 'kbo',
-              //       fontSize: 16,
-              //       color: WHITE,
-              //     ),
-              //   ),
-              // ),
             ),
           ],
         ),
