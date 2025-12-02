@@ -48,6 +48,19 @@ class UploadProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  String? _initialCaption;
+
+  void setInitialCaption(String caption) {
+    _initialCaption = caption;
+    notifyListeners();
+  }
+
+  String? consumeInitialCaption() {
+    final caption = _initialCaption;
+    _initialCaption = null;
+    return caption;
+  }
+
   void clearAll() {
     _images = [];
     _video = null;
@@ -55,6 +68,7 @@ class UploadProvider extends ChangeNotifier {
     _videoThumbnail = null;
     _uploadProgress = 0.0;
     _isUploading = false;
+    _initialCaption = null;
     notifyListeners();
   }
 
