@@ -420,7 +420,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
   Color _getDifficultyColor(String difficulty) {
     switch (difficulty) {
       case 'easy':
-        return GREEN_SECONDARY_700;
+        return Colors.green;
       case 'medium':
         return ORANGE_PRIMARY_500;
       case 'hard':
