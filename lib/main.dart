@@ -222,7 +222,8 @@ class MyApp extends StatelessWidget {
 }
 
 class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
+  final int initialIndex;
+  const AuthWrapper({super.key, this.initialIndex = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -348,7 +349,7 @@ class AuthWrapper extends StatelessWidget {
                     // print('팀 선택 중 에러: $e');
                   }
                 });
-                return const BottomTabBar();
+                return BottomTabBar(initialIndex: initialIndex);
               } else {
                 final route = ModalRoute.of(context);
                 final isCurrentRoute = route?.isCurrent ?? false;
