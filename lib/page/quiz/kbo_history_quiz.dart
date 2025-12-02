@@ -1,0 +1,470 @@
+import 'package:lockerroom/model/quiz_question_model.dart';
+
+final List<QuizQuestionModel> kboHistoryQuestions = [
+  QuizQuestionModel(
+    quizId: 'kbo_001',
+    category: 'KBO역사',
+    question: 'KBO리그가 출범한 연도는?',
+    options: ['1982년', '1972년', '1980년', '1988년'],
+    correctIndex: 0,
+    difficulty: 'easy',
+    explanation: 'KBO리그는 1982년에 출범했습니다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'kbo_002',
+    category: 'KBO역사',
+    question: '다음 중 KBO 원년(1982) 창단 구단이 아닌 팀은?',
+    options: ['MBC청룡', 'OB베어스', '삼성라이온즈,', 'SSG랜더스'],
+    correctIndex: 3,
+    difficulty: 'easy',
+    explanation:
+        '1982년 원년 구단은 MBC, OB, 삼성, 롯데, 삼미, 해태 여섯 팀이다.\n SSG는 2021년에 SK 와이번스를 인수하며 탄생한 최신 구단.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'kbo_003',
+    category: 'KBO역사',
+    question: '다음 중 한국시리즈 최다 우승팀은?',
+    options: ['두산베어스', '삼성라이온즈', '기아타이거즈', '롯데자이언츠'],
+    correctIndex: 2,
+    difficulty: 'easy',
+    explanation: '기아타이거즈는 한국시리즈 11회 우승으로 최다 우승팀입니다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'kbo_004',
+    category: 'KBO역사',
+    question: '한국시리즈에서 투수로서 4승을 올린 선수는?',
+    options: ['류현진', '최동원', '박철순', '선동열'],
+    correctIndex: 1,
+    difficulty: 'medium',
+    explanation: '1984년 한국시리즈에서 최동원은 선발+구원으로 4승을 기록하여 롯데를 한국시리즈 우승으로 이끌었다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'kbo_005',
+    category: 'KBO역사',
+    question: 'KBO리그 한국시리즈 첫 우승팀은?',
+    options: ['롯데자이언츠', '엘지트윈스', 'OB베어스(현 두산베어스)', '해태타이거즈(현 기아타이거즈)'],
+    correctIndex: 2,
+    difficulty: 'medium',
+    explanation:
+        '1982년 10월12일 한국시리즈 6차전에서 삼성을 상대로 승리하며 \nKBO리그 한국시리즈 첫번째 우승팀이 되었다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'kbo_006',
+    category: 'KBO역사',
+    question: '투수로서 22연승을 달성한 선수는?',
+    options: ['박철순', '최동원', '선동열', '류현진'],
+    correctIndex: 0,
+    difficulty: 'medium',
+    explanation: '1982년 09월18일 박철순이 기록한 22연승',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'kbo_007',
+    category: 'KBO역사',
+    question: 'KBO리그 한경기 최다 17탈삼진을 기록한 선수는?',
+    options: ['선동열', '윤석민', '니퍼트', '류현진'],
+    correctIndex: 3,
+    difficulty: 'hard',
+    explanation: '류현진은 2010년 05월11일 청주 LG전에서 9이닝동안 17개의 삼진을 잡아내며 \n완투승을 기록하였다',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'kbo_008',
+    category: 'KBO역사',
+    question: 'KT 위즈가 KBO에 정식 참가한 연도는?',
+    options: ['2013년', '2014년', '2015년', '2016년'],
+    correctIndex: 2,
+    difficulty: 'medium',
+    explanation: '2013~14년 퓨처스리그에서 뛰고, 2015년에 KBO리그에 참가했다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'kbo_009',
+    category: 'KBO역사',
+    question: '현대 유니콘스가 해체되면서 계보를 이어받아 탄생한 구단은?',
+    options: ['롯데자이언츠', '엘지트윈스', 'NC다이노스', '키움히어로즈'],
+    correctIndex: 3,
+    difficulty: 'hard',
+    explanation: '현대 → 히어로즈(넥센·키움)로 선수·기록 계보가 이어진다',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'kbo_0010',
+    category: 'KBO역사',
+    question: '2022년 KBO리그 최초 와이어 투 와이어 우승팀은?',
+    options: ['롯데자이언츠', '엘지트윈스', '두산베어스', 'SSG랜더스'],
+    correctIndex: 3,
+    difficulty: 'easy',
+    explanation:
+        '2022년 SSG랜더스는 시즌 개막때 부터 우승순간까지 1위자리를 놓치지 않아 \n와이어 투 와이어 우승이라는 KBO리그 최초의 기록을 달성하였다.',
+  ),
+];
+
+final List<QuizQuestionModel> baseballRuelQuestions = [
+  QuizQuestionModel(
+    quizId: 'ruel_001',
+    category: '야구룰',
+    question:
+        '투수가 와인드업 자세에서 투구 모션을 시작한 뒤, 공을 던지지 않고 갑자기 2루로 견제했다. 주자가 없을 때 이 행동은?',
+    options: ['정상플레이', '보크', '볼', '타임'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation:
+        '주자가 없어도, 투수 동작이 투구로 간주된 모션에서 갑자기 견제하면 보크. 투구 동작의 일관성이 깨졌기 때문.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'ruel_002',
+    category: '야구룰',
+    question: '스트라이크 존이란 무엇을 기준으로 정해질까?',
+    options: ['심판 기분', '타자의 키', '타자의 어깨부터 무릎까지', '타자의 겨드랑이와 무릎 윗부분'],
+    correctIndex: 2,
+    difficulty: 'easy',
+    explanation: '겨드랑이 아래 부분 ~ 무릎 윗부분’이 공식 정의다',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'ruel_003',
+    category: '야구룰',
+    question: '타자가 공을 맞고 1루에 나가는 상황을 무엇이라 할까?',
+    options: ['볼넷', '사구(데드볼)', '고의사구', '스윙'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation: '몸에 맞는 공 = 사구(HBP). 볼넷과 다르다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'ruel_004',
+    category: '야구룰',
+    question: '볼넷은 몇 개의 볼이 누적되면 성립할까?',
+    options: ['4개', '2개', '3개', '1개'],
+    correctIndex: 0,
+    difficulty: 'easy',
+    explanation: '볼이 4개가 누적이 되면 볼넷이다',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'ruel_005',
+    category: '야구룰',
+    question: '주자가 없는 상황에서 홈런을 치면 몇 점일까?',
+    options: ['1점', '2점', '3점', '4점'],
+    correctIndex: 0,
+    difficulty: 'easy',
+    explanation: '솔로 홈런 = 타자 혼자 들어오기 때문에 1점.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'ruel_006',
+    category: '야구룰',
+    question: '외야 플라이가 잡히기 전 주자가 먼저 베이스 이탈 후 홈인했다. 점수는?',
+    options: ['인정', '무조건 취소', '태그업 실패로 아웃', '수비가 어필해야 무효 처리'],
+    correctIndex: 3,
+    difficulty: 'medium',
+    explanation: '태그업 실수는 수비팀이 ‘어필’해야 무효가 된다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'ruel_007',
+    category: '야구룰',
+    question: '1, 2, 3루에 주자가 모두 있는 상황을 뭐라 하나?',
+    options: ['만루', '득점권', '풀베이스', '만원'],
+    correctIndex: 0,
+    difficulty: 'easy',
+    explanation: '1, 2, 3루 모두 주자가 있는 상황을 만루라고 한다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'ruel_008',
+    category: '야구룰',
+    question: '포수가 타자의 방망이를 건드렸다. 어떻게 되나?',
+    options: ['플레이 계속', '타자에게 1루 부여', '파울볼', '타자 아웃'],
+    correctIndex: 1,
+    difficulty: 'medium',
+    explanation: '포수의 타격방해로 타자는 1루로 진루하고 모든 주자도 한 베이스씩 진루.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'ruel_009',
+    category: '야구룰',
+    question: '무사 또는 1사, 주자 1·2루 또는 만루 상황에서 내야 뜬공은?',
+    options: ['무조건 아웃', '인필드 플라이 룰 적용', '땅볼과 동일', '2루수만 잡으면 됨'],
+    correctIndex: 1,
+    difficulty: 'medium',
+    explanation: '인필드 플라이 룰이 적용되어 타자는 자동 아웃이지만 주자는 진루 가능.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'ruel_0010',
+    category: '야구룰',
+    question: '3루 주자가 정규 투구 시 홈을 훔칠 수 있나?',
+    options: ['불가능', '가능', '심판 허락 필요', '투수가 견제구를 던질 때만'],
+    correctIndex: 1,
+    difficulty: 'hard',
+    explanation: '규칙상 가능하지만 거의 시도되지 않는 위험한 플레이. 성공하면 홈스틸.',
+  ),
+];
+
+final List<QuizQuestionModel> playerQuestions = [
+  QuizQuestionModel(
+    quizId: 'player_001',
+    category: '선수퀴즈',
+    question: '한국인 최초 MLB 진출 선수는?',
+    options: ['박찬호', '류현진', '추신수', '김병현'],
+    correctIndex: 0,
+    difficulty: 'easy',
+    explanation: '박찬호는 1994년 LA 다저스에 입단하며 한국인 최초 메이저리거가 되었다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'player_002',
+    category: '선수퀴즈',
+    question: '2006년 고졸 신인으로 18승을 거두며 MVP를 수상한 선수는?',
+    options: ['김광현', '양현종', '류현진', '윤석민'],
+    correctIndex: 2,
+    difficulty: 'easy',
+    explanation: '류현진은 2006년 고졸 신인으로 18승 6패, 평균자책점 2.23을 기록하며 MVP를 수상했다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'player_003',
+    category: '선수퀴즈',
+    question: '2024년 기준 두산베어스 의 주전 포수는?',
+    options: ['강민호', '양의지', '김태군', '유강남'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation: '양의지는 두산베어스의 주전 포수다',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'player_004',
+    category: '선수퀴즈',
+    question: 'KBO리그 역대 개인통산 최다 세이브 기록 보유선수는?',
+    options: ['김택연', '조병현', '오승환', '김서현'],
+    correctIndex: 2,
+    difficulty: 'easy',
+    explanation: '2024년 04월24일 고척 키움전에서 세이브를 기록하며 개인통산 최다 세이브인 408세이브를 기록하였다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'player_005',
+    category: '선수퀴즈',
+    question: 'KBO리그 역대 개인통산 최다 홈런 기록 보유선수는?',
+    options: ['이승엽', '최정', '이대호', '박병호'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation: '2024년 04월24일 부산 롯데전에서 통산 468홈런을 기록하였다.(이전기록: 이승엽(467홈런))',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'player_006',
+    category: '선수퀴즈',
+    question: 'KBO리그 역대 개인통산 최다 안타 기록 보유선수는?',
+    options: ['이승엽', '최정', '손아섭', '박용택'],
+    correctIndex: 2,
+    difficulty: 'medium',
+    explanation: '2024년 06월20알 잠실 두산전에서 통산 2505안타를 기록하였다.(이전기록:박용택(2504안타))',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'player_007',
+    category: '선수퀴즈',
+    question: 'KBO리그 역대 개인통산 최다 탈삼진 기록 보유선수는?',
+    options: ['니퍼트', '윤석민', '곽빈', '양현종'],
+    correctIndex: 3,
+    difficulty: 'medium',
+    explanation: '2024년 08월21일 광주 롯데전에서 개인통산 2409 탈삼진을 기록하였다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'player_008',
+    category: '선수퀴즈',
+    question: 'KBO리그 역대 개인통산 최다 도루 기록 보유선수는?',
+    options: ['이대형', '이종범', '전준호', '조수행'],
+    correctIndex: 2,
+    difficulty: 'hard',
+    explanation: '전준호는 통산 최다 549개의 도루를 기록하였다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'player_009',
+    category: '선수퀴즈',
+    question: 'KBO리그 2016시즌 다승왕은?',
+    options: ['폰세', '니퍼트', '페디', '류현진'],
+    correctIndex: 1,
+    difficulty: 'medium',
+    explanation: '2016년 니퍼트는 시즌 22승을 기록하며 다승왕을 기록하였다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'player_0010',
+    category: '선수퀴즈',
+    question: 'KBO리그 역대 평균자책점 1위 기록 보유선수는?',
+    options: ['류현진', '양현종', '김광현', '선동열'],
+    correctIndex: 3,
+    difficulty: 'medium',
+    explanation: '선동열은 통산 평균자책점 0.99로 이 기록 1위를 기록하였다.',
+  ),
+];
+
+final List<QuizQuestionModel> statsQuestions = [
+  QuizQuestionModel(
+    quizId: 'stats_001',
+    category: '기록',
+    question: '타율이 .300이라는 건 어떤 뜻일까?',
+    options: ['30% 확률로 삼진', '30% 확률로 안타', '30% 확률로 출루', '30% 확률로 홈런'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation: '타율은 안타 ÷ 타수. .300은 10번 타석에 서면 3번 안타 친다는 뜻.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'stats_002',
+    category: '기록',
+    question: 'OPS는 어떤 두 기록을 더한 값일까?',
+    options: ['타율 + 장타율', '출루율 + 장타율', '타율 + 출루율', '출루율 + 삼진율'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation: 'OPS = 출루율(OBP) + 장타율(SLG).‘출루 능력 + 장타력’을 한 번에 볼 수 있는 종합 지표',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'stats_003',
+    category: '기록',
+    question: 'ERA(평균자책점)가 낮다는 건 어떤 의미일까?',
+    options: ['홈런을 많이 친다', '삼진을 잘 잡는다', '점수를 적게 준다', '볼넷이 많다'],
+    correctIndex: 2,
+    difficulty: 'easy',
+    explanation: 'ERA는 투수가 9이닝 기준으로 몇 점을 책임지는지 보여주는 지표.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'stats_004',
+    category: '기록',
+    question: 'wRC+가 100이라는 뜻은?',
+    options: ['평균 대비 100홈런', '리그 평균과 동일한 공격력', '리그 최상급 공격력', '출루율이 1.00이다'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation:
+        'wRC+는 리그·구장 보정 포함한 공격력 지표. 100 = 리그 평균, 120 = 평균 대비 20% 더 좋음.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'stats_005',
+    category: '기록',
+    question: '규정타석을 채우지 못한 선수는 타율 1위를 달성할 수 있을까?',
+    options: ['가능', '불가능', '심판재량', '팀 순위에 따라 다름'],
+    correctIndex: 1,
+    difficulty: 'medium',
+    explanation: '타격 타이틀은 반드시 ‘규정타석’ 충족해야 인정된다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'stats_006',
+    category: '기록',
+    question: 'WHIP은 어떤 투수 능력을 보여주는 지표일까?',
+    options: ['홈런 허용력', '주자를 내보내는 빈도', '삼진 비율', '스윙률'],
+    correctIndex: 1,
+    difficulty: 'medium',
+    explanation: 'WHIP = (볼넷 + 안타) ÷ 이닝. 투수가 1이닝당 몇 명을 내보내는지 보여주는 안정성 지표.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'stats_007',
+    category: '기록',
+    question: '홈런(홈런 수)이 많다는 건 어떤 능력을 의미할까?',
+    options: ['주루 능력', '장타력', '번트 능력', '수비 능력'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation: '홈런은 장타력(파워)의 상징적인 기록이다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'stats_008',
+    category: '기록',
+    question: '출루율(OBP)이 높은 타자는 어떤 특징을 가진 경우가 많을까?',
+    options: ['삼진이 많다', '공을 잘 골라낸다', '홈런을 많이 친다', '도루가 많다'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation: '출루율은 안타 + 볼넷 + 사구가 포함되며, 특히 ‘볼넷을 많이 고르는 능력’ 이 중요하다',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'stats_009',
+    category: '기록',
+    question: '투수의 ‘삼진’ 개수(K)가 많은 건 어떤 장점의 의미일까?',
+    options: ['수비 도움 없이 타자를 잡을 수 있다', '홈런을 잘 친다', '도루를 잘 막는다', '상대 팀이 좋아한다'],
+    correctIndex: 0,
+    difficulty: 'easy',
+    explanation: '삼진은 인플레이 타구가 없어 수비 운을 타지 않는다. 투수의 순수한 지배력 지표.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'stats_0010',
+    category: '기록',
+    question: 'BABIP이 지나치게 높거나 낮으면 어떤 해석이 가능할까?',
+    options: ['단순히 타격이 뛰어나다', '운(운빨)의 영향이 크다', '심판이 편파적이다', '팀 전술이 이상하다'],
+    correctIndex: 1,
+    difficulty: 'hard',
+    explanation:
+        'BABIP(인플레이 타구 타율)은 운과 수비력의 영향을 크게 받는다. 너무 높거나 낮으면 실력보다 운의 영향이 큰 것.',
+  ),
+];
+
+final List<QuizQuestionModel> stadiumQuestions = [
+  QuizQuestionModel(
+    quizId: 'ruel_001',
+    category: '야구룰',
+    question:
+        '투수가 와인드업 자세에서 투구 모션을 시작한 뒤, 공을 던지지 않고 갑자기 2루로 견제했다. 주자가 없을 때 이 행동은?',
+    options: ['정상플레이', '보크', '볼', '타임'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation:
+        '주자가 없어도, 투수 동작이 투구로 간주된 모션에서 갑자기 견제하면 보크. 투구 동작의 일관성이 깨졌기 때문.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'ruel_002',
+    category: '야구룰',
+    question: '스트라이크 존이란 무엇을 기준으로 정해질까?',
+    options: ['심판 기분', '타자의 키', '타자의 어깨부터 무릎까지', '타자의 겨드랑이와 무릎 윗부분'],
+    correctIndex: 2,
+    difficulty: 'easy',
+    explanation: '겨드랑이 아래 부분 ~ 무릎 윗부분’이 공식 정의다',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'ruel_003',
+    category: '야구룰',
+    question: '타자가 공을 맞고 1루에 나가는 상황을 무엇이라 할까?',
+    options: ['볼넷', '사구(데드볼)', '고의사구', '스윙'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation: '몸에 맞는 공 = 사구(HBP). 볼넷과 다르다.',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'ruel_004',
+    category: '야구룰',
+    question: '볼넷은 몇 개의 볼이 누적되면 성립할까?',
+    options: ['4개', '2개', '3개', '1개'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation: '볼이 4개가 누적이 되면 볼넷이다',
+  ),
+
+  QuizQuestionModel(
+    quizId: 'ruel_005',
+    category: '야구룰',
+    question: '주자가 없는 상황에서 홈런을 치면 몇 점일까?',
+    options: ['1점', '2점', '3점', '4점'],
+    correctIndex: 0,
+    difficulty: 'easy',
+    explanation: '솔로 홈런 = 타자 혼자 들어오기 때문에 1점.',
+  ),
+];
