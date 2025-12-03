@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
+import 'package:lockerroom/page/quiz/quiz_ranking_page.dart';
 
 class QuizStartPage extends StatelessWidget {
   const QuizStartPage({super.key});
@@ -9,51 +11,155 @@ class QuizStartPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: 40),
-
-              // 헤더 섹션
-              _buildHeader(),
-
-              SizedBox(height: 32),
-
-              // 카테고리 리스트
-              ..._buildCategoryList(context),
-            ],
+      appBar: AppBar(
+        backgroundColor: BACKGROUND_COLOR,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          '야구 덕력 테스트',
+          style: TextStyle(
+            fontFamily: 'kbo',
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
+        ),
+
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BottomTabBar(initialIndex: 0),
+                ),
+                (route) => false,
+              );
+            }
+          },
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 헤더 섹션
+            _buildHeader(context),
+
+            SizedBox(height: 24),
+
+            // 랭킹 배너 (별도 섹션)
+            _buildRankingBanner(context),
+
+            SizedBox(height: 24),
+
+            // 카테고리 리스트
+            ..._buildCategoryList(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 랭킹 배너 위젯
+  Widget _buildRankingBanner(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => QuizRankingPage()),
+        );
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.amber.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.amber.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.amber.withOpacity(0.1),
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.amber.shade100),
+              ),
+              child: Text('🏆', style: TextStyle(fontSize: 24)),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '명예의 전당',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: Colors.black87,
+                      fontFamily: 'kbo',
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    '전체 랭킹과 내 순위 확인하기',
+                    style: TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.grey.shade400,
+            ),
+          ],
         ),
       ),
     );
   }
 
   // 헤더 위젯
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '야구 없인 못 살아?',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'kbo',
-            height: 1.2,
-          ),
-        ),
-        SizedBox(height: 4),
-        Text(
-          '그럼 풀어봐~',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'kbo',
-            height: 1.2,
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '야구 없인 못 살아?',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'kbo',
+                height: 1.2,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '그럼 풀어봐~',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'kbo',
+                height: 1.2,
+              ),
+            ),
+          ],
         ),
         SizedBox(height: 12),
         Text(
