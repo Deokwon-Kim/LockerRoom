@@ -33,7 +33,11 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
         backgroundColor: Colors.grey[100],
         title: Text(
           '퀴즈 랭킹',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'kbo',
+          ),
         ),
         centerTitle: true,
         elevation: 0,
