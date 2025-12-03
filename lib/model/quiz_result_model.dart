@@ -66,7 +66,7 @@ class QuizResultModel {
       completedAt: (json['completedAt'] as Timestamp).toDate(),
       timeTakenSeconds: json['timeTakenSeconds'] as int,
       questionIds: List<String>.from(json['questionIds'] as List),
-      answerResults: Map<String, bool>.from(json['answerResilts'] as Map),
+      answerResults: Map<String, bool>.from(json['answerResults'] as Map),
     );
   }
 
