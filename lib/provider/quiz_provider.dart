@@ -8,6 +8,7 @@ import 'package:lockerroom/page/quiz/quiz_data.dart';
 class QuizProvider extends ChangeNotifier {
   List<QuizQuestionModel> _allQuestions = [];
   List<QuizQuestionModel> _currentQuestions = [];
+  List<QuizResultModel> _myHistory = [];
   int _currentQuestionIndex = 0;
   Map<int, int> _userAnswers = {};
   Map<int, bool> _answerCorrectness = {};
@@ -22,6 +23,7 @@ class QuizProvider extends ChangeNotifier {
 
   // 게터
   List<QuizQuestionModel> get currentQuestions => _currentQuestions;
+  List<QuizResultModel> get myHistory => _myHistory;
   int get currentQuestionsIndex => _currentQuestionIndex;
   QuizQuestionModel? get currentQuestion => _currentQuestions.isNotEmpty
       ? _currentQuestions[_currentQuestionIndex]
@@ -282,5 +284,31 @@ class QuizProvider extends ChangeNotifier {
   void toggleExplanation() {
     _showExplanation = !_showExplanation;
     notifyListeners();
+  }
+
+  // 자신의 퀴즈 기록 불러오기
+  Future<void> fetchMyHistory() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final snapshot = await _firestore
+          .collection('quiz_results')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('completedAt', descending: true)
+          .get();
+
+      _myHistory = snapshot.docs.map((doc) {
+        return QuizResultModel.fromJson(doc.data());
+      }).toList();
+    } catch (e) {
+      print('퀴즈 기록 가져오기 실패: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }
