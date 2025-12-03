@@ -7,7 +7,9 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/quiz_result_model.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
 import 'package:lockerroom/main.dart';
+import 'package:lockerroom/page/quiz/quiz_start_page.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
+import 'package:lockerroom/widgets/quiz_ranking_widget.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
@@ -96,6 +98,8 @@ class _QuizResultPageState extends State<QuizResultPage>
                     ),
                     SizedBox(height: 24),
                     _buildStatsCard(),
+                    SizedBox(height: 24),
+                    const QuizRankingWidget(),
                     SizedBox(height: 24),
                     _buildProgressCard(),
                     if (_isCapturing) _buildBranding(),
@@ -303,7 +307,11 @@ class _QuizResultPageState extends State<QuizResultPage>
             Expanded(
               child: GestureDetector(
                 onTap: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => QuizStartPage()),
+                    (route) => false,
+                  );
                 },
                 child: Container(
                   alignment: Alignment.center,
