@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
-import 'package:lockerroom/page/quiz/quiz_ranking_page.dart';
 
 class QuizStartPage extends StatelessWidget {
   const QuizStartPage({super.key});
@@ -48,13 +47,8 @@ class QuizStartPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 헤더 섹션
-            _buildHeader(context),
-
-            SizedBox(height: 24),
-
-            // 랭킹 배너 (별도 섹션)
-            _buildRankingBanner(context),
-
+            _buildHeader(context), // 랭킹 배너 (별도 섹션)
+            // _buildRankingBanner(context),
             SizedBox(height: 24),
 
             // 카테고리 리스트
@@ -65,72 +59,72 @@ class QuizStartPage extends StatelessWidget {
     );
   }
 
-  // 랭킹 배너 위젯
-  Widget _buildRankingBanner(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => QuizRankingPage()),
-        );
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.amber.shade50,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.amber.shade200),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.amber.withOpacity(0.1),
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.amber.shade100),
-              ),
-              child: Text('🏆', style: TextStyle(fontSize: 24)),
-            ),
-            SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '명예의 전당',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: Colors.black87,
-                      fontFamily: 'kbo',
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    '전체 랭킹과 내 순위 확인하기',
-                    style: TextStyle(fontSize: 13, color: Colors.black54),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.grey.shade400,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // // 랭킹 배너 위젯
+  // Widget _buildRankingBanner(BuildContext context) {
+  //   return GestureDetector(
+  //     onTap: () {
+  //       Navigator.push(
+  //         context,
+  //         MaterialPageRoute(builder: (context) => QuizRankingPage()),
+  //       );
+  //     },
+  //     child: Container(
+  //       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+  //       decoration: BoxDecoration(
+  //         color: Colors.amber.shade50,
+  //         borderRadius: BorderRadius.circular(16),
+  //         border: Border.all(color: Colors.amber.shade200),
+  //         boxShadow: [
+  //           BoxShadow(
+  //             color: Colors.amber.withOpacity(0.1),
+  //             blurRadius: 8,
+  //             offset: Offset(0, 4),
+  //           ),
+  //         ],
+  //       ),
+  //       child: Row(
+  //         children: [
+  //           Container(
+  //             padding: EdgeInsets.all(10),
+  //             decoration: BoxDecoration(
+  //               color: Colors.white,
+  //               shape: BoxShape.circle,
+  //               border: Border.all(color: Colors.amber.shade100),
+  //             ),
+  //             child: Text('🏆', style: TextStyle(fontSize: 24)),
+  //           ),
+  //           SizedBox(width: 16),
+  //           Expanded(
+  //             child: Column(
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Text(
+  //                   '명예의 전당',
+  //                   style: TextStyle(
+  //                     fontWeight: FontWeight.bold,
+  //                     fontSize: 18,
+  //                     color: Colors.black87,
+  //                     fontFamily: 'kbo',
+  //                   ),
+  //                 ),
+  //                 SizedBox(height: 2),
+  //                 Text(
+  //                   '전체 랭킹과 내 순위 확인하기',
+  //                   style: TextStyle(fontSize: 13, color: Colors.black54),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //           Icon(
+  //             Icons.arrow_forward_ios,
+  //             size: 16,
+  //             color: Colors.grey.shade400,
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   // 헤더 위젯
   Widget _buildHeader(BuildContext context) {
