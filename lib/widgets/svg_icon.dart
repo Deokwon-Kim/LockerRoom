@@ -34,7 +34,9 @@ class SvgIcon extends StatelessWidget {
 // 자주 사용하는 아이콘들을 미리 정의
 class AppIcons {
   static const String home = 'assets/icons/home.svg';
+  static const String home2 = 'assets/icons/home2.svg';
   static const String homeFill = 'assets/icons/home_fill.svg';
+  static const String homeFill2 = 'assets/icons/home_fill2.svg';
   static const String add = 'assets/icons/add.svg';
   static const String person = 'assets/icons/person.svg';
   static const String personFill = 'assets/icons/person_fill.svg';
@@ -46,9 +48,22 @@ class AppIcons {
     return SvgIcon(assetPath: home, width: size, height: size, color: color);
   }
 
+  static Widget homeIcon2({double? size, Color? color}) {
+    return SvgIcon(assetPath: home2, width: size, height: size, color: color);
+  }
+
   static Widget homeFillIcon({double? size, Color? color}) {
     return SvgIcon(
       assetPath: homeFill,
+      width: size,
+      height: size,
+      color: color,
+    );
+  }
+
+  static Widget homeFillIcon2({double? size, Color? color}) {
+    return SvgIcon(
+      assetPath: homeFill2,
       width: size,
       height: size,
       color: color,
