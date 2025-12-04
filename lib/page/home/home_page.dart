@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lockerroom/bottom_tab_bar/intution_tab_bar.dart';
+import 'package:lockerroom/bottom_tab_bar/quiz_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
@@ -17,6 +18,7 @@ import 'package:lockerroom/page/food_store/landersfield_Store_page.dart';
 import 'package:lockerroom/page/food_store/lionsParksStore_page.dart';
 import 'package:lockerroom/page/food_store/ncParkStore_page.dart';
 import 'package:lockerroom/page/food_store/wizParkStore_page.dart';
+import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_upload_page.dart';
 import 'package:lockerroom/page/schedule/schedule.dart';
 import 'package:lockerroom/provider/block_provider.dart';
@@ -30,6 +32,7 @@ import 'package:lockerroom/provider/video_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
 import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
+import 'package:lockerroom/widgets/quiz_ranking_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:badges/badges.dart' as badges;
@@ -161,40 +164,46 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               ),
-              // IconButton(
-              //   onPressed: () {
-              //     Navigator.pushNamed(context, 'notifications');
-              //   },
-              //   icon: Icon(CupertinoIcons.bell, color: WHITE),
-              // ),
             ],
           ),
           body: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.only(left: 15.0, right: 15.0),
+              padding: const EdgeInsets.only(
+                top: 15.0,
+                left: 15.0,
+                right: 15.0,
+              ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  SchedulePage(teamModel: widget.teamModel),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          '전체일정 보기 >',
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              SchedulePage(teamModel: widget.teamModel),
+                        ),
+                      );
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          '전체일정 보기',
                           style: TextStyle(color: GRAYSCALE_LABEL_500),
                         ),
-                      ),
-                    ],
+                        SizedBox(width: 5),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 12,
+                          color: GRAYSCALE_LABEL_500,
+                        ),
+                      ],
+                    ),
                   ),
+                  SizedBox(height: 10),
                   FutureBuilder(
                     future: ScheduleService().loadSchedules(),
                     builder: (context, snapshot) {
@@ -321,25 +330,62 @@ class _HomePageState extends State<HomePage> {
                     },
                   ),
                   SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '최신게시물',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                  // 작고 세련된 카드
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => QuizTabBar()),
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          '야구 덕력 테스트! 퀴즈 풀기 🏆',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () => widget.onTabTab(1),
-                        child: Text(
-                          '모든 게시물 보기 >',
+                        Spacer(),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 12,
+                          color: GRAYSCALE_LABEL_500,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // 퀴즈 순위 위젯
+                  const QuizRankingWidget(),
+                  const SizedBox(height: 20),
+                  GestureDetector(
+                    onTap: () => widget.onTabTab(1),
+                    child: Row(
+                      children: [
+                        Text(
+                          '최신게시물',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Spacer(),
+                        Text(
+                          '모든 게시물 보기 ',
                           style: TextStyle(color: GRAYSCALE_LABEL_500),
                         ),
-                      ),
-                    ],
+                        SizedBox(width: 5),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          color: GRAYSCALE_LABEL_500,
+                          size: 12,
+                        ),
+                      ],
+                    ),
                   ),
+                  SizedBox(height: 10),
 
                   Consumer<FeedProvider>(
                     builder: (context, feedProvider, child) {
@@ -665,453 +711,121 @@ class _HomePageState extends State<HomePage> {
                     },
                   ),
                   SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '나의 직관기록',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => IntutionTabBar(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          '직관기록 더보기 >',
-                          style: TextStyle(
-                            color: GRAYSCALE_LABEL_500,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  ChangeNotifierProvider(
-                    create: (_) =>
-                        IntutionRecordListProvider()
-                          ..subscribe(autoSetYear: false),
-                    child: Consumer2<IntutionRecordListProvider, TeamProvider>(
-                      builder: (context, ip, tp, child) {
-                        if (ip.isLoading) {
-                          final selectedColor =
-                              tp.selectedTeam?.color ?? BUTTON;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              color: selectedColor,
-                            ),
-                          );
-                        }
-                        final items = ip.records;
-                        if (items.isEmpty) {
-                          return Center(
-                            child: TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        IntutionRecordUploadPage(),
-                                  ),
-                                );
-                              },
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    '아직 직관 기록이 없네요. 첫 직관을 남겨볼까요?',
-                                    style: TextStyle(
-                                      color: GRAYSCALE_LABEL_600,
-                                    ),
-                                  ),
-                                  SizedBox(height: 10),
-                                  Text(
-                                    '직관기록 추가 하기 +',
-                                    style: TextStyle(color: Colors.black),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }
-                        int wins = 0;
-                        int losses = 0;
-                        int draws = 0;
-                        int? _prseScore(dynamic v) =>
-                            v is int ? v : int.tryParse('$v');
-                        for (final d in items) {
-                          final int? my = _prseScore(d['myScore']);
-                          final int? opp = _prseScore(d['opponentScore']);
-                          if (my != null && opp != null) {
-                            if (my > opp) {
-                              wins++;
-                            } else if (my < opp) {
-                              losses++;
-                            } else {
-                              draws++;
-                            }
-                          }
-                        }
-                        // 승률 계산
-                        final int totalGames = items.length;
-                        final double winRate = totalGames > 0
-                            ? (wins / totalGames) * 100
-                            : 0;
-
-                        return Column(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: WHITE,
-                                borderRadius: BorderRadius.circular(28),
-                                boxShadow: [
-                                  BoxShadow(
-                                    offset: Offset(2, 3),
-                                    color: BLACK.withOpacity(0.1),
-                                    blurRadius: 4,
-                                  ),
-                                ],
-                              ),
-
-                              child: Padding(
-                                padding: const EdgeInsets.all(10.0),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        children: [
-                                          Icon(Icons.stadium_outlined),
-                                          SizedBox(height: 5),
-                                          Text(
-                                            '총 경기',
-                                            style: TextStyle(
-                                              color: GRAYSCALE_LABEL_500,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                          SizedBox(height: 5),
-                                          Text(
-                                            '${items.length}',
-                                            style: GoogleFonts.robotoMono(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    SizedBox(width: 5),
-                                    Container(
-                                      width: 0.6,
-                                      height: 80,
-                                      color: GRAYSCALE_LABEL_300,
-                                    ),
-                                    SizedBox(width: 5),
-                                    Expanded(
-                                      child: Column(
-                                        children: [
-                                          Icon(
-                                            Icons.emoji_events_outlined,
-                                            color: Colors.blueAccent,
-                                          ),
-                                          SizedBox(height: 5),
-                                          Text(
-                                            '승',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: GRAYSCALE_LABEL_500,
-                                            ),
-                                          ),
-                                          SizedBox(height: 5),
-                                          Text(
-                                            '$wins',
-                                            style: GoogleFonts.robotoMono(
-                                              color: Colors.blueAccent,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    SizedBox(width: 5),
-                                    Container(
-                                      width: 0.6,
-                                      height: 80,
-                                      color: GRAYSCALE_LABEL_300,
-                                    ),
-                                    SizedBox(width: 5),
-
-                                    Expanded(
-                                      child: Column(
-                                        children: [
-                                          Icon(
-                                            Icons
-                                                .sentiment_dissatisfied_rounded,
-                                            color: Colors.redAccent,
-                                          ),
-                                          SizedBox(height: 5),
-                                          Text(
-                                            '패',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: GRAYSCALE_LABEL_500,
-                                            ),
-                                          ),
-                                          SizedBox(height: 5),
-                                          Text(
-                                            '$losses',
-                                            style: GoogleFonts.robotoMono(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.redAccent,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    SizedBox(width: 5),
-                                    Container(
-                                      width: 0.6,
-                                      height: 80,
-                                      color: GRAYSCALE_LABEL_300,
-                                    ),
-                                    SizedBox(width: 5),
-                                    Expanded(
-                                      child: Column(
-                                        children: [
-                                          Transform.translate(
-                                            offset: Offset(0, -10),
-                                            child: Icon(
-                                              Icons.minimize_outlined,
-                                            ),
-                                          ),
-                                          SizedBox(height: 5),
-                                          Text(
-                                            '무',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: GRAYSCALE_LABEL_500,
-                                            ),
-                                          ),
-                                          SizedBox(height: 5),
-                                          Text(
-                                            '$draws',
-                                            style: GoogleFonts.robotoMono(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    SizedBox(width: 5),
-                                    Container(
-                                      width: 0.6,
-                                      height: 80,
-                                      color: GRAYSCALE_LABEL_300,
-                                    ),
-                                    SizedBox(width: 5),
-                                    Expanded(
-                                      child: Column(
-                                        children: [
-                                          Icon(Icons.percent_outlined),
-                                          SizedBox(height: 5),
-                                          Text(
-                                            '승률',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: GRAYSCALE_LABEL_500,
-                                            ),
-                                          ),
-                                          SizedBox(height: 5),
-                                          Text(
-                                            winRate.toStringAsFixed(0),
-                                            style: GoogleFonts.robotoMono(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${selectedTeam.stadium} 푸드존',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          final foodStorePage = _getFoodStorePage(
-                            selectedTeam.stadium,
-                          );
-                          if (foodStorePage != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => foodStorePage,
-                              ),
-                            );
-                          }
-                        },
-                        child: Text(
-                          '푸드존 정보 더보기 >',
-                          style: TextStyle(
-                            color: GRAYSCALE_LABEL_500,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Consumer<FoodStoreProvider>(
-                    builder: (context, fsp, child) {
-                      // 선택된 팀의 경기장 이름으로 푸드존 리스트 가져오기
-                      final foodStores = fsp.getStore(selectedTeam.stadium);
-
-                      // 최대 5개만 표시
-                      final displayStores = foodStores.take(5).toList();
-
-                      if (displayStores.isEmpty) {
-                        return Center(child: Text('해당 경기장의 푸드존 정보가 없습니다.'));
-                      }
-
-                      return SizedBox(
-                        height: 200,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: displayStores.length,
-                          itemBuilder: (context, index) {
-                            final store = displayStores[index];
-                            return Container(
-                              width: 150,
-                              margin: const EdgeInsets.only(right: 12),
-                              child: Card(
-                                color: WHITE,
-                                child: Padding(
-                                  padding: EdgeInsets.all(10.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // 가게 이미지
-                                      if (store.storePhoto != null)
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          child: Image.asset(
-                                            store.storePhoto!,
-                                            height: 100,
-                                            width: double.infinity,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                      if (store.storePhoto == null)
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          child: Container(
-                                            width: double.infinity,
-                                            height: 100,
-                                            color: GRAYSCALE_LABEL_300,
-                                            child: Icon(Icons.restaurant_menu),
-                                          ),
-                                        ),
-
-                                      SizedBox(height: 8),
-                                      // 상호명
-                                      Text(
-                                        store.storeName,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      SizedBox(height: 4),
-                                      // 음식 타입
-                                      Text(
-                                        store.type,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: GRAYSCALE_LABEL_500,
-                                        ),
-                                      ),
-                                      SizedBox(height: 2),
-                                      Text(
-                                        store.location,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: GRAYSCALE_LABEL_400,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => IntutionRecordListPage(),
                         ),
                       );
                     },
-                  ),
-                  SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        selectedTeam.youtubeName,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                    child: Row(
+                      children: [
+                        Text(
+                          '나의 직관기록',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          launchUrl(
-                            Uri.parse(selectedTeam.youtubeUrl),
-                            mode: LaunchMode.externalApplication,
-                          );
-                        },
-                        child: Text(
-                          '더보기 >',
+                        Spacer(),
+                        Text(
+                          '직관기록 더보기',
                           style: TextStyle(
                             color: GRAYSCALE_LABEL_500,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                      ),
-                    ],
+                        SizedBox(width: 5),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 12,
+                          color: GRAYSCALE_LABEL_500,
+                        ),
+                      ],
+                    ),
                   ),
+                  SizedBox(height: 10),
+                  IntutionRecord(),
+                  SizedBox(height: 20),
+                  GestureDetector(
+                    onTap: () {
+                      final foodStorePage = _getFoodStorePage(
+                        selectedTeam.stadium,
+                      );
+                      if (foodStorePage != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => foodStorePage,
+                          ),
+                        );
+                      }
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          '${selectedTeam.stadium} 푸드존',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Spacer(),
+                        Text(
+                          '푸드존 정보 더보기 ',
+                          style: TextStyle(
+                            color: GRAYSCALE_LABEL_500,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(width: 5),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 12,
+                          color: GRAYSCALE_LABEL_500,
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  FoodStore(selectedTeam),
+                  SizedBox(height: 20),
+                  GestureDetector(
+                    onTap: () {
+                      launchUrl(
+                        Uri.parse(selectedTeam.youtubeUrl),
+                        mode: LaunchMode.externalApplication,
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          selectedTeam.youtubeName,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Spacer(),
+                        Text(
+                          '더보기',
+                          style: TextStyle(
+                            color: GRAYSCALE_LABEL_500,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(width: 5),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 12,
+                          color: GRAYSCALE_LABEL_500,
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 10),
                   Consumer<VideoProvider>(
                     builder: (context, videoProvider, child) {
                       if (videoProvider.isLoading) {
@@ -1164,6 +878,346 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       },
+    );
+  }
+
+  Widget FoodStore(TeamModel selectedTeam) {
+    return Consumer<FoodStoreProvider>(
+      builder: (context, fsp, child) {
+        // 선택된 팀의 경기장 이름으로 푸드존 리스트 가져오기
+        final foodStores = fsp.getStore(selectedTeam.stadium);
+
+        // 최대 5개만 표시
+        final displayStores = foodStores.take(5).toList();
+
+        if (displayStores.isEmpty) {
+          return Center(child: Text('해당 경기장의 푸드존 정보가 없습니다.'));
+        }
+
+        return SizedBox(
+          height: 200,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: displayStores.length,
+            itemBuilder: (context, index) {
+              final store = displayStores[index];
+              return Container(
+                width: 150,
+                margin: const EdgeInsets.only(right: 12),
+                child: Card(
+                  color: WHITE,
+                  child: Padding(
+                    padding: EdgeInsets.all(10.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 가게 이미지
+                        if (store.storePhoto != null)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.asset(
+                              store.storePhoto!,
+                              height: 100,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        if (store.storePhoto == null)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              width: double.infinity,
+                              height: 100,
+                              color: GRAYSCALE_LABEL_300,
+                              child: Icon(Icons.restaurant_menu),
+                            ),
+                          ),
+
+                        SizedBox(height: 8),
+                        // 상호명
+                        Text(
+                          store.storeName,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        SizedBox(height: 4),
+                        // 음식 타입
+                        Text(
+                          store.type,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: GRAYSCALE_LABEL_500,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          store.location,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: GRAYSCALE_LABEL_400,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget IntutionRecord() {
+    return ChangeNotifierProvider(
+      create: (_) =>
+          IntutionRecordListProvider()..subscribe(autoSetYear: false),
+      child: Consumer2<IntutionRecordListProvider, TeamProvider>(
+        builder: (context, ip, tp, child) {
+          if (ip.isLoading) {
+            final selectedColor = tp.selectedTeam?.color ?? BUTTON;
+            return Center(
+              child: CircularProgressIndicator(color: selectedColor),
+            );
+          }
+          final items = ip.records;
+          if (items.isEmpty) {
+            return Center(
+              child: TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => IntutionRecordUploadPage(),
+                    ),
+                  );
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      '아직 직관 기록이 없네요. 첫 직관을 남겨볼까요?',
+                      style: TextStyle(color: GRAYSCALE_LABEL_600),
+                    ),
+                    SizedBox(height: 10),
+                    Text('직관기록 추가 하기 +', style: TextStyle(color: Colors.black)),
+                  ],
+                ),
+              ),
+            );
+          }
+          int wins = 0;
+          int losses = 0;
+          int draws = 0;
+          int? _prseScore(dynamic v) => v is int ? v : int.tryParse('$v');
+          for (final d in items) {
+            final int? my = _prseScore(d['myScore']);
+            final int? opp = _prseScore(d['opponentScore']);
+            if (my != null && opp != null) {
+              if (my > opp) {
+                wins++;
+              } else if (my < opp) {
+                losses++;
+              } else {
+                draws++;
+              }
+            }
+          }
+          // 승률 계산
+          final int totalGames = items.length;
+          final double winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
+
+          return Column(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: WHITE,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      offset: Offset(2, 3),
+                      color: BLACK.withOpacity(0.1),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Icon(Icons.stadium_outlined),
+                            SizedBox(height: 5),
+                            Text(
+                              '총 경기',
+                              style: TextStyle(
+                                color: GRAYSCALE_LABEL_500,
+                                fontSize: 12,
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              '${items.length}',
+                              style: GoogleFonts.robotoMono(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 5),
+                      Container(
+                        width: 0.6,
+                        height: 80,
+                        color: GRAYSCALE_LABEL_300,
+                      ),
+                      SizedBox(width: 5),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.emoji_events_outlined,
+                              color: Colors.blueAccent,
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              '승',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: GRAYSCALE_LABEL_500,
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              '$wins',
+                              style: GoogleFonts.robotoMono(
+                                color: Colors.blueAccent,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 5),
+                      Container(
+                        width: 0.6,
+                        height: 80,
+                        color: GRAYSCALE_LABEL_300,
+                      ),
+                      SizedBox(width: 5),
+
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.sentiment_dissatisfied_rounded,
+                              color: Colors.redAccent,
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              '패',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: GRAYSCALE_LABEL_500,
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              '$losses',
+                              style: GoogleFonts.robotoMono(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.redAccent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 5),
+                      Container(
+                        width: 0.6,
+                        height: 80,
+                        color: GRAYSCALE_LABEL_300,
+                      ),
+                      SizedBox(width: 5),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Transform.translate(
+                              offset: Offset(0, -10),
+                              child: Icon(Icons.minimize_outlined),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              '무',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: GRAYSCALE_LABEL_500,
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              '$draws',
+                              style: GoogleFonts.robotoMono(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 5),
+                      Container(
+                        width: 0.6,
+                        height: 80,
+                        color: GRAYSCALE_LABEL_300,
+                      ),
+                      SizedBox(width: 5),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Icon(Icons.percent_outlined),
+                            SizedBox(height: 5),
+                            Text(
+                              '승률',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: GRAYSCALE_LABEL_500,
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              winRate.toStringAsFixed(0),
+                              style: GoogleFonts.robotoMono(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 

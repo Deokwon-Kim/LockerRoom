@@ -37,6 +37,8 @@ import 'package:lockerroom/provider/marketFeedEdit_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/market_upload_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
+import 'package:lockerroom/provider/quiz_provider.dart';
+import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/social_login_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
@@ -168,6 +170,8 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => FeedEditProvider()),
         ChangeNotifierProvider(create: (context) => MarketfeededitProvider()),
         ChangeNotifierProvider(create: (context) => SocialLoginProvider()),
+        ChangeNotifierProvider(create: (context) => QuizProvider()),
+        ChangeNotifierProvider(create: (context) => QuizRankingProvider()),
       ],
       child: const MyApp(),
     ),
@@ -219,7 +223,8 @@ class MyApp extends StatelessWidget {
 }
 
 class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
+  final int initialIndex;
+  const AuthWrapper({super.key, this.initialIndex = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -345,7 +350,7 @@ class AuthWrapper extends StatelessWidget {
                     // print('팀 선택 중 에러: $e');
                   }
                 });
-                return const BottomTabBar();
+                return BottomTabBar(initialIndex: initialIndex);
               } else {
                 final route = ModalRoute.of(context);
                 final isCurrentRoute = route?.isCurrent ?? false;
