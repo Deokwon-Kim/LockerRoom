@@ -11,7 +11,7 @@ class QuizData {
       '야구 룰': baseballRuelQuestions,
       '선수퀴즈': playerQuestions,
       '기록과 통계': statsQuestions,
-      '구장': stadiumQuestions,
+      '응원가': cheerSongQuestions,
     };
   }
 
