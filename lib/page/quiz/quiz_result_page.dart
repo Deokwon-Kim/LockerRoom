@@ -3,11 +3,11 @@ import 'dart:typed_data';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:lockerroom/bottom_tab_bar/quiz_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/quiz_result_model.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
 import 'package:lockerroom/main.dart';
-import 'package:lockerroom/page/quiz/quiz_start_page.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/widgets/quiz_ranking_widget.dart';
 import 'package:path_provider/path_provider.dart';
@@ -309,7 +309,7 @@ class _QuizResultPageState extends State<QuizResultPage>
                 onTap: () {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (context) => QuizStartPage()),
+                    MaterialPageRoute(builder: (context) => QuizTabBar()),
                     (route) => false,
                   );
                 },
