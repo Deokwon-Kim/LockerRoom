@@ -18,11 +18,19 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
   final _formKey = GlobalKey<FormState>();
   DateTime? selectedDate;
   bool _isTeamSelectorExpanded = false;
+  final PageController _pageController = PageController();
+  int _currentImageIndex = 0;
 
   @override
   void initState() {
     super.initState();
     selectedDate = DateTime.now();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _selectedDate(IntutionRecordProvider provider) async {
@@ -427,7 +435,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                         ),
                       ),
                       SizedBox(height: 20),
-                      intutionProvider.selectedImage != null
+                      intutionProvider.image.isNotEmpty
                           ? Container(
                               width: double.infinity,
                               height: 450,
@@ -435,12 +443,97 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                                 border: Border.all(color: GRAYSCALE_LABEL_300),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.file(
-                                  intutionProvider.selectedImage!,
-                                  fit: BoxFit.cover,
-                                ),
+                              child: Stack(
+                                children: [
+                                  PageView.builder(
+                                    controller: _pageController,
+                                    onPageChanged: (index) {
+                                      setState(() {
+                                        _currentImageIndex = index;
+                                      });
+                                    },
+                                    itemCount: intutionProvider.image.length,
+                                    itemBuilder: (context, index) {
+                                      return ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.file(
+                                          intutionProvider.image[index],
+                                          fit: BoxFit.cover,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  // 이미지 개수 인디케이터
+                                  if (intutionProvider.image.length > 1)
+                                    Positioned(
+                                      bottom: 16,
+                                      right: 16,
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.6),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '${_currentImageIndex + 1}/${intutionProvider.image.length}',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  // 이미지 삭제 버튼
+                                  Positioned(
+                                    top: 16,
+                                    right: 16,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          intutionProvider.removeImageAt(
+                                            _currentImageIndex,
+                                          );
+                                          // 삭제 후 인덱스 조정
+                                          if (_currentImageIndex >=
+                                                  intutionProvider
+                                                      .image
+                                                      .length &&
+                                              intutionProvider
+                                                  .image
+                                                  .isNotEmpty) {
+                                            _currentImageIndex =
+                                                intutionProvider.image.length -
+                                                1;
+                                          } else if (intutionProvider
+                                              .image
+                                              .isEmpty) {
+                                            _currentImageIndex = 0;
+                                          }
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.7),
+                                          borderRadius: BorderRadius.circular(
+                                            30,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 22,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             )
                           : GestureDetector(
@@ -460,7 +553,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  '+ 이미지 추가하기',
+                                  '+ 이미지 추가하기(최대 3장)',
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
