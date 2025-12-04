@@ -222,10 +222,10 @@ class QuizStartPage extends StatelessWidget {
         'icon': Icons.analytics,
       },
       {
-        'title': '구장/팀 상식',
-        'category': '구장',
+        'title': '응원가',
+        'category': '응원가',
         'colors': [BLUE_SECONDARY_700, BLUE_SECONDARY_600],
-        'icon': Icons.stadium,
+        'icon': Icons.music_note_sharp,
       },
     ];
   }
