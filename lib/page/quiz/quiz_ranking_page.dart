@@ -91,6 +91,7 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
               : null;
 
           return RefreshIndicator(
+            color: RED_DANGER_TEXT_50,
             onRefresh: () => qrp.fetchRankings(),
             child: SingleChildScrollView(
               physics: AlwaysScrollableScrollPhysics(),
