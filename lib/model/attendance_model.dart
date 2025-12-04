@@ -12,7 +12,7 @@ class AttendanceModel {
   final String? oppTeam;
   final int myScore;
   final int opponentScore;
-  final String? imageUrl;
+  final List<String> imageUrls;
   final String? memo;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -29,7 +29,7 @@ class AttendanceModel {
     this.oppTeam,
     required this.myScore,
     required this.opponentScore,
-    this.imageUrl,
+    this.imageUrls = const [],
     this.memo,
     this.createdAt,
     this.updatedAt,
@@ -48,6 +48,16 @@ class AttendanceModel {
         ? data['opponentScore'] as int
         : int.tryParse('${data['opponentScore']}') ?? 0;
 
+    // imageUrls 처리: 기존 단일 imageUrl과 새로운 imageUrls 모두 지원
+    List<String> imageUrls = [];
+    if (data['imageUrls'] != null && data['imageUrls'] is List) {
+      imageUrls = List<String>.from(data['imageUrls']);
+    } else if (data['imageUrl'] != null &&
+        data['imageUrl'].toString().isNotEmpty) {
+      // 기존 데이터 호환성: 단일 imageUrl을 리스트로 변환
+      imageUrls = [data['imageUrl'].toString()];
+    }
+
     return AttendanceModel(
       gameId: data['gameId'] ?? '',
       season: data['season'] ?? 0,
@@ -60,7 +70,7 @@ class AttendanceModel {
       oppTeam: data['oppTeam'],
       myScore: myScore,
       opponentScore: opponentScore,
-      imageUrl: data['imageUrl'],
+      imageUrls: imageUrls,
       memo: data['memo'],
       createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
@@ -81,6 +91,16 @@ class AttendanceModel {
         ? data['opponentScore'] as int
         : int.tryParse('${data['opponentScore']}') ?? 0;
 
+    // imageUrls 처리: 기존 단일 imageUrl과 새로운 imageUrls 모두 지원
+    List<String> imageUrls = [];
+    if (data['imageUrls'] != null && data['imageUrls'] is List) {
+      imageUrls = List<String>.from(data['imageUrls']);
+    } else if (data['imageUrl'] != null &&
+        data['imageUrl'].toString().isNotEmpty) {
+      // 기존 데이터 호환성: 단일 imageUrl을 리스트로 변환
+      imageUrls = [data['imageUrl'].toString()];
+    }
+
     return AttendanceModel(
       gameId: data['gameId'] ?? '',
       season: data['season'] ?? 0,
@@ -93,7 +113,7 @@ class AttendanceModel {
       oppTeam: data['oppTeam'],
       myScore: myScore,
       opponentScore: opponentScore,
-      imageUrl: data['imageUrl'],
+      imageUrls: imageUrls,
       memo: data['memo'],
       createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
@@ -118,7 +138,7 @@ class AttendanceModel {
       if (oppTeam != null) 'oppTeam': oppTeam,
       'myScore': myScore,
       'opponentScore': opponentScore,
-      if (imageUrl != null) 'imageUrl': imageUrl,
+      if (imageUrls.isNotEmpty) 'imageUrls': imageUrls,
       if (memo != null && memo!.isNotEmpty) 'memo': memo,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
@@ -140,7 +160,7 @@ class AttendanceModel {
     String? oppTeam,
     int? myScore,
     int? opponentScore,
-    String? imageUrl,
+    List<String>? imageUrls,
     String? memo,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -157,7 +177,7 @@ class AttendanceModel {
       oppTeam: oppTeam ?? this.oppTeam,
       myScore: myScore ?? this.myScore,
       opponentScore: opponentScore ?? this.opponentScore,
-      imageUrl: imageUrl ?? this.imageUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
       memo: memo ?? this.memo,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

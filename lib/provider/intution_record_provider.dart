@@ -26,7 +26,9 @@ class IntutionRecordProvider extends ChangeNotifier {
   String? _selectedTeamSympleForRecord;
   String? _selectedGameIdForRecord;
   List<ScheduleModel>? _availableGamesForDate;
+  List<File> _images = [];
 
+  List<File> get image => _images;
   bool get isLoding => _isLoading;
   bool get saving => _saving;
   ScheduleModel? get todayGame => _todayGame;
@@ -427,20 +429,23 @@ class IntutionRecordProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 이미지 업로드
-      String? imageUrl;
-      if (_selectedImage != null) {
-        try {
-          final fileName =
-              '${DateTime.now().millisecondsSinceEpoch}_${_selectedImage!.path.split('/').last}';
-          final ref = FirebaseStorage.instance.ref().child(
-            'intution_records/${user.uid}/$fileName',
-          );
+      // 여러 이미지 업로드
+      List<String> imageUrls = [];
+      if (_images.isNotEmpty) {
+        for (int i = 0; i < _images.length; i++) {
+          try {
+            final fileName =
+                '${DateTime.now().millisecondsSinceEpoch}_$i\_${_images[i].path.split('/').last}';
+            final ref = FirebaseStorage.instance.ref().child(
+              'intution_records/${user.uid}/$fileName',
+            );
 
-          await ref.putFile(_selectedImage!);
-          imageUrl = await ref.getDownloadURL();
-        } catch (e) {
-          print('직관 이미지 업로드 실패: $e');
+            await ref.putFile(_images[i]);
+            final url = await ref.getDownloadURL();
+            imageUrls.add(url);
+          } catch (e) {
+            print('직관 이미지 업로드 실패 (index $i): $e');
+          }
         }
       }
 
@@ -462,7 +467,7 @@ class IntutionRecordProvider extends ChangeNotifier {
         oppTeam: oppTeam,
         myScore: myScore,
         opponentScore: oppScore,
-        imageUrl: imageUrl,
+        imageUrls: imageUrls,
         memo: memoController.text.trim().isNotEmpty
             ? memoController.text.trim()
             : null,
@@ -477,13 +482,12 @@ class IntutionRecordProvider extends ChangeNotifier {
           .doc(g.gameId)
           .set(attendance.toMap(), SetOptions(merge: true));
 
-      // 저장 완료 후 UploadProvider 초기화
-
-      // 입력 필드 초기화
+      // 저장 완료 후 초기화
       myScoreController.clear();
       oppScoreContreller.clear();
       memoController.clear();
       _selectedImage = null;
+      _images = [];
       notifyListeners();
 
       return true;
@@ -503,18 +507,33 @@ class IntutionRecordProvider extends ChangeNotifier {
   bool get shouldDeleteImage => _shouldDeleteImage;
 
   Future<void> pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      _selectedImage = File(pickedFile.path);
+    final pickedFile = await _picker.pickMultiImage();
+    if (pickedFile.isNotEmpty) {
+      // 최대 3장으로 제한
+      final limitedFiles = pickedFile.take(3).map((e) => File(e.path)).toList();
+      setImages(limitedFiles);
       _shouldDeleteImage = false;
       notifyListeners();
     }
+  }
+
+  void setImages(List<File> newImages) {
+    _images = newImages;
+    notifyListeners();
   }
 
   void removeImage() {
     _selectedImage = null;
     _shouldDeleteImage = true;
     notifyListeners();
+  }
+
+  // 특정 인덱스의 이미지 삭제
+  void removeImageAt(int index) {
+    if (index >= 0 && index < _images.length) {
+      _images.removeAt(index);
+      notifyListeners();
+    }
   }
 
   void resetState() {
@@ -632,16 +651,16 @@ class IntutionRecordProvider extends ChangeNotifier {
         return false;
       }
 
-      // 이미지가 있으면 Storage에서 삭제
-      if (attendance.imageUrl != null && attendance.imageUrl!.isNotEmpty) {
-        try {
-          await FirebaseStorage.instance
-              .refFromURL(attendance.imageUrl!)
-              .delete();
-          print('직관 이미지 삭제: ${attendance.imageUrl}');
-        } catch (e) {
-          print('이미지 삭제 실패 ${attendance.imageUrl}: $e');
-          // 이미지 삭제 실패해도 Firestore 문서 삭제는 계속 진행
+      // 이미지들이 있으면 Storage에서 삭제
+      if (attendance.imageUrls.isNotEmpty) {
+        for (final imageUrl in attendance.imageUrls) {
+          try {
+            await FirebaseStorage.instance.refFromURL(imageUrl).delete();
+            print('직관 이미지 삭제: $imageUrl');
+          } catch (e) {
+            print('이미지 삭제 실패 $imageUrl: $e');
+            // 이미지 삭제 실패해도 Firestore 문서 삭제는 계속 진행
+          }
         }
       }
 

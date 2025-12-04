@@ -26,6 +26,9 @@ class IntutionRecordDetailPage extends StatefulWidget {
 }
 
 class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
+  late final PageController _newImagesPageController;
+  late final PageController _existingImagesPageController;
+  final ValueNotifier<int> _currentImageIndex = ValueNotifier<int>(0);
   Future<AttendanceModel?> _loadAttendance() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return null;
@@ -96,6 +99,8 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
   @override
   void initState() {
     super.initState();
+    _newImagesPageController = PageController();
+    _existingImagesPageController = PageController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<IntutionRecordProvider>().resetState();
     });
@@ -116,6 +121,9 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
     _myTeamScore.dispose();
     _oppTeamScore.dispose();
     _memoController.dispose();
+    _newImagesPageController.dispose();
+    _existingImagesPageController.dispose();
+    _currentImageIndex.dispose();
     super.dispose();
   }
 
@@ -560,52 +568,86 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                       SizedBox(height: 20),
                       Consumer<IntutionRecordProvider>(
                         builder: (context, intutionProvider, child) {
-                          if (intutionProvider.shouldDeleteImage) {
-                            return GestureDetector(
-                              onTap: () {
-                                intutionProvider.pickImage();
-                              },
-                              child: Container(
-                                padding: EdgeInsets.only(left: 10),
-                                width: double.infinity,
-                                height: 50,
-                                alignment: Alignment.centerLeft,
-                                decoration: BoxDecoration(
-                                  color: BACKGROUND_COLOR,
-                                  border: Border.all(
-                                    color: GRAYSCALE_LABEL_300,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '+ 이미지 추가하기',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                          // 새로 선택한 이미지가 있으면 표시
-                          if (intutionProvider.selectedImage != null) {
+                          // 새로 선택한 이미지들이 있으면 표시
+                          if (intutionProvider.image.isNotEmpty) {
                             return Stack(
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.file(
-                                    intutionProvider.selectedImage!,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
+                                  child: SizedBox(
                                     height: 450,
+                                    child: PageView.builder(
+                                      controller: _newImagesPageController,
+                                      onPageChanged: (index) {
+                                        _currentImageIndex.value = index;
+                                      },
+                                      itemCount: intutionProvider.image.length,
+                                      itemBuilder: (context, imgIndex) {
+                                        return Image.file(
+                                          intutionProvider.image[imgIndex],
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: 450,
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ),
+                                // 이미지 개수 인디케이터
+                                if (intutionProvider.image.length > 1)
+                                  Positioned(
+                                    bottom: 16,
+                                    right: 16,
+                                    child: ValueListenableBuilder<int>(
+                                      valueListenable: _currentImageIndex,
+                                      builder: (context, currentIndex, child) {
+                                        return Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(
+                                              0.6,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '${currentIndex + 1}/${intutionProvider.image.length}',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                // 현재 이미지 삭제 버튼
                                 Positioned(
                                   top: 16,
                                   right: 16,
                                   child: GestureDetector(
                                     onTap: () {
-                                      intutionProvider.removeImage();
+                                      final currentIdx =
+                                          _currentImageIndex.value;
+                                      intutionProvider.removeImageAt(
+                                        currentIdx,
+                                      );
+                                      // 삭제 후 인덱스 조정
+                                      if (currentIdx >=
+                                              intutionProvider.image.length &&
+                                          intutionProvider.image.isNotEmpty) {
+                                        _currentImageIndex.value =
+                                            intutionProvider.image.length - 1;
+                                      } else if (intutionProvider
+                                          .image
+                                          .isEmpty) {
+                                        _currentImageIndex.value = 0;
+                                      }
                                     },
                                     child: Container(
                                       padding: EdgeInsets.all(4),
@@ -624,41 +666,101 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                               ],
                             );
                           }
-                          // 기존 이미지가 있으면 표시
-                          if (attendance.imageUrl != null) {
+                          // 기존 이미지들이 있으면 표시 (읽기 전용)
+                          if (attendance.imageUrls.isNotEmpty) {
                             return Stack(
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: CachedNetworkImage(
-                                    imageUrl: attendance.imageUrl!,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
+                                  child: SizedBox(
                                     height: 450,
-                                    placeholder: (context, url) => Container(
-                                      color: Colors.grey[300],
-                                      child: Center(
-                                        child: Text('이미지를 불러올 수 없습니다'),
-                                      ),
+                                    child: PageView.builder(
+                                      controller: _existingImagesPageController,
+                                      onPageChanged: (index) {
+                                        _currentImageIndex.value = index;
+                                      },
+                                      itemCount: attendance.imageUrls.length,
+                                      itemBuilder: (context, imgIndex) {
+                                        return CachedNetworkImage(
+                                          imageUrl:
+                                              attendance.imageUrls[imgIndex],
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: 450,
+                                          placeholder: (context, url) =>
+                                              Container(
+                                                color: Colors.grey[300],
+                                                child: Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                ),
+                                              ),
+                                          errorWidget:
+                                              (context, error, stackTrace) =>
+                                                  Container(
+                                                    color: Colors.grey[300],
+                                                    child: Center(
+                                                      child: Text(
+                                                        '이미지를 불러올 수 없습니다',
+                                                      ),
+                                                    ),
+                                                  ),
+                                        );
+                                      },
                                     ),
                                   ),
                                 ),
+                                // 이미지 개수 인디케이터
+                                if (attendance.imageUrls.length > 1)
+                                  Positioned(
+                                    bottom: 16,
+                                    right: 16,
+                                    child: ValueListenableBuilder<int>(
+                                      valueListenable: _currentImageIndex,
+                                      builder: (context, currentIndex, child) {
+                                        return Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(
+                                              0.6,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '${currentIndex + 1}/${attendance.imageUrls.length}',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                // 이미지 변경 버튼 (기존 이미지를 새 이미지로 교체)
                                 Positioned(
                                   top: 16,
                                   right: 16,
                                   child: GestureDetector(
                                     onTap: () {
-                                      intutionProvider.removeImage();
+                                      intutionProvider.pickImage();
                                     },
                                     child: Container(
+                                      padding: EdgeInsets.all(8),
                                       decoration: BoxDecoration(
                                         color: Colors.black.withOpacity(0.7),
                                         borderRadius: BorderRadius.circular(30),
                                       ),
                                       child: Icon(
-                                        Icons.close,
+                                        Icons.edit,
                                         color: Colors.white,
-                                        size: 22,
+                                        size: 20,
                                       ),
                                     ),
                                   ),
@@ -666,51 +768,30 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                               ],
                             );
                           }
-                          // 새로 추가한 이미지가 있으면 표시
-                          else if (intutionProvider.selectedImage != null) {
-                            return GestureDetector(
-                              onTap: () {
-                                intutionProvider.pickImage();
-                              },
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.file(
-                                  intutionProvider.selectedImage!,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: 450,
-                                ),
-                              ),
-                            );
-                          }
                           // 둘 다 없으면 추가 버튼 표시
-                          else {
-                            return GestureDetector(
-                              onTap: () {
-                                intutionProvider.pickImage();
-                              },
-                              child: Container(
-                                padding: EdgeInsets.only(left: 10),
-                                width: double.infinity,
-                                height: 50,
-                                alignment: Alignment.centerLeft,
-                                decoration: BoxDecoration(
-                                  color: BACKGROUND_COLOR,
-                                  border: Border.all(
-                                    color: GRAYSCALE_LABEL_300,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '+ 이미지 추가하기',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          return GestureDetector(
+                            onTap: () {
+                              intutionProvider.pickImage();
+                            },
+                            child: Container(
+                              padding: EdgeInsets.only(left: 10),
+                              width: double.infinity,
+                              height: 50,
+                              alignment: Alignment.centerLeft,
+                              decoration: BoxDecoration(
+                                color: BACKGROUND_COLOR,
+                                border: Border.all(color: GRAYSCALE_LABEL_300),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '+ 이미지 추가하기',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            );
-                          }
+                            ),
+                          );
                         },
                       ),
                     ],

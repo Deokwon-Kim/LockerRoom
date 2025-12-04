@@ -62,6 +62,12 @@ class _BottomTabBarState extends State<BottomTabBar> {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 4) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        context.read<TeamProvider>().loadTeam(user.uid);
+      }
+    }
   }
 
   @override

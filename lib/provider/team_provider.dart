@@ -15,6 +15,7 @@ class TeamProvider with ChangeNotifier {
         .get();
     if (doc.exists && doc.data()?['team'] != null) {
       _team = doc['team'];
+      _selectedTeam = findTeamByName(_team!);
     }
     notifyListeners();
   }
@@ -435,7 +436,8 @@ class TeamProvider with ChangeNotifier {
   TeamModel? findTeamByName(String name) {
     final teams = _teamList['team'] ?? [];
     try {
-      return teams.firstWhere((t) => t.symplename == name);
+      // name 또는 symplename으로 검색
+      return teams.firstWhere((t) => t.name == name || t.symplename == name);
     } catch (_) {
       return null;
     }

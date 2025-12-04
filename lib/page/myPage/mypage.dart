@@ -32,8 +32,11 @@ class _MypageState extends State<Mypage> {
     if (user != null) {
       // 프로필 이미지 로드
       Future.microtask(() async {
+        if (!mounted) return;
         await context.read<ProfileProvider>().loadProfileImage(user.uid);
+        if (!mounted) return;
         await context.read<TeamProvider>().loadTeam(user.uid);
+        if (!mounted) return;
         await context.read<UserProvider>().loadNickname();
       });
     }
