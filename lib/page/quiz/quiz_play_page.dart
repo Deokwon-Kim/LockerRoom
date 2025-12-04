@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
@@ -14,13 +17,80 @@ class QuizPlayPage extends StatefulWidget {
 }
 
 class _QuizPlayPageState extends State<QuizPlayPage> {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlaying = false;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+
+  // 스트림 구독 저장
+  StreamSubscription? _durationSubscription;
+  StreamSubscription? _positionSubscription;
+  StreamSubscription? _stateSubscription;
+  StreamSubscription? _completeSubscription;
+
   @override
   void initState() {
     super.initState();
+
+    // 오디오 플레이어 리스너 설정
+    _durationSubscription = _audioPlayer.onDurationChanged.listen((duration) {
+      if (mounted) setState(() => _duration = duration);
+    });
+
+    _positionSubscription = _audioPlayer.onPositionChanged.listen((position) {
+      if (mounted) setState(() => _position = position);
+    });
+
+    _stateSubscription = _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) setState(() => _isPlaying = state == PlayerState.playing);
+    });
+
+    _completeSubscription = _audioPlayer.onPlayerComplete.listen((_) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _position = Duration.zero;
+        });
+      }
+    });
+
     // 퀴즈 시작
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<QuizProvider>().startQuiz(widget.category);
+      final provider = context.read<QuizProvider>();
+      provider.startQuiz(widget.category);
+
+      // 첫 문제에 오디오가 있으면 자동 재생
+      if (provider.currentQuestion?.audioPath != null) {
+        _playAudio(provider.currentQuestion!.audioPath!);
+      }
     });
+  }
+
+  @override
+  void didUpdateWidget(QuizPlayPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 카테고리가 변경되면 오디오 정지
+    if (oldWidget.category != widget.category) {
+      _audioPlayer.stop();
+    }
+  }
+
+  // 오디오 재생 헬퍼 메서드
+  Future<void> _playAudio(String audioPath) async {
+    await _audioPlayer.stop(); // 기존 재생 중지
+    await _audioPlayer.play(AssetSource(audioPath));
+  }
+
+  @override
+  void dispose() {
+    // 스트림 구독 취소
+    _durationSubscription?.cancel();
+    _positionSubscription?.cancel();
+    _stateSubscription?.cancel();
+    _completeSubscription?.cancel();
+
+    _audioPlayer.dispose(); // 메모리 누수 방지
+    super.dispose();
   }
 
   @override
@@ -128,6 +198,12 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                             fit: BoxFit.cover,
                           ),
                         ),
+                        SizedBox(height: 20),
+                      ],
+
+                      // 응원가 플레이어 (있는 경우)
+                      if (question.audioPath != null) ...[
+                        _buildAudioPlayer(question.audioPath!),
                         SizedBox(height: 20),
                       ],
 
@@ -413,6 +489,11 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
     } else {
       // 다음 문제
       quizProvider.nextQuestion();
+
+      // 다음 문제에 오디오가 있으면 자동 재생
+      if (quizProvider.currentQuestion?.audioPath != null) {
+        _playAudio(quizProvider.currentQuestion!.audioPath!);
+      }
     }
   }
 
@@ -442,5 +523,142 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
       default:
         return difficulty;
     }
+  }
+
+  // 오디오 플레이어 UI
+  Widget _buildAudioPlayer(String audioPath) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: WHITE,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: GRAYSCALE_LABEL_300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // 제목
+          Row(
+            children: [
+              Icon(Icons.music_note, color: BUTTON, size: 20),
+              SizedBox(width: 8),
+              Text(
+                '응원가 힌트',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'kbo',
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+
+          // 재생 컨트롤
+          Row(
+            children: [
+              // 재생/일시정지 버튼
+              GestureDetector(
+                onTap: () async {
+                  if (_isPlaying) {
+                    await _audioPlayer.pause();
+                  } else {
+                    await _audioPlayer.play(AssetSource(audioPath));
+                  }
+                },
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: BUTTON,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _isPlaying ? Icons.pause : Icons.play_arrow,
+                    color: WHITE,
+                    size: 28,
+                  ),
+                ),
+              ),
+              SizedBox(width: 12),
+
+              // 진행바와 시간
+              Expanded(
+                child: Column(
+                  children: [
+                    // 진행바
+                    SliderTheme(
+                      data: SliderThemeData(
+                        trackHeight: 4,
+                        thumbShape: RoundSliderThumbShape(
+                          enabledThumbRadius: 6,
+                        ),
+                        overlayShape: RoundSliderOverlayShape(
+                          overlayRadius: 12,
+                        ),
+                      ),
+                      child: Slider(
+                        value: _position.inMilliseconds.toDouble().clamp(
+                          0.0,
+                          _duration.inMilliseconds.toDouble(),
+                        ),
+                        max: _duration.inMilliseconds.toDouble() > 0
+                            ? _duration.inMilliseconds.toDouble()
+                            : 1.0,
+                        activeColor: BUTTON,
+                        inactiveColor: GRAYSCALE_LABEL_200,
+                        onChanged: (value) async {
+                          await _audioPlayer.seek(
+                            Duration(milliseconds: value.toInt()),
+                          );
+                        },
+                      ),
+                    ),
+
+                    // 시간 표시
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _formatDuration(_position),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: GRAYSCALE_LABEL_600,
+                            ),
+                          ),
+                          Text(
+                            _formatDuration(_duration),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: GRAYSCALE_LABEL_600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 시간 포맷팅 (0:05 형식)
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds.remainder(60);
+    return '$minutes:${twoDigits(seconds)}';
   }
 }
