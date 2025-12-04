@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 // 두산베어스
 const korea = Color(0xff00022E);
 
-const Doosan = Color(0xff181928);
+const Doosan = Color.fromARGB(255, 13, 12, 40);
 
 // SSG 랜더스
 const Landers = Color(0xffCE0E2D);
