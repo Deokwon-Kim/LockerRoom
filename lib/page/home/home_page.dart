@@ -18,7 +18,6 @@ import 'package:lockerroom/page/food_store/landersfield_Store_page.dart';
 import 'package:lockerroom/page/food_store/lionsParksStore_page.dart';
 import 'package:lockerroom/page/food_store/ncParkStore_page.dart';
 import 'package:lockerroom/page/food_store/wizParkStore_page.dart';
-import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_upload_page.dart';
 import 'package:lockerroom/page/schedule/schedule.dart';
 import 'package:lockerroom/provider/block_provider.dart';
@@ -716,7 +715,7 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => IntutionRecordListPage(),
+                          builder: (context) => IntutionTabBar(),
                         ),
                       );
                     },
