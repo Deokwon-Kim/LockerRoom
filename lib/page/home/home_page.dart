@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lockerroom/bottom_tab_bar/intution_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
@@ -16,7 +17,6 @@ import 'package:lockerroom/page/food_store/landersfield_Store_page.dart';
 import 'package:lockerroom/page/food_store/lionsParksStore_page.dart';
 import 'package:lockerroom/page/food_store/ncParkStore_page.dart';
 import 'package:lockerroom/page/food_store/wizParkStore_page.dart';
-import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_upload_page.dart';
 import 'package:lockerroom/page/schedule/schedule.dart';
 import 'package:lockerroom/provider/block_provider.dart';
@@ -680,7 +680,7 @@ class _HomePageState extends State<HomePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => IntutionRecordListPage(),
+                              builder: (context) => IntutionTabBar(),
                             ),
                           );
                         },
