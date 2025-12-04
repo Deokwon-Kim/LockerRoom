@@ -7,6 +7,7 @@ class QuizQuestionModel {
   final String difficulty;
   final String explanation;
   final String? imageUrl;
+  final String? audioPath;
 
   QuizQuestionModel({
     required this.quizId,
@@ -17,6 +18,7 @@ class QuizQuestionModel {
     required this.difficulty,
     required this.explanation,
     this.imageUrl,
+    this.audioPath,
   });
 
   // json 변환 (나중을 위해)
@@ -29,6 +31,7 @@ class QuizQuestionModel {
       'difficulty': difficulty,
       'explanation': explanation,
       'imageUrl': imageUrl,
+      'audioPath': audioPath,
     };
   }
 
@@ -42,6 +45,7 @@ class QuizQuestionModel {
       difficulty: json['difficulty'] as String,
       explanation: json['explanation'] as String,
       imageUrl: json['imageUrl'] as String?,
+      audioPath: json['audioPath'] as String?,
     );
   }
 
@@ -55,6 +59,7 @@ class QuizQuestionModel {
     String? difficulty,
     String? explanation,
     String? imageUrl,
+    String? audioPath,
   }) {
     return QuizQuestionModel(
       quizId: quizId ?? this.quizId,
@@ -65,6 +70,7 @@ class QuizQuestionModel {
       difficulty: difficulty ?? this.difficulty,
       explanation: explanation ?? this.explanation,
       imageUrl: imageUrl ?? this.imageUrl,
+      audioPath: audioPath ?? this.audioPath,
     );
   }
 }
