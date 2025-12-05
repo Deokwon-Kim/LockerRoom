@@ -289,6 +289,17 @@ class FeedProvider extends ChangeNotifier {
     });
   }
 
+  // 조회수 증가
+  Future<void> incrementViewCount(String postId) async {
+    try {
+      await _postCollection.doc(postId).update({
+        'viewCount': FieldValue.increment(1),
+      });
+    } catch (e) {
+      print('조회수 증가 에러: $e');
+    }
+  }
+
   // 현재 로그인 한 유저에 게시물만 불러오기
   Stream<List<PostModel>> listenMyPosts() {
     final userId = FirebaseAuth.instance.currentUser?.uid;
