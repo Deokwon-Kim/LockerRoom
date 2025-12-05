@@ -346,7 +346,7 @@ class _HomePageState extends State<HomePage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Spacer(),
+                        SizedBox(width: 10),
                         Icon(
                           Icons.arrow_forward_ios,
                           size: 12,
