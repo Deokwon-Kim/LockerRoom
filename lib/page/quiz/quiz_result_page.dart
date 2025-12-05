@@ -8,6 +8,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/quiz_result_model.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
 import 'package:lockerroom/main.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/widgets/quiz_ranking_widget.dart';
 import 'package:path_provider/path_provider.dart';
@@ -277,6 +278,7 @@ class _QuizResultPageState extends State<QuizResultPage>
   }
 
   Widget _buildButtons() {
+    final selectedTeamColor = context.watch<TeamProvider>().selectedTeam?.color;
     return Column(
       children: [
         GestureDetector(
@@ -287,19 +289,19 @@ class _QuizResultPageState extends State<QuizResultPage>
             decoration: BoxDecoration(
               color: WHITE,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: BUTTON),
+              border: Border.all(color: selectedTeamColor!),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.share, color: BUTTON),
+                Icon(Icons.share, color: selectedTeamColor),
                 SizedBox(width: 10),
                 Text(
                   '공유하기',
                   style: TextStyle(
                     fontFamily: 'kbo',
                     fontSize: 16,
-                    color: BUTTON,
+                    color: selectedTeamColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -326,14 +328,14 @@ class _QuizResultPageState extends State<QuizResultPage>
                   decoration: BoxDecoration(
                     color: WHITE,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: GRAYSCALE_LABEL_400),
+                    border: Border.all(color: selectedTeamColor),
                   ),
                   child: Text(
                     '홈으로',
                     style: TextStyle(
                       fontFamily: 'kbo',
                       fontSize: 16,
-                      color: GRAYSCALE_LABEL_900,
+                      color: selectedTeamColor,
                     ),
                   ),
                 ),
@@ -356,7 +358,7 @@ class _QuizResultPageState extends State<QuizResultPage>
                   width: double.infinity,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: BUTTON,
+                    color: selectedTeamColor,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(

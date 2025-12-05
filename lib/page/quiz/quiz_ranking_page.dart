@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/ranking_user_model.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 
 class QuizRankingPage extends StatefulWidget {
@@ -65,12 +66,28 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
                   children: [
                     CupertinoButton(
                       padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('취소', style: TextStyle(color: BUTTON)),
+                      child: Text(
+                        '취소',
+                        style: TextStyle(
+                          color: context
+                              .watch<TeamProvider>()
+                              .selectedTeam
+                              ?.color,
+                        ),
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                     CupertinoButton(
                       padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('완료', style: TextStyle(color: BUTTON)),
+                      child: Text(
+                        '완료',
+                        style: TextStyle(
+                          color: context
+                              .watch<TeamProvider>()
+                              .selectedTeam
+                              ?.color,
+                        ),
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],

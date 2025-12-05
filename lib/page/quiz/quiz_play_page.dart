@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/quiz/quiz_result_page.dart';
 import 'package:lockerroom/provider/quiz_provider.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -261,6 +262,8 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
 
   @override
   Widget build(BuildContext context) {
+    final teamProvider = context.read<TeamProvider>();
+    final selectedTeamColor = teamProvider.selectedTeam?.color;
     return Consumer<QuizProvider>(
       builder: (context, quizProvider, child) {
         if (quizProvider.isLoading) {
@@ -310,7 +313,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
               LinearProgressIndicator(
                 value: quizProvider.progress,
                 backgroundColor: GRAYSCALE_LABEL_200,
-                valueColor: AlwaysStoppedAnimation<Color>(BUTTON),
+                valueColor: AlwaysStoppedAnimation<Color>(selectedTeamColor!),
                 minHeight: 6,
               ),
               Expanded(
@@ -508,7 +511,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                           height: 58,
                           decoration: BoxDecoration(
                             color: quizProvider.showExplanation
-                                ? BUTTON
+                                ? selectedTeamColor
                                 : GRAYSCALE_LABEL_200,
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -713,7 +716,11 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
           // 제목
           Row(
             children: [
-              Icon(Icons.music_note, color: BUTTON, size: 20),
+              Icon(
+                Icons.music_note,
+                color: context.watch<TeamProvider>().selectedTeam?.color,
+                size: 20,
+              ),
               SizedBox(width: 8),
               Text(
                 '응원가 힌트',
@@ -743,7 +750,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: BUTTON,
+                    color: context.watch<TeamProvider>().selectedTeam?.color,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -778,7 +785,10 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                         max: _duration.inMilliseconds.toDouble() > 0
                             ? _duration.inMilliseconds.toDouble()
                             : 1.0,
-                        activeColor: BUTTON,
+                        activeColor: context
+                            .watch<TeamProvider>()
+                            .selectedTeam
+                            ?.color,
                         inactiveColor: GRAYSCALE_LABEL_200,
                         onChanged: (value) async {
                           await _audioPlayer.seek(
