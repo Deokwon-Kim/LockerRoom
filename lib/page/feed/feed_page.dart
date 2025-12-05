@@ -396,107 +396,187 @@ class _PostWidgetState extends State<PostWidget> {
                 if (widget.post.mediaUrls.isNotEmpty)
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      final bool inSingle = widget.post.mediaUrls.length == 1;
+                      final bool isSingle = widget.post.mediaUrls.length == 1;
                       final double availableWidth = constraints.maxWidth;
 
-                      // 싱글일 때는 16:9 비율, 멀티일 때는 정사각형
-                      final double aspectRatio = inSingle ? 16 / 9 : 1.0;
-                      final double listHeight = (availableWidth / aspectRatio)
-                          .clamp(160.0, 400.0);
-                      final double itemWidth = inSingle
-                          ? availableWidth
-                          : (availableWidth * 0.48).clamp(
-                              140.0,
-                              availableWidth,
-                            );
+                      // 싱글 이미지: 원본 비율 유지, 여러 이미지: 정사각형 슬라이더
+                      if (isSingle) {
+                        final url = widget.post.mediaUrls[0];
+                        final isVideo = MediaUtils.isVideoFromPost(
+                          widget.post,
+                          0,
+                        );
 
-                      return SizedBox(
-                        height: listHeight,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: widget.post.mediaUrls.length,
-                          itemBuilder: (_, i) {
-                            final url = widget.post.mediaUrls[i];
-                            final isVideo = MediaUtils.isVideoFromPost(
-                              widget.post,
-                              i,
-                            );
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                left: 0,
-                                right: inSingle ? 0 : 8,
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: isVideo
-                                    ? GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  FullscreenVideoPlayer(
-                                                    videoUrl: url,
-                                                  ),
-                                            ),
-                                          );
-                                        },
-                                        child: NetworkVideoPlayer(
-                                          videoUrl: url,
-                                          width: itemWidth,
-                                          height: listHeight,
-                                          fit: BoxFit.contain,
-                                          autoPlay: true,
-                                          muted: true,
-                                          showControls: false,
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: isVideo
+                              ? AspectRatio(
+                                  aspectRatio: 16 / 9,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              FullscreenVideoPlayer(
+                                                videoUrl: url,
+                                              ),
                                         ),
-                                      )
-                                    : GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  FullscreenImageViewer(
-                                                    imageUrls:
-                                                        widget.post.mediaUrls,
-                                                    initialIndex: i,
-                                                  ),
+                                      );
+                                    },
+                                    child: NetworkVideoPlayer(
+                                      videoUrl: url,
+                                      width: availableWidth,
+                                      height: availableWidth * 9 / 16,
+                                      fit: BoxFit.contain,
+                                      autoPlay: true,
+                                      muted: true,
+                                      showControls: false,
+                                    ),
+                                  ),
+                                )
+                              : GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            FullscreenImageViewer(
+                                              imageUrls: widget.post.mediaUrls,
+                                              initialIndex: 0,
                                             ),
-                                          );
-                                        },
-                                        child: Image.network(
-                                          url,
-                                          height: listHeight,
-                                          width: itemWidth,
-                                          fit: BoxFit.cover,
-                                          loadingBuilder:
-                                              (
-                                                context,
-                                                child,
-                                                loadingProgress,
-                                              ) {
-                                                if (loadingProgress == null) {
-                                                  return child;
-                                                }
-                                                return SizedBox(
-                                                  height: listHeight,
-                                                  width: itemWidth,
-                                                  child: Center(
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          color: selectedColor,
-                                                        ),
-                                                  ),
-                                                );
-                                              },
-                                        ),
                                       ),
-                              ),
-                            );
-                          },
-                        ),
-                      );
+                                    );
+                                  },
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxHeight: 500, // 최대 높이 제한
+                                    ),
+                                    child: Image.network(
+                                      url,
+                                      width: availableWidth,
+                                      fit: BoxFit.contain,
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                            if (loadingProgress == null)
+                                              return child;
+                                            return Container(
+                                              height: 200,
+                                              child: Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: selectedColor,
+                                                    ),
+                                              ),
+                                            );
+                                          },
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return Container(
+                                              height: 200,
+                                              color: GRAYSCALE_LABEL_200,
+                                              child: Center(
+                                                child: Icon(
+                                                  Icons.broken_image,
+                                                  color: GRAYSCALE_LABEL_500,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                    ),
+                                  ),
+                                ),
+                        );
+                      } else {
+                        // 멀티 이미지: 정사각형 슬라이더 유지
+                        final double listHeight = availableWidth * 0.7;
+                        final double itemWidth = (availableWidth * 0.7);
+
+                        return SizedBox(
+                          height: listHeight,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: widget.post.mediaUrls.length,
+                            itemBuilder: (_, i) {
+                              final url = widget.post.mediaUrls[i];
+                              final isVideo = MediaUtils.isVideoFromPost(
+                                widget.post,
+                                i,
+                              );
+                              return Padding(
+                                padding: EdgeInsets.only(right: 8),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: isVideo
+                                      ? GestureDetector(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    FullscreenVideoPlayer(
+                                                      videoUrl: url,
+                                                    ),
+                                              ),
+                                            );
+                                          },
+                                          child: NetworkVideoPlayer(
+                                            videoUrl: url,
+                                            width: itemWidth,
+                                            height: listHeight,
+                                            fit: BoxFit.cover,
+                                            autoPlay: true,
+                                            muted: true,
+                                            showControls: false,
+                                          ),
+                                        )
+                                      : GestureDetector(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    FullscreenImageViewer(
+                                                      imageUrls:
+                                                          widget.post.mediaUrls,
+                                                      initialIndex: i,
+                                                    ),
+                                              ),
+                                            );
+                                          },
+                                          child: Image.network(
+                                            url,
+                                            height: listHeight,
+                                            width: itemWidth,
+                                            fit: BoxFit.cover,
+                                            loadingBuilder:
+                                                (
+                                                  context,
+                                                  child,
+                                                  loadingProgress,
+                                                ) {
+                                                  if (loadingProgress == null)
+                                                    return child;
+                                                  return SizedBox(
+                                                    height: listHeight,
+                                                    width: itemWidth,
+                                                    child: Center(
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                            color:
+                                                                selectedColor,
+                                                          ),
+                                                    ),
+                                                  );
+                                                },
+                                          ),
+                                        ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      }
                     },
                   ),
                 // 좋아요 버튼
