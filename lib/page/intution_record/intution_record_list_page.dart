@@ -265,7 +265,7 @@ class _FilterBar extends StatelessWidget {
                 child: Row(
                   children: [
                     Text(
-                      lp.selectedYear == null ? '전체' : '${lp.selectedYear}',
+                      lp.selectedYear == null ? '전체' : '${lp.selectedYear}년',
                       style: GoogleFonts.roboto(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
