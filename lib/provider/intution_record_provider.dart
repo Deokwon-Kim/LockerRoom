@@ -557,7 +557,7 @@ class IntutionRecordProvider extends ChangeNotifier {
     required int newMyscore,
     required int newOppScore,
     String? newMemo,
-    File? newImage,
+    List<File>? newImages,
   }) async {
     try {
       _isLoading = true;
@@ -568,23 +568,6 @@ class IntutionRecordProvider extends ChangeNotifier {
         _isLoading = false;
         notifyListeners();
         return false;
-      }
-
-      // 이미지 업로드
-      String? imageUrl;
-      if (newImage != null) {
-        try {
-          final fileName =
-              '${DateTime.now().millisecondsSinceEpoch}_${newImage.path.split('/').last}';
-          final ref = FirebaseStorage.instance.ref().child(
-            'intution_records/${user.uid}/$fileName',
-          );
-
-          await ref.putFile(newImage);
-          imageUrl = await ref.getDownloadURL();
-        } catch (e) {
-          print('직관 이미지 업로드 실패: $e');
-        }
       }
 
       // 업데이트할 데이터 준비
@@ -598,23 +581,26 @@ class IntutionRecordProvider extends ChangeNotifier {
         updateData['memo'] = newMemo.trim().isNotEmpty ? newMemo.trim() : null;
       }
 
-      if (_shouldDeleteImage) {
-        updateData['imageUrl'] = imageUrl;
-      }
-      // 새 이미지가 있으면 업로드
-      else if (newImage != null) {
-        try {
-          final fileName =
-              '${DateTime.now().millisecondsSinceEpoch}_${newImage.path.split('/').last}';
-          final ref = FirebaseStorage.instance.ref().child(
-            'intution_records/${user.uid}/$fileName',
-          );
+      // 새 이미지들이 있으면 업로드
+      if (newImages != null && newImages.isNotEmpty) {
+        List<String> imageUrls = [];
+        for (int i = 0; i < newImages.length; i++) {
+          try {
+            final fileName =
+                '${DateTime.now().millisecondsSinceEpoch}_${i}_${newImages[i].path.split('/').last}';
+            final ref = FirebaseStorage.instance.ref().child(
+              'intution_records/${user.uid}/$fileName',
+            );
 
-          await ref.putFile(newImage);
-          final imageUrl = await ref.getDownloadURL();
-          updateData['imageUrl'] = imageUrl;
-        } catch (e) {
-          print('직관 이미지 업로드 실패: $e');
+            await ref.putFile(newImages[i]);
+            final url = await ref.getDownloadURL();
+            imageUrls.add(url);
+          } catch (e) {
+            print('직관 이미지 업로드 실패 (index $i): $e');
+          }
+        }
+        if (imageUrls.isNotEmpty) {
+          updateData['imageUrls'] = imageUrls;
         }
       }
 
@@ -625,6 +611,8 @@ class IntutionRecordProvider extends ChangeNotifier {
           .doc(gameId)
           .update(updateData);
 
+      // 업데이트 성공 후 이미지 리스트 초기화
+      _images = [];
       _isLoading = false;
       _shouldDeleteImage = false;
       notifyListeners();

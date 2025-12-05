@@ -189,7 +189,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                           newMyscore: myScore,
                           newOppScore: oppScore,
                           newMemo: _memoController.text.trim(),
-                          newImage: irp.selectedImage,
+                          newImages: irp.image.isNotEmpty ? irp.image : null,
                         );
 
                         if (success) {
