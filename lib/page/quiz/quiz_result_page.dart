@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gal/gal.dart';
 import 'package:lockerroom/bottom_tab_bar/quiz_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/quiz_result_model.dart';
@@ -71,43 +71,49 @@ class _QuizResultPageState extends State<QuizResultPage>
 
       body: Stack(
         children: [
-          Screenshot(
-            controller: _screenshotController,
-            child: Container(
-              color: BACKGROUND_COLOR,
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(left: 16, right: 16, bottom: 16),
-                child: Column(
-                  children: [
-                    AppBar(
-                      backgroundColor: BACKGROUND_COLOR,
-                      elevation: 0,
-                      scrolledUnderElevation: 0,
-                      automaticallyImplyLeading: false,
-                      title: Text(
-                        '퀴즈 결과',
-                        style: TextStyle(
-                          fontFamily: 'kbo',
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+          SingleChildScrollView(
+            padding: EdgeInsets.only(left: 16, right: 16, bottom: 16),
+            child: Column(
+              children: [
+                AppBar(
+                  backgroundColor: BACKGROUND_COLOR,
+                  elevation: 0,
+                  scrolledUnderElevation: 0,
+                  automaticallyImplyLeading: false,
+                  title: Text(
+                    '퀴즈 결과',
+                    style: TextStyle(
+                      fontFamily: 'kbo',
+                      fontWeight: FontWeight.bold,
                     ),
-                    ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: _buildScoreCard(),
-                    ),
-                    SizedBox(height: 24),
-                    _buildStatsCard(),
-                    SizedBox(height: 24),
-                    const QuizRankingWidget(),
-                    SizedBox(height: 24),
-                    _buildProgressCard(),
-                    if (_isCapturing) _buildBranding(),
-                    SizedBox(height: 24),
-                    if (!_isCapturing) _buildButtons(),
-                  ],
+                  ),
                 ),
-              ),
+                // Screenshot 위젯은 공유할 영역만 감싸기
+                Screenshot(
+                  controller: _screenshotController,
+                  child: Container(
+                    color: BACKGROUND_COLOR,
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        ScaleTransition(
+                          scale: _scaleAnimation,
+                          child: _buildScoreCard(),
+                        ),
+                        SizedBox(height: 24),
+                        _buildStatsCard(),
+                        SizedBox(height: 24),
+                        const QuizRankingWidget(),
+                        SizedBox(height: 24),
+                        _buildProgressCard(),
+                        if (_isCapturing) _buildBranding(),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 24),
+                if (!_isCapturing) _buildButtons(),
+              ],
             ),
           ),
           if (!_isCapturing)
@@ -486,15 +492,20 @@ class _QuizResultPageState extends State<QuizResultPage>
       return;
     }
 
-    final result = await ImageGallerySaver.saveImage(
-      image,
-      quality: 100,
-      name: 'quiz_result_${DateTime.now().millisecondsSinceEpoch}',
-    );
+    try {
+      // 임시 파일로 저장 후 갤러리에 저장
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File(
+        '${tempDir.path}/quiz_result_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
+      await tempFile.writeAsBytes(image);
 
-    if (result['isSuccess']) {
+      await Gal.putImage(tempFile.path);
       _showToast('갤러리에 저장되었습니다');
-    } else {
+
+      // 임시 파일 삭제
+      await tempFile.delete();
+    } catch (e) {
       _showToast('저장 실패');
     }
   }
@@ -523,7 +534,7 @@ class _QuizResultPageState extends State<QuizResultPage>
 
       uploadProvider.setImages([tempFile]);
       uploadProvider.setInitialCaption(
-        '야구 퀴즈 ${widget.result.score}점 달성! 🎉\n\n#야구퀴즈 #야빠 #${widget.result.category}',
+        '더베이스 ${widget.result.category} 퀴즈 ${widget.result.score}점 달성! 🎉\n\n#야구퀴즈 #야빠 #더베이스 #${widget.result.category}',
       );
 
       // AuthWrapper를 통해 이동하여 사용자 정보 로드 및 초기화 보장
@@ -562,7 +573,8 @@ class _QuizResultPageState extends State<QuizResultPage>
 
     await Share.shareXFiles(
       [XFile(imagePath)],
-      text: '야구 퀴즈 ${widget.result.score}점! 🎉 #야구퀴즈 #야빠',
+      text:
+          '더베이스 ${widget.result.category} 퀴즈 ${widget.result.score}점 달성! 🎉\n\n#야구퀴즈 #야빠 #더베이스 #${widget.result.category}',
       sharePositionOrigin: sharePositionOrigin,
     );
   }
