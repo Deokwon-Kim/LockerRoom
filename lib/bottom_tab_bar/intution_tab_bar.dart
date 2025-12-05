@@ -186,7 +186,9 @@ class _IntutionTabBarState extends State<IntutionTabBar> {
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? BUTTON : GRAYSCALE_LABEL_500,
+                  color: isSelected
+                      ? context.watch<TeamProvider>().selectedTeam?.color
+                      : GRAYSCALE_LABEL_500,
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),

@@ -4,7 +4,9 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/quiz/quiz_ranking_page.dart';
 import 'package:lockerroom/page/quiz/quiz_record_page.dart';
 import 'package:lockerroom/page/quiz/quiz_start_page.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/widgets/svg_icon.dart';
+import 'package:provider/provider.dart';
 
 class QuizTabBar extends StatefulWidget {
   final int initialIndex;
@@ -121,7 +123,9 @@ class _QuizTabBarState extends State<QuizTabBar> {
     required int index,
   }) {
     final isSelected = _selectedIndex == index;
-    final color = isSelected ? BUTTON : GRAYSCALE_LABEL_500;
+    final color = isSelected
+        ? context.watch<TeamProvider>().selectedTeam?.color
+        : GRAYSCALE_LABEL_500;
 
     return Expanded(
       child: GestureDetector(
@@ -171,13 +175,17 @@ class _QuizTabBarState extends State<QuizTabBar> {
                 assetPath: isSelected ? selectedSvgPath : unselectedSvgPath,
                 width: 28,
                 height: 28,
-                color: isSelected ? BUTTON : Colors.grey,
+                color: isSelected
+                    ? context.watch<TeamProvider>().selectedTeam?.color
+                    : Colors.grey,
               ),
               SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? BUTTON : GRAYSCALE_LABEL_500,
+                  color: isSelected
+                      ? context.watch<TeamProvider>().selectedTeam?.color
+                      : GRAYSCALE_LABEL_500,
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
