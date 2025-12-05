@@ -8,6 +8,8 @@ import 'package:lockerroom/page/quiz/quiz_result_page.dart';
 import 'package:lockerroom/provider/quiz_provider.dart';
 import 'package:provider/provider.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 class QuizPlayPage extends StatefulWidget {
   final String category;
   const QuizPlayPage({super.key, required this.category});
@@ -59,11 +61,175 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
       final provider = context.read<QuizProvider>();
       provider.startQuiz(widget.category);
 
-      // 첫 문제에 오디오가 있으면 자동 재생
+      // 응원가 카테고리일 때 설명 팝업 표시 (팝업 확인 후 오디오 재생)
+      if (widget.category == '응원가') {
+        _checkAndShowCheerSongPopup();
+      } else {
+        // 응원가 외 카테고리: 첫 문제에 오디오가 있으면 자동 재생
+        if (provider.currentQuestion?.audioPath != null) {
+          _playAudio(provider.currentQuestion!.audioPath!);
+        }
+      }
+    });
+  }
+
+  // 팝업 표시 여부 확인 및 표시
+  Future<void> _checkAndShowCheerSongPopup() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool dontShowAgain = prefs.getBool('dontShowCheerSongPopup') ?? false;
+
+    if (!dontShowAgain) {
+      if (mounted) _showCheerSongGuidePopup();
+    } else {
+      // 팝업 안 띄우는 경우 바로 재생
+      final provider = context.read<QuizProvider>();
       if (provider.currentQuestion?.audioPath != null) {
         _playAudio(provider.currentQuestion!.audioPath!);
       }
-    });
+    }
+  }
+
+  // 응원가 퀴즈 설명 팝업
+  void _showCheerSongGuidePopup() {
+    bool isChecked = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            backgroundColor: WHITE,
+            title: Row(
+              children: [
+                Icon(Icons.music_note, color: BUTTON, size: 28),
+                SizedBox(width: 8),
+                Text(
+                  '응원가 퀴즈 안내',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'kbo',
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildGuideItem('🎵', '응원가는 자동으로 재생됩니다'),
+                SizedBox(height: 12),
+                _buildGuideItem('⏱️', '응원가는 1초~5초 정도로 짧아요'),
+                SizedBox(height: 12),
+                _buildGuideItem('🔊', '이어폰 또는 스피커로 들으시면 더 좋아요'),
+                SizedBox(height: 12),
+                _buildGuideItem('🤔', '응원가를 듣고 어느 팀의 응원가인지 맞춰보세요'),
+                SizedBox(height: 12),
+                _buildGuideItem('🔁', '여러 번 재생할 수 있어요'),
+                SizedBox(height: 20),
+                // 다시 보지 않기 체크박스
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      isChecked = !isChecked;
+                    });
+                  },
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Checkbox(
+                          value: isChecked,
+                          activeColor: BUTTON,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          onChanged: (value) {
+                            setState(() {
+                              isChecked = value ?? false;
+                            });
+                          },
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        '다시 보지 않기',
+                        style: TextStyle(
+                          color: GRAYSCALE_LABEL_600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (isChecked) {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('dontShowCheerSongPopup', true);
+                    }
+                    if (!context.mounted) return;
+                    Navigator.pop(context);
+                    // 팝업 닫은 후 첫 문제 오디오 재생
+                    final provider = this.context.read<QuizProvider>();
+                    if (provider.currentQuestion?.audioPath != null) {
+                      _playAudio(provider.currentQuestion!.audioPath!);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: BUTTON,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text(
+                    '확인',
+                    style: TextStyle(
+                      color: WHITE,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'kbo',
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // 가이드 아이템 빌더
+  Widget _buildGuideItem(String emoji, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(emoji, style: TextStyle(fontSize: 20)),
+        SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.4,
+              color: GRAYSCALE_LABEL_800,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -117,6 +283,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
           appBar: AppBar(
             backgroundColor: BACKGROUND_COLOR,
             elevation: 0,
+            scrolledUnderElevation: 0,
             title: Text(
               widget.category,
               style: TextStyle(fontFamily: 'kbo', fontWeight: FontWeight.bold),
