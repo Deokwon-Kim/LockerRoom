@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class QuizResultModel {
   final String userId;
+  final String userNickName;
   final String category;
   final int totalQuestions;
   final int correctAnswers;
@@ -13,6 +14,7 @@ class QuizResultModel {
 
   QuizResultModel({
     required this.userId,
+    required this.userNickName,
     required this.category,
     required this.totalQuestions,
     required this.correctAnswers,
@@ -45,6 +47,7 @@ class QuizResultModel {
   Map<String, dynamic> toJson() {
     return {
       'userId': userId,
+      'userNickName': userNickName,
       'category': category,
       'totalQuestions': totalQuestions,
       'correctAnswers': correctAnswers,
@@ -59,6 +62,7 @@ class QuizResultModel {
   factory QuizResultModel.fromJson(Map<String, dynamic> json) {
     return QuizResultModel(
       userId: json['userId'] as String,
+      userNickName: json['userNickName'] as String,
       category: json['category'] as String,
       totalQuestions: json['totalQuestions'] as int,
       correctAnswers: json['correctAnswers'] as int,

@@ -179,6 +179,7 @@ class QuizProvider extends ChangeNotifier {
     // 결과 객체 생성
     final result = QuizResultModel(
       userId: _auth.currentUser?.uid ?? '',
+      userNickName: _auth.currentUser?.displayName ?? '',
       category: _selectedCategory!,
       totalQuestions: totalQuestions,
       correctAnswers: correctCount,
@@ -189,9 +190,16 @@ class QuizProvider extends ChangeNotifier {
       answerResults: answerResults,
     );
 
-    // Firestore에 저장
+    // Firestore에 저장 (userId별 서브컬렉션 구조)
     try {
-      await _firestore.collection('quiz_results').add(result.toJson());
+      final userId = _auth.currentUser?.uid;
+      if (userId != null) {
+        await _firestore
+            .collection('quiz_results')
+            .doc(userId)
+            .collection('results')
+            .add(result.toJson());
+      }
     } catch (e) {
       debugPrint('퀴즈 결과 저장 실패: $e');
     }
@@ -207,7 +215,8 @@ class QuizProvider extends ChangeNotifier {
     try {
       final snapshot = await _firestore
           .collection('quiz_results')
-          .where('userId', isEqualTo: userId)
+          .doc(userId)
+          .collection('results')
           .orderBy('completedAt', descending: true)
           .limit(limit)
           .get();
@@ -229,7 +238,8 @@ class QuizProvider extends ChangeNotifier {
     try {
       final snapshot = await _firestore
           .collection('quiz_results')
-          .where('userId', isEqualTo: userId)
+          .doc(userId)
+          .collection('results')
           .where('category', isEqualTo: category)
           .orderBy('score', descending: true)
           .limit(1)
@@ -251,7 +261,8 @@ class QuizProvider extends ChangeNotifier {
     try {
       final snapshot = await _firestore
           .collection('quiz_results')
-          .where('userId', isEqualTo: userId)
+          .doc(userId)
+          .collection('results')
           .where('category', isEqualTo: category)
           .get();
 
@@ -297,7 +308,8 @@ class QuizProvider extends ChangeNotifier {
     try {
       final snapshot = await _firestore
           .collection('quiz_results')
-          .where('userId', isEqualTo: user.uid)
+          .doc(user.uid)
+          .collection('results')
           .orderBy('completedAt', descending: true)
           .get();
 

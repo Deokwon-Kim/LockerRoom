@@ -28,7 +28,8 @@ class QuizRankingProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      Query query = _firestore.collection('quiz_results');
+      // collectionGroup을 사용하여 모든 userId의 results 서브컬렉션 조회
+      Query query = _firestore.collectionGroup('results');
 
       // 카테고리 필터
       if (_selectedCategory != 'all') {
@@ -51,12 +52,14 @@ class QuizRankingProvider extends ChangeNotifier {
         final userId = data['userId'] as String;
         final score = data['score'] as int;
         final completedAt = data['completedAt'] as Timestamp;
+        final userNickName = data['userNickName'] as String? ?? '익명';
 
         if (!userTotalScores.containsKey(userId)) {
           // 처음 발견한 사용자
           userTotalScores[userId] = {
             'totalScore': score,
             'completedAt': completedAt,
+            'userNickName': userNickName,
           };
         } else {
           // 이미 있는 사용자 - 점수 합산
@@ -91,7 +94,10 @@ class QuizRankingProvider extends ChangeNotifier {
             RankingUserModel(
               rank: 0,
               userId: userId,
-              name: userData?['userNickName'] ?? '익명',
+              name:
+                  userData?['userNickName'] ??
+                  scoreData['userNickName'] ??
+                  '익명',
               score: scoreData['totalScore'] as int,
               rankChange: 0,
               profileUrl: userData?['profileImage'],
@@ -105,7 +111,7 @@ class QuizRankingProvider extends ChangeNotifier {
             RankingUserModel(
               rank: 0,
               userId: userId,
-              name: '익명',
+              name: scoreData['userNickName'] ?? '익명',
               score: scoreData['totalScore'] as int,
               rankChange: 0,
               profileUrl: null,
