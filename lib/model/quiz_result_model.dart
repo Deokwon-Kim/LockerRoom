@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class QuizResultModel {
   final String userId;
-  final String userNickName;
+  final String? userNickName; // nullable로 변경 (기존 데이터 호환성)
   final String category;
   final int totalQuestions;
   final int correctAnswers;
@@ -14,7 +14,7 @@ class QuizResultModel {
 
   QuizResultModel({
     required this.userId,
-    required this.userNickName,
+    this.userNickName, // nullable
     required this.category,
     required this.totalQuestions,
     required this.correctAnswers,
@@ -62,7 +62,7 @@ class QuizResultModel {
   factory QuizResultModel.fromJson(Map<String, dynamic> json) {
     return QuizResultModel(
       userId: json['userId'] as String,
-      userNickName: json['userNickName'] as String,
+      userNickName: json['userNickName'] as String?, // nullable 처리
       category: json['category'] as String,
       totalQuestions: json['totalQuestions'] as int,
       correctAnswers: json['correctAnswers'] as int,
