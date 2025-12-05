@@ -9,6 +9,7 @@ class PostModel {
   final DateTime createdAt;
   final DateTime? updateAt;
   final int likesCount;
+  final int? viewCount; // 조회수 추가
   final String userNickName;
   final String userName;
 
@@ -23,6 +24,7 @@ class PostModel {
     required this.createdAt,
     this.updateAt,
     required this.likesCount,
+    this.viewCount = 0,
     required this.userNickName,
     required this.userName,
     required this.likedBy,
@@ -52,6 +54,7 @@ class PostModel {
           ? DateTime.now()
           : (data['updatedAt'] as Timestamp).toDate(),
       likesCount: data['likesCount'] ?? 0,
+      viewCount: data['viewCount'] ?? 0,
       userNickName: data['userNickName'] ?? '사용자',
       userName: data['name'] ?? '',
       likedBy: List<String>.from(data['likedBy'] ?? const []),
@@ -64,6 +67,7 @@ class PostModel {
     List<Map<String, dynamic>>? mediaInfo,
     DateTime? updatedAt,
     int? likesCount,
+    int? viewCount,
     String? userNickName,
     String? userName,
     List<String>? likedBy,
@@ -77,6 +81,7 @@ class PostModel {
       mediaInfo: mediaInfo ?? this.mediaInfo,
       updateAt: updatedAt ?? updateAt,
       likesCount: likesCount ?? this.likesCount,
+      viewCount: viewCount ?? this.viewCount,
       userNickName: userNickName ?? this.userNickName,
       userName: userName ?? this.userName,
       likedBy: likedBy ?? this.likedBy,
@@ -92,6 +97,7 @@ class PostModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updateAt != null ? Timestamp.fromDate(updateAt!) : null,
       'likesCount': likesCount,
+      'viewCount': viewCount,
       'userNickName': userNickName,
       'userName': userName,
       'likedBy': likedBy,
