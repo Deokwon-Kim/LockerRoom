@@ -26,16 +26,24 @@ android {
     }
 
     defaultConfig {
-        manifestPlaceholders.putAll(mutableMapOf(
-            "KAKAO_NATIVE_APP_KEY" to (System.getenv("KAKAO_NATIVE_APP_KEY") ?: "")
-        ))
+        // key.properties에서 카카오 키 로드
+        val keystoreProperties = Properties()
+        val keystorePropertiesFile = rootProject.file("key.properties")
+        if (keystorePropertiesFile.exists()) {
+            keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+        }
+        
+        val kakaoKey = keystoreProperties["kakaoNativeAppKey"] as String? ?: ""
+        
+        manifestPlaceholders["KAKAO_NATIVE_APP_KEY"] = kakaoKey
+        
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.codegrove.thebase"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 123
+        versionCode = 125
         versionName = "1.2.0"
     }
 
