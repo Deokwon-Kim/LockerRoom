@@ -1,9 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -12,8 +12,9 @@ class WinRatePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final displayName = currentUser?.displayName ?? '';
+    final userProvider = Provider.of<UserProvider>(context);
+    final userNickName =
+        userProvider.nickname ?? userProvider.currentUser?.displayName ?? '사용자';
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
@@ -190,7 +191,7 @@ class WinRatePage extends StatelessWidget {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              displayName,
+                              userNickName,
                               style: TextStyle(
                                 color: teamColor,
                                 fontSize: 16,
