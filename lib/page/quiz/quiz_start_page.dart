@@ -205,7 +205,7 @@ class QuizStartPage extends StatelessWidget {
       },
       {
         'title': '야구 룰',
-        'category': '야구 룰',
+        'category': '야구룰',
         'colors': [ORANGE_PRIMARY_500, ORANGE_PRIMARY_600],
         'icon': Icons.gavel,
       },
@@ -217,7 +217,7 @@ class QuizStartPage extends StatelessWidget {
       },
       {
         'title': '기록과 통계',
-        'category': '기록과 통계',
+        'category': '기록',
         'colors': [GREEN_SECONDARY_700, GREEN_SECONDARY_600],
         'icon': Icons.analytics,
       },
@@ -226,6 +226,12 @@ class QuizStartPage extends StatelessWidget {
         'category': '응원가',
         'colors': [BLUE_SECONDARY_700, BLUE_SECONDARY_600],
         'icon': Icons.music_note_sharp,
+      },
+      {
+        'title': '랜덤',
+        'category': '랜덤',
+        'colors': [Colors.purple.shade400, Colors.purple.shade600],
+        'icon': Icons.shuffle,
       },
     ];
   }

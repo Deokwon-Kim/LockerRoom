@@ -8,10 +8,11 @@ class QuizData {
   static Map<String, List<QuizQuestionModel>> getAllQuestions() {
     return {
       'KBO역사': kboHistoryQuestions,
-      '야구 룰': baseballRuelQuestions,
+      '야구룰': baseballRuelQuestions,
       '선수퀴즈': playerQuestions,
-      '기록과 통계': statsQuestions,
+      '기록': statsQuestions,
       '응원가': cheerSongQuestions,
+      '랜덤': randomQuestions,
     };
   }
 
