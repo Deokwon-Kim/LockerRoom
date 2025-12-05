@@ -187,7 +187,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
                           );
                         },
                     child: _buildTopRankingItem(
-                      topRankings[_currentTopIndex],
+                      topRankings[_currentTopIndex % topRankings.length],
                       key: ValueKey<int>(_currentTopIndex),
                     ),
                   ),
