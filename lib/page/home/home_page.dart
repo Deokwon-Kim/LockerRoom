@@ -402,7 +402,7 @@ class _HomePageState extends State<HomePage> {
                       // 높이 계산
                       double listHeight;
                       if (hasMediaPosts) {
-                        listHeight = 246.0; // 미디어 있음
+                        listHeight = 248.0; // 미디어 있음
                       } else if (hasLinkPosts) {
                         listHeight = 150.0; // 링크만 있음
                       } else {
