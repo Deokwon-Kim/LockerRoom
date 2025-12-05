@@ -16,6 +16,8 @@ class QuizTabBar extends StatefulWidget {
 
 class _QuizTabBarState extends State<QuizTabBar> {
   int _selectedIndex = 0;
+  bool _isBottomBarVisible = true;
+  double _lastScrollPosition = 0;
 
   @override
   void initState() {
@@ -29,6 +31,23 @@ class _QuizTabBarState extends State<QuizTabBar> {
     });
   }
 
+  // 스크롤 방향 감지
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollUpdateNotification) {
+      final currentPosition = notification.metrics.pixels;
+      final delta = currentPosition - _lastScrollPosition;
+
+      if (delta > 5 && _isBottomBarVisible) {
+        setState(() => _isBottomBarVisible = false);
+      } else if (delta < -5 && !_isBottomBarVisible) {
+        setState(() => _isBottomBarVisible = true);
+      }
+
+      _lastScrollPosition = currentPosition;
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final pages = [QuizStartPage(), QuizRecordPage(), QuizRankingPage()];
@@ -37,43 +56,57 @@ class _QuizTabBarState extends State<QuizTabBar> {
       body: Stack(
         children: [
           // 페이지 컨텐츠
-          pages[_selectedIndex],
+          NotificationListener<ScrollNotification>(
+            onNotification: _handleScrollNotification,
+            child: pages[_selectedIndex],
+          ),
 
           // 플로팅 바텀바
-          Positioned(
+          AnimatedPositioned(
+            duration: Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
             left: 20,
             right: 20,
-            bottom: 20,
-            child: Container(
-              height: 70,
-              decoration: BoxDecoration(
-                color: WHITE,
-                borderRadius: BorderRadius.circular(50),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 10,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildSvgTabIcon(0, AppIcons.home2, AppIcons.homeFill2, '홈'),
-                  _buildSvgTabIcon(
-                    1,
-                    AppIcons.person,
-                    AppIcons.personFill,
-                    '기록',
-                  ),
-                  _buildNavItem(
-                    icon: CupertinoIcons.chart_bar,
-                    label: '랭킹',
-                    index: 2,
-                  ),
-                ],
+            bottom: _isBottomBarVisible ? 20 : -90,
+            child: AnimatedOpacity(
+              duration: Duration(milliseconds: 200),
+              opacity: _isBottomBarVisible ? 1.0 : 0.0,
+              child: Container(
+                height: 70,
+                decoration: BoxDecoration(
+                  color: WHITE,
+                  borderRadius: BorderRadius.circular(50),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 10,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildSvgTabIcon(
+                      0,
+                      AppIcons.home2,
+                      AppIcons.homeFill2,
+                      '홈',
+                    ),
+                    _buildSvgTabIcon(
+                      1,
+                      AppIcons.person,
+                      AppIcons.personFill,
+                      '기록',
+                    ),
+                    _buildNavItem(
+                      icon: CupertinoIcons.chart_bar,
+                      label: '랭킹',
+                      index: 2,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
