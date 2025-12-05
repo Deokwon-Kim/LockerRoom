@@ -60,3 +60,5 @@ kakao_key.env
 functions/node_modules/
 
 assets/schedules
+
+android/build/reports/problems/problems-report.html
