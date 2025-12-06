@@ -732,6 +732,38 @@ class UserProvider extends ChangeNotifier {
         print('차단 정보 삭제 중 오류: $e');
       }
 
+      // 1-7-2. 퀴즈 기록 삭제
+      try {
+        final quizResultsSnapshot = await _firestore
+            .collection('quiz_results')
+            .doc(uid)
+            .collection('results')
+            .get();
+
+        var batch = _firestore.batch();
+        batchCount = 0;
+
+        for (final doc in quizResultsSnapshot.docs) {
+          batch.delete(doc.reference);
+          batchCount++;
+          if (batchCount >= maxBatchSize) {
+            await batch.commit();
+            batch = _firestore.batch();
+            batchCount = 0;
+          }
+        }
+
+        // 상위 문서(quiz_results/{uid})도 삭제
+        batch.delete(_firestore.collection('quiz_results').doc(uid));
+        batchCount++;
+
+        await batch.commit();
+        print('퀴즈 기록 ${quizResultsSnapshot.docs.length}개 및 상위 문서 삭제 완료');
+        batchCount = 0; // 리셋
+      } catch (e) {
+        print('퀴즈 기록 삭제 중 오류: $e');
+      }
+
       // 1-8. 사용자 문서 및 서브컬렉션 삭제
       try {
         // 경기 참석 기록 삭제

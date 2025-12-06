@@ -304,6 +304,21 @@ class SocialLoginProvider extends ChangeNotifier {
         await doc.reference.delete();
       }
 
+      // 7-2. 퀴즈 기록 삭제
+      try {
+        final quizResultsSnapshot = await _firestore
+            .collection('quiz_results')
+            .doc(uid)
+            .collection('results')
+            .get();
+        for (final doc in quizResultsSnapshot.docs) {
+          await doc.reference.delete();
+        }
+        await _firestore.collection('quiz_results').doc(uid).delete();
+      } catch (e) {
+        debugPrint('퀴즈 기록 삭제 중 오류: $e');
+      }
+
       // 8. 사용자 문서 삭제
       await _firestore.collection('users').doc(uid).delete();
 
