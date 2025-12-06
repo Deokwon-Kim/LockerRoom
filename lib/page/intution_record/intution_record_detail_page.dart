@@ -95,6 +95,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
   late final TextEditingController _oppTeamScore;
   late final TextEditingController _memoController;
   bool _controllersInitialized = false;
+  AttendanceModel? _loadedAttendance;
 
   @override
   void initState() {
@@ -135,6 +136,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
       _memoController.text = attendance.memo ?? '';
       _controllersInitialized = true;
     }
+    _loadedAttendance = attendance;
   }
 
   @override
@@ -190,6 +192,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                           newOppScore: oppScore,
                           newMemo: _memoController.text.trim(),
                           newImages: irp.image.isNotEmpty ? irp.image : null,
+                          oldImageUrls: _loadedAttendance?.imageUrls,
                         );
 
                         if (success) {
@@ -549,6 +552,8 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                           child: TextField(
                             controller: _memoController,
                             cursorColor: BUTTON,
+                            keyboardType: TextInputType.multiline,
+                            enabled: true,
                             maxLines: null,
                             minLines: 1,
                             textAlignVertical: TextAlignVertical.top, // 위쪽 정렬
@@ -568,7 +573,16 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                       SizedBox(height: 20),
                       Consumer<IntutionRecordProvider>(
                         builder: (context, intutionProvider, child) {
-                          // 새로 선택한 이미지들이 있으면 표시
+                          // 새로 선택한 이미지들이 뜨기전까지 로딩중 표시
+                          if (intutionProvider.isImagePicking) {
+                            return SizedBox(
+                              height: 100,
+                              child: Center(
+                                child: CircularProgressIndicator(color: BUTTON),
+                              ),
+                            );
+                          }
+                          // 2. 새로 선택한 이미지가 있으면 우선 표시 (기존 이미지는 숨김)
                           if (intutionProvider.image.isNotEmpty) {
                             return Stack(
                               children: [
@@ -666,7 +680,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                               ],
                             );
                           }
-                          // 기존 이미지들이 있으면 표시 (읽기 전용)
+                          // 3. 새로 선택한 이미지가 없을 때만 기존 이미지 표시
                           if (attendance.imageUrls.isNotEmpty) {
                             return Stack(
                               children: [

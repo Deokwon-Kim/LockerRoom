@@ -506,13 +506,28 @@ class IntutionRecordProvider extends ChangeNotifier {
   File? get selectedImage => _selectedImage;
   bool get shouldDeleteImage => _shouldDeleteImage;
 
+  bool _isImagePicking = false;
+  bool get isImagePicking => _isImagePicking;
+
   Future<void> pickImage() async {
-    final pickedFile = await _picker.pickMultiImage();
-    if (pickedFile.isNotEmpty) {
-      // 최대 3장으로 제한
-      final limitedFiles = pickedFile.take(3).map((e) => File(e.path)).toList();
-      setImages(limitedFiles);
-      _shouldDeleteImage = false;
+    _isImagePicking = true;
+    notifyListeners();
+
+    try {
+      final pickedFile = await _picker.pickMultiImage();
+      if (pickedFile.isNotEmpty) {
+        // 최대 3장으로 제한
+        final limitedFiles = pickedFile
+            .take(3)
+            .map((e) => File(e.path))
+            .toList();
+        setImages(limitedFiles);
+        _shouldDeleteImage = false;
+      }
+    } catch (e) {
+      print('이미지 선택 실패: $e');
+    } finally {
+      _isImagePicking = false;
       notifyListeners();
     }
   }
@@ -558,6 +573,7 @@ class IntutionRecordProvider extends ChangeNotifier {
     required int newOppScore,
     String? newMemo,
     List<File>? newImages,
+    List<String>? oldImageUrls,
   }) async {
     try {
       _isLoading = true;
@@ -570,6 +586,17 @@ class IntutionRecordProvider extends ChangeNotifier {
         return false;
       }
 
+      // 새 이미지가 있으면 기존 이미지 스토리지에서 삭제
+      if (newImages != null && newImages.isNotEmpty && oldImageUrls != null) {
+        for (final url in oldImageUrls) {
+          try {
+            await FirebaseStorage.instance.refFromURL(url).delete();
+          } catch (e) {
+            print('기존 이미지 삭제 실패: $e');
+          }
+        }
+      }
+
       // 업데이트할 데이터 준비
       final updateData = <String, dynamic>{
         'myScore': newMyscore,
@@ -578,7 +605,9 @@ class IntutionRecordProvider extends ChangeNotifier {
       };
 
       if (newMemo != null) {
-        updateData['memo'] = newMemo.trim().isNotEmpty ? newMemo.trim() : null;
+        final trimmedMemo = newMemo.trim();
+        updateData['memo'] = trimmedMemo.isNotEmpty ? trimmedMemo : null;
+        print('메모 업데이트 시도: $trimmedMemo');
       }
 
       // 새 이미지들이 있으면 업로드
