@@ -78,7 +78,11 @@ class _BottomTabBarState extends State<BottomTabBar> {
             backgroundColor: WHITE,
             title: Row(
               children: [
-                Icon(Icons.notifications_active, color: BUTTON, size: 28),
+                Icon(
+                  Icons.notifications_active,
+                  color: context.read<TeamProvider>().selectedTeam?.color,
+                  size: 28,
+                ),
                 SizedBox(width: 8),
                 Text(
                   '공지사항',
@@ -118,7 +122,10 @@ class _BottomTabBarState extends State<BottomTabBar> {
                         height: 24,
                         child: Checkbox(
                           value: isChecked,
-                          activeColor: BUTTON,
+                          activeColor: context
+                              .read<TeamProvider>()
+                              .selectedTeam
+                              ?.color,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -155,7 +162,10 @@ class _BottomTabBarState extends State<BottomTabBar> {
                     Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: BUTTON,
+                    backgroundColor: context
+                        .read<TeamProvider>()
+                        .selectedTeam
+                        ?.color,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
