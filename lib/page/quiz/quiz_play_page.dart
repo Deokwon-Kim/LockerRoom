@@ -106,7 +106,11 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
             backgroundColor: WHITE,
             title: Row(
               children: [
-                Icon(Icons.music_note, color: BUTTON, size: 28),
+                Icon(
+                  Icons.music_note,
+                  color: context.read<TeamProvider>().selectedTeam?.color,
+                  size: 28,
+                ),
                 SizedBox(width: 8),
                 Text(
                   '응원가 퀴즈 안내',
@@ -146,7 +150,10 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                         height: 24,
                         child: Checkbox(
                           value: isChecked,
-                          activeColor: BUTTON,
+                          activeColor: context
+                              .read<TeamProvider>()
+                              .selectedTeam
+                              ?.color,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -188,7 +195,10 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: BUTTON,
+                    backgroundColor: context
+                        .read<TeamProvider>()
+                        .selectedTeam
+                        ?.color,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
