@@ -551,7 +551,7 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
         ),
         SizedBox(width: 12),
         // 순위 변동 화살표
-        _buildRankChangeIndicator(user.rankChange),
+        _buildRankChangeIndicator(user.rankChange, user.rank),
       ],
     );
 
@@ -589,9 +589,9 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
     }
   }
 
-  Widget _buildRankChangeIndicator(int scoreDiff) {
-    // 1위인 경우 (scoreDiff = 0)
-    if (scoreDiff == 0) {
+  Widget _buildRankChangeIndicator(int scoreDiff, int rank) {
+    // 1위인 경우만 TOP 표시
+    if (rank == 1) {
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
@@ -609,12 +609,14 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
       );
     }
 
-    // 2위 이하 - 점수 차이 표시
+    // 2위 이하 - 점수 차이 표시 (0점 차이라도 표시)
     final displayDiff = scoreDiff.abs();
 
     // 점수 차이에 따른 색상 결정
     Color diffColor;
-    if (displayDiff <= 50) {
+    if (displayDiff == 0) {
+      diffColor = Colors.grey; // 동점: 회색
+    } else if (displayDiff <= 50) {
       diffColor = Colors.orange; // 50점 이하: 주황색 (근접)
     } else if (displayDiff <= 100) {
       diffColor = Colors.deepOrange; // 100점 이하: 진한 주황색
