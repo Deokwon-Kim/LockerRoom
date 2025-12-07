@@ -7,6 +7,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/quiz/quiz_result_page.dart';
 import 'package:lockerroom/provider/quiz_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -657,7 +658,8 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
   ) async {
     if (quizProvider.currentQuestionsIndex == quizProvider.totalQuestions - 1) {
       // 퀴즈 완료
-      final result = await quizProvider.completeQuiz();
+      final userNickName = context.read<UserProvider>().nickname;
+      final result = await quizProvider.completeQuiz(userNickName);
       if (context.mounted) {
         Navigator.pushReplacement(
           context,

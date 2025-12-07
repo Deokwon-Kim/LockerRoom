@@ -159,7 +159,7 @@ class QuizProvider extends ChangeNotifier {
   }
 
   // ==== 퀴즈 완료 및 결과 저장 ====
-  Future<QuizResultModel> completeQuiz() async {
+  Future<QuizResultModel> completeQuiz(String? userNickName) async {
     if (_quizStartTime == null || _selectedCategory == null) {
       throw Exception('퀴즈가 시작되지 않았습니다');
     }
@@ -179,7 +179,7 @@ class QuizProvider extends ChangeNotifier {
     // 결과 객체 생성
     final result = QuizResultModel(
       userId: _auth.currentUser?.uid ?? '',
-      userNickName: _auth.currentUser?.displayName ?? '',
+      userNickName: userNickName ?? '',
       category: _selectedCategory!,
       totalQuestions: totalQuestions,
       correctAnswers: correctCount,
