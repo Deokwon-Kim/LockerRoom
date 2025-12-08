@@ -40,7 +40,7 @@ class QuizRankingProvider extends ChangeNotifier {
       query = query
           .orderBy('score', descending: true)
           .orderBy('completedAt', descending: true)
-          .limit(100);
+          .limit(1000);
 
       final snapshot = await query.get();
 

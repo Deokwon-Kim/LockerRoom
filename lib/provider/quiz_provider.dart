@@ -194,11 +194,17 @@ class QuizProvider extends ChangeNotifier {
     try {
       final userId = _auth.currentUser?.uid;
       if (userId != null) {
+        // 1. 개별 결과 저장
         await _firestore
             .collection('quiz_results')
             .doc(userId)
             .collection('results')
             .add(result.toJson());
+
+        // 2. 유저 총점 업데이트 (Increment)
+        await _firestore.collection('users').doc(userId).update({
+          'totalQuizScore': FieldValue.increment(score),
+        });
       }
     } catch (e) {
       debugPrint('퀴즈 결과 저장 실패: $e');
