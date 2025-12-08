@@ -438,7 +438,7 @@ class _QuizResultPageState extends State<QuizResultPage>
               ),
             ),
             SizedBox(height: 24),
-            _ShareOption(
+            ShareOption(
               icon: Icons.download,
               iconColor: GREEN_SUCCESS_TEXT_50,
               title: '이미지로 저장',
@@ -448,7 +448,7 @@ class _QuizResultPageState extends State<QuizResultPage>
                 _saveToGallery();
               },
             ),
-            _ShareOption(
+            ShareOption(
               icon: Icons.post_add,
               iconColor: BUTTON,
               title: '게시물로 공유',
@@ -458,7 +458,7 @@ class _QuizResultPageState extends State<QuizResultPage>
                 _shareToFeed();
               },
             ),
-            _ShareOption(
+            ShareOption(
               icon: Icons.share,
               iconColor: ORANGE_PRIMARY_500,
               title: '다른 앱으로 공유',
@@ -615,14 +615,14 @@ class _QuizResultPageState extends State<QuizResultPage>
   }
 }
 
-class _ShareOption extends StatelessWidget {
+class ShareOption extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
 
-  const _ShareOption({
+  const ShareOption({
     required this.icon,
     required this.iconColor,
     required this.title,
