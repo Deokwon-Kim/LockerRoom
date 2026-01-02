@@ -1,5 +1,5 @@
 # <h1>
-  <img src="assets/images/applogo/app_logo.png" width="48" align="center" /> 더베이스
+  <img src="assets/images/applogo/app_logo.png" width="150" align="center" /> 더베이스
 </h1>
 
 
