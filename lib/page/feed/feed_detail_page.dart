@@ -39,6 +39,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
   final FocusNode _commentFocusNode = FocusNode();
   String? _replyParentId;
   String? _replyToUserName;
+  String? _replyToUserId;
   final Map<String, bool> _replyVisibility = {}; // 답글 표시/ 숨김 상태관리
   late PostModel _currentPost; // 현재 게시물 상태 관리
 
@@ -756,13 +757,14 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                       postOwnerId: _currentPost.userId,
                       parentCommentOwnerId: _replyParentId == null
                           ? null
-                          : _replyParentId,
+                          : _replyToUserId,
                     );
                     if (!mounted) return;
                     _commentsController.clear();
                     setState(() {
                       _replyParentId = null;
                       _replyToUserName = null;
+                      _replyToUserId = null;
                     });
                     // 전송 후에도 맨 아래로 스크롤
                     // Future.delayed(const Duration(milliseconds: 80), () {
@@ -985,6 +987,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                         setState(() {
                           _replyParentId = c.id;
                           _replyToUserName = nickname;
+                          _replyToUserId = c.userId;
                         });
                         _commentFocusNode.requestFocus();
                       },
@@ -1232,6 +1235,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                           setState(() {
                             _replyParentId = reply.id;
                             _replyToUserName = reply.userName;
+                            _replyToUserId = reply.userId;
                           });
                           _commentFocusNode.requestFocus();
                         },

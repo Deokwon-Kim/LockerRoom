@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/quiz/quiz_ranking_page.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 
 class QuizRankingWidget extends StatefulWidget {
@@ -61,6 +62,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
 
     return Consumer<QuizRankingProvider>(
       builder: (context, provider, child) {
+        final teamColor = context.read<TeamProvider>().selectedTeam?.color;
         if (provider.isLoading) {
           return GestureDetector(
             onTap: () {
@@ -82,7 +84,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
                   ),
                 ],
               ),
-              child: const Center(child: CircularProgressIndicator()),
+              child: Center(child: CircularProgressIndicator(color: teamColor)),
             ),
           );
         }

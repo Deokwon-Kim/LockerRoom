@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/model/notification_model.dart';
 import 'package:toastification/toastification.dart';
 import 'package:lockerroom/services/navigation_service.dart';
+import 'package:lockerroom/model/post_model.dart';
+import 'package:lockerroom/page/feed/feed_detail_page.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -261,6 +263,7 @@ class NotificationProvider extends ChangeNotifier {
       description: description,
       type: type,
       icon: icon,
+      notification: notification,
     );
   }
 
@@ -269,6 +272,7 @@ class NotificationProvider extends ChangeNotifier {
     required String description,
     required ToastificationType type,
     required IconData icon,
+    required AppNotification notification,
   }) {
     // navigatorKey를 통해 전역적으로 토스트 메시지 표시
     final context = navigatorKey.currentContext;
@@ -283,7 +287,106 @@ class NotificationProvider extends ChangeNotifier {
         icon: Icon(icon, color: Colors.white),
         style: ToastificationStyle.flat,
         showProgressBar: false,
+        callbacks: ToastificationCallbacks(
+          onTap: (toastItem) => _onNotificationTap(context, notification),
+        ),
       );
+    }
+  }
+
+  Future<void> _onNotificationTap(
+    BuildContext context,
+    AppNotification n,
+  ) async {
+    final isFeedLike = n.type == 'feedLike';
+    final isComment = n.type == 'comment';
+    final commentLike = n.type == 'commentLike';
+
+    if (n.postId != null) {
+      if (isFeedLike || isComment) {
+        try {
+          final postDoc = await _firestore
+              .collection('posts')
+              .doc(n.postId)
+              .get();
+
+          if (postDoc.exists) {
+            final post = PostModel.fromDoc(postDoc);
+            if (!context.mounted) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FeedDetailPage(post: post),
+              ),
+            );
+          } else {
+            if (!context.mounted) return;
+            toastification.show(
+              context: context,
+              type: ToastificationType.error,
+              alignment: Alignment.bottomCenter,
+              autoCloseDuration: Duration(seconds: 2),
+              title: Text('게시물을 찾을 수 없습니다'),
+            );
+          }
+        } catch (e) {
+          if (!context.mounted) return;
+          toastification.show(
+            context: context,
+            type: ToastificationType.error,
+            alignment: Alignment.bottomCenter,
+            autoCloseDuration: Duration(seconds: 2),
+            title: Text('오류가 발생했습니다'),
+          );
+        }
+      }
+    } else if (commentLike && n.commentId != null) {
+      // 댓글 좋아요 -> 댓글 -> 게시물
+      try {
+        final commentDoc = await _firestore
+            .collection('comments')
+            .doc(n.commentId)
+            .get();
+
+        if (commentDoc.exists) {
+          final commentPostId = commentDoc.data()?['postId'] as String?;
+          if (commentPostId != null) {
+            final postDoc = await _firestore
+                .collection('posts')
+                .doc(commentPostId)
+                .get();
+
+            if (postDoc.exists) {
+              final post = PostModel.fromDoc(postDoc);
+              if (!context.mounted) return;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FeedDetailPage(post: post),
+                ),
+              );
+            }
+          }
+        } else {
+          if (!context.mounted) return;
+          toastification.show(
+            context: context,
+            type: ToastificationType.error,
+            alignment: Alignment.bottomCenter,
+            autoCloseDuration: Duration(seconds: 2),
+            title: Text('댓글을 찾을 수 없습니다'),
+          );
+        }
+      } catch (e) {
+        if (!context.mounted) return;
+        toastification.show(
+          context: context,
+          type: ToastificationType.error,
+          alignment: Alignment.bottomCenter,
+          autoCloseDuration: Duration(seconds: 2),
+          title: Text('오류가 발생했습니다'),
+        );
+      }
     }
   }
 
