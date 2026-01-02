@@ -56,25 +56,40 @@
 ---
 
 ## 📸 스크린샷
-> |                                                 홈화면                                                  |                                                산책시작                                                 |                                                전체메뉴                                                 |
-| :-----------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: |
-| <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8917.PNG?raw=true" width="200">
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8917.PNG?raw=true" width="200">
-| <img src="https://github.com/user-attachments/assets/f5beb386-dd92-46cf-aa8b-23a6c18185f2" width="200"> | <img src="https://github.com/user-attachments/assets/9639dd40-62b8-465b-b9d5-a843c7db5a93" width="200"> |
+### 🏠 홈화면
 
-|                                          날씨페이지                                           |                                          나의 코스                                           |                                           주간 기록                                           |                                           월간 기록                                           |  
-| :-----------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: | 
-| <img src="https://github.com/user-attachments/assets/970003dc-8bd1-440f-9039-4eeb0ae52a27" width="200"> | <img src="https://github.com/user-attachments/assets/62e7f494-bcc4-475f-9d3d-84411996a66d" width="200"> |  <img src="https://github.com/user-attachments/assets/5f6f1015-9a47-4cba-8a25-807d12ef379d" width="200"> | <img src="https://github.com/user-attachments/assets/2da6fcbc-049c-436e-b87e-674d2218c322" width="200"> | 
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8917.PNG?raw=true" width="200" />
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8918.PNG?raw=true" width="200" />
 
- 
+### 💬 커뮤니티
 
-|                                               추천 코스                                               |                                        내 주변 공원                                         |  
-| :-----------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: | 
-| <img src="https://github.com/user-attachments/assets/cbdcbf16-f7fc-4ca3-902c-e984175696fd" width="200"> | <img src="https://github.com/user-attachments/assets/3a81f4f8-9eb6-4fb9-8c5a-0ec663e9cb14" width="200"> | 
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8927.PNG?raw=true" width="200" />
 
-|                                           산책 시작                                           |                                           추천코스 산책 시작                                           |                                           산책저장                                           |                                           산책종료                                           |                                           홈화면 날씨 버튼                                           
-| :-----------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: | :-----------------------------------------------------------------------------------------------------: 
-| <img src="https://github.com/user-attachments/assets/bc1b7dbb-fd3c-454b-8613-03412b65543f" width="200"> | <img src="https://github.com/user-attachments/assets/48893043-5e49-444d-be20-d097cdacd540" width="200"> | <img src="https://github.com/user-attachments/assets/910edf71-2315-474b-93b9-ee9f9aba45fd" width="200"> | <img src="https://github.com/user-attachments/assets/9f82056f-6d0f-4311-9178-eafac3f9f113" width="200">| <img src="https://github.com/user-attachments/assets/f74514db-bdf9-4ed9-9ff9-d2e40adfe191" width="200">
+### 🏞️ 업로드 
+
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8928.PNG?raw=true" width="200" />
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8929.PNG?raw=true" width="200" />
+
+
+### 🗓️ 경기일정
+
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8919.PNG?raw=true" width="200" />
+
+### 🏟️ 직관기록 
+
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8920.PNG?raw=true" width="200" />
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8921.PNG?raw=true" width="200" />
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8922.PNG?raw=true" width="200" />
+
+### 🧠 야구 퀴즈
+
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8923.PNG?raw=true" width="200" />
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8924.PNG?raw=true" width="200" />
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8925.PNG?raw=true" width="200" />
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/%E1%84%8C%E1%85%A6%E1%84%86%E1%85%A9%E1%86%A8%20%E1%84%8B%E1%85%A5%E1%86%B9%E1%84%82%E1%85%B3%E1%86%AB%20%E1%84%83%E1%85%B5%E1%84%8C%E1%85%A1%E1%84%8B%E1%85%B5%E1%86%AB.gif?raw=true" width="200" />
+
+
+
 
 ---
 
