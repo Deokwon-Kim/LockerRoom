@@ -1,7 +1,8 @@
 # <h1>
-  <img src="assets/images/applogo/app_logo.png" width="200" style="vertical-align: middle;" />
+  <img src="assets/images/applogo/app_logo.png" width="200" align="center" />
   더베이스
 </h1>
+
 
 **KBO 팬을 위한 팀 중심 야구 커뮤니티 앱**
 
