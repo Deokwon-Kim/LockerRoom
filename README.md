@@ -62,8 +62,7 @@
 
 ### ⚾️ 응원팀 선택
 
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8935.PNG?raw=true" width="200" /> 
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8936.PNG?raw=true" width="200" /> 
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8935.PNG?raw=true" width="200" /> <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8936.PNG?raw=true" width="200" /> 
 
 
 ### 🏠 홈화면
@@ -84,8 +83,7 @@
 
 ### 🗓️ 경기일정
 
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8919.PNG?raw=true" width="200" />
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8934.PNG?raw=true" width="200" /> 
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8919.PNG?raw=true" width="200" /> <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8934.PNG?raw=true" width="200" /> 
 
 ### 🏟️ 직관기록 
 
