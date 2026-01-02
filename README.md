@@ -58,8 +58,7 @@
 ## 📸 스크린샷
 ### 🏠 홈화면
 
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8917.PNG?raw=true" width="200" />
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8918.PNG?raw=true" width="200" />
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8917.PNG?raw=true" width="200" /> <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8918.PNG?raw=true" width="200" />
 
 ### 💬 커뮤니티
 
@@ -67,8 +66,7 @@
 
 ### 🏞️ 업로드 
 
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8928.PNG?raw=true" width="200" />
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8929.PNG?raw=true" width="200" />
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8928.PNG?raw=true" width="200" /> <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8929.PNG?raw=true" width="200" />
 
 
 ### 🗓️ 경기일정
@@ -77,16 +75,11 @@
 
 ### 🏟️ 직관기록 
 
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8920.PNG?raw=true" width="200" />
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8921.PNG?raw=true" width="200" />
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8922.PNG?raw=true" width="200" />
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8920.PNG?raw=true" width="200" /> <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8921.PNG?raw=true" width="200" /> <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8922.PNG?raw=true" width="200" />
 
 ### 🧠 야구 퀴즈
 
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8923.PNG?raw=true" width="200" />
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8924.PNG?raw=true" width="200" />
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8925.PNG?raw=true" width="200" />
-<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/%E1%84%8C%E1%85%A6%E1%84%86%E1%85%A9%E1%86%A8%20%E1%84%8B%E1%85%A5%E1%86%B9%E1%84%82%E1%85%B3%E1%86%AB%20%E1%84%83%E1%85%B5%E1%84%8C%E1%85%A1%E1%84%8B%E1%85%B5%E1%86%AB.gif?raw=true" width="200" />
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8923.PNG?raw=true" width="200" /> <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8924.PNG?raw=true" width="200" /> <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8925.PNG?raw=true" width="200" /> <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/%E1%84%8C%E1%85%A6%E1%84%86%E1%85%A9%E1%86%A8%20%E1%84%8B%E1%85%A5%E1%86%B9%E1%84%82%E1%85%B3%E1%86%AB%20%E1%84%83%E1%85%B5%E1%84%8C%E1%85%A1%E1%84%8B%E1%85%B5%E1%86%AB.gif?raw=true" width="200" />
 
 
 
