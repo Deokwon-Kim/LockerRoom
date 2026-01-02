@@ -1,4 +1,8 @@
-# assets/images/applogo/app_logo.png 더베이스  
+# <h1>
+  <img src="assets/images/applogo/app_logo.png" width="36" style="vertical-align: middle;" />
+  더베이스
+</h1>
+
 **KBO 팬을 위한 팀 중심 야구 커뮤니티 앱**
 
 더베이스는 KBO 팬들이 응원하는 팀을 중심으로  
