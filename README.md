@@ -56,6 +56,16 @@
 ---
 
 ## 📸 스크린샷
+### 🔒 로그인 
+
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8937.PNG?raw=true" width="200" /> 
+
+### ⚾️ 응원팀 선택
+
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8935.PNG?raw=true" width="200" /> 
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8936.PNG?raw=true" width="200" /> 
+
+
 ### 🏠 홈화면
 
 <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8917.PNG?raw=true" width="200" /> <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8918.PNG?raw=true" width="200" />
@@ -68,10 +78,14 @@
 
 <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8928.PNG?raw=true" width="200" /> <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8929.PNG?raw=true" width="200" />
 
+### 🔔 알림
+
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8933.PNG?raw=true" width="200" /> 
 
 ### 🗓️ 경기일정
 
 <img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8919.PNG?raw=true" width="200" />
+<img src="https://github.com/Deokwon-Kim/LockerRoom/blob/dev/assets/images/screenshot/IMG_8934.PNG?raw=true" width="200" /> 
 
 ### 🏟️ 직관기록 
 
