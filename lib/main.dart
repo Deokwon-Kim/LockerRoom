@@ -16,6 +16,7 @@ import 'package:lockerroom/page/login/social_login_page.dart';
 import 'package:lockerroom/page/login/social_profile_setting_page.dart';
 import 'package:lockerroom/page/my_post/likedPosts_page.dart';
 import 'package:lockerroom/page/notice/notice_list_page.dart';
+import 'package:lockerroom/page/quiz/my_badge_page.dart';
 import 'package:lockerroom/page/setting/change_password_page.dart';
 import 'package:lockerroom/page/setting/custormer_center_page.dart';
 import 'package:lockerroom/page/setting/find_password_page.dart';
@@ -26,6 +27,7 @@ import 'package:lockerroom/page/setting/block_list_page.dart';
 import 'package:lockerroom/page/alert/notifications_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/page/login/terms_gate_page.dart';
+import 'package:lockerroom/provider/badge_provider.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_edit_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
@@ -172,6 +174,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => SocialLoginProvider()),
         ChangeNotifierProvider(create: (context) => QuizProvider()),
         ChangeNotifierProvider(create: (context) => QuizRankingProvider()),
+        ChangeNotifierProvider(create: (context) => BadgeProvider()),
       ],
       child: const MyApp(),
     ),
@@ -200,7 +203,7 @@ class MyApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
-        home: const AuthWrapper(),
+        home: const MyBadgePage(),
         routes: {
           'signUp': (context) => const SignupPage(),
           'signIn': (context) => const SocialLoginPage(),
