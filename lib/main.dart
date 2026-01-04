@@ -16,7 +16,6 @@ import 'package:lockerroom/page/login/social_login_page.dart';
 import 'package:lockerroom/page/login/social_profile_setting_page.dart';
 import 'package:lockerroom/page/my_post/likedPosts_page.dart';
 import 'package:lockerroom/page/notice/notice_list_page.dart';
-import 'package:lockerroom/page/quiz/my_badge_page.dart';
 import 'package:lockerroom/page/setting/change_password_page.dart';
 import 'package:lockerroom/page/setting/custormer_center_page.dart';
 import 'package:lockerroom/page/setting/find_password_page.dart';
@@ -203,7 +202,7 @@ class MyApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
-        home: const MyBadgePage(),
+        home: const AuthWrapper(),
         routes: {
           'signUp': (context) => const SignupPage(),
           'signIn': (context) => const SocialLoginPage(),
