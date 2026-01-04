@@ -8,6 +8,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/quiz_result_model.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
 import 'package:lockerroom/main.dart';
+import 'package:lockerroom/provider/badge_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/widgets/quiz_ranking_widget.dart';
@@ -56,6 +57,37 @@ class _QuizResultPageState extends State<QuizResultPage>
         _confettiController.play();
       });
     }
+
+    // 뱃지 획득 체크
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final badgeProvider = context.read<BadgeProvider>();
+      final newBadges = await badgeProvider.checkQuizBadges(widget.result);
+
+      if (newBadges.isNotEmpty) {
+        for (int i = 0; i < newBadges.length; i++) {
+          Future.delayed(Duration(milliseconds: 400 * 1), () {
+            if (mounted) {
+              _showBadgeUnlockToast('🏆 [${newBadges[i]}] 뱃지를 획득했습니다!');
+            }
+          });
+          // 뱃지 획득 팝업 띄우기
+        }
+      }
+    });
+  }
+
+  // 뱃지 획득 축하 다이얼로그
+  void _showBadgeUnlockToast(String message) {
+    toastification.show(
+      context: context,
+      alignment: Alignment.topCenter,
+      autoCloseDuration: Duration(seconds: 4),
+      type: ToastificationType.success,
+      style: ToastificationStyle.fillColored,
+      title: Text(message, style: TextStyle(fontWeight: FontWeight.bold)),
+      icon: Icon(Icons.military_tech, color: Colors.white),
+      showProgressBar: false,
+    );
   }
 
   @override
