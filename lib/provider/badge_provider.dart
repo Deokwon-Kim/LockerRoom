@@ -1,5 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/model/badge_model.dart';
+import 'package:lockerroom/model/quiz_result_model.dart';
 
 class BadgeProvider extends ChangeNotifier {
   // 전체 뱃지 목록
@@ -111,19 +114,180 @@ class BadgeProvider extends ChangeNotifier {
 
   // 데이터 로드 함수
   Future<void> fetchMyBadges(String userId) async {
-    // TODO: Firestore에서 userId로 획득한 뱃지 ID 목록 가져오기
+    if (userId.isEmpty) return;
 
-    // 더미: 2초 뒤 일부 뱃지 획득 처리
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('badges')
+          .get();
 
-    final dummyUnlockedIds = ['first_hit']; // '첫 타석 안타'만 획득했다고 가정
-    _badges = _badges.map((badge) {
-      if (dummyUnlockedIds.contains(badge.id)) {
-        return badge.copyWith(isLocked: false, acquiredAt: DateTime.now());
+      // 내 획득 뱃지 ID 목록
+      final unlockedIds = snapshot.docs.map((doc) => doc.id).toList();
+
+      // 로컬 _badges 상태 업데이트
+      _badges = _badges.map((badge) {
+        if (unlockedIds.contains(badge.id)) {
+          // Firestore에 저장된 획득 시간 가져오기 (없으면 현재 시간)
+          final data = snapshot.docs
+              .firstWhere((doc) => doc.id == badge.id)
+              .data();
+          final acquiredAt =
+              (data['acquiredAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+
+          return badge.copyWith(isLocked: false, acquiredAt: acquiredAt);
+        }
+        return badge;
+      }).toList();
+
+      notifyListeners();
+    } catch (e) {
+      print('뱃지 로드 실패: $e');
+    }
+  }
+
+  // Firestore 뱃지 잠금 해제 및 저장
+  Future<void> unlockBadge(String badgeId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final index = _badges.indexWhere((b) => b.id == badgeId);
+    // 이미 획득했거나 없는 뱃지면 패스
+    if (index == -1 || !_badges[index].isLocked) return;
+
+    try {
+      // 1. Firestore에 저장
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('badges')
+          .doc(badgeId)
+          .set({
+            'id': badgeId,
+            'name': _badges[index].name,
+            'acquiredAt': FieldValue.serverTimestamp(),
+          });
+
+      // 2. 로컬 상태 업데이트
+      _badges[index] = _badges[index].copyWith(
+        isLocked: false,
+        acquiredAt: DateTime.now(),
+      );
+      notifyListeners();
+
+      print('뱃지 획득 성공: ${_badges[index].name}');
+    } catch (e) {
+      print('뱃지 저장 실패: $e');
+    }
+  }
+
+  // 퀴즈 결과에 따른 뱃지 체크 로직
+  Future<List<String>> checkQuizBadges(QuizResultModel result) async {
+    List<String> newBadges = [];
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return [];
+
+    // 유저의 현재 총 누적 점수 가져오기
+    int currentTotalScore = 0;
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      currentTotalScore = userDoc.data()?['totalQuizScore'] ?? 0;
+    } catch (e) {
+      print('총점 조회 실패: $e');
+    }
+
+    // [조건 1] 첫 안타 (0점 초과시)
+    if (result.score > 0) {
+      if (_isLocked('first_hit')) {
+        await unlockBadge('first_hit');
+        newBadges.add('첫 안타');
       }
-      return badge;
-    }).toList();
+    }
 
-    notifyListeners();
+    // [조건 2] 퍼펙트 게임 30문제 연속 정답 (오답없이 스트릭 유지)
+    int currentStreak = 0;
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      currentStreak = userDoc.data()?['consecutiveCorrectCount'] ?? 0;
+    } catch (_) {}
+
+    int newStreak = 0;
+
+    // 이번 퀴즈에서 오답이 없었는지 확인
+    if (result.score == 100) {
+      newStreak = currentStreak + result.totalQuestions;
+    } else {
+      // 하나라도 틀렸으면 스트릭 초기화
+      newStreak = 0;
+    }
+
+    // 변경 된 스트릭 정보 저장
+    FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+      'consecutiveCorrectCount': newStreak,
+    });
+
+    // 30문제 이상 연속 정답이면 뱃지 획득
+    if (newStreak >= 30) {
+      if (_isLocked('perfect_game')) {
+        await unlockBadge('perfect_game');
+        newBadges.add('퍼펙트 게임');
+      }
+    }
+
+    // [조건 3] 누적점수 777점이면 '행운의 7'
+    if (currentTotalScore >= 777) {
+      if (_isLocked('lucky_seven')) {
+        await unlockBadge('lucky_seven');
+        newBadges.add('행운의 7');
+      }
+    }
+    // [조건 4] 카테고리별 마스터 (80점 이상)
+    if (result.score >= 80) {
+      String? badgeId;
+      if (result.category == 'KBO역사') badgeId = 'history_buff';
+      if (result.category == '야구룰') badgeId = 'rule_master';
+      if (result.category == '기록') badgeId = 'record_breaker';
+      if (badgeId != null && _isLocked(badgeId)) {
+        await unlockBadge(badgeId);
+        // 뱃지 이름 찾기
+        final name = _badges.firstWhere((b) => b.id == badgeId).name;
+        newBadges.add(name);
+      }
+    }
+
+    final now = DateTime.now();
+    final hour = now.hour;
+
+    // [조건 5] 얼리버드: 아침 9시 이전 (06:00 ~ 08: 59)
+    if (hour >= 6 && hour < 9) {
+      if (_isLocked('early_bird')) {
+        await unlockBadge('early_bird');
+        newBadges.add('얼리버드');
+      }
+    }
+
+    // [조건 6] 야간 자율학습: 밤 11시 ~ 새벽 3시 59분
+    if (hour >= 23 || hour < 4) {
+      if (_isLocked('night_owl')) {
+        await unlockBadge('night_owl');
+        newBadges.add('야간 자율학습');
+      }
+    }
+
+    return newBadges;
+  }
+
+  bool _isLocked(String id) {
+    final index = _badges.indexWhere((b) => b.id == id);
+    return index != -1 && _badges[index].isLocked;
   }
 }
