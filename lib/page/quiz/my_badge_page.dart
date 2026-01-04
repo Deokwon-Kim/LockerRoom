@@ -18,7 +18,9 @@ class _MyBadgePageState extends State<MyBadgePage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BadgeProvider>().fetchMyBadges('current');
+      if (currentUserId != null) {
+        context.read<BadgeProvider>().fetchMyBadges(currentUserId!);
+      }
     });
   }
 
