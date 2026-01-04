@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/page/quiz/my_badge_page.dart';
 import 'package:lockerroom/page/quiz/quiz_ranking_page.dart';
 import 'package:lockerroom/page/quiz/quiz_record_page.dart';
 import 'package:lockerroom/page/quiz/quiz_start_page.dart';
@@ -52,7 +53,12 @@ class _QuizTabBarState extends State<QuizTabBar> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = [QuizStartPage(), QuizRecordPage(), QuizRankingPage()];
+    final pages = [
+      QuizStartPage(),
+      QuizRecordPage(),
+      MyBadgePage(),
+      QuizRankingPage(),
+    ];
 
     return Scaffold(
       body: Stack(
@@ -103,9 +109,14 @@ class _QuizTabBarState extends State<QuizTabBar> {
                       '기록',
                     ),
                     _buildNavItem(
+                      icon: Icons.military_tech,
+                      label: '뱃지',
+                      index: 2,
+                    ),
+                    _buildNavItem(
                       icon: CupertinoIcons.chart_bar,
                       label: '랭킹',
-                      index: 2,
+                      index: 3,
                     ),
                   ],
                 ),
