@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/model/badge_model.dart';
 import 'package:lockerroom/model/quiz_result_model.dart';
+import 'package:lockerroom/page/quiz/quiz_data.dart';
 
 class BadgeProvider extends ChangeNotifier {
   // 전체 뱃지 목록
@@ -17,7 +18,7 @@ class BadgeProvider extends ChangeNotifier {
     BadgeModel(
       id: 'homerun_king',
       name: '홈런왕',
-      description: '10문제 연속 정답',
+      description: '20문제 연속 정답',
       icon: Icons.whatshot,
       isLocked: true,
     ),
@@ -46,7 +47,7 @@ class BadgeProvider extends ChangeNotifier {
     BadgeModel(
       id: 'night_owl',
       name: '야간 자율학습',
-      description: '밤 12시 이후에\n 퀴즈 참여',
+      description: '밤 11시 이후에\n 퀴즈 참여',
       icon: Icons.nightlight_round,
       isLocked: true,
     ),
@@ -55,14 +56,14 @@ class BadgeProvider extends ChangeNotifier {
     BadgeModel(
       id: 'perfect_game',
       name: '퍼펙트 게임',
-      description: '한 번도 틀리지 않고 30문제 연속 정답',
+      description: '30문제 연속 정답',
       icon: Icons.stars,
       isLocked: true,
     ),
     BadgeModel(
       id: 'clutch_hitter',
       name: '해결사',
-      description: '난이도 [상] 문제\n 10회 정답',
+      description: '난이도 [상] 문제\n 50회 정답',
       icon: Icons.flash_on,
       isLocked: true,
     ),
@@ -94,6 +95,20 @@ class BadgeProvider extends ChangeNotifier {
       name: '기록 제조기',
       description: '[기록] 카테고리\n 50문제 정답',
       icon: Icons.bar_chart,
+      isLocked: true,
+    ),
+    BadgeModel(
+      id: 'cheer_captain',
+      name: '응원 단장',
+      description: '[응원가] 카테고리\n 50문제 정답',
+      icon: Icons.campaign,
+      isLocked: true,
+    ),
+    BadgeModel(
+      id: 'sing_along_master',
+      name: '떼창 유발자',
+      description: '[응원가] 카테고리\n 100문제 정답',
+      icon: Icons.mic,
       isLocked: true,
     ),
 
@@ -187,15 +202,14 @@ class BadgeProvider extends ChangeNotifier {
     List<String> newBadges = [];
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return [];
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
 
     // 유저의 현재 총 누적 점수 가져오기
     int currentTotalScore = 0;
     try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
       currentTotalScore = userDoc.data()?['totalQuizScore'] ?? 0;
     } catch (e) {
       print('총점 조회 실패: $e');
@@ -209,14 +223,66 @@ class BadgeProvider extends ChangeNotifier {
       }
     }
 
+    // [조건 4] 출석왕: 7일 연속 퀴즈 참여
+    try {
+      final lastQuizDateTimestamp =
+          userDoc.data()?['lastQuizDate'] as Timestamp?;
+      int quizStreak = userDoc.data()?['quizStreak'] ?? 0;
+
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      // 마지막 참여 날짜 확인
+      DateTime? lastDate;
+      if (lastQuizDateTimestamp != null) {
+        final d = lastQuizDateTimestamp.toDate();
+        lastDate = DateTime(d.year, d.month, d.day);
+      }
+
+      int newQuizStreak = 1; // 기본값 (오늘 처음)
+
+      if (lastDate != null) {
+        final difference = today.difference(lastDate).inDays;
+        if (difference == 0) {
+          // 오늘 이미 참여함 -> 스트릭 유지
+          newQuizStreak = quizStreak;
+        } else if (difference == 1) {
+          // 어제 참여함 -> 스트릭 증가
+          newQuizStreak = quizStreak + 1;
+        } else {
+          // 연속 끊김 -> 1부터 시작
+          newQuizStreak = 1;
+        }
+      } else {
+        // 기록 없음 -> 1부터 시작
+        newQuizStreak = 1;
+      }
+
+      // DB 업데이트 (스트릭이 변했거나, 날짜가 바뀌었을 때)
+      if (lastDate != today || newQuizStreak != quizStreak) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({
+              'lastQuizDate': FieldValue.serverTimestamp(),
+              'quizStreak': newQuizStreak,
+            });
+
+        // 7일 연속 달성 체크
+        if (newQuizStreak >= 7) {
+          if (_isLocked('attendance_king')) {
+            await unlockBadge('attendance_king');
+            newBadges.add('출석왕');
+          }
+        }
+      }
+    } catch (e) {
+      print('출석왕 체크 실패: $e');
+    }
+
     // [조건 2] 퍼펙트 게임 30문제 연속 정답 (오답없이 스트릭 유지)
     int currentStreak = 0;
     try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
       currentStreak = userDoc.data()?['consecutiveCorrectCount'] ?? 0;
     } catch (_) {}
 
@@ -250,19 +316,6 @@ class BadgeProvider extends ChangeNotifier {
         newBadges.add('행운의 7');
       }
     }
-    // [조건 4] 카테고리별 마스터 (80점 이상)
-    if (result.score >= 80) {
-      String? badgeId;
-      if (result.category == 'KBO역사') badgeId = 'history_buff';
-      if (result.category == '야구룰') badgeId = 'rule_master';
-      if (result.category == '기록') badgeId = 'record_breaker';
-      if (badgeId != null && _isLocked(badgeId)) {
-        await unlockBadge(badgeId);
-        // 뱃지 이름 찾기
-        final name = _badges.firstWhere((b) => b.id == badgeId).name;
-        newBadges.add(name);
-      }
-    }
 
     final now = DateTime.now();
     final hour = now.hour;
@@ -283,11 +336,185 @@ class BadgeProvider extends ChangeNotifier {
       }
     }
 
+    // [조건 3-1] 해결사: 난이도 'hard' 50회 정답
+    try {
+      int highDifficultyCorrectCount = 0;
+      final allQuestions = QuizData.getAllQuestions().values
+          .expand((x) => x)
+          .toList();
+
+      for (final qId in result.questionIds) {
+        // 문제 찾기
+        final question = allQuestions.firstWhere(
+          (q) => q.quizId == qId,
+          orElse: () => allQuestions.first,
+        ); // orElse는 에러 방지용 더미
+
+        // 난이도가 hard이고 정답을 맞췄는지 확인
+        if (question.quizId == qId && question.difficulty == 'hard') {
+          if (result.answerResults[qId] == true) {
+            highDifficultyCorrectCount++;
+          }
+        }
+      }
+
+      if (highDifficultyCorrectCount > 0) {
+        int totalHighDifficulty =
+            userDoc.data()?['totalHighDifficultyCorrect'] ?? 0;
+        int newTotalHigh = totalHighDifficulty + highDifficultyCorrectCount;
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({'totalHighDifficultyCorrect': newTotalHigh});
+
+        if (newTotalHigh >= 50) {
+          if (_isLocked('clutch_hitter')) {
+            await unlockBadge('clutch_hitter');
+            newBadges.add('해결사');
+          }
+        }
+      }
+    } catch (e) {
+      print('해결사 뱃지 체크 실패: $e');
+    }
+
+    // [조건 7] 홈런왕 20문제 연속 정답 시
+
+    try {
+      currentStreak = userDoc.data()?['consecutiveCorrectCount'] ?? 0;
+    } catch (_) {}
+
+    // 이번 퀴즈에서 오답이 없었는지 확인
+    if (result.score == 100) {
+      newStreak = currentStreak + result.totalQuestions;
+    } else {
+      // 하나라도 틀렸으면 스트릭 초기화
+      newStreak = 0;
+    }
+
+    // 변경 된 스트릭 정보 저장
+    FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+      'consecutiveCorrectCount': newStreak,
+    });
+
+    // 20문제 이상 연속 정답이면 뱃지 획득
+    if (newStreak >= 20) {
+      if (_isLocked('homerun_king')) {
+        await unlockBadge('homerun_king');
+        newBadges.add('홈런왕');
+      }
+    }
+
+    // [조건 8] 야구 백과사전: 누적 정답 100개
+    int currentTotalCorrect = 0;
+    try {
+      currentTotalCorrect = userDoc.data()?['totalCorrectAnswers'] ?? 0;
+    } catch (_) {}
+
+    // 이번 퀴즈의 정답 수를 합산
+    int newTotalCorrect = currentTotalCorrect + result.correctAnswers;
+
+    // Firestore 업데이트
+    FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+      'totalCorrectAnswers': newTotalCorrect,
+    });
+
+    if (newTotalCorrect >= 100) {
+      if (_isLocked('quiz_master')) {
+        await unlockBadge('quiz_master');
+        newBadges.add('야구 백과사전');
+      }
+    }
+
+    // [조건 9] 카테고리별 누적 정답 수 체크
+    // 1. 현재 카테고리의 기존 누적 정답 수 가져오기
+    Map<String, dynamic> categoryStatus = {};
+    try {
+      categoryStatus = userDoc.data()?['categoryStatus'] ?? {};
+    } catch (_) {}
+
+    int currentCategoryCorrect = categoryStatus[result.category] ?? 0;
+
+    // 2. 이번 퀴즈 정답 수 더하기
+    int newCategoryCorrect = currentCategoryCorrect + result.correctAnswers;
+
+    // 3. Firestore 업데이트
+    FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+      'categoryStatus.${result.category}': newCategoryCorrect,
+    });
+
+    // 4. 뱃지 조건 체크
+    String? targetBadgeId;
+    if (result.category == 'KBO역사') targetBadgeId = 'history_buff'; // 역사 선생님
+    if (result.category == '야구룰') targetBadgeId = 'rule_master'; // 심판장
+    if (result.category == '기록') targetBadgeId = 'record_breaker'; // 기록 제조기
+    if (result.category == '응원가') targetBadgeId = 'cheer_captain'; // 응원단장
+
+    if (targetBadgeId != null && newCategoryCorrect >= 50) {
+      if (_isLocked(targetBadgeId)) {
+        await unlockBadge(targetBadgeId);
+
+        final badgeName = _badges.firstWhere((b) => b.id == targetBadgeId).name;
+        newBadges.add(badgeName);
+      }
+    }
+
+    // [조건 9-1] 떼창 유발자: [응원가] 카테고리 100문제 정답
+    if (result.category == '응원가' && newCategoryCorrect >= 100) {
+      if (_isLocked('sing_along_master')) {
+        await unlockBadge('sing_along_master');
+        newBadges.add('떼창 유발자');
+      }
+    }
+
     return newBadges;
   }
 
   bool _isLocked(String id) {
     final index = _badges.indexWhere((b) => b.id == id);
     return index != -1 && _badges[index].isLocked;
+  }
+
+  // 공유 횟수 증가 및 뱃지 체크
+  Future<void> incrementShareCount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final userRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
+
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final snapshot = await transaction.get(userRef);
+
+        if (!snapshot.exists) return;
+
+        int currentShareCount = snapshot.data()?['shareCount'] ?? 0;
+        int newShareCount = currentShareCount + 1;
+
+        transaction.update(userRef, {'shareCount': newShareCount});
+
+        // 10회 달성 시 뱃지 획득
+        if (newShareCount >= 10) {
+          // 트랜잭션 내에서 비동기 함수 호출(unlockBadge)은 지양하는 것이 좋으므로
+          // 뱃지 획득 로직은 트랜잭션 밖에서 처리하거나, 직접 업데이트.
+          // 여기서는 로컬 상태 확인 후 트랜잭션 완료 후 처리하도록 함.
+        }
+      });
+
+      // 트랜잭션 후 최신 카운트 다시 조회 혹은 예측하여 뱃지 체크
+      final snapshot = await userRef.get();
+      int updatedCount = snapshot.data()?['shareCount'] ?? 0;
+
+      if (updatedCount >= 10) {
+        if (_isLocked('influencer')) {
+          await unlockBadge('influencer');
+        }
+      }
+    } catch (e) {
+      print('공유 카운트 증가 실패: $e');
+    }
   }
 }
