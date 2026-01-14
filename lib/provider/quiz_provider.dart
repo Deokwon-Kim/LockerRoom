@@ -63,7 +63,7 @@ class QuizProvider extends ChangeNotifier {
   }
 
   // ====== 퀴즈 시작 ======
-  void startQuiz(String category, {int questionCount = 10}) {
+  Future<void> startQuiz(String category, {int questionCount = 10}) async {
     _isLoading = true;
     notifyListeners();
 
@@ -73,11 +73,51 @@ class QuizProvider extends ChangeNotifier {
       // 로컬 데이터에서 문제 가져오기
       _allQuestions = QuizData.getByCategory(category);
 
-      // 문제 섞기
-      _allQuestions.shuffle();
+      final user = _auth.currentUser;
+      List<String> lastPlayedIds = [];
 
-      // 지정된 개수만큼 선택
-      _currentQuestions = _allQuestions.take(questionCount).toList();
+      // Firestore에서 직전에 푼 문제 ID 조회
+      if (user != null) {
+        try {
+          final doc = await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .collection('quiz_data')
+              .doc('last_played')
+              .get();
+
+          if (doc.exists) {
+            lastPlayedIds = List<String>.from(doc.data()?['ids'] ?? []);
+          }
+        } catch (e) {
+          print('직전 기록 조회 실패:$e');
+        }
+      }
+
+      // 직전에 푼 문제 제외히고 후보 추리기
+      final candidates = _allQuestions
+          .where((q) => !lastPlayedIds.contains(q.quizId))
+          .toList();
+
+      // 문제 섞기
+      candidates.shuffle();
+
+      // 문제 선책 (후보가 부족하면 제외했던 것 중에서 보충)
+      if (candidates.length >= questionCount) {
+        _currentQuestions = candidates.take(questionCount).toList();
+      } else {
+        _currentQuestions = [...candidates];
+
+        // 제외했던 문제들 가져와서 섞음
+        final excluded = _allQuestions
+            .where((q) => lastPlayedIds.contains(q.quizId))
+            .toList();
+        excluded.shuffle();
+
+        // 부족한 만큼 채우기
+        final needed = questionCount - candidates.length;
+        _currentQuestions.addAll(excluded.take(needed));
+      }
 
       // 상태 초기화
       _currentQuestionIndex = 0;
@@ -204,6 +244,31 @@ class QuizProvider extends ChangeNotifier {
         // 2. 유저 총점 업데이트 (Increment)
         await _firestore.collection('users').doc(userId).update({
           'totalQuizScore': FieldValue.increment(score),
+        });
+
+        // 직전 문제 리스트 저장 (중복방지)
+        final docRef = _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('quiz_data')
+            .doc('last_played');
+
+        await _firestore.runTransaction((transaction) async {
+          final snapshot = await transaction.get(docRef);
+          List<String> currentIds = [];
+          if (snapshot.exists) {
+            currentIds = List<String>.from(snapshot.data()?['ids'] ?? []);
+          }
+
+          // 이번 문제 ID들 뒤에 추가
+          currentIds.addAll(questionIds);
+
+          // 너무 많으면 오래된 것부터 삭제
+          if (currentIds.length > 40) {
+            currentIds = currentIds.sublist(currentIds.length - 40);
+          }
+
+          transaction.set(docRef, {'ids': currentIds});
         });
       }
     } catch (e) {

@@ -59,9 +59,9 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
     });
 
     // 퀴즈 시작
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final provider = context.read<QuizProvider>();
-      provider.startQuiz(widget.category);
+      await provider.startQuiz(widget.category);
 
       // 응원가 카테고리일 때 설명 팝업 표시 (팝업 확인 후 오디오 재생)
       if (widget.category == '응원가') {
