@@ -179,7 +179,7 @@ class _MyBadgePageState extends State<MyBadgePage> {
               badge.description,
               style: TextStyle(fontSize: 10, color: Colors.grey[600]),
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
           ),
