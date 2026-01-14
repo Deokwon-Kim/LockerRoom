@@ -249,6 +249,11 @@ class AuthWrapper extends StatelessWidget {
               ).listen(uid);
               // 차단 목록 구독 시작
               Provider.of<BlockProvider>(context, listen: false).listen(uid);
+              // 뱃지 정보 로드
+              Provider.of<BadgeProvider>(
+                context,
+                listen: false,
+              ).fetchMyBadges(uid);
             }
           });
         }
