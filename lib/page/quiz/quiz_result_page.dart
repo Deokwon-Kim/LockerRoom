@@ -571,6 +571,9 @@ class _QuizResultPageState extends State<QuizResultPage>
         '더베이스 ${widget.result.category} 퀴즈 ${widget.result.score}점 달성! 🎉\n\n#야구퀴즈 #야빠 #더베이스 #${widget.result.category}',
       );
 
+      // 공유 카운트 증가
+      context.read<BadgeProvider>().incrementShareCount();
+
       // AuthWrapper를 통해 이동하여 사용자 정보 로드 및 초기화 보장
       Navigator.pushAndRemoveUntil(
         context,
@@ -611,6 +614,11 @@ class _QuizResultPageState extends State<QuizResultPage>
           '더베이스 ${widget.result.category} 퀴즈 ${widget.result.score}점 달성! 🎉\n\n#야구퀴즈 #야빠 #더베이스 #${widget.result.category}',
       sharePositionOrigin: sharePositionOrigin,
     );
+
+    // 공유 카운트 증가
+    if (mounted) {
+      context.read<BadgeProvider>().incrementShareCount();
+    }
   }
 
   void _showToast(String message) {
