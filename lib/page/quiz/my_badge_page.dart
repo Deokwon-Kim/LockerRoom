@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/badge_model.dart';
 import 'package:lockerroom/provider/badge_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
@@ -12,16 +13,140 @@ class MyBadgePage extends StatefulWidget {
   State<MyBadgePage> createState() => _MyBadgePageState();
 }
 
-class _MyBadgePageState extends State<MyBadgePage> {
+class _MyBadgePageState extends State<MyBadgePage>
+    with TickerProviderStateMixin {
+  late AnimationController _stampController;
+  late Animation<double> _stampScale;
+  late Animation<double> _stampRotation;
   final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
   @override
   void initState() {
     super.initState();
+
+    _stampController = AnimationController(
+      duration: Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _stampScale = Tween<double>(begin: 0.0, end: 1.2).animate(
+      CurvedAnimation(
+        parent: _stampController,
+        curve: Interval(0.0, 0.6, curve: Curves.elasticOut),
+      ),
+    );
+
+    _stampRotation = Tween<double>(begin: -0.3, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _stampController,
+        curve: Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (currentUserId != null) {
         context.read<BadgeProvider>().fetchMyBadges(currentUserId!);
       }
+      _checkUnviewedBadges();
     });
+  }
+
+  void _checkUnviewedBadges() async {
+    final badgeProvider = context.read<BadgeProvider>();
+    final unviewedBadges = badgeProvider.unviewedBadges;
+
+    if (unviewedBadges.isNotEmpty) {
+      // 순차적으로 애니메이션 재생
+      for (int i = 0; i < unviewedBadges.length; i++) {
+        if (!mounted) break;
+
+        // 애니메이션 표시
+        _showStampAnimation(unviewedBadges[i]);
+
+        // 2초 대기 후 다이얼로그 닫기
+        await Future.delayed(Duration(seconds: 2));
+
+        if (mounted) {
+          // 가장 최근에 열린 다이얼로그만 닫기
+          Navigator.of(context, rootNavigator: false).pop();
+        }
+
+        // 다음 애니메이션 전 잠깐 대기
+        if (i < unviewedBadges.length - 1) {
+          await Future.delayed(Duration(milliseconds: 400));
+        }
+      }
+    }
+  }
+
+  void _showStampAnimation(BadgeModel badge) async {
+    // 애니메이션 시작
+    _stampController.forward(from: 0.0);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: AnimatedBuilder(
+          animation: _stampController,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _stampScale.value,
+              child: Transform.rotate(
+                angle: _stampRotation.value,
+                child: Container(
+                  padding: EdgeInsets.all(40),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 20,
+                        offset: Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(badge.icon, size: 80, color: Colors.amber),
+                      SizedBox(height: 20),
+                      Text(
+                        '🎉 ${badge.name} 획득! 🎉',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'kbo',
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        badge.description,
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    if (mounted) {
+      // Firestore에 확인 표시
+      context.read<BadgeProvider>().markBadgeAsViewed(badge.id);
+    }
+  }
+
+  @override
+  void dispose() {
+    _stampController.dispose();
+    super.dispose();
   }
 
   @override

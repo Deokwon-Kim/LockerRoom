@@ -6,6 +6,7 @@ class BadgeModel {
   final String description;
   final IconData icon;
   final bool isLocked;
+  final bool isViewed;
   final DateTime? acquiredAt;
 
   BadgeModel({
@@ -14,16 +15,18 @@ class BadgeModel {
     required this.description,
     required this.icon,
     this.isLocked = true,
+    this.isViewed = true,
     this.acquiredAt,
   });
 
-  BadgeModel copyWith({bool? isLocked, DateTime? acquiredAt}) {
+  BadgeModel copyWith({bool? isLocked, bool? isViewed, DateTime? acquiredAt}) {
     return BadgeModel(
       id: id,
       name: name,
       description: description,
       icon: icon,
       isLocked: isLocked ?? this.isLocked,
+      isViewed: isViewed ?? this.isViewed,
       acquiredAt: acquiredAt ?? this.acquiredAt,
     );
   }

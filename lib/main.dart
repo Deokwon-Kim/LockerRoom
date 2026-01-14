@@ -49,6 +49,7 @@ import 'package:lockerroom/repository/user_repository.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toastification/toastification.dart';
 import 'package:lockerroom/services/notification_service.dart';
 import 'package:lockerroom/services/navigation_service.dart';
@@ -228,6 +229,22 @@ class AuthWrapper extends StatelessWidget {
   final int initialIndex;
   const AuthWrapper({super.key, this.initialIndex = 0});
 
+  Future<void> _checkandGrantRetroactiveBadges(
+    String uid,
+    BadgeProvider badgeProvider,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasGranted =
+        prefs.getBool('retroactive_badges_granted_$uid') ?? false;
+
+    if (!hasGranted) {
+      print('소급 뱃지 지급 시작...');
+      await badgeProvider.grantRetroactiveBadges();
+      await prefs.setBool('retroactive_badges_granted_$uid', true);
+      print('소급 뱃지 지급 완료 및 플래그 저장');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedColor =
@@ -250,10 +267,14 @@ class AuthWrapper extends StatelessWidget {
               // 차단 목록 구독 시작
               Provider.of<BlockProvider>(context, listen: false).listen(uid);
               // 뱃지 정보 로드
-              Provider.of<BadgeProvider>(
+              final badgeProvider = Provider.of<BadgeProvider>(
                 context,
                 listen: false,
-              ).fetchMyBadges(uid);
+              );
+              badgeProvider.fetchMyBadges(uid);
+
+              // 소급 뱃지 지급 (한번만 실행)
+              _checkandGrantRetroactiveBadges(uid, badgeProvider);
             }
           });
         }

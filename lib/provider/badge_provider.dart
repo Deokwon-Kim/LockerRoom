@@ -150,8 +150,13 @@ class BadgeProvider extends ChangeNotifier {
               .data();
           final acquiredAt =
               (data['acquiredAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+          final isViewed = data['isViewed'] ?? true;
 
-          return badge.copyWith(isLocked: false, acquiredAt: acquiredAt);
+          return badge.copyWith(
+            isLocked: false,
+            acquiredAt: acquiredAt,
+            isViewed: isViewed,
+          );
         }
         return badge;
       }).toList();
@@ -161,6 +166,32 @@ class BadgeProvider extends ChangeNotifier {
       print('뱃지 로드 실패: $e');
     }
   }
+
+  Future<void> markBadgeAsViewed(String badgeId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('badges')
+          .doc(badgeId)
+          .set({'isViewed': true}, SetOptions(merge: true));
+
+      final index = _badges.indexWhere((b) => b.id == badgeId);
+      if (index != -1) {
+        _badges[index] = _badges[index].copyWith(isViewed: true);
+        notifyListeners();
+      }
+    } catch (e) {
+      print('뱃지 확인 표시 실패: $e');
+    }
+  }
+
+  // 미확인 뱃지 목록 가져오기
+  List<BadgeModel> get unviewedBadges =>
+      _badges.where((b) => !b.isLocked && !b.isViewed).toList();
 
   // Firestore 뱃지 잠금 해제 및 저장
   Future<void> unlockBadge(String badgeId) async {
@@ -182,12 +213,14 @@ class BadgeProvider extends ChangeNotifier {
             'id': badgeId,
             'name': _badges[index].name,
             'acquiredAt': FieldValue.serverTimestamp(),
+            'isViewed': false,
           });
 
       // 2. 로컬 상태 업데이트
       _badges[index] = _badges[index].copyWith(
         isLocked: false,
         acquiredAt: DateTime.now(),
+        isViewed: false,
       );
       notifyListeners();
 
@@ -429,19 +462,19 @@ class BadgeProvider extends ChangeNotifier {
 
     // [조건 9] 카테고리별 누적 정답 수 체크
     // 1. 현재 카테고리의 기존 누적 정답 수 가져오기
-    Map<String, dynamic> categoryStatus = {};
+    Map<String, dynamic> existingCategoryStatus = {};
     try {
-      categoryStatus = userDoc.data()?['categoryStatus'] ?? {};
+      existingCategoryStatus = userDoc.data()?['existingCategoryStatus'] ?? {};
     } catch (_) {}
 
-    int currentCategoryCorrect = categoryStatus[result.category] ?? 0;
+    int currentCategoryCorrect = existingCategoryStatus[result.category] ?? 0;
 
     // 2. 이번 퀴즈 정답 수 더하기
     int newCategoryCorrect = currentCategoryCorrect + result.correctAnswers;
 
     // 3. Firestore 업데이트
     FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-      'categoryStatus.${result.category}': newCategoryCorrect,
+      'existingCategoryStatus.${result.category}': newCategoryCorrect,
     });
 
     // 4. 뱃지 조건 체크
@@ -469,6 +502,219 @@ class BadgeProvider extends ChangeNotifier {
     }
 
     return newBadges;
+  }
+
+  // 기존 유저 대상 뱃지 소급 적용
+  Future<void> grantRetroactiveBadges() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      print('=== 소급 뱃지 체크 시작 ===');
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (!userDoc.exists) return;
+      final data = userDoc.data()!;
+
+      // 퀴즈 기록 전체 조회
+      final quizResult = await FirebaseFirestore.instance
+          .collection('quiz_results')
+          .doc(user.uid)
+          .collection('results')
+          .get();
+      print('총 퀴즈 기록 수: ${quizResult.docs.length}');
+
+      // 퀴즈 기록에서 집계 데이터 계산
+      int totalCorrect = 0;
+      int totalScore = 0;
+      int totalHighDifficultyCorrect = 0;
+      Map<String, int> categoryCorrect = {};
+
+      for (var doc in quizResult.docs) {
+        final result = doc.data();
+
+        // 정답 수 누적
+        final correctAnswers = result['correctAnswers'] ?? 0;
+        totalCorrect += correctAnswers as int;
+
+        // 점수 누적
+        final score = result['score'] ?? 0;
+        totalScore += score as int;
+
+        // 카테고리별 정답 누적
+        final category = result['category'] ?? '';
+        if (category.isNotEmpty) {
+          categoryCorrect[category] =
+              (categoryCorrect[category] ?? 0) + correctAnswers;
+        }
+
+        // 난이도 상 문제 정답 수 개선
+        final questionIds = List<String>.from(result['questionIds'] ?? []);
+        final answerResults = Map<String, dynamic>.from(
+          result['answerResults'] ?? {},
+        );
+
+        final allQuestions = QuizData.getAllQuestions().values
+            .expand((x) => x)
+            .toList();
+
+        for (final qId in questionIds) {
+          final question = allQuestions.firstWhere(
+            (q) => q.quizId == qId,
+            orElse: () => allQuestions.first,
+          );
+
+          if (question.quizId == qId &&
+              question.difficulty == 'hard' &&
+              answerResults[qId] == true) {
+            totalHighDifficultyCorrect++;
+          }
+        }
+      }
+
+      print('계산된 총 정답 수: $totalCorrect');
+      print('계산된 총 점수: $totalScore');
+      print('계산된 난이도 상 정답: $totalHighDifficultyCorrect');
+      print('카테고리별 정답: $categoryCorrect');
+
+      // Firestore 필드가 없으면 개선된 값 사용, 있으면 기존 값 사용
+      totalCorrect = data['totalCorrectAnswers'] ?? totalCorrect;
+      totalScore = data['totalQuizScore'] ?? totalScore;
+      totalHighDifficultyCorrect =
+          data['totalHighDifficultyCorrect'] ?? totalHighDifficultyCorrect;
+
+      final existingCategoryStatus =
+          data['existingCategoryStatus'] as Map<String, dynamic>? ?? {};
+      for (var entry in categoryCorrect.entries) {
+        if (!existingCategoryStatus.containsKey(entry.key)) {
+          existingCategoryStatus[entry.key] = entry.value;
+        }
+      }
+
+      // 계산된 값으로 Firestroe 업데이트 (없는 필드인 경우)
+      Map<String, dynamic> updateData = {};
+      if (!data.containsKey('totalCorrectAnswers')) {
+        updateData['totalCorrectAnswers'] = totalCorrect;
+      }
+      if (!data.containsKey('totalQuizScore')) {
+        updateData['totalQuizScore'] = totalScore;
+      }
+      if (!data.containsKey('totalHighDifficultyCorrect')) {
+        updateData['totalHighDifficultyCorrect'] = totalHighDifficultyCorrect;
+      }
+      if (!data.containsKey('existingCategoryStatus')) {
+        updateData['existingCategoryStatus'] = existingCategoryStatus;
+      }
+
+      if (updateData.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update(updateData);
+        print('누락된 필드 업데이트 완료: ${updateData.keys}');
+      }
+
+      // 1. 총 정답 수 체크 -> 야구 백과사전
+
+      if (totalCorrect >= 100 && _isLocked('quiz_master')) {
+        await unlockBadge('quiz_master');
+        print('야구 백과사전 뱃지 소급 지급');
+      }
+      // 2. 난이도 상 정답 수 체크 -> 해결사
+
+      if (totalHighDifficultyCorrect >= 50 && _isLocked('clutch_hitter')) {
+        await unlockBadge('clutch_hitter');
+        print('해결사 뱃지 소급 지급');
+      }
+      // 3. 공유 횟수 체크 -> 인플루언서
+      final shareCount = data['shareCount'] ?? 0;
+      if (shareCount >= 10 && _isLocked('influencer')) {
+        await unlockBadge('influencer');
+        print('인플루언서 뱃지 소급 지급');
+      }
+      // 4. 카테고리별 누적 정답 체크
+
+      // KBO역사
+      if ((existingCategoryStatus['KBO역사'] ?? 0) >= 50 &&
+          _isLocked('history_buff')) {
+        await unlockBadge('history_buff');
+        print('역사 선생님 뱃지 소급 지급');
+      }
+
+      // 야구룰
+      if ((existingCategoryStatus['야구룰'] ?? 0) >= 50 &&
+          _isLocked('rule_master')) {
+        await unlockBadge('rule_master');
+        print('심판장 뱃지 소급 지급');
+      }
+
+      // 기록
+      if ((existingCategoryStatus['기록'] ?? 0) >= 50 &&
+          _isLocked('record_breaker')) {
+        await unlockBadge('record_breaker');
+        print('기록 제조기 뱃지 소급 지급');
+      }
+
+      // 응원가 50문제
+      if ((existingCategoryStatus['응원가'] ?? 0) >= 50 &&
+          _isLocked('cheer_captain')) {
+        await unlockBadge('cheer_captain');
+        print('응원 단장 뱃지 소급 지급');
+      }
+
+      // 응원가 100문제
+      if ((existingCategoryStatus['응원가'] ?? 0) >= 100 &&
+          _isLocked('sing_along_master')) {
+        await unlockBadge('sing_along_master');
+        print('떼창 유발자 뱃지 소급 지급');
+      }
+      // 5. 연속 정답 체크는 현재 스트릭으로만 판단 가능
+      final consecutiveCorrect = data['consecutiveCorrectCount'] ?? 0;
+
+      // 홈런왕 (20문제 연속)
+      if (consecutiveCorrect >= 20 && _isLocked('homerun_king')) {
+        await unlockBadge('homerun_king');
+        print('홈런왕 뱃지 소급 지급');
+      }
+
+      // 퍼펙트 게임 (30문제 연속)
+      if (consecutiveCorrect >= 30 && _isLocked('perfect_game')) {
+        await unlockBadge('perfect_game');
+        print('퍼펙트 게임 뱃지 소급 지급');
+      }
+      // 6. 총점 체크 -> 행운의 7
+      if (totalScore >= 777 && _isLocked('lucky_seven')) {
+        await unlockBadge('lucky_seven');
+        print('행운의 7 뱃지 소급 지급');
+      }
+      // 7. 출석왕은 현재 스트릭으로만 판단
+      final quizStreak = data['quizStreak'] ?? 0;
+      if (quizStreak >= 7 && _isLocked('attendance_king')) {
+        await unlockBadge('attendance_king');
+        print('출석왕 뱃지 소급 지급');
+      }
+      print('=== 소급 뱃지 체크 완료 ===');
+      // 소급 적용 로그 저장
+      await FirebaseFirestore.instance
+          .collection('badge_retroactive_logs')
+          .doc(user.uid)
+          .set({
+            'userId': user.uid,
+            'appliedAt': FieldValue.serverTimestamp(),
+            'totalCorrect': totalCorrect,
+            'totalScore': totalScore,
+            'totalHighDifficultyCorrect': totalHighDifficultyCorrect,
+            'categoryStatus': existingCategoryStatus,
+            'badgesGranted': _badges
+                .where((b) => !b.isLocked)
+                .map((b) => b.id)
+                .toList(),
+          });
+    } catch (e) {
+      print('소급 뱃지 지급 실패: $e');
+    }
   }
 
   bool _isLocked(String id) {
