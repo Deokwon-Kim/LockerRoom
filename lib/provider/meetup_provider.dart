@@ -213,4 +213,29 @@ class MeetupProvider extends ChangeNotifier {
       return [];
     }
   }
+
+  Future<bool> markAttendance(String meetupId, String participantId) async {
+    try {
+      final docRef = _firestore.collection('meetups').doc(meetupId);
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) throw Exception('모임을 찾을 수 없습니다');
+
+        final meetup = MeetupModel.fromFirestore(snapshot);
+        // 이미 출석했는지 확인
+        if (meetup.attendedParticipants.contains(participantId)) {
+          throw Exception('이미 출석 처리되었습니다');
+        }
+
+        final updatedAttended = [...meetup.attendedParticipants, participantId];
+        transaction.update(docRef, {'attendedParticipants': updatedAttended});
+      });
+
+      await fetchMeetups();
+      return true;
+    } catch (e) {
+      print('출석 체크 실패: $e');
+      return false;
+    }
+  }
 }
