@@ -5,9 +5,12 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/user_model.dart';
 import 'package:lockerroom/page/alert/delete_diallog.dart';
+import 'package:lockerroom/page/meetup/meetup_people_page.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:toastification/toastification.dart';
 
 class MeetupDetailPage extends StatefulWidget {
@@ -112,6 +115,133 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
     }
   }
 
+  // 방장용 QR 다이얼로그
+  void _showQRCode(BuildContext context, String meetupId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: context.read<TeamProvider>().selectedTeam?.color,
+      builder: (context) => Container(
+        width: double.infinity,
+        height: 500,
+        alignment: Alignment.center,
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+        decoration: BoxDecoration(
+          color: context.read<TeamProvider>().selectedTeam?.color,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(Icons.qr_code_rounded, color: WHITE, size: 40),
+                SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '출석용 QR 코드',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: WHITE,
+                      ),
+                    ),
+                    Text(
+                      '모임 참가자에게 이 QR을 보여주세요',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: WHITE.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+                Spacer(),
+                IconButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: Icon(Icons.close, color: WHITE, size: 30),
+                ),
+              ],
+            ),
+            SizedBox(height: 50),
+            Container(
+              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              decoration: BoxDecoration(
+                color: WHITE,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: QrImageView(
+                data: meetupId,
+                version: QrVersions.auto,
+                size: 200,
+              ),
+            ),
+            SizedBox(height: 20), // QR과의 간격
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: WHITE.withOpacity(0.8),
+                  size: 16,
+                ),
+                SizedBox(width: 6),
+                Text(
+                  '스캔 시 자동으로 출석 처리됩니다.',
+                  style: TextStyle(
+                    color: WHITE.withOpacity(0.8),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 참가자용 스캐너 다이얼로그
+  void _openScanner(BuildContext context, String meetupId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SizedBox(
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: MobileScanner(
+          onDetect: (capture) async {
+            final List<Barcode> barcodes = capture.barcodes;
+            for (final barcode in barcodes) {
+              if (barcode.rawValue == meetupId) {
+                // 스캔한 QR이 해당 모임 ID와 일치하면 출석 처리
+                final userId = FirebaseAuth.instance.currentUser?.uid;
+                if (userId != null) {
+                  final success = await context
+                      .read<MeetupProvider>()
+                      .markAttendance(meetupId, userId);
+                  if (success) {
+                    Navigator.pop(context);
+                    toastification.show(
+                      context: context,
+                      type: ToastificationType.success,
+                      alignment: Alignment.bottomCenter,
+                      autoCloseDuration: Duration(seconds: 2),
+                      title: Text('출석이 완료되었습니다'),
+                    );
+                  }
+                }
+              }
+            }
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final teamProvider = context.read<TeamProvider>();
@@ -166,15 +296,30 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                               itemCount: meetup.images.length,
                               itemBuilder: (context, index) {
                                 return ClipRRect(
-                                  borderRadius: BorderRadiusGeometry.circular(
-                                    30,
-                                  ),
+                                  borderRadius: BorderRadius.circular(30),
                                   child: Image.network(
                                     meetup.images[index],
                                     fit: BoxFit.cover,
                                   ),
                                 );
                               },
+                            ),
+                          ),
+                          Positioned.fill(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(30),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withOpacity(0.05),
+                                    Colors.black.withOpacity(0.6),
+                                  ],
+                                  stops: const [0.0, 0.6, 1.0],
+                                ),
+                              ),
                             ),
                           ),
                           if (meetup.isFull)
@@ -244,8 +389,15 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                               meetup.title,
                               style: TextStyle(
                                 fontSize: 18,
-                                color: BLACK,
+                                color: WHITE,
                                 fontWeight: FontWeight.bold,
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(0, 1),
+                                    blurRadius: 4.0,
+                                    color: Colors.black.withOpacity(0.5),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -420,6 +572,22 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                             ),
                           ),
                         ),
+                        Spacer(),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    MeetupPeoplePage(meetUp: meetup),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            '전체보기',
+                            style: TextStyle(color: GRAYSCALE_LABEL_500),
+                          ),
+                        ),
                       ],
                     ),
                     SizedBox(height: 10),
@@ -447,27 +615,42 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                 children: [
                                   Stack(
                                     children: [
-                                      CircleAvatar(
-                                        radius: 30,
-                                        backgroundColor: GRAYSCALE_LABEL_300,
-                                        backgroundImage:
-                                            (user.profileImage?.isNotEmpty ??
-                                                false)
-                                            ? NetworkImage(user.profileImage!)
-                                            : null,
-                                        child:
-                                            (user.profileImage?.isEmpty ?? true)
-                                            ? const Icon(
-                                                Icons.person,
-                                                size: 30,
-                                                color: WHITE,
-                                              )
-                                            : null,
+                                      Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border:
+                                              meetup.attendedParticipants
+                                                  .contains(user.uid)
+                                              ? Border.all(
+                                                  color: Colors.green,
+                                                  width: 2,
+                                                )
+                                              : null,
+                                        ),
+                                        child: CircleAvatar(
+                                          radius: 30,
+                                          backgroundColor: GRAYSCALE_LABEL_300,
+                                          backgroundImage:
+                                              (user.profileImage?.isNotEmpty ??
+                                                  false)
+                                              ? NetworkImage(user.profileImage!)
+                                              : null,
+                                          child:
+                                              (user.profileImage?.isEmpty ??
+                                                  true)
+                                              ? const Icon(
+                                                  Icons.person,
+                                                  size: 30,
+                                                  color: WHITE,
+                                                )
+                                              : null,
+                                        ),
                                       ),
                                       if (isHost)
                                         Positioned(
-                                          bottom: 0,
-                                          right: 0,
+                                          top: 0,
+                                          left: 0,
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(
                                               horizontal: 6,
@@ -490,6 +673,47 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                                 color: WHITE,
                                                 fontWeight: FontWeight.bold,
                                               ),
+                                            ),
+                                          ),
+                                        ),
+                                      if (meetup.attendedParticipants.contains(
+                                        user.uid,
+                                      ))
+                                        Positioned(
+                                          bottom: 0,
+                                          right: 0,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              border: Border.all(
+                                                color: WHITE,
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: const Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.check,
+                                                  color: WHITE,
+                                                  size: 10,
+                                                ),
+                                                SizedBox(width: 2),
+                                                Text(
+                                                  '출석완료',
+                                                  style: TextStyle(
+                                                    fontSize: 8,
+                                                    color: WHITE,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
@@ -532,6 +756,49 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                             meetup.isFull
                                 ? '모집 마감'
                                 : (isParticipating ? '모임 나가기' : '참여하기'),
+                            style: TextStyle(
+                              color: WHITE,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    SizedBox(height: 10),
+                    if (isMyMeetup)
+                      GestureDetector(
+                        onTap: () => _showQRCode(context, meetup.id),
+                        child: Container(
+                          alignment: Alignment.center,
+                          width: double.infinity,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            color: selectedTeam?.color ?? BUTTON,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '출석용 QR 보여주기',
+                            style: TextStyle(
+                              color: WHITE,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (isParticipating)
+                      GestureDetector(
+                        onTap: () => _openScanner(context, meetup.id),
+                        child: Container(
+                          alignment: Alignment.center,
+                          width: double.infinity,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            color: selectedTeam?.color ?? BUTTON,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '출석하기',
                             style: TextStyle(
                               color: WHITE,
                               fontSize: 16,
