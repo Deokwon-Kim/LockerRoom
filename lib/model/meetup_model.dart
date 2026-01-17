@@ -20,6 +20,7 @@ class MeetupModel {
   final int viewCount;
   final int commentCount;
   final List<String> images;
+  final List<String> attendedParticipants;
 
   MeetupModel({
     required this.id,
@@ -41,6 +42,7 @@ class MeetupModel {
     this.viewCount = 0,
     this.commentCount = 0,
     this.images = const [],
+    this.attendedParticipants = const [],
   });
 
   factory MeetupModel.fromFirestore(DocumentSnapshot doc) {
@@ -65,6 +67,9 @@ class MeetupModel {
       viewCount: data['viewCount'] ?? 0,
       commentCount: data['commentCount'] ?? 0,
       images: List<String>.from(data['images'] ?? []),
+      attendedParticipants: List<String>.from(
+        data['attendedParticipants'] ?? [],
+      ),
     );
   }
   Map<String, dynamic> toFirestore() {
@@ -87,6 +92,7 @@ class MeetupModel {
       'viewCount': viewCount,
       'commentCount': commentCount,
       'images': images,
+      'attendedParticipants': attendedParticipants,
     };
   }
 
@@ -110,6 +116,7 @@ class MeetupModel {
     int? viewCount,
     int? commentCount,
     List<String>? images,
+    List<String>? attendedParticipants,
   }) {
     return MeetupModel(
       id: id ?? this.id,
@@ -131,6 +138,7 @@ class MeetupModel {
       viewCount: viewCount ?? this.viewCount,
       commentCount: commentCount ?? this.commentCount,
       images: images ?? this.images,
+      attendedParticipants: attendedParticipants ?? this.attendedParticipants,
     );
   }
 
