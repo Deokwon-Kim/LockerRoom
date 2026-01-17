@@ -76,6 +76,8 @@ dependencies:
   gal: ^2.3.0  # image_gallery_saver 대체 (AGP 8.x 호환)
   audioplayers: ^6.5.1
   shared_preferences: ^2.5.3
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.1.4
 
 
 
