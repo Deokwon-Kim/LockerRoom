@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/model/meetup_model.dart';
+import 'package:lockerroom/model/user_model.dart';
 
 class MeetupProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -190,6 +191,26 @@ class MeetupProvider extends ChangeNotifier {
     } catch (e) {
       print('모임 수정 실패: $e');
       return false;
+    }
+  }
+
+  // 참여자 정보 가져오기
+  Future<List<UserModel>> getParticipantsInfo(List<String> userIds) async {
+    if (userIds.isEmpty) return [];
+
+    try {
+      final futures = userIds.map(
+        (uid) => _firestore.collection('users').doc(uid).get(),
+      );
+      final snapshots = await Future.wait(futures);
+
+      return snapshots
+          .where((doc) => doc.exists)
+          .map((doc) => UserModel.fromDoc(doc))
+          .toList();
+    } catch (e) {
+      print('참여자 정보 가져오기 실패: $e');
+      return [];
     }
   }
 }
