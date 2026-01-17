@@ -34,15 +34,17 @@ class _MeetupPageState extends State<MeetupPage> {
       backgroundColor: WHITE,
       appBar: AppBar(
         backgroundColor: selectedTeam?.color ?? BUTTON,
+        scrolledUnderElevation: 0,
         title: Text(
-          '직관 모임',
+          '함께 직관 가요!',
           style: TextStyle(
             color: WHITE,
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
+        iconTheme: IconThemeData(color: WHITE),
         actions: [
           IconButton(
             onPressed: () {
@@ -173,7 +175,8 @@ class _MeetupPageState extends State<MeetupPage> {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final isParticipating =
         currentUserId != null && meetup.participants.contains(currentUserId);
-    final isMyMeetup = currentUserId == meetup.userId;
+    final teamProvider = context.read<TeamProvider>();
+    final selectedTeam = teamProvider.selectedTeam;
 
     return Card(
       color: WHITE,
@@ -226,6 +229,21 @@ class _MeetupPageState extends State<MeetupPage> {
                       ),
                       child: const Text(
                         '마감',
+                        style: TextStyle(color: WHITE, fontSize: 12),
+                      ),
+                    )
+                  else if (!isParticipating)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selectedTeam?.color ?? BUTTON,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        '모집 중',
                         style: TextStyle(color: WHITE, fontSize: 12),
                       ),
                     ),
@@ -347,13 +365,13 @@ class _MeetupPageState extends State<MeetupPage> {
     final stadium = [
       '잠실',
       '고척',
-      '위즈파크',
-      '랜더스필드',
-      '한화생명볼파크',
-      '챔피언스필드',
-      '라이온즈파크',
-      'NC파크',
-      '사직',
+      '수원KT위즈파크',
+      '인천SSG랜더스필드',
+      '대전한화생명볼파크',
+      '광주기아챔피언스필드',
+      '대구상성라이온즈파크',
+      '창원NC파크',
+      '사직야구장',
       '도쿄돔',
     ];
     showModalBottomSheet(
