@@ -34,7 +34,7 @@ class MeetupPeoplePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            color: GRAYSCALE_LABEL_100,
+            color: WHITE,
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,167 +131,162 @@ class MeetupPeoplePage extends StatelessWidget {
                             itemBuilder: (context, index) {
                               final user = snapshot.data![index];
                               final isHost = user.uid == meetUp.userId;
-                              return Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: WHITE,
-                                  border: Border.all(
-                                    color: GRAYSCALE_LABEL_300,
-                                  ),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Stack(
-                                      children: [
-                                        Container(
-                                          padding: EdgeInsets.all(2),
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            border:
-                                                meetUp.attendedParticipants
-                                                    .contains(user.uid)
-                                                ? Border.all(
-                                                    color: Colors.green,
-                                                    width: 2,
-                                                  )
-                                                : null,
-                                          ),
-                                          child: CircleAvatar(
-                                            radius: 30,
-                                            backgroundColor:
-                                                GRAYSCALE_LABEL_300,
-                                            backgroundImage:
-                                                (user
-                                                        .profileImage
-                                                        ?.isNotEmpty ??
-                                                    false)
-                                                ? NetworkImage(
-                                                    user.profileImage!,
-                                                  )
-                                                : null,
-                                            child:
-                                                (user.profileImage?.isEmpty ??
-                                                    true)
-                                                ? Icon(
-                                                    Icons.person,
-                                                    size: 30,
-                                                    color: WHITE,
-                                                  )
-                                                : null,
-                                          ),
-                                        ),
-                                        if (isHost)
-                                          Positioned(
-                                            top: 45,
-                                            left: 20,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 2,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    selectedTeam?.color ??
-                                                    BUTTON,
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                                border: Border.all(
-                                                  color: WHITE,
-                                                  width: 1,
-                                                ),
-                                              ),
-                                              child: const Text(
-                                                'HOST',
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: WHITE,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
+                              return Card(
+                                color: WHITE,
+
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Row(
+                                    children: [
+                                      Stack(
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all(2),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              border:
+                                                  meetUp.attendedParticipants
+                                                      .contains(user.uid)
+                                                  ? Border.all(
+                                                      color: Colors.green,
+                                                      width: 2,
+                                                    )
+                                                  : null,
                                             ),
-                                          ),
-                                        if (meetUp.attendedParticipants
-                                            .contains(user.uid))
-                                          Positioned(
-                                            bottom: 0,
-                                            right: 0,
-                                            child: Container(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 6,
-                                                vertical: 2,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.green,
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                                border: Border.all(
-                                                  color: WHITE,
-                                                  width: 1,
-                                                ),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.check,
-                                                    color: WHITE,
-                                                    size: 10,
-                                                  ),
-                                                  SizedBox(width: 2),
-                                                  Text(
-                                                    '출석완료',
-                                                    style: TextStyle(
-                                                      fontSize: 8,
+                                            child: CircleAvatar(
+                                              radius: 30,
+                                              backgroundColor:
+                                                  GRAYSCALE_LABEL_300,
+                                              backgroundImage:
+                                                  (user
+                                                          .profileImage
+                                                          ?.isNotEmpty ??
+                                                      false)
+                                                  ? NetworkImage(
+                                                      user.profileImage!,
+                                                    )
+                                                  : null,
+                                              child:
+                                                  (user.profileImage?.isEmpty ??
+                                                      true)
+                                                  ? Icon(
+                                                      Icons.person,
+                                                      size: 30,
                                                       color: WHITE,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
+                                                    )
+                                                  : null,
                                             ),
                                           ),
-                                      ],
-                                    ),
-                                    SizedBox(width: 10),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          user.userNickName,
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        if (meetUp.attendedParticipants
-                                            .contains(user.uid))
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.check_circle,
-                                                color: Colors.green,
-                                                size: 15,
-                                              ),
-                                              Text(
-                                                '출석완료',
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.green,
+                                          if (isHost)
+                                            Positioned(
+                                              top: 45,
+                                              left: 20,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      selectedTeam?.color ??
+                                                      BUTTON,
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  border: Border.all(
+                                                    color: WHITE,
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                child: const Text(
+                                                  'HOST',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: WHITE,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                               ),
-                                            ],
+                                            ),
+                                          if (meetUp.attendedParticipants
+                                              .contains(user.uid))
+                                            Positioned(
+                                              bottom: 0,
+                                              right: 0,
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 6,
+                                                  vertical: 2,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.green,
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  border: Border.all(
+                                                    color: WHITE,
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.check,
+                                                      color: WHITE,
+                                                      size: 10,
+                                                    ),
+                                                    SizedBox(width: 2),
+                                                    Text(
+                                                      '출석완료',
+                                                      style: TextStyle(
+                                                        fontSize: 8,
+                                                        color: WHITE,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      SizedBox(width: 10),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            user.userNickName,
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
-                                      ],
-                                    ),
-                                  ],
+                                          if (meetUp.attendedParticipants
+                                              .contains(user.uid))
+                                            Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.check_circle,
+                                                  color: Colors.green,
+                                                  size: 15,
+                                                ),
+                                                Text(
+                                                  '출석완료',
+                                                  style: TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.green,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               );
                             },
