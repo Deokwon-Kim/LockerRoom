@@ -5,6 +5,7 @@ import 'package:lockerroom/page/feed/feed_page.dart';
 import 'package:lockerroom/page/home/home_page.dart';
 import 'package:lockerroom/page/myPage/mypage.dart';
 import 'package:lockerroom/page/feed/feed_upload_page.dart';
+import 'package:lockerroom/provider/tab_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/widgets/svg_icon.dart';
@@ -37,7 +38,18 @@ class _BottomTabBarState extends State<BottomTabBar> {
       _teamProvider.addListener(_handleTeamProviderChange);
 
       _checkAndShowCheerSongPopup();
+
+      final tabProvider = context.read<TabProvider>();
+      tabProvider.addListener(_handleTabProviderChange);
+      _selectedIndex = tabProvider.selectedIndex;
     });
+  }
+
+  void _handleTabProviderChange() {
+    final index = context.read<TabProvider>().selectedIndex;
+    if (_selectedIndex != index && mounted) {
+      setState(() => _selectedIndex = index);
+    }
   }
 
   void _handleTeamProviderChange() {
@@ -221,6 +233,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
   }
 
   void _onItemTapped(int index) {
+    context.read<TabProvider>().setSelectedIndex(index);
     setState(() {
       _selectedIndex = index;
     });
