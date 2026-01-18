@@ -1,13 +1,17 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/user_model.dart';
 import 'package:lockerroom/page/alert/delete_diallog.dart';
+import 'package:lockerroom/page/feed/feed_upload_page.dart';
 import 'package:lockerroom/page/meetup/meetup_people_page.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
+import 'package:lockerroom/provider/tab_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -243,9 +247,6 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
   }
 
   void _moreBottomSheet(BuildContext context) {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final isMyMeetUp = widget.meetup.userId == currentUserId;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -261,7 +262,10 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
             ListTile(
               leading: Icon(Icons.share),
               title: Text('공유하기'),
-              onTap: () {},
+              onTap: () {
+                Navigator.pop(context);
+                _showShareOptions(context);
+              },
             ),
             ListTile(
               leading: Icon(Icons.delete, color: RED_DANGER_TEXT_50),
@@ -276,6 +280,60 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
               onTap: () {
                 Navigator.pop(context);
                 _handleDelete();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 공유 옵션
+  void _showShareOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: BACKGROUND_COLOR,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.only(left: 10, right: 10, bottom: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+
+          children: [
+            ListTile(
+              leading: Icon(Icons.feed),
+              title: Text('피드에 공유'),
+              onTap: () {
+                Navigator.pop(context);
+                final uploadProvider = context.read<UploadProvider>();
+                uploadProvider.clearAll();
+                uploadProvider.setMeetupId(widget.meetup.id);
+                uploadProvider.setInitialCaption(
+                  '함께 직관 가요!✨\n${widget.meetup.title} 모임 참여하기',
+                );
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FeedUploadPage(
+                      onUploaded: () {
+                        // 모든 스택을 닫고 메인 탭바(루트)로 이동
+                        Navigator.of(
+                          context,
+                        ).popUntil((route) => route.isFirst);
+                        context.read<TabProvider>().setSelectedIndex(1);
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(CupertinoIcons.share_up),
+              title: Text('SNS로 공유'),
+              onTap: () {
+                Navigator.pop(context);
               },
             ),
           ],
@@ -325,7 +383,12 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                   icon: Icon(Icons.more_horiz),
                 )
               else
-                IconButton(onPressed: () {}, icon: Icon(Icons.share_rounded)),
+                IconButton(
+                  onPressed: () {
+                    _showShareOptions(context);
+                  },
+                  icon: Icon(Icons.share_rounded),
+                ),
               // if (isMyMeetup)
               //   IconButton(onPressed: _handleDelete, icon: Icon(Icons.delete)),
             ],
