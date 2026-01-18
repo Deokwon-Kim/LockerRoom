@@ -197,6 +197,23 @@ class _UploadPageState extends State<FeedUploadPage> {
                       ),
                     ),
                   ),
+                  SizedBox(height: 10),
+                  if (uploadProvider.meetupId != null) ...[
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.groups, color: Colors.blue),
+                          SizedBox(width: 10),
+                          Text('모임 정보가 함께 공유됩니다'),
+                        ],
+                      ),
+                    ),
+                  ],
                   if (extractUrl(_captionController.text) != null) ...[
                     SizedBox(height: 10),
                     Container(
