@@ -37,10 +37,12 @@ import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/marketFeedEdit_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/market_upload_provider.dart';
+import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/quiz_provider.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/social_login_provider.dart';
+import 'package:lockerroom/provider/tab_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
@@ -175,6 +177,8 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => QuizProvider()),
         ChangeNotifierProvider(create: (context) => QuizRankingProvider()),
         ChangeNotifierProvider(create: (context) => BadgeProvider()),
+        ChangeNotifierProvider(create: (context) => MeetupProvider()),
+        ChangeNotifierProvider(create: (context) => TabProvider()),
       ],
       child: const MyApp(),
     ),
