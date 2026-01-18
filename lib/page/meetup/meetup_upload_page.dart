@@ -149,13 +149,21 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                 surfaceTintColor: Colors.transparent,
               ),
               colorScheme: base.colorScheme.copyWith(
-                primary: BUTTON, // 선택 색상
+                primary: context
+                    .read<TeamProvider>()
+                    .selectedTeam
+                    ?.color, // 선택 색상
                 onPrimary: WHITE,
-                surface: BACKGROUND_COLOR,
+                surface: BLACK,
                 onSurface: BLACK,
               ),
               textButtonTheme: TextButtonThemeData(
-                style: TextButton.styleFrom(foregroundColor: BUTTON),
+                style: TextButton.styleFrom(
+                  foregroundColor: context
+                      .read<TeamProvider>()
+                      .selectedTeam
+                      ?.color,
+                ),
               ),
             ),
             child: child!,
@@ -550,7 +558,7 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
 
             // 경기 선택 카드
             Card(
-              color: BACKGROUND_COLOR,
+              color: selectedTeam?.color,
               child: InkWell(
                 onTap: _showSchedulePicker,
                 child: Padding(
@@ -566,13 +574,10 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: WHITE,
                             ),
                           ),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                            color: GRAYSCALE_LABEL_500,
-                          ),
+                          Icon(Icons.arrow_forward_ios, size: 16, color: WHITE),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -582,7 +587,7 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                           _selectedDate == null
                               ? '날짜를 먼저 선택해주세요'
                               : '경기를 선택해주세요',
-                          style: TextStyle(color: GRAYSCALE_LABEL_500),
+                          style: TextStyle(color: WHITE),
                         )
                       else
                         Column(
@@ -593,15 +598,13 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
+                                color: WHITE,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               '${DateFormat('HH:mm').format(_selectedSchedules!.dateTimeKst)} | ${_selectedSchedules!.stadium}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: GRAYSCALE_LABEL_500,
-                              ),
+                              style: TextStyle(fontSize: 12, color: WHITE),
                             ),
                           ],
                         ),
