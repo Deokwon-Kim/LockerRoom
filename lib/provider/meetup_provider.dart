@@ -238,4 +238,17 @@ class MeetupProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  // 특정 모임 정보 가져오기
+  Future<MeetupModel?> getMeetupById(String id) async {
+    try {
+      final doc = await _firestore.collection('meetups').doc(id).get();
+      if (doc.exists) {
+        return MeetupModel.fromFirestore(doc);
+      }
+    } catch (e) {
+      print('모임 정보 단일 조회 실패: $e');
+    }
+    return null;
+  }
 }
