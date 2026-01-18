@@ -124,7 +124,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
       backgroundColor: context.read<TeamProvider>().selectedTeam?.color,
       builder: (context) => Container(
         width: double.infinity,
-        height: 500,
+        height: 450,
         alignment: Alignment.center,
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
         decoration: BoxDecoration(
@@ -242,6 +242,48 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
     );
   }
 
+  void _moreBottomSheet(BuildContext context) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final isMyMeetUp = widget.meetup.userId == currentUserId;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: BACKGROUND_COLOR,
+      builder: (context) => Container(
+        width: double.infinity,
+        height: 200,
+        color: BACKGROUND_COLOR,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.share),
+              title: Text('공유하기'),
+              onTap: () {},
+            ),
+            ListTile(
+              leading: Icon(Icons.delete, color: RED_DANGER_TEXT_50),
+              title: Text(
+                '모임 삭제',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: RED_DANGER_TEXT_50,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _handleDelete();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final teamProvider = context.read<TeamProvider>();
@@ -276,7 +318,16 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
             iconTheme: IconThemeData(color: WHITE),
             actions: [
               if (isMyMeetup)
-                IconButton(onPressed: _handleDelete, icon: Icon(Icons.delete)),
+                IconButton(
+                  onPressed: () {
+                    _moreBottomSheet(context);
+                  },
+                  icon: Icon(Icons.more_horiz),
+                )
+              else
+                IconButton(onPressed: () {}, icon: Icon(Icons.share_rounded)),
+              // if (isMyMeetup)
+              //   IconButton(onPressed: _handleDelete, icon: Icon(Icons.delete)),
             ],
           ),
           body: ListView(
