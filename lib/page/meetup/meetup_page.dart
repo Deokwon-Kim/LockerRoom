@@ -270,12 +270,38 @@ class _MeetupPageState extends State<MeetupPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${meetup.homeTeam} vs ${meetup.awayTeam}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: BUTTON,
-                            fontWeight: FontWeight.bold,
+                        RichText(
+                          text: TextSpan(
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: meetup.homeTeam,
+                                style: TextStyle(
+                                  color:
+                                      teamProvider
+                                          .findTeamByName(meetup.homeTeam)
+                                          ?.color ??
+                                      BUTTON,
+                                ),
+                              ),
+                              const TextSpan(
+                                text: ' vs ',
+                                style: TextStyle(color: BLACK),
+                              ),
+                              TextSpan(
+                                text: meetup.awayTeam,
+                                style: TextStyle(
+                                  color:
+                                      teamProvider
+                                          .findTeamByName(meetup.awayTeam)
+                                          ?.color ??
+                                      BUTTON,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         SizedBox(height: 4),
@@ -363,8 +389,8 @@ class _MeetupPageState extends State<MeetupPage> {
 
   void _showStadiumFilter(BuildContext context) {
     final stadium = [
-      '잠실',
-      '고척',
+      '잠실야구장',
+      '고척스카이돔',
       '수원KT위즈파크',
       '인천SSG랜더스필드',
       '대전한화생명볼파크',
