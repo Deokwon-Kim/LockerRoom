@@ -16,7 +16,8 @@ import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
 class MeetupUploadPage extends StatefulWidget {
-  const MeetupUploadPage({super.key});
+  final MeetupModel? meetupToEdit;
+  const MeetupUploadPage({super.key, this.meetupToEdit});
 
   @override
   State<MeetupUploadPage> createState() => _MeetupUploadPageState();
@@ -36,9 +37,21 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
   final ImagePicker _picker = ImagePicker();
   List<XFile> _selectedImages = [];
   bool _isUploading = false;
+  List<String> _existingImageUrls = [];
+  bool get _isEditMode => widget.meetupToEdit != null;
   @override
   void initState() {
     super.initState();
+    if (_isEditMode) {
+      final meetup = widget.meetupToEdit!;
+      _titleController.text = meetup.title;
+      _contentController.text = meetup.content;
+      _maxParticipants = meetup.maxParticipants;
+      _existingImageUrls = List.from(meetup.images);
+      _selectedDate = DateTime.parse(meetup.gameDate);
+      _selectedMyTeam = meetup.myTeam;
+      // Note: _selectedSchedules will be set in _loadSchedules after it completes
+    }
     _loadSchedules();
   }
 
@@ -52,11 +65,32 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
 
       setState(() {
         _allSchedules = schedules.where((s) {
+          if (_isEditMode) {
+            final editDate = DateTime.parse(widget.meetupToEdit!.gameDate);
+            if (s.dateTimeKst.year == editDate.year &&
+                s.dateTimeKst.month == editDate.month &&
+                s.dateTimeKst.day == editDate.day) {
+              return true;
+            }
+          }
           return s.dateTimeKst.isAfter(now.subtract(const Duration(days: 1)));
         }).toList();
 
         // 날짜순 정렬
         _allSchedules.sort((a, b) => a.dateTimeKst.compareTo(b.dateTimeKst));
+
+        if (_isEditMode) {
+          final meetup = widget.meetupToEdit!;
+          _selectedSchedules = _allSchedules.firstWhere(
+            (s) =>
+                s.homeTeam == meetup.homeTeam &&
+                s.awayTeam == meetup.awayTeam &&
+                s.stadium == meetup.stadium &&
+                DateFormat('yyyy-MM-dd').format(s.dateTimeKst) ==
+                    meetup.gameDate,
+            orElse: () => _selectedSchedules!,
+          );
+        }
       });
     } catch (e) {
       print('경기 일정 로드 실패:$e');
@@ -375,44 +409,81 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
       final userNickName = userDoc.data()?['userNickName'] ?? '익명';
       final userProfileImage = userDoc.data()?['profileImage'];
 
+      // 3. MeetupModel 생성/수정
       final schedule = _selectedSchedules!;
       final gameDate = DateFormat('yyyy-MM-dd').format(schedule.dateTimeKst);
       final gameTime = DateFormat('HH:mm').format(schedule.dateTimeKst);
 
-      // 3. MeetupModel 생성
-      final meetup = MeetupModel(
-        id: '',
-        userId: user.uid,
-        userNickName: userNickName,
-        userProfileImage: userProfileImage,
-        title: _titleController.text.trim(),
-        content: _contentController.text.trim(),
-        gameDate: gameDate,
-        gameTime: gameTime,
-        stadium: schedule.stadium,
-        homeTeam: schedule.homeTeam,
-        awayTeam: schedule.awayTeam,
-        myTeam: _selectedMyTeam!,
-        maxParticipants: _maxParticipants,
-        participants: [user.uid],
-        createdAt: DateTime.now(),
-        images: imageUrls,
-      );
+      if (_isEditMode) {
+        final existingMeetup = widget.meetupToEdit!;
+        final updatedMeetup = {
+          'title': _titleController.text.trim(),
+          'content': _contentController.text.trim(),
+          'gameDate': gameDate,
+          'gameTime': gameTime,
+          'stadium': schedule.stadium,
+          'homeTeam': schedule.homeTeam,
+          'awayTeam': schedule.awayTeam,
+          'myTeam': _selectedMyTeam!,
+          'maxParticipants': _maxParticipants,
+          'images': [..._existingImageUrls, ...imageUrls],
+        };
 
-      final success = await context.read<MeetupProvider>().createMeetup(meetup);
-
-      if (success) {
-        if (!mounted) return;
-        Navigator.pop(context);
-        toastification.show(
-          context: context,
-          type: ToastificationType.success,
-          alignment: Alignment.bottomCenter,
-          autoCloseDuration: const Duration(seconds: 2),
-          title: const Text('모임이 생성되었습니다'),
+        final success = await context.read<MeetupProvider>().updateMeetup(
+          existingMeetup.id,
+          updatedMeetup,
         );
+
+        if (success) {
+          if (!mounted) return;
+          Navigator.pop(context);
+          toastification.show(
+            context: context,
+            type: ToastificationType.success,
+            alignment: Alignment.bottomCenter,
+            autoCloseDuration: const Duration(seconds: 2),
+            title: const Text('모임이 수정되었습니다'),
+          );
+        } else {
+          throw Exception('모임 수정 실패');
+        }
       } else {
-        throw Exception('모임 생성 실패');
+        final meetup = MeetupModel(
+          id: '',
+          userId: user.uid,
+          userNickName: userNickName,
+          userProfileImage: userProfileImage,
+          title: _titleController.text.trim(),
+          content: _contentController.text.trim(),
+          gameDate: gameDate,
+          gameTime: gameTime,
+          stadium: schedule.stadium,
+          homeTeam: schedule.homeTeam,
+          awayTeam: schedule.awayTeam,
+          myTeam: _selectedMyTeam!,
+          maxParticipants: _maxParticipants,
+          participants: [user.uid],
+          createdAt: DateTime.now(),
+          images: imageUrls,
+        );
+
+        final success = await context.read<MeetupProvider>().createMeetup(
+          meetup,
+        );
+
+        if (success) {
+          if (!mounted) return;
+          Navigator.pop(context);
+          toastification.show(
+            context: context,
+            type: ToastificationType.success,
+            alignment: Alignment.bottomCenter,
+            autoCloseDuration: const Duration(seconds: 2),
+            title: const Text('모임이 생성되었습니다'),
+          );
+        } else {
+          throw Exception('모임 생성 실패');
+        }
       }
     } catch (e) {
       if (!mounted) return;
@@ -442,7 +513,7 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
       appBar: AppBar(
         backgroundColor: selectedTeam?.color ?? BUTTON,
         title: Text(
-          '직관 모임 만들기',
+          _isEditMode ? '직관 모임 수정하기' : '직관 모임 만들기',
           style: TextStyle(
             fontSize: 18,
             color: WHITE,
@@ -462,8 +533,8 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                       strokeWidth: 2,
                     ),
                   )
-                : const Text(
-                    '등록',
+                : Text(
+                    _isEditMode ? '수정' : '등록',
                     style: TextStyle(
                       fontSize: 16,
                       color: WHITE,
@@ -761,9 +832,12 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                           ),
                         ),
                         Text(
-                          '${_selectedImages.length}/4',
+                          '${_existingImageUrls.length + _selectedImages.length}/4',
                           style: TextStyle(
-                            color: _selectedImages.length == 4
+                            color:
+                                (_existingImageUrls.length +
+                                        _selectedImages.length) ==
+                                    4
                                 ? Colors.red
                                 : GRAYSCALE_LABEL_500,
                           ),
@@ -776,7 +850,9 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                       child: Row(
                         children: [
                           // 사진 추가 버튼
-                          if (_selectedImages.length < 4)
+                          if (_existingImageUrls.length +
+                                  _selectedImages.length <
+                              4)
                             Padding(
                               padding: const EdgeInsets.only(right: 12),
                               child: InkWell(
@@ -799,6 +875,50 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                                 ),
                               ),
                             ),
+                          // 기존 이미지 목록
+                          ..._existingImageUrls.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final url = entry.value;
+                            return Stack(
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(right: 12),
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    image: DecorationImage(
+                                      image: NetworkImage(url),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  right: 16,
+                                  child: InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _existingImageUrls.removeAt(index);
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.black54,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        size: 12,
+                                        color: WHITE,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }),
                           // 선택된 사진 목록
                           ..._selectedImages.asMap().entries.map((entry) {
                             final index = entry.key;

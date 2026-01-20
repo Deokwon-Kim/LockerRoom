@@ -8,6 +8,7 @@ import 'package:lockerroom/model/user_model.dart';
 import 'package:lockerroom/page/alert/delete_diallog.dart';
 import 'package:lockerroom/page/feed/feed_upload_page.dart';
 import 'package:lockerroom/page/meetup/meetup_people_page.dart';
+import 'package:lockerroom/page/meetup/meetup_upload_page.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/tab_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -265,6 +266,25 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
               onTap: () {
                 Navigator.pop(context);
                 _showShareOptions(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.edit),
+              title: Text('게시글 수정'),
+              onTap: () {
+                Navigator.pop(context);
+                final meetUpProvider = context.read<MeetupProvider>();
+                final latestMeetup = meetUpProvider.meetups.firstWhere(
+                  (m) => m.id == widget.meetup.id,
+                  orElse: () => widget.meetup,
+                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        MeetupUploadPage(meetupToEdit: latestMeetup),
+                  ),
+                );
               },
             ),
             ListTile(
