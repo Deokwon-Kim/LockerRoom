@@ -78,6 +78,8 @@ dependencies:
   shared_preferences: ^2.5.3
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.1.4
+  flutter_chat_ui: ^2.11.1
+  uuid: ^4.5.2
 
 
 
