@@ -14,9 +14,13 @@ import 'package:lockerroom/provider/tab_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:toastification/toastification.dart';
+import 'dart:io';
 
 class MeetupDetailPage extends StatefulWidget {
   final MeetupModel meetup;
@@ -27,6 +31,7 @@ class MeetupDetailPage extends StatefulWidget {
 }
 
 class _MeetupDetailPageState extends State<MeetupDetailPage> {
+  final ScreenshotController _screenshotController = ScreenshotController();
   @override
   void initState() {
     super.initState();
@@ -247,6 +252,39 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
     );
   }
 
+  Future<void> _shareScreenshot() async {
+    try {
+      final image = await _screenshotController.capture();
+      if (image == null) return;
+
+      final directory = await getTemporaryDirectory();
+      final imagePath = await File(
+        '${directory.path}/meetup_share.png',
+      ).create();
+      await imagePath.writeAsBytes(image);
+
+      final box = context.findRenderObject() as RenderBox?;
+
+      await Share.shareXFiles(
+        [XFile(imagePath.path)],
+        text: '[Locker Room] ${widget.meetup.title} 모임에 함께해요! ⚾',
+        sharePositionOrigin: box != null
+            ? box.localToGlobal(Offset.zero) & box.size
+            : null,
+      );
+    } catch (e) {
+      debugPrint('Screenshot share error: $e');
+      if (mounted) {
+        toastification.show(
+          context: context,
+          type: ToastificationType.error,
+          title: Text('공유하기에 실패했습니다'),
+          autoCloseDuration: Duration(seconds: 2),
+        );
+      }
+    }
+  }
+
   void _moreBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -354,6 +392,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
               title: Text('SNS로 공유'),
               onTap: () {
                 Navigator.pop(context);
+                _shareScreenshot();
               },
             ),
           ],
@@ -413,538 +452,587 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
               //   IconButton(onPressed: _handleDelete, icon: Icon(Icons.delete)),
             ],
           ),
-          body: ListView(
-            padding: const EdgeInsets.all(10),
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(5),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (meetup.images.isNotEmpty)
-                      Stack(
-                        children: [
-                          SizedBox(
-                            height: 250,
-                            child: PageView.builder(
-                              itemCount: meetup.images.length,
-                              itemBuilder: (context, index) {
-                                return ClipRRect(
-                                  borderRadius: BorderRadius.circular(30),
-                                  child: Image.network(
-                                    meetup.images[index],
-                                    fit: BoxFit.cover,
+          body: Screenshot(
+            controller: _screenshotController,
+            child: Container(
+              color: BACKGROUND_COLOR,
+              child: ListView(
+                padding: const EdgeInsets.all(10),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(5),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (meetup.images.isNotEmpty)
+                          Stack(
+                            children: [
+                              SizedBox(
+                                height: 250,
+                                child: PageView.builder(
+                                  itemCount: meetup.images.length,
+                                  itemBuilder: (context, index) {
+                                    return ClipRRect(
+                                      borderRadius: BorderRadius.circular(30),
+                                      child: Image.network(
+                                        meetup.images[index],
+                                        fit: BoxFit.cover,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(30),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.transparent,
+                                        Colors.black.withOpacity(0.08),
+                                        Colors.black.withOpacity(0.7),
+                                      ],
+                                      stops: const [0.0, 0.6, 1.0],
+                                    ),
                                   ),
-                                );
-                              },
-                            ),
-                          ),
-                          Positioned.fill(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(30),
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black.withOpacity(0.05),
-                                    Colors.black.withOpacity(0.6),
+                                ),
+                              ),
+                              if (isParticipating)
+                                Positioned(
+                                  top: 150,
+                                  left: 20,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      '참여중',
+                                      style: TextStyle(
+                                        color: WHITE,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else if (meetup.isFull)
+                                Positioned(
+                                  top: 150,
+                                  left: 20,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      '마감',
+                                      style: TextStyle(
+                                        color: WHITE,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                Positioned(
+                                  top: 150,
+                                  left: 20,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: selectedTeam?.color ?? BUTTON,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      '모집중',
+                                      style: TextStyle(
+                                        color: WHITE,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                              Positioned(
+                                top: 180,
+                                left: 20,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${meetup.homeTeam} vs ${meetup.awayTeam}',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: WHITE,
+                                        fontWeight: FontWeight.bold,
+                                        shadows: [
+                                          Shadow(
+                                            offset: Offset(0, 1),
+                                            blurRadius: 4.0,
+                                            color: Colors.black.withOpacity(
+                                              0.5,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      meetup.title,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: WHITE,
+                                        fontWeight: FontWeight.bold,
+                                        shadows: [
+                                          Shadow(
+                                            offset: Offset(0, 1),
+                                            blurRadius: 4.0,
+                                            color: Colors.black.withOpacity(
+                                              0.5,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ],
-                                  stops: const [0.0, 0.6, 1.0],
                                 ),
                               ),
-                            ),
+                            ],
                           ),
-                          if (meetup.isFull)
-                            Positioned(
-                              top: 150,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  '마감',
-                                  style: TextStyle(color: WHITE, fontSize: 12),
-                                ),
-                              ),
-                            )
-                          else
-                            Positioned(
-                              top: 170,
-                              left: 20,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: selectedTeam?.color ?? BUTTON,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  '모집중',
-                                  style: TextStyle(color: WHITE, fontSize: 12),
-                                ),
-                              ),
-                            ),
-                          if (isParticipating)
-                            Positioned(
-                              top: 170,
-                              left: 20,
-                              child: Container(
+                        SizedBox(height: 20),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 15,
+                          ),
+                          decoration: BoxDecoration(
+                            color: WHITE,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: GRAYSCALE_LABEL_300),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
                                 padding: EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
+                                  horizontal: 10,
+                                  vertical: 10,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.green,
-                                  borderRadius: BorderRadius.circular(4),
+                                  color: BUTTON.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(30),
                                 ),
-                                child: Text(
-                                  '참여중',
-                                  style: TextStyle(
-                                    color: WHITE,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                child: Icon(
+                                  Icons.calendar_today,
+                                  color: selectedTeam?.color ?? BUTTON,
                                 ),
                               ),
-                            ),
-                          Positioned(
-                            top: 200,
-                            left: 20,
-                            child: Text(
-                              meetup.title,
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: WHITE,
-                                fontWeight: FontWeight.bold,
-                                shadows: [
-                                  Shadow(
-                                    offset: Offset(0, 1),
-                                    blurRadius: 4.0,
-                                    color: Colors.black.withOpacity(0.5),
+                              SizedBox(width: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '경기 일정',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: selectedTeam?.color ?? BUTTON,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${DateFormat('MM월 dd일 (E)', 'ko').format(DateTime.parse(meetup.gameDate))} ${meetup.gameTime}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: BLACK,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    SizedBox(height: 20),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 15,
-                      ),
-                      decoration: BoxDecoration(
-                        color: WHITE,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: GRAYSCALE_LABEL_300),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: BUTTON.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: Icon(
-                              Icons.calendar_today,
-                              color: selectedTeam?.color ?? BUTTON,
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '경기 일정',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: selectedTeam?.color ?? BUTTON,
-                                ),
-                              ),
-                              Text(
-                                '${DateFormat('MM월 dd일 (E)', 'ko').format(DateTime.parse(meetup.gameDate))} ${meetup.gameTime}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: BLACK,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
                             ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 15,
-                      ),
-                      decoration: BoxDecoration(
-                        color: WHITE,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: GRAYSCALE_LABEL_300),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: BUTTON.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: Icon(
-                              Icons.location_on,
-                              color: selectedTeam?.color ?? BUTTON,
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '장소',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: selectedTeam?.color ?? BUTTON,
-                                ),
-                              ),
-                              Text(
-                                meetup.stadium,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: BLACK,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 15,
-                      ),
-                      decoration: BoxDecoration(
-                        color: WHITE,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: GRAYSCALE_LABEL_300),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.description,
-                                color: selectedTeam?.color ?? BUTTON,
-                              ),
-                              SizedBox(width: 10),
-                              Text(
-                                '상세 설명',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: BLACK,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 5),
-                          Text(meetup.content),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 15),
-                    Row(
-                      children: [
-                        Text(
-                          '참여 멤버',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(width: 5),
+                        SizedBox(height: 10),
                         Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 5,
+                            horizontal: 15,
+                            vertical: 15,
+                          ),
+                          decoration: BoxDecoration(
+                            color: WHITE,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: GRAYSCALE_LABEL_300),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: BUTTON.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: Icon(
+                                  Icons.location_on,
+                                  color: selectedTeam?.color ?? BUTTON,
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '장소',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: selectedTeam?.color ?? BUTTON,
+                                    ),
+                                  ),
+                                  Text(
+                                    meetup.stadium,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: BLACK,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 15,
+                            vertical: 15,
                           ),
                           decoration: BoxDecoration(
                             color: WHITE,
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: GRAYSCALE_LABEL_300),
                           ),
-                          child: Text(
-                            '${meetup.participants.length}/${meetup.maxParticipants}명',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: meetup.isFull ? Colors.red : BUTTON,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        Spacer(),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    MeetupPeoplePage(meetUp: meetup),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            '전체보기',
-                            style: TextStyle(color: GRAYSCALE_LABEL_500),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 10),
-                    FutureBuilder<List<UserModel>>(
-                      future: meetUpProvider.getParticipantsInfo(
-                        meetup.participants,
-                      ),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        return SizedBox(
-                          height: 110,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: snapshot.data!.length,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(width: 15),
-                            itemBuilder: (context, index) {
-                              final user = snapshot.data![index];
-                              final isHost = user.uid == meetup.userId;
-                              return Column(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
-                                  Stack(
+                                  Icon(
+                                    Icons.description,
+                                    color: selectedTeam?.color ?? BUTTON,
+                                  ),
+                                  SizedBox(width: 10),
+                                  Text(
+                                    '상세 설명',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: BLACK,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 5),
+                              Text(meetup.content),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 15),
+                        Row(
+                          children: [
+                            Text(
+                              '참여 멤버',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(width: 5),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: WHITE,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${meetup.participants.length}/${meetup.maxParticipants}명',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: meetup.isFull ? Colors.red : BUTTON,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Spacer(),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        MeetupPeoplePage(meetUp: meetup),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                '전체보기',
+                                style: TextStyle(color: GRAYSCALE_LABEL_500),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 10),
+                        FutureBuilder<List<UserModel>>(
+                          future: meetUpProvider.getParticipantsInfo(
+                            meetup.participants,
+                          ),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+                            return SizedBox(
+                              height: 110,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: snapshot.data!.length,
+                                separatorBuilder: (context, index) =>
+                                    const SizedBox(width: 15),
+                                itemBuilder: (context, index) {
+                                  final user = snapshot.data![index];
+                                  final isHost = user.uid == meetup.userId;
+                                  return Column(
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border:
-                                              meetup.attendedParticipants
-                                                  .contains(user.uid)
-                                              ? Border.all(
-                                                  color: Colors.green,
-                                                  width: 2,
-                                                )
-                                              : null,
-                                        ),
-                                        child: CircleAvatar(
-                                          radius: 30,
-                                          backgroundColor: GRAYSCALE_LABEL_300,
-                                          backgroundImage:
-                                              (user.profileImage?.isNotEmpty ??
-                                                  false)
-                                              ? NetworkImage(user.profileImage!)
-                                              : null,
-                                          child:
-                                              (user.profileImage?.isEmpty ??
-                                                  true)
-                                              ? const Icon(
-                                                  Icons.person,
-                                                  size: 30,
-                                                  color: WHITE,
-                                                )
-                                              : null,
-                                        ),
-                                      ),
-                                      if (isHost)
-                                        Positioned(
-                                          top: 0,
-                                          left: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
+                                      Stack(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(2),
                                             decoration: BoxDecoration(
-                                              color:
-                                                  selectedTeam?.color ?? BUTTON,
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              border: Border.all(
-                                                color: WHITE,
-                                                width: 1,
-                                              ),
+                                              shape: BoxShape.circle,
+                                              border:
+                                                  meetup.attendedParticipants
+                                                      .contains(user.uid)
+                                                  ? Border.all(
+                                                      color: Colors.green,
+                                                      width: 2,
+                                                    )
+                                                  : null,
                                             ),
-                                            child: const Text(
-                                              'HOST',
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                color: WHITE,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                            child: CircleAvatar(
+                                              radius: 30,
+                                              backgroundColor:
+                                                  GRAYSCALE_LABEL_300,
+                                              backgroundImage:
+                                                  (user
+                                                          .profileImage
+                                                          ?.isNotEmpty ??
+                                                      false)
+                                                  ? NetworkImage(
+                                                      user.profileImage!,
+                                                    )
+                                                  : null,
+                                              child:
+                                                  (user.profileImage?.isEmpty ??
+                                                      true)
+                                                  ? const Icon(
+                                                      Icons.person,
+                                                      size: 30,
+                                                      color: WHITE,
+                                                    )
+                                                  : null,
                                             ),
                                           ),
-                                        ),
-                                      if (meetup.attendedParticipants.contains(
-                                        user.uid,
-                                      ))
-                                        Positioned(
-                                          bottom: 0,
-                                          right: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.green,
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              border: Border.all(
-                                                color: WHITE,
-                                                width: 1,
-                                              ),
-                                            ),
-                                            child: const Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.check,
-                                                  color: WHITE,
-                                                  size: 10,
+                                          if (isHost)
+                                            Positioned(
+                                              top: 0,
+                                              left: 0,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      selectedTeam?.color ??
+                                                      BUTTON,
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  border: Border.all(
+                                                    color: WHITE,
+                                                    width: 1,
+                                                  ),
                                                 ),
-                                                SizedBox(width: 2),
-                                                Text(
-                                                  '출석완료',
+                                                child: const Text(
+                                                  'HOST',
                                                   style: TextStyle(
-                                                    fontSize: 8,
+                                                    fontSize: 10,
                                                     color: WHITE,
                                                     fontWeight: FontWeight.bold,
                                                   ),
                                                 ),
-                                              ],
+                                              ),
                                             ),
-                                          ),
+                                          if (meetup.attendedParticipants
+                                              .contains(user.uid))
+                                            Positioned(
+                                              bottom: 0,
+                                              right: 0,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.green,
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  border: Border.all(
+                                                    color: WHITE,
+                                                    width: 1,
+                                                  ),
+                                                ),
+                                                child: const Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.check,
+                                                      color: WHITE,
+                                                      size: 10,
+                                                    ),
+                                                    SizedBox(width: 2),
+                                                    Text(
+                                                      '출석완료',
+                                                      style: TextStyle(
+                                                        fontSize: 8,
+                                                        color: WHITE,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        user.userNickName,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: BLACK,
                                         ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    user.userNickName,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: BLACK,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              );
-                            },
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                        SizedBox(height: 10),
+                        if (!isMyMeetup)
+                          GestureDetector(
+                            onTap: meetup.isFull
+                                ? null
+                                : (isParticipating
+                                      ? _handleLeave
+                                      : _handleJoin),
+                            child: Container(
+                              alignment: Alignment.center,
+                              width: double.infinity,
+                              height: 58,
+                              decoration: BoxDecoration(
+                                color: isParticipating
+                                    ? Colors.grey
+                                    : selectedTeam?.color ?? BUTTON,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                meetup.isFull
+                                    ? '모집 마감'
+                                    : (isParticipating ? '모임 나가기' : '참여하기'),
+                                style: TextStyle(
+                                  color: WHITE,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ),
-                        );
-                      },
+                        SizedBox(height: 10),
+                        if (isMyMeetup)
+                          GestureDetector(
+                            onTap: () => _showQRCode(context, meetup.id),
+                            child: Container(
+                              alignment: Alignment.center,
+                              width: double.infinity,
+                              height: 58,
+                              decoration: BoxDecoration(
+                                color: selectedTeam?.color ?? BUTTON,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '출석용 QR 보여주기',
+                                style: TextStyle(
+                                  color: WHITE,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          )
+                        else if (isParticipating)
+                          GestureDetector(
+                            onTap: () => _openScanner(context, meetup.id),
+                            child: Container(
+                              alignment: Alignment.center,
+                              width: double.infinity,
+                              height: 58,
+                              decoration: BoxDecoration(
+                                color: selectedTeam?.color ?? BUTTON,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '출석하기',
+                                style: TextStyle(
+                                  color: WHITE,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                    SizedBox(height: 10),
-                    if (!isMyMeetup)
-                      GestureDetector(
-                        onTap: meetup.isFull
-                            ? null
-                            : (isParticipating ? _handleLeave : _handleJoin),
-                        child: Container(
-                          alignment: Alignment.center,
-                          width: double.infinity,
-                          height: 58,
-                          decoration: BoxDecoration(
-                            color: isParticipating
-                                ? Colors.grey
-                                : selectedTeam?.color ?? BUTTON,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            meetup.isFull
-                                ? '모집 마감'
-                                : (isParticipating ? '모임 나가기' : '참여하기'),
-                            style: TextStyle(
-                              color: WHITE,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    SizedBox(height: 10),
-                    if (isMyMeetup)
-                      GestureDetector(
-                        onTap: () => _showQRCode(context, meetup.id),
-                        child: Container(
-                          alignment: Alignment.center,
-                          width: double.infinity,
-                          height: 58,
-                          decoration: BoxDecoration(
-                            color: selectedTeam?.color ?? BUTTON,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '출석용 QR 보여주기',
-                            style: TextStyle(
-                              color: WHITE,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      )
-                    else if (isParticipating)
-                      GestureDetector(
-                        onTap: () => _openScanner(context, meetup.id),
-                        child: Container(
-                          alignment: Alignment.center,
-                          width: double.infinity,
-                          height: 58,
-                          decoration: BoxDecoration(
-                            color: selectedTeam?.color ?? BUTTON,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '출석하기',
-                            style: TextStyle(
-                              color: WHITE,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
