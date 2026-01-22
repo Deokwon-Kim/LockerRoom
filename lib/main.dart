@@ -27,6 +27,7 @@ import 'package:lockerroom/page/alert/notifications_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/page/login/terms_gate_page.dart';
 import 'package:lockerroom/provider/badge_provider.dart';
+import 'package:lockerroom/provider/chat_provider.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_edit_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
@@ -179,6 +180,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => BadgeProvider()),
         ChangeNotifierProvider(create: (context) => MeetupProvider()),
         ChangeNotifierProvider(create: (context) => TabProvider()),
+        ChangeNotifierProvider(create: (context) => ChatProvider()),
       ],
       child: const MyApp(),
     ),
