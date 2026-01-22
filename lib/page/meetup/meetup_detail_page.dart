@@ -7,6 +7,7 @@ import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/user_model.dart';
 import 'package:lockerroom/page/alert/delete_diallog.dart';
 import 'package:lockerroom/page/feed/feed_upload_page.dart';
+import 'package:lockerroom/page/meetup/chat_room_page.dart';
 import 'package:lockerroom/page/meetup/meetup_people_page.dart';
 import 'package:lockerroom/page/meetup/meetup_upload_page.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
@@ -41,9 +42,9 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
   }
 
   Future<void> _handleJoin() async {
-    final success = await context.read<MeetupProvider>().joinMeetup(
-      widget.meetup.id,
-    );
+    final meetupProvider = context.read<MeetupProvider>();
+    final success = await meetupProvider.joinMeetup(widget.meetup.id);
+    if (!mounted) return;
     if (success) {
       toastification.show(
         context: context,
@@ -83,9 +84,9 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
     );
 
     if (confirm == true) {
-      final success = await context.read<MeetupProvider>().leaveMeetup(
-        widget.meetup.id,
-      );
+      final meetupProvider = context.read<MeetupProvider>();
+      final success = await meetupProvider.leaveMeetup(widget.meetup.id);
+      if (!mounted) return;
       if (success) {
         toastification.show(
           context: context,
@@ -109,9 +110,9 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
     );
 
     if (confirm == true) {
-      final success = await context.read<MeetupProvider>().deleteMeetup(
-        widget.meetup.id,
-      );
+      final meetupProvider = context.read<MeetupProvider>();
+      final success = await meetupProvider.deleteMeetup(widget.meetup.id);
+      if (!mounted) return;
       if (success) {
         Navigator.pop(context);
         toastification.show(
@@ -230,9 +231,12 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                 // 스캔한 QR이 해당 모임 ID와 일치하면 출석 처리
                 final userId = FirebaseAuth.instance.currentUser?.uid;
                 if (userId != null) {
-                  final success = await context
-                      .read<MeetupProvider>()
-                      .markAttendance(meetupId, userId);
+                  final meetupProvider = context.read<MeetupProvider>();
+                  final success = await meetupProvider.markAttendance(
+                    meetupId,
+                    userId,
+                  );
+                  if (!mounted) return;
                   if (success) {
                     Navigator.pop(context);
                     toastification.show(
@@ -263,6 +267,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
       ).create();
       await imagePath.writeAsBytes(image);
 
+      if (!mounted) return;
       final box = context.findRenderObject() as RenderBox?;
 
       await Share.shareXFiles(
@@ -985,6 +990,49 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                             ),
                           ),
                         SizedBox(height: 10),
+                        if (isParticipating)
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChatRoomPage(
+                                    meetupId: meetup.id,
+                                    meetupTitle: meetup.title,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              alignment: Alignment.center,
+                              width: double.infinity,
+                              height: 58,
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.chat_bubble,
+                                    color: WHITE,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    '채팅방 입장하기',
+                                    style: TextStyle(
+                                      color: WHITE,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        if (isParticipating) SizedBox(height: 10),
                         if (isMyMeetup)
                           GestureDetector(
                             onTap: () => _showQRCode(context, meetup.id),
