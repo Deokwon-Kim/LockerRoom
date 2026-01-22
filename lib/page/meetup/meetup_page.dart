@@ -21,6 +21,7 @@ class _MeetupPageState extends State<MeetupPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<MeetupProvider>().fetchMeetups();
     });
   }

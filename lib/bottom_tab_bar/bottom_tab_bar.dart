@@ -24,6 +24,7 @@ class BottomTabBar extends StatefulWidget {
 class _BottomTabBarState extends State<BottomTabBar> {
   int _selectedIndex = 0;
   late TeamProvider _teamProvider;
+  late TabProvider _tabProvider;
   TeamModel? _previousSelectedTeam;
 
   @override
@@ -39,15 +40,16 @@ class _BottomTabBarState extends State<BottomTabBar> {
 
       _checkAndShowCheerSongPopup();
 
-      final tabProvider = context.read<TabProvider>();
-      tabProvider.addListener(_handleTabProviderChange);
-      _selectedIndex = tabProvider.selectedIndex;
+      _tabProvider = context.read<TabProvider>();
+      _tabProvider.addListener(_handleTabProviderChange);
+      _selectedIndex = _tabProvider.selectedIndex;
     });
   }
 
   void _handleTabProviderChange() {
-    final index = context.read<TabProvider>().selectedIndex;
-    if (_selectedIndex != index && mounted) {
+    if (!mounted) return;
+    final index = _tabProvider.selectedIndex;
+    if (_selectedIndex != index) {
       setState(() => _selectedIndex = index);
     }
   }
@@ -228,6 +230,9 @@ class _BottomTabBarState extends State<BottomTabBar> {
     // Remove listener if it was registered
     try {
       _teamProvider.removeListener(_handleTeamProviderChange);
+    } catch (_) {}
+    try {
+      _tabProvider.removeListener(_handleTabProviderChange);
     } catch (_) {}
     super.dispose();
   }

@@ -750,10 +750,6 @@ class _HomePageState extends State<HomePage> {
                                                   profileProvider,
                                                   child,
                                                 ) {
-                                                  profileProvider
-                                                      .subscribeUserProfile(
-                                                        post.userId,
-                                                      );
                                                   final nickName =
                                                       profileProvider
                                                           .userNicknames[post

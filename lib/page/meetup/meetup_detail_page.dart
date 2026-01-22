@@ -37,6 +37,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<MeetupProvider>().incrementViewCount(widget.meetup.id);
     });
   }
