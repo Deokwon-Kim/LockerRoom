@@ -1,0 +1,661 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_chat_ui/flutter_chat_ui.dart';
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
+import 'package:flutter_chat_core/flutter_chat_core.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/provider/chat_provider.dart';
+import 'package:lockerroom/provider/team_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+class ChatRoomPage extends StatefulWidget {
+  final String meetupId;
+  final String meetupTitle;
+
+  const ChatRoomPage({
+    super.key,
+    required this.meetupId,
+    required this.meetupTitle,
+  });
+
+  @override
+  State<ChatRoomPage> createState() => _ChatRoomPageState();
+}
+
+class _ChatRoomPageState extends State<ChatRoomPage> {
+  late types.User _user;
+  late InMemoryChatController _chatController;
+  Message? _replyMessage;
+  Message? _editingMessage;
+  final TextEditingController _textController = TextEditingController();
+
+  StreamSubscription? _messagesSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    _user = types.User(id: currentUserId);
+    _chatController = InMemoryChatController();
+
+    // 메시지 스트림 구독 시작
+    // 메시지 스트림 구독 시작
+    _messagesSubscription = context
+        .read<ChatProvider>()
+        .getMessagesStream(widget.meetupId)
+        .listen((messages) {
+          if (mounted) {
+            // 렌더링 에러 방지를 위해 다음 프레임에 업데이트
+            Future.microtask(() {
+              if (mounted) {
+                final coreMessages = messages.map(_convertMessage).toList();
+                // 과거 메시지가 Index 0에 오도록 오름차순 정렬 (flutter_chat_ui v2 대응)
+                coreMessages.sort((a, b) {
+                  final aTime = a.createdAt?.millisecondsSinceEpoch ?? 0;
+                  final bTime = b.createdAt?.millisecondsSinceEpoch ?? 0;
+                  return aTime.compareTo(bTime);
+                });
+                _chatController.setMessages(coreMessages);
+                setState(() {});
+              }
+            });
+          }
+        });
+  }
+
+  @override
+  void dispose() {
+    _messagesSubscription?.cancel();
+    _chatController.dispose();
+    _textController.dispose();
+    super.dispose();
+  }
+
+  void _handleSendPressed(String text) {
+    if (_editingMessage != null) {
+      final oldMessage = _editingMessage!;
+      // 1. Firestore 업데이트 시작
+      context.read<ChatProvider>().updateMessage(
+        widget.meetupId,
+        oldMessage.id,
+        text,
+      );
+
+      // 2. 로컬 컨트롤러 즉시 업데이트 (Optimistic UI)
+      if (oldMessage is TextMessage) {
+        final newMessage = oldMessage.copyWith(
+          text: text,
+          updatedAt: DateTime.now(),
+        );
+        _chatController.updateMessage(oldMessage, newMessage);
+      }
+
+      setState(() {
+        _editingMessage = null;
+      });
+      _textController.clear();
+      return;
+    }
+
+    final textMessage = types.TextMessage(
+      author: _user,
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+      id: '',
+      text: text,
+      metadata: _replyMessage != null
+          ? {
+              'replyToId': _replyMessage!.id,
+              'replyText': _replyMessage is TextMessage
+                  ? (_replyMessage as TextMessage).text
+                  : '이미지',
+              'replyAuthorId': _replyMessage!.authorId,
+            }
+          : null,
+    );
+    context.read<ChatProvider>().sendMessage(widget.meetupId, textMessage);
+    setState(() {
+      _replyMessage = null;
+    });
+    _textController.clear();
+  }
+
+  // 이미지 선택 및 전송
+  void _handleImageSelection() async {
+    final chatProvider = context.read<ChatProvider>();
+    final result = await ImagePicker().pickMultiImage(limit: 4);
+    if (result.isNotEmpty) {
+      final files = result.map((res) => File(res.path)).toList();
+      if (mounted) {
+        await chatProvider.sendImageMessages(widget.meetupId, _user.id, files);
+      }
+    }
+  }
+
+  // types.Message를 core.Message로 변환
+  Message _convertMessage(types.Message typesMsg) {
+    if (typesMsg is types.TextMessage) {
+      return Message.text(
+        id: typesMsg.id,
+        authorId: typesMsg.author.id,
+        text: typesMsg.text,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(typesMsg.createdAt ?? 0),
+        updatedAt: typesMsg.updatedAt != null
+            ? DateTime.fromMillisecondsSinceEpoch(typesMsg.updatedAt!)
+            : null,
+        metadata: typesMsg.metadata,
+      );
+    } else if (typesMsg is types.ImageMessage) {
+      return Message.image(
+        id: typesMsg.id,
+        authorId: typesMsg.author.id,
+        source: typesMsg.uri,
+        size: typesMsg.size.toInt(),
+        createdAt: DateTime.fromMillisecondsSinceEpoch(typesMsg.createdAt ?? 0),
+        updatedAt: typesMsg.updatedAt != null
+            ? DateTime.fromMillisecondsSinceEpoch(typesMsg.updatedAt!)
+            : null,
+        metadata: typesMsg.metadata,
+      );
+    }
+    // 기본값으로 텍스트 메시지 반환
+    return Message.text(
+      id: typesMsg.id,
+      authorId: typesMsg.author.id,
+      text: '',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(typesMsg.createdAt ?? 0),
+      updatedAt: typesMsg.updatedAt != null
+          ? DateTime.fromMillisecondsSinceEpoch(typesMsg.updatedAt!)
+          : null,
+      metadata: typesMsg.metadata,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final chatProvider = context.read<ChatProvider>();
+    final selectedTeam = context.watch<TeamProvider>().selectedTeam;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.meetupTitle,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: selectedTeam?.color,
+        foregroundColor: WHITE,
+        elevation: 0.5,
+        scrolledUnderElevation: 0,
+      ),
+      body: Chat(
+        currentUserId: _user.id,
+        chatController: _chatController,
+        resolveUser: (id) => chatProvider.resolveUser(id),
+        onMessageSend: _handleSendPressed,
+        onAttachmentTap: _handleImageSelection,
+        onMessageLongPress:
+            (context, message, {required index, required details}) =>
+                _onMessageLongPress(message),
+        decoration: BoxDecoration(
+          color: selectedTeam?.color ?? WHITE,
+          image: selectedTeam?.logoPath != null
+              ? DecorationImage(image: AssetImage(selectedTeam!.logoPath))
+              : null,
+        ),
+        theme: ChatTheme.light().copyWith(
+          colors: ChatColors.light().copyWith(
+            primary: selectedTeam?.color ?? ORANGE_PRIMARY_500,
+          ),
+        ),
+        builders: Builders(
+          chatMessageBuilder:
+              (
+                context,
+                message,
+                index,
+                animation,
+                child, {
+                isRemoved,
+                required isSentByMe,
+                groupStatus,
+              }) {
+                bool showDateDivider = false;
+                final messages = _chatController.messages;
+                if (index == 0) {
+                  showDateDivider = true;
+                } else if (index < messages.length) {
+                  final previousMessage = messages[index - 1];
+                  if (!_isSameDay(
+                    message.createdAt ?? DateTime.now(),
+                    previousMessage.createdAt ?? DateTime.now(),
+                  )) {
+                    showDateDivider = true;
+                  }
+                }
+
+                return Dismissible(
+                  key: ValueKey('dismissible_${message.id}'),
+                  direction: DismissDirection.horizontal,
+                  confirmDismiss: (direction) async {
+                    setState(() {
+                      _replyMessage = message;
+                    });
+                    return false;
+                  },
+                  background: Container(
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.only(left: 20),
+                    child: const Icon(Icons.reply, color: WHITE),
+                  ),
+                  child: Column(
+                    children: [
+                      if (showDateDivider)
+                        _buildDateDivider(message.createdAt ?? DateTime.now()),
+                      ChatMessage(
+                        message: message,
+                        index: index,
+                        animation: animation,
+                        isRemoved: isRemoved,
+                        groupStatus: groupStatus,
+                        verticalPadding: 12,
+                        verticalGroupedPadding: 10,
+                        leadingWidget: isSentByMe
+                            ? _buildTimeWidget(message.createdAt)
+                            : null,
+                        trailingWidget: !isSentByMe
+                            ? _buildTimeWidget(message.createdAt)
+                            : null,
+                        headerWidget:
+                            (!isSentByMe && (groupStatus?.isFirst != false))
+                            ? Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 12,
+                                  bottom: 0,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Avatar(userId: message.authorId, size: 35),
+                                    SizedBox(width: 8),
+                                    Transform.translate(
+                                      offset: Offset(0, -5),
+                                      child: Username(
+                                        userId: message.authorId,
+                                        style: TextStyle(
+                                          color: WHITE,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : null,
+                        topWidget: _buildReplySource(message, isSentByMe),
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            left: isSentByMe ? 5.0 : 40.0,
+                            right: isSentByMe ? 10.0 : 5.0,
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 2,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSentByMe ? Color(0xFFFBE54D) : WHITE,
+                              borderRadius: BorderRadius.only(
+                                topLeft: const Radius.circular(16),
+                                topRight: const Radius.circular(16),
+                                bottomLeft: Radius.circular(
+                                  isSentByMe ? 16 : 4,
+                                ),
+                                bottomRight: Radius.circular(
+                                  isSentByMe ? 4 : 16,
+                                ),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: BLACK.withOpacity(0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: child,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+          textMessageBuilder:
+              (context, message, index, {required isSentByMe, groupStatus}) {
+                return SimpleTextMessage(
+                  message: message,
+                  index: index,
+                  showTime: false,
+                  sentBackgroundColor: Colors.transparent,
+                  receivedBackgroundColor: Colors.transparent,
+                  sentTextStyle: const TextStyle(
+                    color: BLACK,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  receivedTextStyle: const TextStyle(
+                    color: BLACK,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                );
+              },
+          imageMessageBuilder:
+              (context, message, index, {required isSentByMe, groupStatus}) {
+                return SizedBox(
+                  width: message.width?.toDouble() ?? 200,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      message.source,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(child: CircularProgressIndicator());
+                      },
+                    ),
+                  ),
+                );
+              },
+          composerBuilder: (context) => Theme(
+            data: Theme.of(context).copyWith(
+              textSelectionTheme: TextSelectionThemeData(
+                cursorColor: selectedTeam?.color ?? ORANGE_PRIMARY_500,
+                selectionColor: (selectedTeam?.color ?? ORANGE_PRIMARY_500)
+                    .withOpacity(0.3),
+                selectionHandleColor: selectedTeam?.color ?? ORANGE_PRIMARY_500,
+              ),
+            ),
+            child: Composer(
+              textEditingController: _textController,
+              hintText: '메시지를 입력하세요',
+              backgroundColor: WHITE,
+              topWidget: _editingMessage != null
+                  ? _buildEditPreview()
+                  : (_replyMessage != null ? _buildReplyPreview() : null),
+            ),
+          ),
+          emptyChatListBuilder: (context) =>
+              const EmptyChatList(text: '아직 메시지가 없습니다'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateDivider(DateTime date) {
+    return Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Row(
+        children: [
+          const Expanded(child: Divider(color: GRAYSCALE_LABEL_300)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              DateFormat('yyyy년 MM월 dd일 (E)', 'ko').format(date),
+              style: const TextStyle(
+                color: WHITE,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const Expanded(child: Divider(color: GRAYSCALE_LABEL_300)),
+        ],
+      ),
+    );
+  }
+
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  void _onMessageLongPress(Message message) {
+    if (message.authorId != _user.id) return;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              final coreMessage = _chatController.messages.firstWhere(
+                (m) => m.id == message.id,
+              );
+              if (coreMessage is TextMessage) {
+                setState(() {
+                  _editingMessage = coreMessage;
+                  _textController.text = coreMessage.text;
+                });
+              }
+            },
+            child: const Text('수정', style: TextStyle(color: BLACK)),
+          ),
+          CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              Navigator.pop(context);
+              _showDeleteConfirmDialog(message.id);
+            },
+            child: const Text('삭제'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('취소'),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmDialog(String messageId) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('메시지 삭제'),
+        content: const Text('이 메시지를 삭제하시겠습니까?'),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<ChatProvider>().deleteMessage(
+                widget.meetupId,
+                messageId,
+              );
+            },
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditPreview() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: WHITE,
+        border: Border(top: BorderSide(color: GRAYSCALE_LABEL_300, width: 0.5)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.edit, size: 20, color: ORANGE_PRIMARY_500),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              '메시지 수정 중...',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: ORANGE_PRIMARY_500,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 20, color: GRAYSCALE_LABEL_500),
+            onPressed: () {
+              setState(() {
+                _editingMessage = null;
+                _textController.clear();
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeWidget(DateTime? time) {
+    if (time == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Text(
+        DateFormat('HH:mm').format(time),
+        style: const TextStyle(color: WHITE, fontSize: 10),
+      ),
+    );
+  }
+
+  Widget _buildReplyPreview() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: WHITE,
+        border: Border(top: BorderSide(color: GRAYSCALE_LABEL_300, width: 0.5)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.reply, size: 20, color: GRAYSCALE_LABEL_500),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '답장 보내는 중...',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: ORANGE_PRIMARY_500,
+                  ),
+                ),
+                Text(
+                  _replyMessage is TextMessage
+                      ? (_replyMessage as TextMessage).text
+                      : '이미지 메시지',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: GRAYSCALE_LABEL_500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 20, color: GRAYSCALE_LABEL_500),
+            onPressed: () => setState(() => _replyMessage = null),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget? _buildReplySource(Message message, bool isSentByMe) {
+    final replyToId = message.metadata?['replyToId'];
+    if (replyToId == null) return null;
+
+    final replyText = message.metadata?['replyText'] ?? '';
+    final replyAuthorId = message.metadata?['replyAuthorId'];
+
+    return GestureDetector(
+      onTap: () {
+        _chatController.scrollToMessage(replyToId);
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Column(
+          crossAxisAlignment: isSentByMe
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isSentByMe)
+                  Text(
+                    '회원',
+                    style: TextStyle(
+                      color: GRAYSCALE_LABEL_500.withOpacity(0.8),
+                      fontSize: 10,
+                    ),
+                  )
+                else if (replyAuthorId != null)
+                  Username(
+                    userId: replyAuthorId,
+                    style: TextStyle(
+                      color: GRAYSCALE_LABEL_500.withOpacity(0.8),
+                      fontSize: 10,
+                    ),
+                  ),
+                Text(
+                  '님이 보낸 답장',
+                  style: TextStyle(
+                    color: GRAYSCALE_LABEL_500.withOpacity(0.8),
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSentByMe ? Colors.grey[200] : Colors.transparent,
+                borderRadius: BorderRadius.circular(isSentByMe ? 16 : 4),
+                border: isSentByMe
+                    ? null
+                    : const Border(
+                        left: BorderSide(color: GRAYSCALE_LABEL_300, width: 3),
+                      ),
+              ),
+              child: Text(
+                replyText,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: GRAYSCALE_LABEL_500,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
