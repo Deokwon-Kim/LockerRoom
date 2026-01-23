@@ -114,6 +114,41 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> sendSystemMessage(String meetupId, String text) async {
+    await _firestore
+        .collection('meetups')
+        .doc(meetupId)
+        .collection('messages')
+        .add({
+          'authorId': 'system',
+          'createdAt': FieldValue.serverTimestamp(),
+          'text': text,
+          'type': 'text',
+          'metadata': {'isSystem': true},
+        });
+  }
+
+  // 유저가 모임 채팅방에 처음 입장했는 여부 확인 후 입장 메시지 전송
+  Future<void> sendEntryMessageOnce(
+    String meetupId,
+    String userId,
+    String nickname,
+  ) async {
+    final participantRef = _firestore
+        .collection('meetups')
+        .doc(meetupId)
+        .collection('participants')
+        .doc(userId);
+
+    final doc = await participantRef.get();
+
+    if (!doc.exists) {
+      // 처음 입장하는 경우에만 데이터 생성 및 시스템 메시지 발송
+      await participantRef.set({'joinAt': FieldValue.serverTimestamp()});
+      await sendSystemMessage(meetupId, '$nickname님이 입장했습니다');
+    }
+  }
+
   // 메시지 수정
   Future<void> updateMessage(
     String meetupId,

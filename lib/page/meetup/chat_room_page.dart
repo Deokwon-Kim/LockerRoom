@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/chat_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -33,6 +34,9 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   Message? _replyMessage;
   Message? _editingMessage;
   final TextEditingController _textController = TextEditingController();
+  List<Message> _serverMessages = [];
+  final List<Message> _pendingMessages = [];
+  Timer? _updateTimer;
 
   StreamSubscription? _messagesSubscription;
 
@@ -43,6 +47,22 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     _user = types.User(id: currentUserId);
     _chatController = InMemoryChatController();
 
+    // 부모 위젯 빌드 완료 후 시스템 메시지 전송 (중복 전송 방지를 위해 프레임 대기)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final userProvider = context.read<UserProvider>();
+      final myNickName =
+          userProvider.nickname ??
+          FirebaseAuth.instance.currentUser?.displayName ??
+          '누군가';
+
+      context.read<ChatProvider>().sendEntryMessageOnce(
+        widget.meetupId,
+        _user.id,
+        myNickName,
+      );
+    });
+
     // 메시지 스트림 구독 시작
     // 메시지 스트림 구독 시작
     _messagesSubscription = context
@@ -50,20 +70,8 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         .getMessagesStream(widget.meetupId)
         .listen((messages) {
           if (mounted) {
-            // 렌더링 에러 방지를 위해 다음 프레임에 업데이트
-            Future.microtask(() {
-              if (mounted) {
-                final coreMessages = messages.map(_convertMessage).toList();
-                // 과거 메시지가 Index 0에 오도록 오름차순 정렬 (flutter_chat_ui v2 대응)
-                coreMessages.sort((a, b) {
-                  final aTime = a.createdAt?.millisecondsSinceEpoch ?? 0;
-                  final bTime = b.createdAt?.millisecondsSinceEpoch ?? 0;
-                  return aTime.compareTo(bTime);
-                });
-                _chatController.setMessages(coreMessages);
-                setState(() {});
-              }
-            });
+            _serverMessages = messages.map(_convertMessage).toList();
+            _updateDisplayMessages();
           }
         });
   }
@@ -74,6 +82,31 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     _chatController.dispose();
     _textController.dispose();
     super.dispose();
+  }
+
+  void _updateDisplayMessages() {
+    if (!mounted) return;
+
+    _updateTimer?.cancel();
+    _updateTimer = Timer(Duration(milliseconds: 100), () {
+      if (!mounted) return;
+
+      final allMessages = [..._serverMessages, ..._pendingMessages];
+
+      final ids = <String>{};
+      final uniqueMessages = allMessages.where((m) => ids.add(m.id)).toList();
+
+      uniqueMessages.sort((a, b) {
+        final aTime = a.createdAt?.millisecondsSinceEpoch ?? 0;
+        final bTime = b.createdAt?.millisecondsSinceEpoch ?? 0;
+        return aTime.compareTo(bTime);
+      });
+
+      _chatController.setMessages(uniqueMessages);
+      if (mounted) setState(() {});
+    });
+
+    // 시간순 정렬 (과거 메시지가 위로 )
   }
 
   void _handleSendPressed(String text) {
@@ -130,8 +163,33 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     final result = await ImagePicker().pickMultiImage(limit: 4);
     if (result.isNotEmpty) {
       final files = result.map((res) => File(res.path)).toList();
-      if (mounted) {
+
+      // 즉시 화면에 보여주기 위한 임시 메시지 생성
+      final tempMessages = files.map((file) {
+        return Message.image(
+          id: 'temp-${file.path.hashCode}',
+          authorId: _user.id,
+          source: file.path,
+          size: file.lengthSync(),
+          createdAt: DateTime.now(),
+          metadata: {'isLocal': true},
+        );
+      }).toList();
+
+      _pendingMessages.addAll(tempMessages);
+      _updateDisplayMessages();
+
+      // 실제 업로드 시작
+      try {
         await chatProvider.sendImageMessages(widget.meetupId, _user.id, files);
+      } catch (e) {
+        debugPrint('업로드 실패: $e');
+      } finally {
+        // 업로드 완료 후 임시 메시지 제거
+        if (mounted) {
+          _pendingMessages.removeWhere((m) => tempMessages.contains(m));
+          _updateDisplayMessages();
+        }
       }
     }
   }
@@ -203,7 +261,12 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         decoration: BoxDecoration(
           color: selectedTeam?.color ?? WHITE,
           image: selectedTeam?.logoPath != null
-              ? DecorationImage(image: AssetImage(selectedTeam!.logoPath))
+              ? DecorationImage(
+                  image: AssetImage(selectedTeam!.logoPath),
+                  alignment: const Alignment(0.0, -0.3),
+                  opacity: 0.2, // 투명도를 조절하여 메시지 가독성 확보
+                  fit: BoxFit.contain,
+                )
               : null,
         ),
         theme: ChatTheme.light().copyWith(
@@ -223,6 +286,27 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                 required isSentByMe,
                 groupStatus,
               }) {
+                final bool isSystem = message.metadata?['isSystem'] == true;
+
+                if (isSystem) {
+                  return Center(
+                    child: Container(
+                      margin: EdgeInsets.symmetric(vertical: 10),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        (message as TextMessage).text,
+                        style: TextStyle(fontSize: 12, color: BLACK),
+                      ),
+                    ),
+                  );
+                }
                 bool showDateDivider = false;
                 final messages = _chatController.messages;
                 if (index == 0) {
@@ -357,19 +441,48 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
               },
           imageMessageBuilder:
               (context, message, index, {required isSentByMe, groupStatus}) {
-                return SizedBox(
-                  width: message.width?.toDouble() ?? 200,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      message.source,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(child: CircularProgressIndicator());
-                      },
+                final bool isLocal = message.metadata?['isLocal'] == true;
+                final teamProvider = context.read<TeamProvider>();
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 200,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: isLocal
+                            ? Image.file(
+                                File(message.source),
+                                fit: BoxFit.cover,
+                                cacheWidth: 400,
+                              )
+                            : Image.network(
+                                message.source,
+                                fit: BoxFit.cover,
+                                cacheWidth: 400,
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          color:
+                                              teamProvider.selectedTeam?.color,
+                                        ),
+                                      );
+                                    },
+                              ),
+                      ),
                     ),
-                  ),
+                    if (isLocal)
+                      Container(
+                        width: 200,
+                        height: 150,
+                        color: Colors.black26,
+                        child: Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
+                      ),
+                  ],
                 );
               },
           composerBuilder: (context) => Theme(
@@ -385,13 +498,21 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
               textEditingController: _textController,
               hintText: '메시지를 입력하세요',
               backgroundColor: WHITE,
+              attachmentIcon: const Icon(Icons.add, color: BLACK),
+              sendIconColor: selectedTeam?.color ?? ORANGE_PRIMARY_500,
               topWidget: _editingMessage != null
                   ? _buildEditPreview()
                   : (_replyMessage != null ? _buildReplyPreview() : null),
             ),
           ),
-          emptyChatListBuilder: (context) =>
-              const EmptyChatList(text: '아직 메시지가 없습니다'),
+          emptyChatListBuilder: (context) => const EmptyChatList(
+            text: '아직 메시지가 없습니다',
+            textStyle: TextStyle(
+              color: WHITE,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
     );
@@ -597,7 +718,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         _chatController.scrollToMessage(replyToId);
       },
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.only(top: 10, left: 5, bottom: 6),
         child: Column(
           crossAxisAlignment: isSentByMe
               ? CrossAxisAlignment.end
@@ -607,35 +728,20 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (isSentByMe)
-                  Text(
-                    '회원',
-                    style: TextStyle(
-                      color: GRAYSCALE_LABEL_500.withOpacity(0.8),
-                      fontSize: 10,
-                    ),
-                  )
+                  Text('회원', style: TextStyle(color: WHITE, fontSize: 10))
                 else if (replyAuthorId != null)
                   Username(
                     userId: replyAuthorId,
-                    style: TextStyle(
-                      color: GRAYSCALE_LABEL_500.withOpacity(0.8),
-                      fontSize: 10,
-                    ),
+                    style: TextStyle(color: WHITE, fontSize: 10),
                   ),
-                Text(
-                  '님이 보낸 답장',
-                  style: TextStyle(
-                    color: GRAYSCALE_LABEL_500.withOpacity(0.8),
-                    fontSize: 10,
-                  ),
-                ),
+                Text('님이 보낸 답장', style: TextStyle(color: WHITE, fontSize: 10)),
               ],
             ),
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isSentByMe ? Colors.grey[200] : Colors.transparent,
+                color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(isSentByMe ? 16 : 4),
                 border: isSentByMe
                     ? null
@@ -647,10 +753,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                 replyText,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: GRAYSCALE_LABEL_500,
-                  fontSize: 11,
-                ),
+                style: const TextStyle(color: BLACK, fontSize: 11),
               ),
             ),
           ],
