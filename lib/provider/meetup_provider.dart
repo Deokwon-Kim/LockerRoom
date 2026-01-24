@@ -148,6 +148,14 @@ class MeetupProvider extends ChangeNotifier {
         transaction.update(docRef, {'participants': updateParticipants});
       });
 
+      // 채팅방 입장 기록 삭제 (다음에 다시 들어오면 입장 메시지가 다시 뜸)
+      await _firestore
+          .collection('meetups')
+          .doc(meetupId)
+          .collection('participants')
+          .doc(userId)
+          .delete();
+
       await fetchMeetups();
       return true;
     } catch (e) {
@@ -250,5 +258,38 @@ class MeetupProvider extends ChangeNotifier {
       print('모임 정보 단일 조회 실패: $e');
     }
     return null;
+  }
+
+  // 참여자 강제 퇴장 (방장전용)
+  Future<bool> kickParticipant(String meetupId, String targetUserId) async {
+    try {
+      final docRef = _firestore.collection('meetups').doc(meetupId);
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) throw Exception('모임을 찾을 수 없습니다');
+
+        final meetup = MeetupModel.fromFirestore(snapshot);
+
+        final updatedParticipants = meetup.participants
+            .where((id) => id != targetUserId)
+            .toList();
+
+        transaction.update(docRef, {'participants': updatedParticipants});
+      });
+
+      // 강퇴당한 유저의 채팅방 입장 기록도 삭제
+      await _firestore
+          .collection('meetups')
+          .doc(meetupId)
+          .collection('participants')
+          .doc(targetUserId)
+          .delete();
+
+      await fetchMeetups();
+      return true;
+    } catch (e) {
+      print('강제 퇴장 실패: $e');
+      return false;
+    }
   }
 }
