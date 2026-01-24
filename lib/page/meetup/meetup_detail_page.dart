@@ -33,6 +33,19 @@ class MeetupDetailPage extends StatefulWidget {
 
 class _MeetupDetailPageState extends State<MeetupDetailPage> {
   final ScreenshotController _screenshotController = ScreenshotController();
+  MeetupModel? _latestMeetup;
+
+  Future<void> _refreshMeetup() async {
+    final updated = await context.read<MeetupProvider>().getMeetupById(
+      widget.meetup.id,
+    );
+    if (updated != null && mounted) {
+      setState(() {
+        _latestMeetup = updated;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +60,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
     final success = await meetupProvider.joinMeetup(widget.meetup.id);
     if (!mounted) return;
     if (success) {
+      await _refreshMeetup();
       toastification.show(
         context: context,
         type: ToastificationType.success,
@@ -89,6 +103,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
       final success = await meetupProvider.leaveMeetup(widget.meetup.id);
       if (!mounted) return;
       if (success) {
+        await _refreshMeetup();
         toastification.show(
           context: context,
           type: ToastificationType.success,
@@ -415,10 +430,12 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
 
     return Consumer<MeetupProvider>(
       builder: (context, meetUpProvider, child) {
-        final meetup = meetUpProvider.meetups.firstWhere(
-          (m) => m.id == widget.meetup.id,
-          orElse: () => widget.meetup,
-        );
+        final meetup =
+            _latestMeetup ??
+            meetUpProvider.meetups.firstWhere(
+              (m) => m.id == widget.meetup.id,
+              orElse: () => widget.meetup,
+            );
 
         final isParticipating =
             currentUserId != null &&
@@ -990,50 +1007,58 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                               ),
                             ),
                           ),
-                        SizedBox(height: 10),
-                        if (isParticipating)
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ChatRoomPage(
-                                    meetupId: meetup.id,
-                                    meetupTitle: meetup.title,
+                        const SizedBox(height: 10),
+                        GestureDetector(
+                          onTap: () {
+                            if (!isParticipating) {
+                              toastification.show(
+                                context: context,
+                                type: ToastificationType.warning,
+                                alignment: Alignment.bottomCenter,
+                                autoCloseDuration: const Duration(seconds: 2),
+                                title: const Text('모임에 참여해야 채팅방 입장이 가능합니다.'),
+                              );
+                              return;
+                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ChatRoomPage(
+                                  meetupId: meetup.id,
+                                  meetupTitle: meetup.title,
+                                  meetup: meetup,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            alignment: Alignment.center,
+                            width: double.infinity,
+                            height: 58,
+                            decoration: BoxDecoration(
+                              color: isParticipating
+                                  ? Colors.green
+                                  : GRAYSCALE_LABEL_400,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.chat_bubble, color: WHITE, size: 20),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  '채팅방 입장하기',
+                                  style: TextStyle(
+                                    color: WHITE,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              );
-                            },
-                            child: Container(
-                              alignment: Alignment.center,
-                              width: double.infinity,
-                              height: 58,
-                              decoration: BoxDecoration(
-                                color: Colors.green,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.chat_bubble,
-                                    color: WHITE,
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    '채팅방 입장하기',
-                                    style: TextStyle(
-                                      color: WHITE,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              ],
                             ),
                           ),
-                        if (isParticipating) SizedBox(height: 10),
+                        ),
+                        const SizedBox(height: 10),
                         if (isMyMeetup)
                           GestureDetector(
                             onTap: () => _showQRCode(context, meetup.id),
