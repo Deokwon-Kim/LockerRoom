@@ -13,6 +13,10 @@ class MeetupModel {
   final String homeTeam;
   final String awayTeam;
   final String myTeam;
+  final String? announcement;
+  final String? announcementId;
+  final String? announcementAuthorId;
+  final DateTime? announcementCreatedAt;
   final int maxParticipants;
   final List<String> participants;
   final DateTime createdAt;
@@ -43,6 +47,10 @@ class MeetupModel {
     this.commentCount = 0,
     this.images = const [],
     this.attendedParticipants = const [],
+    this.announcement,
+    this.announcementId,
+    this.announcementAuthorId,
+    this.announcementCreatedAt,
   });
 
   factory MeetupModel.fromFirestore(DocumentSnapshot doc) {
@@ -70,6 +78,11 @@ class MeetupModel {
       attendedParticipants: List<String>.from(
         data['attendedParticipants'] ?? [],
       ),
+      announcement: data['announcement'],
+      announcementId: data['announcementId'],
+      announcementAuthorId: data['announcementAuthorId'],
+      announcementCreatedAt: (data['announcementCreatedAt'] as Timestamp?)
+          ?.toDate(),
     );
   }
   Map<String, dynamic> toFirestore() {
@@ -93,6 +106,12 @@ class MeetupModel {
       'commentCount': commentCount,
       'images': images,
       'attendedParticipants': attendedParticipants,
+      'announcement': announcement,
+      'announcementId': announcementId,
+      'announcementAuthorId': announcementAuthorId,
+      'announcementCreatedAt': announcementCreatedAt != null
+          ? Timestamp.fromDate(announcementCreatedAt!)
+          : null,
     };
   }
 
@@ -109,6 +128,10 @@ class MeetupModel {
     String? homeTeam,
     String? awayTeam,
     String? myTeam,
+    String? announcement,
+    String? announcementId,
+    String? announcementAuthorId,
+    DateTime? announcementCreatedAt,
     int? maxParticipants,
     List<String>? participants,
     DateTime? createdAt,
