@@ -292,4 +292,45 @@ class MeetupProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  // 모임 정보 실시간 스트림
+  Stream<MeetupModel?> getMeetupStream(String id) {
+    return _firestore
+        .collection('meetups')
+        .doc(id)
+        .snapshots()
+        .map((doc) => doc.exists ? MeetupModel.fromFirestore(doc) : null);
+  }
+
+  Stream<List<String>> getChatParticipantIdsStream(String meetupId) {
+    return _firestore
+        .collection('meetups')
+        .doc(meetupId)
+        .collection('participants')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.id).toList());
+  }
+
+  // 공지 등록
+  Future<void> updateAnnouncement(
+    String meetupId,
+    Map<String, dynamic> data,
+  ) async {
+    await _firestore.collection('meetups').doc(meetupId).update({
+      'announcement': data['text'],
+      'announcementId': data['id'],
+      'announcementAuthorId': data['authorId'],
+      'announcementCreatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // 공지 내리기
+  Future<void> clearAnnouncement(String meetupId) async {
+    await _firestore.collection('meetups').doc(meetupId).update({
+      'announcement': FieldValue.delete(),
+      'announcementId': FieldValue.delete(),
+      'announcementAuthorId': FieldValue.delete(),
+      'announcementCreatedAt': FieldValue.delete(),
+    });
+  }
 }
