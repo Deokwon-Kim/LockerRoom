@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +36,7 @@ class MeetupDetailPage extends StatefulWidget {
 class _MeetupDetailPageState extends State<MeetupDetailPage> {
   final ScreenshotController _screenshotController = ScreenshotController();
   MeetupModel? _latestMeetup;
+  StreamSubscription? _meetupSubscription;
 
   Future<void> _refreshMeetup() async {
     final updated = await context.read<MeetupProvider>().getMeetupById(
@@ -53,6 +56,26 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
       if (!mounted) return;
       context.read<MeetupProvider>().incrementViewCount(widget.meetup.id);
     });
+    _setupMeetupListener();
+  }
+
+  void _setupMeetupListener() {
+    _meetupSubscription = context
+        .read<MeetupProvider>()
+        .getMeetupStream(widget.meetup.id)
+        .listen((updated) {
+          if (updated != null && mounted) {
+            setState(() {
+              _latestMeetup = updated;
+            });
+          }
+        });
+  }
+
+  @override
+  void dispose() {
+    _meetupSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _handleJoin() async {
