@@ -26,6 +26,9 @@ class MeetupModel {
   final List<String> images;
   final List<String> attendedParticipants;
 
+  // 공지사항 메시지 ID (announcementId 필드를 사용)
+  String? get noticeMessageId => announcementId;
+
   MeetupModel({
     required this.id,
     required this.userId,
