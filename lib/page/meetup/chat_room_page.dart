@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
@@ -11,6 +13,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/user_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
+import 'package:lockerroom/page/meetup/poll_detail_page.dart';
 import 'package:lockerroom/provider/chat_provider.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -43,7 +46,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   final TextEditingController _textController = TextEditingController();
   List<Message> _serverMessages = [];
   final List<Message> _pendingMessages = [];
-  Timer? _updateTimer;
   List<UserModel> _participantsInfos = [];
   MeetupModel? _latestMeetup;
 
@@ -149,26 +151,23 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   void _updateDisplayMessages() {
     if (!mounted) return;
 
-    _updateTimer?.cancel();
-    _updateTimer = Timer(Duration(milliseconds: 100), () {
-      if (!mounted) return;
+    final allMessages = [..._serverMessages, ..._pendingMessages];
 
-      final allMessages = [..._serverMessages, ..._pendingMessages];
+    final ids = <String>{};
+    final uniqueMessages = allMessages.where((m) => ids.add(m.id)).toList();
 
-      final ids = <String>{};
-      final uniqueMessages = allMessages.where((m) => ids.add(m.id)).toList();
-
-      uniqueMessages.sort((a, b) {
-        final aTime = a.createdAt?.millisecondsSinceEpoch ?? 0;
-        final bTime = b.createdAt?.millisecondsSinceEpoch ?? 0;
-        return aTime.compareTo(bTime);
-      });
-
-      _chatController.setMessages(uniqueMessages);
-      if (mounted) setState(() {});
+    uniqueMessages.sort((a, b) {
+      final aTime = a.createdAt?.millisecondsSinceEpoch ?? 0;
+      final bTime = b.createdAt?.millisecondsSinceEpoch ?? 0;
+      return aTime.compareTo(bTime);
     });
 
-    // 시간순 정렬 (과거 메시지가 위로 )
+    // 메시지 업데이트 시 컨트롤러를 재생성하여 SliverAnimatedList 에러 방지
+    _chatController.dispose();
+    _chatController = InMemoryChatController();
+    _chatController.setMessages(uniqueMessages);
+
+    if (mounted) setState(() {});
   }
 
   void _handleSendPressed(String text) {
@@ -219,6 +218,44 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     _textController.clear();
   }
 
+  // 카메라로 바로 전송
+  void _handleCameraSend() async {
+    final chatProvider = context.read<ChatProvider>();
+    final imageResult = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+    );
+    if (imageResult != null) {
+      final file = File(imageResult.path);
+
+      // 즉시 화면에 보여주기 위한 임시 메시지 생성 (Optimistic UI)
+      final tempMessage = Message.image(
+        id: 'temp-${file.path.hashCode}',
+        authorId: _user.id,
+        source: file.path,
+        size: file.lengthSync(),
+        createdAt: DateTime.now(),
+        metadata: {'isLocal': true},
+      );
+
+      setState(() {
+        _pendingMessages.add(tempMessage);
+        _updateDisplayMessages();
+      });
+
+      // 실제 업로드 시작 (단일 파일을 리스트로 감싸서 전달)
+      try {
+        await chatProvider.sendImageMessages(widget.meetupId, _user.id, [file]);
+      } catch (e) {
+        debugPrint('카메라 업로드 실패: $e');
+      } finally {
+        if (mounted) {
+          _pendingMessages.remove(tempMessage);
+          _updateDisplayMessages();
+        }
+      }
+    }
+  }
+
   // 이미지 선택 및 전송
   void _handleImageSelection() async {
     final chatProvider = context.read<ChatProvider>();
@@ -256,6 +293,197 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     }
   }
 
+  void _handlePollCreate(String question, List<String> options) {
+    final Map<String, List<String>> initialVotes = {
+      for (var opt in options) opt: [],
+    };
+
+    // 로컬에 즉시 보여주기 위한 임시 메시지 생성 (Optimistic UI)
+    final tempPollMessage = types.CustomMessage(
+      author: types.User(id: _user.id),
+      id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
+      createdAt: DateTime.now().millisecondsSinceEpoch,
+      metadata: {
+        'question': question,
+        'options': options,
+        'votes': initialVotes,
+        'isLocal': true,
+      },
+    );
+
+    setState(() {
+      _pendingMessages.add(_convertMessage(tempPollMessage));
+      _updateDisplayMessages();
+    });
+
+    // 백그라운드에서 Firebase에 저장
+    context.read<ChatProvider>().sendPollMessage(
+      widget.meetupId,
+      _user.id,
+      question,
+      options,
+    );
+  }
+
+  void _showAttachmentMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: WHITE,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+        height: 150,
+        child: GridView.count(
+          crossAxisCount: 3,
+          mainAxisSpacing: 20,
+          children: [
+            _buildMenuIcon(
+              Icons.camera_alt,
+              '카메라',
+              const Color(0xFF4A90E2),
+              _handleCameraSend,
+            ),
+            _buildMenuIcon(
+              Icons.image,
+              '사진',
+              const Color(0xFF7ED321),
+              _handleImageSelection,
+            ),
+            _buildMenuIcon(
+              Icons.how_to_vote,
+              '투표',
+              const Color(0xFFF5A623),
+              _showPollCreateSheet,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuIcon(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            child: Icon(icon, color: WHITE, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPollCreateSheet() {
+    final questionController = TextEditingController();
+    final optionControllers = [
+      TextEditingController(),
+      TextEditingController(),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '투표 만들기',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: questionController,
+                decoration: const InputDecoration(
+                  hintText: '질문을 입력하세요',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 15),
+              ...optionControllers.asMap().entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: TextField(
+                    controller: entry.value,
+                    decoration: InputDecoration(
+                      hintText: '항목 ${entry.key + 1}',
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                );
+              }),
+              if (optionControllers.length < 5)
+                TextButton.icon(
+                  onPressed: () => setSheetState(() {
+                    optionControllers.add(TextEditingController());
+                  }),
+                  icon: const Icon(Icons.add),
+                  label: const Text('항목 추가'),
+                ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        context.read<TeamProvider>().selectedTeam?.color ??
+                        ORANGE_PRIMARY_500,
+                    foregroundColor: WHITE,
+                  ),
+                  onPressed: () {
+                    final question = questionController.text.trim();
+                    final options = optionControllers
+                        .map((c) => c.text.trim())
+                        .where((t) => t.isNotEmpty)
+                        .toList();
+
+                    if (question.isNotEmpty && options.length >= 2) {
+                      Navigator.pop(context);
+                      _handlePollCreate(question, options);
+                    }
+                  },
+                  child: const Text('등록하기'),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // types.Message를 core.Message로 변환
   Message _convertMessage(types.Message typesMsg) {
     if (typesMsg is types.TextMessage) {
@@ -275,6 +503,17 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         authorId: typesMsg.author.id,
         source: typesMsg.uri,
         size: typesMsg.size.toInt(),
+        createdAt: DateTime.fromMillisecondsSinceEpoch(typesMsg.createdAt ?? 0),
+        updatedAt: typesMsg.updatedAt != null
+            ? DateTime.fromMillisecondsSinceEpoch(typesMsg.updatedAt!)
+            : null,
+        metadata: typesMsg.metadata,
+      );
+    } else if (typesMsg is types.CustomMessage) {
+      return Message.text(
+        id: typesMsg.id,
+        authorId: typesMsg.author.id,
+        text: '',
         createdAt: DateTime.fromMillisecondsSinceEpoch(typesMsg.createdAt ?? 0),
         updatedAt: typesMsg.updatedAt != null
             ? DateTime.fromMillisecondsSinceEpoch(typesMsg.updatedAt!)
@@ -390,11 +629,16 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           _buildAnnouncementBar(meetup),
           Expanded(
             child: Chat(
+              key: ValueKey(
+                _serverMessages.length.toString() +
+                    _serverMessages.map((m) => m.id).join() +
+                    _serverMessages.map((m) => m.metadata.toString()).join(),
+              ),
               currentUserId: _user.id,
               chatController: _chatController,
               resolveUser: (id) => chatProvider.resolveUser(id),
               onMessageSend: _handleSendPressed,
-              onAttachmentTap: _handleImageSelection,
+              onAttachmentTap: _showAttachmentMenu,
               onMessageLongPress:
                   (context, message, {required index, required details}) =>
                       _onMessageLongPress(message),
@@ -576,6 +820,20 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                       required isSentByMe,
                       groupStatus,
                     }) {
+                      // 텍스트 메시지이지만 metadata에 투표 정보가 있으면 투표 위젯 렌더링
+                      if (message.metadata?['question'] != null) {
+                        final metadata = message.metadata!;
+                        return _buildPollPreview(
+                          messageId: message.id,
+                          question: metadata['question'] as String,
+                          options: List<String>.from(metadata['options'] ?? []),
+                          votes: Map<String, dynamic>.from(
+                            metadata['votes'] ?? {},
+                          ),
+                          deadLine: metadata['deadLine'] as Timestamp?,
+                        );
+                      }
+
                       return SimpleTextMessage(
                         message: message,
                         index: index,
@@ -1150,43 +1408,276 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
   }
 
   Widget _buildAnnouncementBar(MeetupModel? meetup) {
-    if (meetup == null || meetup.announcement == null) return SizedBox.shrink();
+    if (meetup?.noticeMessageId == null) return const SizedBox.shrink();
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-      decoration: BoxDecoration(
-        color: WHITE.withOpacity(0.95),
-        border: Border(
-          bottom: BorderSide(color: GRAYSCALE_LABEL_300, width: 0.5),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.campaign, color: ORANGE_PRIMARY_500, size: 22),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              meetup.announcement!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: BLACK,
+    // 공지 메시지 찾기
+    Message? noticeMessage;
+    // 1. 서버 메시지에서 찾기
+    try {
+      noticeMessage = _serverMessages.firstWhere(
+        (m) => m.id == meetup!.noticeMessageId,
+      );
+    } catch (_) {}
+
+    // 2. 없으면 pending에서 찾기
+    if (noticeMessage == null) {
+      try {
+        noticeMessage = _pendingMessages.firstWhere(
+          (m) => m.id == meetup!.noticeMessageId,
+        );
+      } catch (_) {}
+    }
+
+    if (noticeMessage == null) return const SizedBox.shrink();
+
+    // 메시지 내용 추출
+    String content = '';
+    bool isPoll = false;
+
+    // 투표 메시지인지 확인 (metadata에 question이 있는지)
+    if (noticeMessage.metadata?['question'] != null) {
+      isPoll = true;
+      final questionText = noticeMessage.metadata!['question'];
+      content = '[투표] $questionText';
+      print('DEBUG: Poll notice - question: $questionText'); // 디버깅용
+    } else {
+      // 텍스트 메시지 처리 - dynamic으로 접근하여 text 속성 확인
+      try {
+        if (noticeMessage is types.TextMessage) {
+          content = (noticeMessage as types.TextMessage).text;
+        } else {
+          // types.TextMessage가 아닌 경우, dynamic으로 text 속성에 접근 시도
+          final dynamic msg = noticeMessage;
+          if (msg.text != null) {
+            content = msg.text;
+          } else {
+            content = '[메시지]';
+          }
+        }
+      } catch (e) {
+        print('DEBUG: Failed to extract text - ${noticeMessage.runtimeType}');
+        content = '[알 수 없는 메시지]';
+      }
+    }
+
+    print('DEBUG: Announcement content: $content, isPoll: $isPoll'); // 디버깅용
+
+    return InkWell(
+      onTap: () {
+        if (isPoll && noticeMessage?.metadata?['question'] != null) {
+          // 투표인 경우 PollDetailPage로 이동
+          final metadata = noticeMessage!.metadata!;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PollDetailPage(
+                meetupId: widget.meetupId,
+                messageId: noticeMessage!.id,
+                question: metadata['question'] as String,
+                options: List<String>.from(metadata['options'] ?? []),
+                votes: Map<String, dynamic>.from(metadata['votes'] ?? {}),
+                deadLine: metadata['deadLine'] as Timestamp?,
               ),
             ),
+          );
+        }
+        // 일반 메시지는 스크롤 기능을 현재 지원하지 않음
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: WHITE.withOpacity(0.95),
+          border: Border(
+            bottom: BorderSide(color: GRAYSCALE_LABEL_300, width: 0.5),
           ),
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: BoxConstraints(),
-            onPressed: () => context.read<MeetupProvider>().clearAnnouncement(
-              widget.meetupId,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isPoll ? Icons.how_to_vote : Icons.campaign,
+              color: ORANGE_PRIMARY_500,
+              size: 20,
             ),
-            icon: Icon(Icons.close, size: 18, color: GRAYSCALE_LABEL_500),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                content,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: BLACK,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: BoxConstraints(),
+              onPressed: () => context.read<MeetupProvider>().clearAnnouncement(
+                widget.meetupId,
+              ),
+              icon: Icon(Icons.close, size: 18, color: GRAYSCALE_LABEL_500),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildPollPreview({
+    required String messageId,
+    required String question,
+    required List<String> options,
+    required Map<String, dynamic> votes,
+    required Timestamp? deadLine,
+  }) {
+    final now = DateTime.now();
+    final endTime = deadLine?.toDate() ?? now;
+    final isExpired = now.isAfter(endTime);
+    final remainingTime = endTime.difference(now);
+
+    int totalVotes = 0;
+    votes.forEach((key, value) {
+      totalVotes += (value as List).length;
+    });
+
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PollDetailPage(
+              meetupId: widget.meetupId,
+              messageId: messageId,
+              question: question,
+              options: options,
+              votes: votes,
+              deadLine: deadLine,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: 250,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: WHITE,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.how_to_vote, color: BLACK, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    question,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: BLACK,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // 옵션 리스트 표시 (상위 3개만 표시하거나 전체 표시)
+            ...options.map((option) {
+              final voters = votes[option] ?? [];
+              final percent = totalVotes > 0
+                  ? (voters.length / totalVotes).toDouble()
+                  : 0.0;
+              final isMyVote = voters.contains(_user.id);
+              final selectedTeam = context.read<TeamProvider>().selectedTeam;
+              final teamColor = selectedTeam?.color ?? ORANGE_PRIMARY_500;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          option,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isMyVote ? teamColor : BLACK,
+                            fontWeight: isMyVote
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                        Text(
+                          '${voters.length}명',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: GRAYSCALE_LABEL_500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: percent,
+                        minHeight: 6,
+                        backgroundColor: GRAYSCALE_LABEL_50,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isMyVote ? teamColor : GRAYSCALE_LABEL_300,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const Divider(height: 20),
+            Text(
+              '총 $totalVotes명 참여',
+              style: const TextStyle(fontSize: 13, color: GRAYSCALE_LABEL_500),
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  isExpired ? Icons.lock : Icons.timer,
+                  size: 14,
+                  color: isExpired ? GRAYSCALE_LABEL_400 : ORANGE_PRIMARY_500,
+                ),
+                SizedBox(width: 4),
+                Text(
+                  isExpired ? '마감됨' : _formatRemaining(remainingTime),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isExpired ? GRAYSCALE_LABEL_400 : ORANGE_PRIMARY_500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatRemaining(Duration duration) {
+    if (duration.inHours > 0) {
+      return '${duration.inHours}시간 남음';
+    } else if (duration.inMinutes > 0) {
+      return '${duration.inMinutes}분 남음';
+    } else {
+      return '곧 마감';
+    }
   }
 }

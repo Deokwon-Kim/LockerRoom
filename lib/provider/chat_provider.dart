@@ -38,6 +38,18 @@ class ChatProvider extends ChangeNotifier {
                 metadata: data['metadata'] as Map<String, dynamic>?,
               );
             }
+            if (data['type'] == 'custom') {
+              return types.CustomMessage(
+                author: types.User(id: data['authorId']),
+                createdAt:
+                    (data['createdAt'] as Timestamp?)?.millisecondsSinceEpoch ??
+                    DateTime.now().millisecondsSinceEpoch,
+                updatedAt:
+                    (data['updatedAt'] as Timestamp?)?.millisecondsSinceEpoch,
+                id: doc.id,
+                metadata: data['metadata'] as Map<String, dynamic>?,
+              );
+            }
             return types.TextMessage(
               author: types.User(id: data['authorId']),
               createdAt:
@@ -174,5 +186,77 @@ class ChatProvider extends ChangeNotifier {
         .collection('messages')
         .doc(messageId)
         .delete();
+  }
+
+  // 투표 메시지 전송
+  Future<void> sendPollMessage(
+    String meetupId,
+    String userId,
+    String question,
+    List<String> options,
+  ) async {
+    final Map<String, List<String>> votes = {for (var opt in options) opt: []};
+    final deadLine = Timestamp.fromDate(
+      DateTime.now().add(Duration(hours: 24)),
+    );
+
+    await _firestore
+        .collection('meetups')
+        .doc(meetupId)
+        .collection('messages')
+        .add({
+          'authorId': userId,
+          'createdAt': FieldValue.serverTimestamp(),
+          'type': 'custom',
+          'metadata': {
+            'pollType': 'single',
+            'question': question,
+            'options': options,
+            'votes': votes,
+            'deadLine': deadLine,
+            'isClosed': false,
+          },
+        });
+  }
+
+  // 투표 참여
+  Future<void> votePoll(
+    String meetupId,
+    String messageId,
+    String userId,
+    String pickedOption,
+  ) async {
+    final docRef = _firestore
+        .collection('meetups')
+        .doc(meetupId)
+        .collection('messages')
+        .doc(messageId);
+
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(docRef);
+      if (!snapshot.exists) return;
+
+      final data = snapshot.data()!;
+      final Map<String, dynamic> metadata = Map<String, dynamic>.from(
+        data['metadata'] ?? {},
+      );
+      final Map<String, dynamic> votes = Map<String, dynamic>.from(
+        metadata['votes'] ?? {},
+      );
+
+      votes.forEach((key, value) {
+        final List<dynamic> userList = List.from(value);
+        userList.remove(userId);
+        votes[key] = userList;
+      });
+
+      // 선택한 항목에 UserId 추가
+      final List<dynamic> newUserList = List.from(votes[pickedOption] ?? []);
+      newUserList.add(userId);
+      votes[pickedOption] = newUserList;
+
+      metadata['votes'] = votes;
+      transaction.update(docRef, {'metadata': metadata});
+    });
   }
 }
