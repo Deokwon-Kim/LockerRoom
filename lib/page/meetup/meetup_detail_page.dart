@@ -23,6 +23,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:toastification/toastification.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'dart:io';
 
 class MeetupDetailPage extends StatefulWidget {
@@ -80,7 +81,29 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
 
   Future<void> _handleJoin() async {
     final meetupProvider = context.read<MeetupProvider>();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      toastification.show(
+        context: context,
+        type: ToastificationType.error,
+        alignment: Alignment.bottomCenter,
+        autoCloseDuration: Duration(seconds: 2),
+        title: Text('로그인이 필요합니다.'),
+      );
+      return;
+    }
     final success = await meetupProvider.joinMeetup(widget.meetup.id);
+    if (success) {
+      // Firebase Analytics 이벤트 기록
+      FirebaseAnalytics.instance.logEvent(
+        name: 'join_meetup',
+        parameters: {
+          'meetup_id': widget.meetup.id,
+          'title': widget.meetup.title,
+          'team': widget.meetup.myTeam,
+        },
+      );
+    }
     if (!mounted) return;
     if (success) {
       await _refreshMeetup();
@@ -123,7 +146,29 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
 
     if (confirm == true) {
       final meetupProvider = context.read<MeetupProvider>();
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        toastification.show(
+          context: context,
+          type: ToastificationType.error,
+          alignment: Alignment.bottomCenter,
+          autoCloseDuration: Duration(seconds: 2),
+          title: Text('로그인이 필요합니다.'),
+        );
+        return;
+      }
       final success = await meetupProvider.leaveMeetup(widget.meetup.id);
+      if (success) {
+        // Firebase Analytics 이벤트 기록
+        FirebaseAnalytics.instance.logEvent(
+          name: 'leave_meetup',
+          parameters: {
+            'meetup_id': widget.meetup.id,
+            'title': widget.meetup.title,
+            'team': widget.meetup.myTeam,
+          },
+        );
+      }
       if (!mounted) return;
       if (success) {
         await _refreshMeetup();
