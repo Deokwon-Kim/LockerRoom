@@ -20,18 +20,21 @@ import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:toastification/toastification.dart';
 
 class ChatRoomPage extends StatefulWidget {
   final String meetupId;
   final String meetupTitle;
   final MeetupModel meetup;
+  final UserModel? user;
 
   const ChatRoomPage({
     super.key,
     required this.meetupId,
     required this.meetupTitle,
     required this.meetup,
+    this.user,
   });
 
   @override
@@ -39,6 +42,7 @@ class ChatRoomPage extends StatefulWidget {
 }
 
 class _ChatRoomPageState extends State<ChatRoomPage> {
+  final Map<String, GlobalKey> _messageKeys = {};
   late types.User _user;
   late InMemoryChatController _chatController;
   Message? _replyMessage;
@@ -212,6 +216,16 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           : null,
     );
     context.read<ChatProvider>().sendMessage(widget.meetupId, textMessage);
+
+    // Firebase Analytics 이벤트 기록
+    FirebaseAnalytics.instance.logEvent(
+      name: 'chat_sent',
+      parameters: {
+        'meetup_id': widget.meetup.id,
+        'has_reply': _replyMessage != null ? 1 : 0,
+      },
+    );
+
     setState(() {
       _replyMessage = null;
     });
@@ -245,6 +259,12 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       // 실제 업로드 시작 (단일 파일을 리스트로 감싸서 전달)
       try {
         await chatProvider.sendImageMessages(widget.meetupId, _user.id, [file]);
+
+        // Firebase Analytics 이벤트 기록
+        FirebaseAnalytics.instance.logEvent(
+          name: 'chat_image_sent',
+          parameters: {'meetup_id': widget.meetupId, 'source': 'camera'},
+        );
       } catch (e) {
         debugPrint('카메라 업로드 실패: $e');
       } finally {
@@ -281,6 +301,16 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       // 실제 업로드 시작
       try {
         await chatProvider.sendImageMessages(widget.meetupId, _user.id, files);
+
+        // Firebase Analytics 이벤트 기록
+        FirebaseAnalytics.instance.logEvent(
+          name: 'chat_image_sent',
+          parameters: {
+            'meetup_id': widget.meetupId,
+            'source': 'gallery',
+            'count': files.length,
+          },
+        );
       } catch (e) {
         debugPrint('업로드 실패: $e');
       } finally {
@@ -293,35 +323,29 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     }
   }
 
-  void _handlePollCreate(String question, List<String> options) {
-    final Map<String, List<String>> initialVotes = {
-      for (var opt in options) opt: [],
-    };
-
-    // 로컬에 즉시 보여주기 위한 임시 메시지 생성 (Optimistic UI)
-    final tempPollMessage = types.CustomMessage(
-      author: types.User(id: _user.id),
-      id: 'temp-${DateTime.now().millisecondsSinceEpoch}',
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-      metadata: {
-        'question': question,
-        'options': options,
-        'votes': initialVotes,
-        'isLocal': true,
-      },
-    );
-
-    setState(() {
-      _pendingMessages.add(_convertMessage(tempPollMessage));
-      _updateDisplayMessages();
-    });
-
+  void _handlePollCreate(
+    String question,
+    List<String> options,
+    DateTime deadLine,
+    bool allowMultiple,
+  ) {
     // 백그라운드에서 Firebase에 저장
     context.read<ChatProvider>().sendPollMessage(
       widget.meetupId,
       _user.id,
       question,
       options,
+      deadLine,
+      allowMultiple,
+    );
+
+    // Firebase Analytics 이벤트 기록
+    FirebaseAnalytics.instance.logEvent(
+      name: 'poll_created',
+      parameters: {
+        'meetup_id': widget.meetupId,
+        'option_count': options.length,
+      },
     );
   }
 
@@ -394,13 +418,18 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   void _showPollCreateSheet() {
     final questionController = TextEditingController();
+    final teamProvider = context.read<TeamProvider>();
     final optionControllers = [
       TextEditingController(),
       TextEditingController(),
     ];
+    DateTime selectedDeadLine = DateTime.now().add(Duration(hours: 24));
+    bool allowMultiple = false;
 
     showModalBottomSheet(
+      backgroundColor: BACKGROUND_COLOR,
       context: context,
+      showDragHandle: true,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -411,7 +440,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
             bottom: MediaQuery.of(context).viewInsets.bottom,
             left: 20,
             right: 20,
-            top: 20,
+            top: 0,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -423,10 +452,21 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
               ),
               const SizedBox(height: 20),
               TextField(
+                cursorColor: teamProvider.selectedTeam?.color,
                 controller: questionController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '질문을 입력하세요',
-                  border: OutlineInputBorder(),
+                  hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: teamProvider.selectedTeam?.color ?? BUTTON,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 15),
@@ -437,45 +477,199 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                     controller: entry.value,
                     decoration: InputDecoration(
                       hintText: '항목 ${entry.key + 1}',
-                      border: const OutlineInputBorder(),
+                      hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: teamProvider.selectedTeam?.color ?? BUTTON,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 );
               }),
+              SwitchListTile(
+                activeColor: teamProvider.selectedTeam?.color,
+                inactiveThumbColor: teamProvider.selectedTeam?.color,
+                hoverColor: teamProvider.selectedTeam?.color,
+                title: Text('복수 투표 허용'),
+                value: allowMultiple,
+                onChanged: (val) => setSheetState(() => allowMultiple = val),
+              ),
+              ListTile(
+                title: Text('마감 시간 설정'),
+                subtitle: Text(
+                  DateFormat('yyyy.MM.dd HH:mm').format(selectedDeadLine),
+                ),
+                trailing: Icon(
+                  Icons.calendar_today,
+                  color: teamProvider.selectedTeam?.color,
+                ),
+                onTap: () async {
+                  final now = DateTime.now();
+                  final date = await showDatePicker(
+                    context: context,
+                    firstDate: DateTime(now.year, now.month, now.day + 1),
+                    lastDate: DateTime(2030),
+                    builder: (context, child) {
+                      final base = Theme.of(context);
+                      return Localizations.override(
+                        context: context,
+                        locale: const Locale('ko', 'KR'),
+                        child: Theme(
+                          data: base.copyWith(
+                            datePickerTheme: DatePickerThemeData(
+                              backgroundColor: BACKGROUND_COLOR,
+                              headerBackgroundColor: BACKGROUND_COLOR,
+                            ),
+                            colorScheme: base.colorScheme.copyWith(
+                              primary:
+                                  teamProvider.selectedTeam?.color, // 팀 컬러 적용
+                              surface: BACKGROUND_COLOR,
+                              onSurface: Colors.black,
+                            ),
+                            textButtonTheme: TextButtonThemeData(
+                              style: TextButton.styleFrom(
+                                foregroundColor:
+                                    teamProvider.selectedTeam?.color,
+                              ), // 팀 컬러 적용
+                            ),
+                          ),
+                          child: child!,
+                        ),
+                      );
+                    },
+                  );
+                  if (date != null) {
+                    final time = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                      builder: (context, child) {
+                        final base = Theme.of(context);
+                        return Localizations.override(
+                          context: context,
+                          locale: const Locale('ko', 'KR'),
+                          child: Theme(
+                            data: base.copyWith(
+                              timePickerTheme: TimePickerThemeData(
+                                backgroundColor: BACKGROUND_COLOR,
+                                dialBackgroundColor: BACKGROUND_COLOR,
+                                // 1. 시간/분 박스의 배경색과 텍스트색 (ColorScheme보다 우선순위 높음)
+                                hourMinuteColor: teamProvider
+                                    .selectedTeam
+                                    ?.color
+                                    .withOpacity(0.1), // 박스 배경
+                                hourMinuteTextColor: Colors.black, // 박스 안 글자색
+                                // 2. 오전/오후(AM/PM) 선택 박스 설정
+                                dayPeriodColor: teamProvider.selectedTeam?.color
+                                    .withOpacity(0.1), // 선택된 AM/PM 배경
+                                dayPeriodTextColor: teamProvider
+                                    .selectedTeam
+                                    ?.color, // AM/PM 글자색
+                                dayPeriodBorderSide: BorderSide(
+                                  color: teamProvider.selectedTeam!.color,
+                                ), // 테두리
+                                // 3. 시계판 숫자 디자인
+                                dialTextColor: WidgetStateColor.resolveWith((
+                                  states,
+                                ) {
+                                  if (states.contains(WidgetState.selected))
+                                    return Colors.white;
+                                  return Colors.black;
+                                }), // 시계판 숫자 색상
+                                dialHandColor: teamProvider
+                                    .selectedTeam
+                                    ?.color, // 시계 바늘 색상 (primary와 별도로 지정 시)
+                                // 4. 대화상자 모양
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              colorScheme: base.colorScheme.copyWith(
+                                primary:
+                                    teamProvider.selectedTeam?.color, // 팀 컬러 적용
+                                surface: BACKGROUND_COLOR,
+                                onSurface: Colors.black,
+                                onPrimary: Colors.white,
+                              ),
+                              textButtonTheme: TextButtonThemeData(
+                                style: TextButton.styleFrom(
+                                  foregroundColor:
+                                      teamProvider.selectedTeam?.color,
+                                ), // 팀 컬러 적용
+                              ),
+                            ),
+                            child: child!,
+                          ),
+                        );
+                      },
+                    );
+                    if (time != null) {
+                      setSheetState(() {
+                        selectedDeadLine = DateTime(
+                          date.year,
+                          date.month,
+                          date.day,
+                          time.hour,
+                          time.minute,
+                        );
+                      });
+                    }
+                  }
+                },
+              ),
               if (optionControllers.length < 5)
                 TextButton.icon(
                   onPressed: () => setSheetState(() {
                     optionControllers.add(TextEditingController());
                   }),
-                  icon: const Icon(Icons.add),
-                  label: const Text('항목 추가'),
+                  icon: Icon(
+                    Icons.add,
+                    color: teamProvider.selectedTeam?.color,
+                  ),
+                  label: Text(
+                    '항목 추가',
+                    style: TextStyle(color: teamProvider.selectedTeam?.color),
+                  ),
                 ),
               const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        context.read<TeamProvider>().selectedTeam?.color ??
-                        ORANGE_PRIMARY_500,
-                    foregroundColor: WHITE,
-                  ),
-                  onPressed: () {
-                    final question = questionController.text.trim();
-                    final options = optionControllers
-                        .map((c) => c.text.trim())
-                        .where((t) => t.isNotEmpty)
-                        .toList();
+              GestureDetector(
+                onTap: () {
+                  final question = questionController.text.trim();
+                  final options = optionControllers
+                      .map((c) => c.text.trim())
+                      .where((t) => t.isNotEmpty)
+                      .toList();
 
-                    if (question.isNotEmpty && options.length >= 2) {
-                      Navigator.pop(context);
-                      _handlePollCreate(question, options);
-                    }
-                  },
-                  child: const Text('등록하기'),
+                  if (question.isNotEmpty && options.length >= 2) {
+                    Navigator.pop(context);
+                    _handlePollCreate(
+                      question,
+                      options,
+                      selectedDeadLine,
+                      allowMultiple,
+                    );
+                  }
+                },
+                child: Container(
+                  alignment: Alignment.center,
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: teamProvider.selectedTeam?.color,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '등록하기',
+                    style: TextStyle(color: WHITE, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
+
               const SizedBox(height: 20),
             ],
           ),
@@ -534,11 +728,35 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     );
   }
 
+  // void _scrollToMessage(String _messageId) {
+  //   final key = _messageKeys[_messageId];
+  //   if (key?.currentContext != null) {
+  //     Scrollable.ensureVisible(
+  //       key!.currentContext!,
+  //       duration: Duration(milliseconds: 500),
+  //       curve: Curves.easeInOut,
+  //       alignment: 0.5,
+  //     );
+  //   }
+  // }
+
   @override
   Widget build(BuildContext context) {
     final chatProvider = context.read<ChatProvider>();
     final selectedTeam = context.watch<TeamProvider>().selectedTeam;
     final meetup = _latestMeetup ?? widget.meetup;
+
+    // 공지사항 작성자 찾기
+    UserModel? announcementAuthor;
+    if (meetup.announcementAuthorId != null) {
+      try {
+        announcementAuthor = _participantsInfos.firstWhere(
+          (u) => u.uid == meetup.announcementAuthorId,
+        );
+      } catch (_) {
+        // 참여자 목록에 없는 경우 (드문 경우)
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -626,7 +844,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       ),
       body: Column(
         children: [
-          _buildAnnouncementBar(meetup),
+          _buildAnnouncementBar(meetup, announcementAuthor),
           Expanded(
             child: Chat(
               key: ValueKey(
@@ -670,6 +888,12 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                       required isSentByMe,
                       groupStatus,
                     }) {
+                      if (!_messageKeys.containsKey(message.id)) {
+                        _messageKeys[message.id] = GlobalKey();
+                      }
+
+                      final messageKey = _messageKeys[message.id];
+
                       final bool isSystem =
                           message.metadata?['isSystem'] == true;
 
@@ -706,109 +930,116 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                         }
                       }
 
-                      return Dismissible(
-                        key: ValueKey('dismissible_${message.id}'),
-                        direction: DismissDirection.horizontal,
-                        confirmDismiss: (direction) async {
-                          setState(() {
-                            _replyMessage = message;
-                          });
-                          return false;
-                        },
-                        background: Container(
-                          alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.only(left: 20),
-                          child: const Icon(Icons.reply, color: WHITE),
-                        ),
-                        child: Column(
-                          children: [
-                            if (showDateDivider)
-                              _buildDateDivider(
-                                message.createdAt ?? DateTime.now(),
-                              ),
-                            ChatMessage(
-                              message: message,
-                              index: index,
-                              animation: animation,
-                              isRemoved: isRemoved,
-                              groupStatus: groupStatus,
-                              verticalPadding: 12,
-                              verticalGroupedPadding: 10,
-                              leadingWidget: isSentByMe
-                                  ? _buildTimeWidget(message.createdAt)
-                                  : null,
-                              trailingWidget: !isSentByMe
-                                  ? _buildTimeWidget(message.createdAt)
-                                  : null,
-                              headerWidget:
-                                  (!isSentByMe &&
-                                      (groupStatus?.isFirst != false))
-                                  ? Padding(
-                                      padding: const EdgeInsets.only(
-                                        left: 12,
-                                        bottom: 0,
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Avatar(
-                                            userId: message.authorId,
-                                            size: 35,
-                                          ),
-                                          SizedBox(width: 8),
-                                          Transform.translate(
-                                            offset: Offset(0, -5),
-                                            child: Username(
+                      return FadeTransition(
+                        key: messageKey,
+                        opacity: animation,
+                        child: Dismissible(
+                          key: ValueKey('dismissible_${message.id}'),
+                          direction: DismissDirection.horizontal,
+                          confirmDismiss: (direction) async {
+                            setState(() {
+                              _replyMessage = message;
+                            });
+                            return false;
+                          },
+                          background: Container(
+                            alignment: Alignment.centerLeft,
+                            padding: const EdgeInsets.only(left: 20),
+                            child: const Icon(Icons.reply, color: WHITE),
+                          ),
+                          child: Column(
+                            children: [
+                              if (showDateDivider)
+                                _buildDateDivider(
+                                  message.createdAt ?? DateTime.now(),
+                                ),
+                              ChatMessage(
+                                message: message,
+                                index: index,
+                                animation: animation,
+                                isRemoved: isRemoved,
+                                groupStatus: groupStatus,
+                                verticalPadding: 12,
+                                verticalGroupedPadding: 10,
+                                leadingWidget: isSentByMe
+                                    ? _buildTimeWidget(message.createdAt)
+                                    : null,
+                                trailingWidget: !isSentByMe
+                                    ? _buildTimeWidget(message.createdAt)
+                                    : null,
+                                headerWidget:
+                                    (!isSentByMe &&
+                                        (groupStatus?.isFirst != false))
+                                    ? Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: 12,
+                                          bottom: 0,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Avatar(
                                               userId: message.authorId,
-                                              style: TextStyle(
-                                                color: WHITE,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
+                                              size: 35,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Transform.translate(
+                                              offset: Offset(0, -5),
+                                              child: Username(
+                                                userId: message.authorId,
+                                                style: TextStyle(
+                                                  color: WHITE,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : null,
-                              topWidget: _buildReplySource(message, isSentByMe),
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  left: isSentByMe ? 5.0 : 40.0,
-                                  right: isSentByMe ? 10.0 : 5.0,
+                                          ],
+                                        ),
+                                      )
+                                    : null,
+                                topWidget: _buildReplySource(
+                                  message,
+                                  isSentByMe,
                                 ),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                    vertical: 2,
+                                child: Padding(
+                                  padding: EdgeInsets.only(
+                                    left: isSentByMe ? 5.0 : 40.0,
+                                    right: isSentByMe ? 10.0 : 5.0,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: isSentByMe
-                                        ? Color(0xFFFBE54D)
-                                        : WHITE,
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: const Radius.circular(16),
-                                      topRight: const Radius.circular(16),
-                                      bottomLeft: Radius.circular(
-                                        isSentByMe ? 16 : 4,
-                                      ),
-                                      bottomRight: Radius.circular(
-                                        isSentByMe ? 4 : 16,
-                                      ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 2,
+                                      vertical: 2,
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: BLACK.withOpacity(0.1),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
+                                    decoration: BoxDecoration(
+                                      color: isSentByMe
+                                          ? Color(0xFFFBE54D)
+                                          : WHITE,
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: const Radius.circular(16),
+                                        topRight: const Radius.circular(16),
+                                        bottomLeft: Radius.circular(
+                                          isSentByMe ? 16 : 4,
+                                        ),
+                                        bottomRight: Radius.circular(
+                                          isSentByMe ? 4 : 16,
+                                        ),
                                       ),
-                                    ],
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: BLACK.withOpacity(0.1),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: child,
                                   ),
-                                  child: child,
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -831,6 +1062,8 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                             metadata['votes'] ?? {},
                           ),
                           deadLine: metadata['deadLine'] as Timestamp?,
+                          authorId: (message as dynamic).authorId,
+                          createdAt: (message as dynamic).createdAt,
                         );
                       }
 
@@ -1407,7 +1640,11 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     );
   }
 
-  Widget _buildAnnouncementBar(MeetupModel? meetup) {
+  Widget _buildAnnouncementBar(MeetupModel? meetup, UserModel? user) {
+    final String? profileImageUrl = user?.profileImage;
+    final bool hasProfileImage =
+        profileImageUrl != null && profileImageUrl.isNotEmpty;
+
     if (meetup?.noticeMessageId == null) return const SizedBox.shrink();
 
     // 공지 메시지 찾기
@@ -1477,11 +1714,87 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                 options: List<String>.from(metadata['options'] ?? []),
                 votes: Map<String, dynamic>.from(metadata['votes'] ?? {}),
                 deadLine: metadata['deadLine'] as Timestamp?,
+                authorId: (noticeMessage as dynamic).authorId,
+                createdAt: (noticeMessage as dynamic).createdAt,
               ),
             ),
           );
+          // } else {
+          //   // 일반 메시지인 경우 해당 메시지로 스크롤
+          //   _chatController.scrollToMessage(noticeMessage!.id);
+
+          // 또는 상세 내용을 바텀시트로 보여줌 (스크롤 실패 대비 또는 가독성용)
+          showModalBottomSheet(
+            backgroundColor: BACKGROUND_COLOR,
+            showDragHandle: true,
+            context: context,
+            builder: (BuildContext context) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.only(bottom: 30),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: hasProfileImage
+                            ? NetworkImage(profileImageUrl)
+                            : null,
+                        child: !hasProfileImage
+                            ? const Icon(Icons.person, color: Colors.white)
+                            : null,
+                        backgroundColor: hasProfileImage
+                            ? Colors.transparent
+                            : GRAYSCALE_LABEL_300,
+                      ),
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.userNickName ?? '알수없음',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (widget.meetup.announcementCreatedAt != null)
+                            Text(
+                              DateFormat('yyyy년 MM월 dd일 (E)', 'ko').format(
+                                DateTime.parse(
+                                  widget.meetup.announcementCreatedAt
+                                      .toString(),
+                                ),
+                              ),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: GRAYSCALE_LABEL_700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                        ],
+                      ),
+                      trailing: TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _chatController.scrollToMessage(noticeMessage!.id);
+                        },
+                        child: const Text('메시지 보기'),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        content,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
         }
-        // 일반 메시지는 스크롤 기능을 현재 지원하지 않음
       },
       child: Container(
         width: double.infinity,
@@ -1533,6 +1846,8 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     required List<String> options,
     required Map<String, dynamic> votes,
     required Timestamp? deadLine,
+    required String authorId,
+    required DateTime? createdAt,
   }) {
     final now = DateTime.now();
     final endTime = deadLine?.toDate() ?? now;
@@ -1556,6 +1871,8 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
               options: options,
               votes: votes,
               deadLine: deadLine,
+              authorId: authorId,
+              createdAt: createdAt,
             ),
           ),
         );

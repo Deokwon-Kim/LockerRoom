@@ -194,11 +194,10 @@ class ChatProvider extends ChangeNotifier {
     String userId,
     String question,
     List<String> options,
+    DateTime deadLine,
+    bool allowMultiple,
   ) async {
     final Map<String, List<String>> votes = {for (var opt in options) opt: []};
-    final deadLine = Timestamp.fromDate(
-      DateTime.now().add(Duration(hours: 24)),
-    );
 
     await _firestore
         .collection('meetups')
@@ -213,8 +212,9 @@ class ChatProvider extends ChangeNotifier {
             'question': question,
             'options': options,
             'votes': votes,
-            'deadLine': deadLine,
+            'deadLine': Timestamp.fromDate(deadLine),
             'isClosed': false,
+            'allowMultiple': allowMultiple,
           },
         });
   }
@@ -244,19 +244,95 @@ class ChatProvider extends ChangeNotifier {
         metadata['votes'] ?? {},
       );
 
-      votes.forEach((key, value) {
-        final List<dynamic> userList = List.from(value);
-        userList.remove(userId);
-        votes[key] = userList;
-      });
+      final allowMultiple = metadata['allowMultiple'] ?? false;
 
-      // 선택한 항목에 UserId 추가
-      final List<dynamic> newUserList = List.from(votes[pickedOption] ?? []);
-      newUserList.add(userId);
-      votes[pickedOption] = newUserList;
+      if (!allowMultiple) {
+        votes.forEach((key, value) {
+          final List<dynamic> userList = List.from(value);
+          userList.remove(userId);
+          votes[key] = userList;
+        });
+
+        // 선택한 항목에 UserId 추가
+        final List<dynamic> newUserList = List.from(votes[pickedOption] ?? []);
+        newUserList.add(userId);
+        votes[pickedOption] = newUserList;
+      } else {
+        // 복수투표 로직
+        final List<dynamic> currentVoters = List.from(
+          votes[pickedOption] ?? [],
+        );
+
+        if (currentVoters.contains(userId)) {
+          // 이미 투표했다면 취소
+          currentVoters.remove(userId);
+        } else {
+          // 투표하지 않았다면 추가
+          currentVoters.add(userId);
+        }
+        votes[pickedOption] = currentVoters;
+      }
 
       metadata['votes'] = votes;
       transaction.update(docRef, {'metadata': metadata});
     });
+  }
+
+  // 투표 수정
+  Future<void> updatePoll(
+    String meetupId,
+    String messageId, {
+    required String question,
+    required List<String> options,
+    required DateTime deadLine,
+    required bool allowMultiple,
+  }) async {
+    final docRef = _firestore
+        .collection('meetups')
+        .doc(meetupId)
+        .collection('messages')
+        .doc(messageId);
+
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(docRef);
+      if (!snapshot.exists) return;
+
+      final data = snapshot.data()!;
+      final Map<String, dynamic> metadata = Map<String, dynamic>.from(
+        data['metadata'] ?? {},
+      );
+      final Map<String, dynamic> oldVotes = Map<String, dynamic>.from(
+        metadata['votes'] ?? {},
+      );
+
+      // 새로운 투표 내역 맵 생성
+      final Map<String, dynamic> newVotes = {};
+      for (var option in options) {
+        // 기존에 있던 선택지면 투표 내역 유지, 새로운 선택지면 빈 리스트
+        newVotes[option] = oldVotes[option] ?? [];
+      }
+
+      metadata['question'] = question;
+      metadata['options'] = options;
+      metadata['votes'] = newVotes;
+      metadata['deadLine'] = Timestamp.fromDate(deadLine);
+      metadata['allowMultiple'] = allowMultiple;
+
+      transaction.update(docRef, {'metadata': metadata});
+    });
+  }
+
+  // 투표 종료/재개
+  Future<void> togglePollClosed(
+    String meetupId,
+    String messageId,
+    bool isClosed,
+  ) async {
+    await _firestore
+        .collection('meetups')
+        .doc(meetupId)
+        .collection('messages')
+        .doc(messageId)
+        .update({'metadata.isClosed': isClosed});
   }
 }
