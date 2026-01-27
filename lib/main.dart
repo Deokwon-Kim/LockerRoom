@@ -57,6 +57,7 @@ import 'package:toastification/toastification.dart';
 import 'package:lockerroom/services/notification_service.dart';
 import 'package:lockerroom/services/navigation_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'dart:io';
 
 @pragma('vm:entry-point')
@@ -74,6 +75,8 @@ Future<void> main() async {
     javaScriptAppKey: dotenv.env['KAKAO_JAVASCRIPT_APP_KEY'],
   );
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 
   // 로컬 알림 초기화
   await NotificationService().initNotification();
@@ -207,6 +210,9 @@ class MyApp extends StatelessWidget {
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
+        ],
+        navigatorObservers: [
+          FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
         ],
         supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
         home: const AuthWrapper(),
