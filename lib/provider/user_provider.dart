@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -214,6 +215,7 @@ class UserProvider extends ChangeNotifier {
     }
 
     try {
+      await FirebaseAnalytics.instance.logEvent(name: 'logout');
       await FirebaseAuth.instance.signOut();
       // 사용자 관련 모든 상태 초기화
       _currentUser = null;
@@ -290,6 +292,11 @@ class UserProvider extends ChangeNotifier {
     await FirebaseAuth.instance.currentUser?.updateDisplayName(newNickname);
     await FirebaseAuth.instance.currentUser?.reload();
 
+    await FirebaseAnalytics.instance.logEvent(
+      name: 'nickname_changed',
+      parameters: {'nickname': newNickname},
+    );
+
     _currentUser = FirebaseAuth.instance.currentUser;
 
     _nickname = newNickname;
@@ -355,6 +362,11 @@ class UserProvider extends ChangeNotifier {
         }
       }
 
+      await FirebaseAnalytics.instance.logEvent(
+        name: 'account_deleted',
+        parameters: {'method': 'kakao'},
+      );
+
       clearUserData();
     } catch (e) {
       debugPrint('카카오 계정 탈퇴 중 오류: $e');
@@ -405,6 +417,11 @@ class UserProvider extends ChangeNotifier {
       } catch (e) {
         print('Auth 사용자 삭제 중 오류 (무시): $e');
       }
+
+      await FirebaseAnalytics.instance.logEvent(
+        name: 'account_deleted',
+        parameters: {'method': 'email'},
+      );
 
       clearUserData();
     } on FirebaseAuthException {

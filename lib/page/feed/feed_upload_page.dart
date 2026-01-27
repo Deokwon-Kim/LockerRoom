@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter_link_previewer/flutter_link_previewer.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
@@ -378,6 +379,19 @@ class _UploadPageState extends State<FeedUploadPage> {
                                 name: name ?? '',
                                 text: _captionController.text,
                               );
+
+                              await FirebaseAnalytics.instance.logEvent(
+                                name: 'feed_upload',
+                                parameters: {
+                                  'has_image': uploadProvider.images.isNotEmpty
+                                      ? 1
+                                      : 0,
+                                  'has_video': uploadProvider.video != null
+                                      ? 1
+                                      : 0,
+                                },
+                              );
+
                               _captionController.clear();
                               widget.onUploaded?.call();
                             }

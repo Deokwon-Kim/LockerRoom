@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:confetti/confetti.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
 import 'package:lockerroom/bottom_tab_bar/quiz_tab_bar.dart';
@@ -37,6 +38,13 @@ class _QuizResultPageState extends State<QuizResultPage>
   @override
   void initState() {
     super.initState();
+
+    Future.microtask(() async {
+      await FirebaseAnalytics.instance.logEvent(
+        name: 'quiz_complete',
+        parameters: {'score': widget.result.score},
+      );
+    });
 
     _animationController = AnimationController(
       duration: Duration(milliseconds: 800),
@@ -537,6 +545,11 @@ class _QuizResultPageState extends State<QuizResultPage>
       await Gal.putImage(tempFile.path);
       _showToast('갤러리에 저장되었습니다');
 
+      await FirebaseAnalytics.instance.logEvent(
+        name: 'quiz_share',
+        parameters: {'type': 'gallery', 'grade': widget.result.grade},
+      );
+
       // 임시 파일 삭제
       await tempFile.delete();
     } catch (e) {
@@ -573,6 +586,11 @@ class _QuizResultPageState extends State<QuizResultPage>
 
       // 공유 카운트 증가
       context.read<BadgeProvider>().incrementShareCount();
+
+      await FirebaseAnalytics.instance.logEvent(
+        name: 'quiz_share',
+        parameters: {'type': 'feed', 'grade': widget.result.grade},
+      );
 
       // AuthWrapper를 통해 이동하여 사용자 정보 로드 및 초기화 보장
       Navigator.pushAndRemoveUntil(
@@ -618,6 +636,10 @@ class _QuizResultPageState extends State<QuizResultPage>
     // 공유 카운트 증가
     if (mounted) {
       context.read<BadgeProvider>().incrementShareCount();
+      await FirebaseAnalytics.instance.logEvent(
+        name: 'quiz_share',
+        parameters: {'type': 'other', 'grade': widget.result.grade},
+      );
     }
   }
 

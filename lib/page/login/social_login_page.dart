@@ -7,6 +7,7 @@ import 'package:lockerroom/provider/social_login_provider.dart';
 import 'package:lockerroom/services/navigation_service.dart';
 import 'package:lockerroom/main.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class SocialLoginPage extends StatelessWidget {
   const SocialLoginPage({super.key});
@@ -41,6 +42,12 @@ class SocialLoginPage extends StatelessWidget {
                         );
 
                         await socialProvider.signWithApple();
+
+                        // Firebase Analytics 이벤트 기록
+                        FirebaseAnalytics.instance.logEvent(
+                          name: 'login',
+                          parameters: {'method': 'apple'},
+                        );
 
                         // 다이얼 로그 닫기
                         navigatorKey.currentState?.pop();
@@ -113,6 +120,12 @@ class SocialLoginPage extends StatelessWidget {
 
                       await socialProvider.googleLogin();
 
+                      // Firebase Analytics 이벤트 기록
+                      FirebaseAnalytics.instance.logEvent(
+                        name: 'login',
+                        parameters: {'method': 'google'},
+                      );
+
                       // navigatorKey를 사용하여 다이얼로그 확실히 닫기
                       navigatorKey.currentState?.pop();
 
@@ -183,6 +196,12 @@ class SocialLoginPage extends StatelessWidget {
                       );
 
                       await socialProvider.kakaoLogin();
+
+                      // Firebase Analytics 이벤트 기록
+                      FirebaseAnalytics.instance.logEvent(
+                        name: 'login',
+                        parameters: {'method': 'kakao'},
+                      );
 
                       // navigatorKey를 사용하여 다이얼로그 확실히 닫기
                       navigatorKey.currentState?.pop();
