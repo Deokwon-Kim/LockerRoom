@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/chat_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -13,6 +14,8 @@ class PollDetailPage extends StatefulWidget {
   final List<String> options;
   final Map<String, dynamic> votes;
   final Timestamp? deadLine;
+  final String authorId;
+  final DateTime? createdAt;
 
   const PollDetailPage({
     super.key,
@@ -22,6 +25,8 @@ class PollDetailPage extends StatefulWidget {
     required this.options,
     required this.votes,
     required this.deadLine,
+    required this.authorId,
+    this.createdAt,
   });
 
   @override
@@ -30,7 +35,11 @@ class PollDetailPage extends StatefulWidget {
 
 class _PollDetailPageState extends State<PollDetailPage> {
   late Map<String, List<String>> _currentVotes;
-  String? _myVote;
+  late String _currentQuestion;
+  late List<String> _currentOptions;
+  late Timestamp? _currentDeadLine;
+  late bool _isClosed;
+  late bool _allowMultiple;
 
   @override
   void initState() {
@@ -38,15 +47,14 @@ class _PollDetailPageState extends State<PollDetailPage> {
     _currentVotes = Map<String, List<String>>.from(
       widget.votes.map((key, value) => MapEntry(key, List<String>.from(value))),
     );
+    _currentQuestion = widget.question;
+    _currentOptions = List<String>.from(widget.options);
+    _currentDeadLine = widget.deadLine;
+    _isClosed = widget.votes['isClosed'] ?? false;
+    _allowMultiple = widget.votes['allowMultiple'] ?? false;
 
     // 내가 투표한 항목 찾기
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    for (var entry in _currentVotes.entries) {
-      if (entry.value.contains(currentUserId)) {
-        _myVote = entry.key;
-        break;
-      }
-    }
+    // _updateMyVote는 더 이상 필요하지 않음 (voters list에서 직접 확인)
 
     _setupPollStream();
   }
@@ -62,13 +70,26 @@ class _PollDetailPageState extends State<PollDetailPage> {
           if (snapshot.exists && mounted) {
             final data = snapshot.data()!;
             final metadata = data['metadata'];
-            setState(() {
-              _currentVotes = Map<String, List<String>>.from(
-                metadata['votes'].map(
-                  (k, v) => MapEntry(k, List<String>.from(v)),
-                ),
-              );
-            });
+            if (metadata != null) {
+              setState(() {
+                _currentQuestion = metadata['question'] ?? _currentQuestion;
+                _currentOptions = List<String>.from(
+                  metadata['options'] ?? _currentOptions,
+                );
+                _currentDeadLine =
+                    metadata['deadLine'] as Timestamp? ?? _currentDeadLine;
+                _isClosed = metadata['isClosed'] ?? false;
+                _allowMultiple = metadata['allowMultiple'] ?? false;
+                _currentVotes = Map<String, List<String>>.from(
+                  (metadata['votes'] as Map? ?? {}).map(
+                    (k, v) => MapEntry(
+                      k.toString(),
+                      List<String>.from(v as List? ?? []),
+                    ),
+                  ),
+                );
+              });
+            }
           }
         });
   }
@@ -76,7 +97,7 @@ class _PollDetailPageState extends State<PollDetailPage> {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final endTime = widget.deadLine?.toDate() ?? now;
+    final endTime = _currentDeadLine?.toDate() ?? now;
     final isExpired = now.isAfter(endTime);
 
     int totalVotes = 0;
@@ -93,38 +114,57 @@ class _PollDetailPageState extends State<PollDetailPage> {
         ),
         backgroundColor: context.read<TeamProvider>().selectedTeam?.color,
         foregroundColor: WHITE,
-        actions: [IconButton(onPressed: () {}, icon: Icon(Icons.more_horiz))],
+        scrolledUnderElevation: 0,
+        actions: [
+          if (widget.authorId == FirebaseAuth.instance.currentUser?.uid)
+            IconButton(
+              onPressed: _showEditPollSheet,
+              icon: const Icon(Icons.edit_note),
+            ),
+          _buildMoreMenu(),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 20, left: 20, right: 20),
-            child: Text(
-              widget.question,
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [_buildAuthorInfo()],
             ),
           ),
-          // 타이머 헤더
-          _buildTimerHeader(endTime, isExpired, totalVotes),
 
+          // 타이머 헤더
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.only(left: 20, top: 30, right: 20),
+              padding: const EdgeInsets.only(left: 15, top: 15, right: 15),
               children: [
-                Text(
-                  '투표 선택지',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _currentQuestion,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    _buildTimerHeader(endTime, isExpired, totalVotes),
+                  ],
                 ),
+
                 SizedBox(height: 24),
 
                 // 투표 옵션
-                ...widget.options.map((option) {
+                ..._currentOptions.map((option) {
                   final voters = _currentVotes[option] ?? [];
                   final percent = totalVotes > 0
                       ? (voters.length / totalVotes).toDouble()
                       : 0.0;
-                  final isMyVote = _myVote == option;
+                  final currentUserId =
+                      FirebaseAuth.instance.currentUser?.uid ?? '';
+                  final isMyVote = voters.contains(currentUserId);
 
                   return _buildPollOption(
                     option: option,
@@ -156,41 +196,40 @@ class _PollDetailPageState extends State<PollDetailPage> {
       builder: (context, snapshot) {
         final remaining = endTime.difference(DateTime.now());
 
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-          decoration: BoxDecoration(
-            color: isExpired ? GRAYSCALE_LABEL_100 : BACKGROUND_COLOR,
-            border: Border(bottom: BorderSide(color: GRAYSCALE_LABEL_200)),
-          ),
-          child: Row(
-            children: [
-              Text(
-                '종료까지',
-                style: TextStyle(
-                  color: GRAYSCALE_LABEL_700,
-                  fontWeight: FontWeight.bold,
-                ),
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Text(
+              '종료까지',
+              style: TextStyle(
+                color: GRAYSCALE_LABEL_700,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
-              SizedBox(width: 4),
-              Text(
-                isExpired ? '투표가 마감되었습니다' : _formatDetailedTime(remaining),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isExpired ? RED_DANGER_TEXT_50 : GRAYSCALE_LABEL_700,
-                ),
+            ),
+            SizedBox(width: 4),
+            Text(
+              isExpired || _isClosed
+                  ? '투표가 마감되었습니다'
+                  : _formatDetailedTime(remaining),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isExpired || _isClosed
+                    ? RED_DANGER_TEXT_50
+                    : GRAYSCALE_LABEL_700,
               ),
-              SizedBox(width: 4),
-              Text(
-                '$totalVotes명 참여 중',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: GRAYSCALE_LABEL_700,
-                ),
+            ),
+            SizedBox(width: 4),
+            Text(
+              '$totalVotes명 참여 중',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: GRAYSCALE_LABEL_700,
+                fontSize: 14,
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
@@ -215,11 +254,12 @@ class _PollDetailPageState extends State<PollDetailPage> {
     required bool isMyVote,
     required bool isExpired,
   }) {
+    final bool canVote = !isExpired && !_isClosed;
     final teamProvider = context.read<TeamProvider>();
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: InkWell(
-        onTap: isExpired ? null : () => _handleVote(option),
+        onTap: canVote ? () => _handleVote(option) : null,
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -290,16 +330,26 @@ class _PollDetailPageState extends State<PollDetailPage> {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     setState(() {
-      _currentVotes.forEach((key, value) {
-        value.remove(currentUserId);
-      });
-
-      // 새투표 추가
-      if (!_currentVotes.containsKey(option)) {
-        _currentVotes[option] = [];
+      if (!_allowMultiple) {
+        // 단일 투표: 기존 투표 모두 제거 후 새로 추가
+        _currentVotes.forEach((key, value) {
+          value.remove(currentUserId);
+        });
+        if (!_currentVotes.containsKey(option)) {
+          _currentVotes[option] = [];
+        }
+        _currentVotes[option]!.add(currentUserId);
+      } else {
+        // 복수 투표: 해당 항목 토글
+        if (!_currentVotes.containsKey(option)) {
+          _currentVotes[option] = [];
+        }
+        if (_currentVotes[option]!.contains(currentUserId)) {
+          _currentVotes[option]!.remove(currentUserId);
+        } else {
+          _currentVotes[option]!.add(currentUserId);
+        }
       }
-      _currentVotes[option]!.add(currentUserId);
-      _myVote = option;
     });
 
     // Firestore 업데이트
@@ -308,6 +358,336 @@ class _PollDetailPageState extends State<PollDetailPage> {
       widget.messageId,
       currentUserId,
       option,
+    );
+  }
+
+  Widget _buildAuthorInfo() {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.authorId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final userData = snapshot.data?.data() as Map<String, dynamic>?;
+        final nickname = userData?['userNickName'] ?? '탈퇴한 사용자';
+        final profileImage = userData?['profileImage'] as String?;
+
+        String dateStr = '';
+        if (widget.createdAt != null) {
+          final date = widget.createdAt!;
+          dateStr =
+              '${date.year}. ${date.month}. ${date.day}. ${date.hour > 12 ? '오후' : '오전'} ${date.hour > 12 ? date.hour - 12 : date.hour}:${date.minute.toString().padLeft(2, '0')}';
+        }
+
+        return Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: GRAYSCALE_LABEL_300,
+              backgroundImage: profileImage != null
+                  ? NetworkImage(profileImage)
+                  : null,
+              child: profileImage == null
+                  ? const Icon(Icons.person, size: 20, color: WHITE)
+                  : null,
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  nickname,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: BLACK,
+                  ),
+                ),
+                if (dateStr.isNotEmpty)
+                  Text(
+                    dateStr,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: GRAYSCALE_LABEL_500,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showEditPollSheet() {
+    final questionController = TextEditingController(text: _currentQuestion);
+    final teamProvider = context.read<TeamProvider>();
+    final List<TextEditingController> optionControllers = _currentOptions
+        .map((opt) => TextEditingController(text: opt))
+        .toList();
+    DateTime selectedDeadLine =
+        _currentDeadLine?.toDate() ??
+        DateTime.now().add(const Duration(hours: 24));
+    bool allowMultiple = _allowMultiple;
+
+    showModalBottomSheet(
+      backgroundColor: BACKGROUND_COLOR,
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 0,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '투표 수정하기',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                cursorColor: teamProvider.selectedTeam?.color,
+                controller: questionController,
+                decoration: InputDecoration(
+                  hintText: '질문을 입력하세요',
+                  hintStyle: const TextStyle(color: GRAYSCALE_LABEL_400),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: GRAYSCALE_LABEL_400),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                      color: teamProvider.selectedTeam?.color ?? BUTTON,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 15),
+              ...optionControllers.asMap().entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: entry.value,
+                          decoration: InputDecoration(
+                            hintText: '항목 ${entry.key + 1}',
+                            hintStyle: const TextStyle(
+                              color: GRAYSCALE_LABEL_400,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: GRAYSCALE_LABEL_400,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color:
+                                    teamProvider.selectedTeam?.color ?? BUTTON,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (optionControllers.length > 2)
+                        IconButton(
+                          onPressed: () {
+                            setSheetState(() {
+                              optionControllers.removeAt(entry.key);
+                            });
+                          },
+                          icon: const Icon(
+                            Icons.remove_circle_outline,
+                            color: GRAYSCALE_LABEL_400,
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              }),
+              SwitchListTile(
+                title: const Text('복수 투표 허용'),
+                value: allowMultiple,
+                onChanged: (val) => setSheetState(() => allowMultiple = val),
+              ),
+              ListTile(
+                title: const Text('마감 시간 설정'),
+                subtitle: Text(
+                  DateFormat('yyyy.MM.dd HH:mm').format(selectedDeadLine),
+                ),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    firstDate: DateTime.now().isBefore(selectedDeadLine)
+                        ? DateTime.now()
+                        : selectedDeadLine,
+                    lastDate: DateTime(2030),
+                    initialDate: selectedDeadLine,
+                  );
+                  if (date != null) {
+                    final time = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.fromDateTime(selectedDeadLine),
+                    );
+                    if (time != null) {
+                      setSheetState(() {
+                        selectedDeadLine = DateTime(
+                          date.year,
+                          date.month,
+                          date.day,
+                          time.hour,
+                          time.minute,
+                        );
+                      });
+                    }
+                  }
+                },
+              ),
+              if (optionControllers.length < 10)
+                TextButton.icon(
+                  onPressed: () {
+                    setSheetState(() {
+                      optionControllers.add(TextEditingController());
+                    });
+                  },
+                  icon: const Icon(
+                    Icons.add_circle_outline,
+                    color: GRAYSCALE_LABEL_500,
+                  ),
+                  label: const Text(
+                    '항목 추가',
+                    style: TextStyle(color: GRAYSCALE_LABEL_600),
+                  ),
+                ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final question = questionController.text.trim();
+                    final options = optionControllers
+                        .map((c) => c.text.trim())
+                        .where((t) => t.isNotEmpty)
+                        .toList();
+
+                    if (question.isNotEmpty && options.length >= 2) {
+                      await context.read<ChatProvider>().updatePoll(
+                        widget.meetupId,
+                        widget.messageId,
+                        question: question,
+                        options: options,
+                        deadLine: selectedDeadLine,
+                        allowMultiple: allowMultiple,
+                      );
+                      if (context.mounted) Navigator.pop(context);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: teamProvider.selectedTeam?.color ?? BUTTON,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    '수정 완료',
+                    style: TextStyle(
+                      color: WHITE,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoreMenu() {
+    final isAuthor = widget.authorId == FirebaseAuth.instance.currentUser?.uid;
+
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_horiz),
+      onSelected: (value) {
+        if (value == 'delete') {
+          _handleDeletePoll();
+        } else if (value == 'toggle_close') {
+          _handleToggleClosePoll();
+        }
+      },
+      itemBuilder: (context) => [
+        if (isAuthor) ...[
+          PopupMenuItem(
+            value: 'toggle_close',
+            child: Text(_isClosed ? '투표 재개하기' : '투표 강제종료'),
+          ),
+          const PopupMenuItem(
+            value: 'delete',
+            child: Text('투표 삭제하기', style: TextStyle(color: RED_DANGER_TEXT_50)),
+          ),
+        ],
+        const PopupMenuItem(value: 'report', child: Text('신고하기')),
+      ],
+    );
+  }
+
+  void _handleDeletePoll() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('투표 삭제'),
+        content: const Text('정말 이 투표를 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              '취소',
+              style: TextStyle(color: GRAYSCALE_LABEL_600),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // 다이얼로그 닫기
+              await context.read<ChatProvider>().deleteMessage(
+                widget.meetupId,
+                widget.messageId,
+              );
+              if (mounted) Navigator.pop(context); // 상세 페이지 닫기
+            },
+            child: const Text(
+              '삭제',
+              style: TextStyle(color: RED_DANGER_TEXT_50),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleToggleClosePoll() {
+    context.read<ChatProvider>().togglePollClosed(
+      widget.meetupId,
+      widget.messageId,
+      !_isClosed,
     );
   }
 }
