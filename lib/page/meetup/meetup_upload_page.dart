@@ -14,6 +14,7 @@ import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class MeetupUploadPage extends StatefulWidget {
   final MeetupModel? meetupToEdit;
@@ -435,6 +436,16 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
         );
 
         if (success) {
+          // Firebase Analytics 이벤트 기록
+          FirebaseAnalytics.instance.logEvent(
+            name: 'meetup_updated',
+            parameters: {
+              'meetup_id': existingMeetup.id,
+              'my_team': _selectedMyTeam!,
+              'max_participants': _maxParticipants,
+            },
+          );
+
           if (!mounted) return;
           Navigator.pop(context);
           toastification.show(
@@ -472,6 +483,17 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
         );
 
         if (success) {
+          // Firebase Analytics 이벤트 기록
+          FirebaseAnalytics.instance.logEvent(
+            name: 'meetup_created',
+            parameters: {
+              'max_participants': meetup.maxParticipants,
+              'my_team': meetup.myTeam,
+              'game_date': meetup.gameDate,
+              'stadium': meetup.stadium,
+            },
+          );
+
           if (!mounted) return;
           Navigator.pop(context);
           toastification.show(
