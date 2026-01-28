@@ -1,13 +1,18 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/meetup_model.dart';
+import 'package:lockerroom/page/meetup/chat_list_page.dart';
 import 'package:lockerroom/page/meetup/meetup_detail_page.dart';
 import 'package:lockerroom/page/meetup/meetup_upload_page.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:badges/badges.dart' as badges;
 
 class MeetupPage extends StatefulWidget {
   const MeetupPage({super.key});
@@ -17,6 +22,8 @@ class MeetupPage extends StatefulWidget {
 }
 
 class _MeetupPageState extends State<MeetupPage> {
+  bool _isButtonVisible = true;
+  double _lastScrollPosition = 0;
   @override
   void initState() {
     super.initState();
@@ -24,6 +31,23 @@ class _MeetupPageState extends State<MeetupPage> {
       if (!mounted) return;
       context.read<MeetupProvider>().fetchMeetups();
     });
+  }
+
+  // 스크롤 방향 감지
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollUpdateNotification) {
+      final currentPosition = notification.metrics.pixels;
+      final delta = currentPosition - _lastScrollPosition;
+
+      if (delta > 5 && _isButtonVisible) {
+        setState(() => _isButtonVisible = false);
+      } else if (delta < -5 && !_isButtonVisible) {
+        setState(() => _isButtonVisible = true);
+      }
+
+      _lastScrollPosition = currentPosition;
+    }
+    return false;
   }
 
   @override
@@ -51,17 +75,57 @@ class _MeetupPageState extends State<MeetupPage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => MeetupUploadPage()),
+                MaterialPageRoute(builder: (context) => ChatListPage()),
               );
             },
-            icon: Icon(Icons.add, color: WHITE),
+            icon: TotalUnreadBadge(
+              currentUserId: FirebaseAuth.instance.currentUser?.uid ?? '',
+              child: Icon(CupertinoIcons.paperplane_fill, color: WHITE),
+            ),
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          _buildFilterBar(),
-          Expanded(child: _buildMeetupList()),
+          NotificationListener<ScrollNotification>(
+            onNotification: _handleScrollNotification,
+            child: Column(
+              children: [
+                _buildFilterBar(),
+                Expanded(child: _buildMeetupList()),
+              ],
+            ),
+          ),
+
+          AnimatedPositioned(
+            duration: Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            bottom: _isButtonVisible ? 70 : -100,
+            right: 15,
+            child: AnimatedOpacity(
+              duration: Duration(milliseconds: 200),
+              opacity: _isButtonVisible ? 1.0 : 0.0,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MeetupUploadPage()),
+                  );
+                },
+                child: Container(
+                  width: 70,
+                  height: 70,
+                  alignment: Alignment.center,
+                  padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: teamProvider.selectedTeam?.color,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(Icons.add, color: WHITE, size: 30),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -279,11 +343,11 @@ class _MeetupPageState extends State<MeetupPage> {
                             ),
                             children: [
                               TextSpan(
-                                text: meetup.homeTeam,
+                                text: meetup.awayTeam,
                                 style: TextStyle(
                                   color:
                                       teamProvider
-                                          .findTeamByName(meetup.homeTeam)
+                                          .findTeamByName(meetup.awayTeam)
                                           ?.color ??
                                       BUTTON,
                                 ),
@@ -293,11 +357,11 @@ class _MeetupPageState extends State<MeetupPage> {
                                 style: TextStyle(color: BLACK),
                               ),
                               TextSpan(
-                                text: meetup.awayTeam,
+                                text: meetup.homeTeam,
                                 style: TextStyle(
                                   color:
                                       teamProvider
-                                          .findTeamByName(meetup.awayTeam)
+                                          .findTeamByName(meetup.homeTeam)
                                           ?.color ??
                                       BUTTON,
                                 ),
@@ -507,4 +571,179 @@ class _MeetupPageState extends State<MeetupPage> {
       context.read<MeetupProvider>().setDateFilter(date);
     }
   }
+}
+
+class TotalUnreadBadge extends StatelessWidget {
+  final String currentUserId;
+  final Widget child;
+
+  const TotalUnreadBadge({
+    super.key,
+    required this.currentUserId,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (currentUserId.isEmpty) return child;
+
+    return StreamBuilder<List<MeetupModel>>(
+      stream: context.read<MeetupProvider>().getJoinedMeetupStream(
+        currentUserId,
+      ),
+      builder: (context, snapshot) {
+        final meetups = snapshot.data ?? [];
+        if (meetups.isEmpty) return child;
+
+        return _TotalCountAggregator(
+          meetupIds: meetups.map((m) => m.id).toList(),
+          currentUserId: currentUserId,
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+class _TotalCountAggregator extends StatefulWidget {
+  final List<String> meetupIds;
+  final String currentUserId;
+  final Widget child;
+
+  const _TotalCountAggregator({
+    required this.meetupIds,
+    required this.currentUserId,
+    required this.child,
+  });
+
+  @override
+  State<_TotalCountAggregator> createState() => _TotalCountAggregatorState();
+}
+
+class _TotalCountAggregatorState extends State<_TotalCountAggregator> {
+  final Map<String, int> _unreadCounts = {};
+
+  @override
+  Widget build(BuildContext context) {
+    int totalUnread = _unreadCounts.values.fold(0, (sum, count) => sum + count);
+
+    return badges.Badge(
+      showBadge: totalUnread > 0,
+      position: badges.BadgePosition.topEnd(top: -10, end: -10),
+      badgeContent: Text(
+        totalUnread > 99 ? '99+' : '$totalUnread',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      badgeStyle: const badges.BadgeStyle(
+        badgeColor: Colors.red,
+        padding: EdgeInsets.all(4),
+      ),
+      child: Stack(
+        children: [
+          widget.child,
+          // 각 채팅방의 읽음 상태를 감시하는 투명한 위젯들
+          ...widget.meetupIds.map(
+            (id) => _UnreadListener(
+              key: ValueKey(id),
+              meetupId: id,
+              currentUserId: widget.currentUserId,
+              onCountChanged: (count) {
+                if (_unreadCounts[id] != count) {
+                  setState(() {
+                    _unreadCounts[id] = count;
+                  });
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UnreadListener extends StatefulWidget {
+  final String meetupId;
+  final String currentUserId;
+  final Function(int) onCountChanged;
+
+  const _UnreadListener({
+    super.key,
+    required this.meetupId,
+    required this.currentUserId,
+    required this.onCountChanged,
+  });
+
+  @override
+  State<_UnreadListener> createState() => _UnreadListenerState();
+}
+
+class _UnreadListenerState extends State<_UnreadListener> {
+  StreamSubscription? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _startListening();
+  }
+
+  @override
+  void didUpdateWidget(_UnreadListener oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.meetupId != widget.meetupId) {
+      _subscription?.cancel();
+      _startListening();
+    }
+  }
+
+  void _startListening() {
+    // 1. 유저의 마지막 읽은 시간 가져오기
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.currentUserId)
+        .collection('readStatus')
+        .doc(widget.meetupId)
+        .snapshots()
+        .listen((readSnapshot) {
+          if (!mounted) return;
+          final readData = readSnapshot.data();
+          final lastReadAt = readData?['lastReadAt'] as Timestamp?;
+
+          _subscription?.cancel();
+          // 2. 마지막 읽은 시간 이후의 메시지 개수 감시 (본인 메시지 제외)
+          _subscription = FirebaseFirestore.instance
+              .collection('meetups')
+              .doc(widget.meetupId)
+              .collection('messages')
+              .where(
+                'createdAt',
+                isGreaterThan:
+                    lastReadAt ?? Timestamp.fromMillisecondsSinceEpoch(0),
+              )
+              .snapshots()
+              .listen((msgSnapshot) {
+                if (!mounted) return;
+                final docs = msgSnapshot.docs;
+                int unreadCount = docs
+                    .where(
+                      (doc) => (doc.data())['authorId'] != widget.currentUserId,
+                    )
+                    .length;
+                widget.onCountChanged(unreadCount);
+              });
+        });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
