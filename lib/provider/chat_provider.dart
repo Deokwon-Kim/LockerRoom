@@ -96,6 +96,20 @@ class ChatProvider extends ChangeNotifier {
           'type': 'text',
           'metadata': message.metadata,
         });
+    await _firestore.collection('meetups').doc(meetupId).update({
+      'lastMessage': message.text,
+      'lastMessageAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  // 채팅방 입장 시 호출할 읽음처리 함수
+  Future<void> markAsRead(String meetupId, String userId) async {
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('readStatus')
+        .doc(meetupId)
+        .set({'lastReadAt': FieldValue.serverTimestamp()});
   }
 
   // 이미지 업로드 및 메시지 전송 (최대 4장)
@@ -124,6 +138,10 @@ class ChatProvider extends ChangeNotifier {
             'type': 'image',
           });
     }
+    await _firestore.collection('meetups').doc(meetupId).update({
+      'lastMessage': '사진을 보냈습니다.',
+      'lastMessageAt': DateTime.now().toIso8601String(),
+    });
   }
 
   Future<void> sendSystemMessage(String meetupId, String text) async {
