@@ -567,155 +567,26 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
         ],
       ),
 
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: EdgeInsets.all(16),
-          children: [
-            Text(
-              '모임제목',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 20),
-            // 모임 제목
-            TextFormField(
-              cursorColor: selectedTeam?.color ?? BUTTON,
-              controller: _titleController,
-              decoration: InputDecoration(
-                hintText: '예) 같이 응원하실 분 구해요!',
-                hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
-                ),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.translucent,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: EdgeInsets.all(16),
+            children: [
+              Text(
+                '모임제목',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return '제목을 입력해주세요';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: 16),
-            // 경기 날짜 선택
-            InkWell(
-              onTap: _selectDate,
-              child: Card(
-                color: BACKGROUND_COLOR,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '경기 날짜 *',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _selectedDate == null
-                                ? '날짜를 선택해주세요'
-                                : DateFormat(
-                                    'yyyy년 MM월 dd일 (E)',
-                                    'ko_KR',
-                                  ).format(_selectedDate!),
-                            style: TextStyle(
-                              color: _selectedDate == null
-                                  ? GRAYSCALE_LABEL_500
-                                  : BLACK,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Icon(
-                        Icons.calendar_today,
-                        color: selectedTeam?.color ?? BUTTON,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 경기 선택 카드
-            Card(
-              color: selectedTeam?.color,
-              child: InkWell(
-                onTap: _showSchedulePicker,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            '경기 선택 *',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: WHITE,
-                            ),
-                          ),
-                          Icon(Icons.arrow_forward_ios, size: 16, color: WHITE),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      // ... (표시 부분)
-                      if (_selectedSchedules == null)
-                        Text(
-                          _selectedDate == null
-                              ? '날짜를 먼저 선택해주세요'
-                              : '경기를 선택해주세요',
-                          style: TextStyle(color: WHITE),
-                        )
-                      else
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${_selectedSchedules!.homeTeam} vs ${_selectedSchedules!.awayTeam}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: WHITE,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${DateFormat('HH:mm').format(_selectedSchedules!.dateTimeKst)} | ${_selectedSchedules!.stadium}',
-                              style: TextStyle(fontSize: 12, color: WHITE),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 16),
-
-            // 응원팀 선택
-            if (_selectedSchedules != null)
-              DropdownButtonFormField<String>(
-                dropdownColor: WHITE,
-                value: _selectedMyTeam,
+              SizedBox(height: 20),
+              // 모임 제목
+              TextFormField(
+                cursorColor: selectedTeam?.color ?? BUTTON,
+                controller: _titleController,
                 decoration: InputDecoration(
-                  labelText: '내가 응원하는 팀',
-                  labelStyle: TextStyle(color: GRAYSCALE_LABEL_400),
+                  hintText: '예) 같이 응원하실 분 구해요!',
+                  hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
@@ -725,101 +596,133 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                     borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
                   ),
                 ),
-                items:
-                    [
-                      _selectedSchedules!.homeTeam,
-                      _selectedSchedules!.awayTeam,
-                    ].toSet().map((team) {
-                      return DropdownMenuItem(value: team, child: Text(team));
-                    }).toList(),
-                onChanged: (value) => setState(() => _selectedMyTeam = value),
-                validator: (value) => value == null ? '응원팀을 선택해주세요' : null,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return '제목을 입력해주세요';
+                  }
+                  return null;
+                },
               ),
-            SizedBox(height: 16),
-
-            // 최대 참여인원
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '모집 인원',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
+              SizedBox(height: 16),
+              // 경기 날짜 선택
+              InkWell(
+                onTap: _selectDate,
+                child: Card(
+                  color: BACKGROUND_COLOR,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '경기 날짜 *',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _selectedDate == null
+                                  ? '날짜를 선택해주세요'
+                                  : DateFormat(
+                                      'yyyy년 MM월 dd일 (E)',
+                                      'ko_KR',
+                                    ).format(_selectedDate!),
+                              style: TextStyle(
+                                color: _selectedDate == null
+                                    ? GRAYSCALE_LABEL_500
+                                    : BLACK,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Icon(
+                          Icons.calendar_today,
+                          color: selectedTeam?.color ?? BUTTON,
+                        ),
+                      ],
                     ),
-                    Text(
-                      '$_maxParticipants명',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: _maxParticipants > 2
-                          ? () {
-                              setState(() {
-                                _maxParticipants--;
-                              });
-                            }
-                          : null,
-                      icon: Icon(
-                        Icons.remove_circle_outline,
-                        color: _maxParticipants > 2
-                            ? selectedTeam?.color ?? BUTTON
-                            : GRAYSCALE_LABEL_300,
-                      ),
-                    ),
-                    Expanded(
-                      child: Slider(
-                        activeColor: selectedTeam?.color ?? BUTTON,
-                        value: _maxParticipants.toDouble(),
-                        min: 2,
-                        max: 20,
-                        onChanged: (value) {
-                          setState(() => _maxParticipants = value.toInt());
-                        },
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _maxParticipants < 20
-                          ? () {
-                              setState(() {
-                                _maxParticipants++;
-                              });
-                            }
-                          : null,
-                      icon: Icon(
-                        Icons.add_circle_outline,
-                        color: _maxParticipants < 20
-                            ? selectedTeam?.color ?? BUTTON
-                            : GRAYSCALE_LABEL_300,
-                      ),
-                    ),
-                  ],
-                ),
+              ),
+              const SizedBox(height: 16),
 
-                SizedBox(height: 16),
-
-                Text(
-                  '상세설명',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              // 경기 선택 카드
+              Card(
+                color: selectedTeam?.color,
+                child: InkWell(
+                  onTap: _showSchedulePicker,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              '경기 선택 *',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: WHITE,
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: WHITE,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        // ... (표시 부분)
+                        if (_selectedSchedules == null)
+                          Text(
+                            _selectedDate == null
+                                ? '날짜를 먼저 선택해주세요'
+                                : '경기를 선택해주세요',
+                            style: TextStyle(color: WHITE),
+                          )
+                        else
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${_selectedSchedules!.homeTeam} vs ${_selectedSchedules!.awayTeam}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: WHITE,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${DateFormat('HH:mm').format(_selectedSchedules!.dateTimeKst)} | ${_selectedSchedules!.stadium}',
+                                style: TextStyle(fontSize: 12, color: WHITE),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-                SizedBox(height: 20),
-                // 모임 설명
-                TextFormField(
-                  cursorColor: selectedTeam?.color ?? BUTTON,
-                  controller: _contentController,
+              ),
+              SizedBox(height: 16),
+
+              // 응원팀 선택
+              if (_selectedSchedules != null)
+                DropdownButtonFormField<String>(
+                  dropdownColor: WHITE,
+                  value: _selectedMyTeam,
                   decoration: InputDecoration(
-                    hintText: '모임에 대한 설명을 입력해주세요',
-                    hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
+                    labelText: '내가 응원하는 팀',
+                    labelStyle: TextStyle(color: GRAYSCALE_LABEL_400),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
@@ -829,166 +732,271 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                       borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
                     ),
                   ),
-                  maxLines: 5,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return '설명을 입력해주세요';
-                    }
-                    return null;
-                  },
+                  items:
+                      [
+                        _selectedSchedules!.homeTeam,
+                        _selectedSchedules!.awayTeam,
+                      ].toSet().map((team) {
+                        return DropdownMenuItem(value: team, child: Text(team));
+                      }).toList(),
+                  onChanged: (value) => setState(() => _selectedMyTeam = value),
+                  validator: (value) => value == null ? '응원팀을 선택해주세요' : null,
                 ),
-                const SizedBox(height: 16),
+              SizedBox(height: 16),
 
-                // 사진 첨부
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          '사진 첨부',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+              // 최대 참여인원
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '모집 인원',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
                         ),
-                        Text(
-                          '${_existingImageUrls.length + _selectedImages.length}/4',
-                          style: TextStyle(
-                            color:
-                                (_existingImageUrls.length +
-                                        _selectedImages.length) ==
-                                    4
-                                ? Colors.red
-                                : GRAYSCALE_LABEL_500,
-                          ),
+                      ),
+                      Text(
+                        '$_maxParticipants명',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: _maxParticipants > 2
+                            ? () {
+                                setState(() {
+                                  _maxParticipants--;
+                                });
+                              }
+                            : null,
+                        icon: Icon(
+                          Icons.remove_circle_outline,
+                          color: _maxParticipants > 2
+                              ? selectedTeam?.color ?? BUTTON
+                              : GRAYSCALE_LABEL_300,
+                        ),
+                      ),
+                      Expanded(
+                        child: Slider(
+                          activeColor: selectedTeam?.color ?? BUTTON,
+                          value: _maxParticipants.toDouble(),
+                          min: 2,
+                          max: 20,
+                          onChanged: (value) {
+                            setState(() => _maxParticipants = value.toInt());
+                          },
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _maxParticipants < 20
+                            ? () {
+                                setState(() {
+                                  _maxParticipants++;
+                                });
+                              }
+                            : null,
+                        icon: Icon(
+                          Icons.add_circle_outline,
+                          color: _maxParticipants < 20
+                              ? selectedTeam?.color ?? BUTTON
+                              : GRAYSCALE_LABEL_300,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 16),
+
+                  Text(
+                    '상세설명',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 20),
+                  // 모임 설명
+                  TextFormField(
+                    cursorColor: selectedTeam?.color ?? BUTTON,
+                    controller: _contentController,
+                    decoration: InputDecoration(
+                      hintText: '모임에 대한 설명을 입력해주세요',
+                      hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
+                    maxLines: 5,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return '설명을 입력해주세요';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 사진 첨부
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // 사진 추가 버튼
-                          if (_existingImageUrls.length +
-                                  _selectedImages.length <
-                              4)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: InkWell(
-                                onTap: _pickImages,
-                                child: Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: GRAYSCALE_LABEL_300,
+                          const Text(
+                            '사진 첨부',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '${_existingImageUrls.length + _selectedImages.length}/4',
+                            style: TextStyle(
+                              color:
+                                  (_existingImageUrls.length +
+                                          _selectedImages.length) ==
+                                      4
+                                  ? Colors.red
+                                  : GRAYSCALE_LABEL_500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            // 사진 추가 버튼
+                            if (_existingImageUrls.length +
+                                    _selectedImages.length <
+                                4)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 12),
+                                child: InkWell(
+                                  onTap: _pickImages,
+                                  child: Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: GRAYSCALE_LABEL_300,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    Icons.camera_alt,
-                                    color:
-                                        selectedTeam?.color ??
-                                        GRAYSCALE_LABEL_500,
+                                    child: Icon(
+                                      Icons.camera_alt,
+                                      color:
+                                          selectedTeam?.color ??
+                                          GRAYSCALE_LABEL_500,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          // 기존 이미지 목록
-                          ..._existingImageUrls.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final url = entry.value;
-                            return Stack(
-                              children: [
-                                Container(
-                                  margin: const EdgeInsets.only(right: 12),
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    image: DecorationImage(
-                                      image: NetworkImage(url),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 4,
-                                  right: 16,
-                                  child: InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        _existingImageUrls.removeAt(index);
-                                      });
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.black54,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        size: 12,
-                                        color: WHITE,
+                            // 기존 이미지 목록
+                            ..._existingImageUrls.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final url = entry.value;
+                              return Stack(
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 12),
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      image: DecorationImage(
+                                        image: NetworkImage(url),
+                                        fit: BoxFit.cover,
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            );
-                          }),
-                          // 선택된 사진 목록
-                          ..._selectedImages.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final image = entry.value;
-                            return Stack(
-                              children: [
-                                Container(
-                                  margin: const EdgeInsets.only(right: 12),
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    image: DecorationImage(
-                                      image: FileImage(File(image.path)),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 4,
-                                  right: 16,
-                                  child: InkWell(
-                                    onTap: () => _removeImage(index),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: const BoxDecoration(
-                                        color: Colors.black54,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        size: 12,
-                                        color: WHITE,
+                                  Positioned(
+                                    top: 4,
+                                    right: 16,
+                                    child: InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          _existingImageUrls.removeAt(index);
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black54,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.close,
+                                          size: 12,
+                                          color: WHITE,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            );
-                          }),
-                        ],
+                                ],
+                              );
+                            }),
+                            // 선택된 사진 목록
+                            ..._selectedImages.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final image = entry.value;
+                              return Stack(
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 12),
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      image: DecorationImage(
+                                        image: FileImage(File(image.path)),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 4,
+                                    right: 16,
+                                    child: InkWell(
+                                      onTap: () => _removeImage(index),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black54,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.close,
+                                          size: 12,
+                                          color: WHITE,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
