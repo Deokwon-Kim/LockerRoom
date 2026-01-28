@@ -1,4 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:toastification/toastification.dart';
 
 class FullscreenImageViewer extends StatefulWidget {
   final List<String> imageUrls;
@@ -18,6 +23,49 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
   late PageController _pageController;
   late int _currentIndex;
   late List<TransformationController> _transformationControllers;
+  bool _isDownloading = false;
+
+  void _showToast(String message, {bool isSuccess = true}) {
+    toastification.show(
+      context: context,
+      title: Text(message),
+      autoCloseDuration: const Duration(seconds: 2),
+      type: isSuccess ? ToastificationType.success : ToastificationType.error,
+      style: ToastificationStyle.flat,
+    );
+  }
+
+  Future<void> _downloadImage() async {
+    if (_isDownloading) return;
+
+    setState(() => _isDownloading = true);
+
+    try {
+      final url = widget.imageUrls[_currentIndex];
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File(
+          '${tempDir.path}/download_${DateTime.now().millisecondsSinceEpoch}.png',
+        );
+        await tempFile.writeAsBytes(response.bodyBytes);
+
+        await Gal.putImage(tempFile.path);
+        await tempFile.delete();
+
+        _showToast('이미지가 갤러리에 저장되었습니다');
+      } else {
+        _showToast('이미지 다운로드 실패', isSuccess: false);
+      }
+    } catch (e) {
+      _showToast('이미지 저장 중 오류가 발생했습니다', isSuccess: false);
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloading = false);
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -63,6 +111,21 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: _isDownloading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.download, color: Colors.white),
+            onPressed: _downloadImage,
+          ),
+        ],
       ),
       body: PageView.builder(
         controller: _pageController,
