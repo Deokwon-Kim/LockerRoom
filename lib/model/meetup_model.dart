@@ -25,6 +25,8 @@ class MeetupModel {
   final int commentCount;
   final List<String> images;
   final List<String> attendedParticipants;
+  final String? lastMessage;
+  final String? lastMessageAt;
 
   // 공지사항 메시지 ID (announcementId 필드를 사용)
   String? get noticeMessageId => announcementId;
@@ -54,6 +56,8 @@ class MeetupModel {
     this.announcementId,
     this.announcementAuthorId,
     this.announcementCreatedAt,
+    this.lastMessage,
+    this.lastMessageAt,
   });
 
   factory MeetupModel.fromFirestore(DocumentSnapshot doc) {
@@ -86,6 +90,8 @@ class MeetupModel {
       announcementAuthorId: data['announcementAuthorId'],
       announcementCreatedAt: (data['announcementCreatedAt'] as Timestamp?)
           ?.toDate(),
+      lastMessage: data['lastMessage'],
+      lastMessageAt: data['lastMessageAt'],
     );
   }
   Map<String, dynamic> toFirestore() {
@@ -115,6 +121,8 @@ class MeetupModel {
       'announcementCreatedAt': announcementCreatedAt != null
           ? Timestamp.fromDate(announcementCreatedAt!)
           : null,
+      'lastMessage': lastMessage,
+      'lastMessageAt': lastMessageAt,
     };
   }
 
@@ -143,6 +151,8 @@ class MeetupModel {
     int? commentCount,
     List<String>? images,
     List<String>? attendedParticipants,
+    String? lastMessage,
+    String? lastMessageAt,
   }) {
     return MeetupModel(
       id: id ?? this.id,
@@ -165,6 +175,8 @@ class MeetupModel {
       commentCount: commentCount ?? this.commentCount,
       images: images ?? this.images,
       attendedParticipants: attendedParticipants ?? this.attendedParticipants,
+      lastMessage: lastMessage ?? this.lastMessage,
+      lastMessageAt: lastMessageAt ?? this.lastMessageAt,
     );
   }
 
