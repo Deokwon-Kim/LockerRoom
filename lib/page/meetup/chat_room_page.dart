@@ -22,6 +22,9 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:toastification/toastification.dart';
+import 'package:flutter_link_previewer/flutter_link_previewer.dart';
+import 'package:lockerroom/page/feed/fullscreen_image_viewer.dart';
+import 'package:lockerroom/page/meetup/chat_media_page.dart';
 
 class ChatRoomPage extends StatefulWidget {
   final String meetupId;
@@ -89,6 +92,9 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           if (mounted) {
             _serverMessages = messages.map(_convertMessage).toList();
             _updateDisplayMessages();
+
+            // 채팅방에 있는 동안 들어오는 메시지들은 모두 읽음 처리
+            context.read<ChatProvider>().markAsRead(widget.meetupId, _user.id);
           }
         });
     _loadParticipantInfos();
@@ -788,7 +794,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${widget.meetup.homeTeam} vs ${widget.meetup.awayTeam}',
+                          '${widget.meetup.awayTeam} vs ${widget.meetup.homeTeam}',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -842,339 +848,431 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          _buildAnnouncementBar(meetup, announcementAuthor),
-          Expanded(
-            child: Chat(
-              key: ValueKey(
-                _serverMessages.length.toString() +
-                    _serverMessages.map((m) => m.id).join() +
-                    _serverMessages.map((m) => m.metadata.toString()).join(),
-              ),
-              currentUserId: _user.id,
-              chatController: _chatController,
-              resolveUser: (id) => chatProvider.resolveUser(id),
-              onMessageSend: _handleSendPressed,
-              onAttachmentTap: _showAttachmentMenu,
-              onMessageLongPress:
-                  (context, message, {required index, required details}) =>
-                      _onMessageLongPress(message),
-              decoration: BoxDecoration(
-                color: selectedTeam?.color ?? WHITE,
-                image: selectedTeam?.logoPath != null
-                    ? DecorationImage(
-                        image: AssetImage(selectedTeam!.logoPath),
-                        alignment: const Alignment(0.0, -0.3),
-                        opacity: 0.2, // 투명도를 조절하여 메시지 가독성 확보
-                        fit: BoxFit.contain,
-                      )
-                    : null,
-              ),
-              theme: ChatTheme.light().copyWith(
-                colors: ChatColors.light().copyWith(
-                  primary: selectedTeam?.color ?? ORANGE_PRIMARY_500,
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.translucent,
+        child: Column(
+          children: [
+            _buildAnnouncementBar(meetup, announcementAuthor),
+            Expanded(
+              child: Chat(
+                key: ValueKey(
+                  _serverMessages.length.toString() +
+                      _serverMessages.map((m) => m.id).join() +
+                      _serverMessages.map((m) => m.metadata.toString()).join(),
                 ),
-              ),
-              builders: Builders(
-                chatMessageBuilder:
-                    (
-                      context,
-                      message,
-                      index,
-                      animation,
-                      child, {
-                      isRemoved,
-                      required isSentByMe,
-                      groupStatus,
-                    }) {
-                      if (!_messageKeys.containsKey(message.id)) {
-                        _messageKeys[message.id] = GlobalKey();
-                      }
+                currentUserId: _user.id,
+                chatController: _chatController,
+                resolveUser: (id) => chatProvider.resolveUser(id),
+                onMessageSend: _handleSendPressed,
+                onAttachmentTap: _showAttachmentMenu,
+                onMessageLongPress:
+                    (context, message, {required index, required details}) =>
+                        _onMessageLongPress(message),
+                decoration: BoxDecoration(
+                  color: selectedTeam?.color ?? WHITE,
+                  image: selectedTeam?.logoPath != null
+                      ? DecorationImage(
+                          image: AssetImage(selectedTeam!.logoPath),
+                          alignment: const Alignment(0.0, -0.3),
+                          opacity: 0.2, // 투명도를 조절하여 메시지 가독성 확보
+                          fit: BoxFit.contain,
+                        )
+                      : null,
+                ),
+                theme: ChatTheme.light().copyWith(
+                  colors: ChatColors.light().copyWith(
+                    primary: selectedTeam?.color ?? ORANGE_PRIMARY_500,
+                  ),
+                ),
+                builders: Builders(
+                  chatMessageBuilder:
+                      (
+                        context,
+                        message,
+                        index,
+                        animation,
+                        child, {
+                        isRemoved,
+                        required isSentByMe,
+                        groupStatus,
+                      }) {
+                        if (!_messageKeys.containsKey(message.id)) {
+                          _messageKeys[message.id] = GlobalKey();
+                        }
 
-                      final messageKey = _messageKeys[message.id];
+                        final messageKey = _messageKeys[message.id];
 
-                      final bool isSystem =
-                          message.metadata?['isSystem'] == true;
+                        final bool isSystem =
+                            message.metadata?['isSystem'] == true;
 
-                      if (isSystem) {
-                        return Center(
-                          child: Container(
-                            margin: EdgeInsets.symmetric(vertical: 10),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
+                        if (isSystem) {
+                          return Center(
+                            child: Container(
+                              margin: EdgeInsets.symmetric(vertical: 10),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                (message as TextMessage).text,
+                                style: TextStyle(fontSize: 12, color: BLACK),
+                              ),
                             ),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(10),
+                          );
+                        }
+                        bool showDateDivider = false;
+                        final messages = _chatController.messages;
+                        if (index == 0) {
+                          showDateDivider = true;
+                        } else if (index < messages.length) {
+                          final previousMessage = messages[index - 1];
+                          if (!_isSameDay(
+                            message.createdAt ?? DateTime.now(),
+                            previousMessage.createdAt ?? DateTime.now(),
+                          )) {
+                            showDateDivider = true;
+                          }
+                        }
+
+                        return FadeTransition(
+                          key: messageKey,
+                          opacity: animation,
+                          child: Dismissible(
+                            key: ValueKey('dismissible_${message.id}'),
+                            direction: DismissDirection.horizontal,
+                            confirmDismiss: (direction) async {
+                              setState(() {
+                                _replyMessage = message;
+                              });
+                              return false;
+                            },
+                            background: Container(
+                              alignment: Alignment.centerLeft,
+                              padding: const EdgeInsets.only(left: 20),
+                              child: const Icon(Icons.reply, color: WHITE),
                             ),
-                            child: Text(
-                              (message as TextMessage).text,
-                              style: TextStyle(fontSize: 12, color: BLACK),
+                            child: Column(
+                              children: [
+                                if (showDateDivider)
+                                  _buildDateDivider(
+                                    message.createdAt ?? DateTime.now(),
+                                  ),
+                                ChatMessage(
+                                  message: message,
+                                  index: index,
+                                  animation: animation,
+                                  isRemoved: isRemoved,
+                                  groupStatus: groupStatus,
+                                  verticalPadding: 12,
+                                  verticalGroupedPadding: 10,
+                                  leadingWidget: isSentByMe
+                                      ? _buildTimeWidget(message.createdAt)
+                                      : null,
+                                  trailingWidget: !isSentByMe
+                                      ? _buildTimeWidget(message.createdAt)
+                                      : null,
+                                  headerWidget:
+                                      (!isSentByMe &&
+                                          (groupStatus?.isFirst != false))
+                                      ? Padding(
+                                          padding: const EdgeInsets.only(
+                                            left: 12,
+                                            bottom: 0,
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Avatar(
+                                                userId: message.authorId,
+                                                size: 35,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Transform.translate(
+                                                offset: Offset(0, -5),
+                                                child: Username(
+                                                  userId: message.authorId,
+                                                  style: TextStyle(
+                                                    color: WHITE,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : null,
+                                  topWidget: _buildReplySource(
+                                    message,
+                                    isSentByMe,
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.only(
+                                      left: isSentByMe ? 5.0 : 40.0,
+                                      right: isSentByMe ? 10.0 : 5.0,
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 2,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isSentByMe
+                                            ? Color(0xFFFBE54D)
+                                            : WHITE,
+                                        borderRadius: BorderRadius.only(
+                                          topLeft: const Radius.circular(16),
+                                          topRight: const Radius.circular(16),
+                                          bottomLeft: Radius.circular(
+                                            isSentByMe ? 16 : 4,
+                                          ),
+                                          bottomRight: Radius.circular(
+                                            isSentByMe ? 4 : 16,
+                                          ),
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: BLACK.withOpacity(0.1),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: child,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         );
-                      }
-                      bool showDateDivider = false;
-                      final messages = _chatController.messages;
-                      if (index == 0) {
-                        showDateDivider = true;
-                      } else if (index < messages.length) {
-                        final previousMessage = messages[index - 1];
-                        if (!_isSameDay(
-                          message.createdAt ?? DateTime.now(),
-                          previousMessage.createdAt ?? DateTime.now(),
-                        )) {
-                          showDateDivider = true;
+                      },
+                  textMessageBuilder:
+                      (
+                        context,
+                        message,
+                        index, {
+                        required isSentByMe,
+                        groupStatus,
+                      }) {
+                        // 텍스트 메시지이지만 metadata에 투표 정보가 있으면 투표 위젯 렌더링
+                        if (message.metadata?['question'] != null) {
+                          final metadata = message.metadata!;
+                          return _buildPollPreview(
+                            messageId: message.id,
+                            question: metadata['question'] as String,
+                            options: List<String>.from(
+                              metadata['options'] ?? [],
+                            ),
+                            votes: Map<String, dynamic>.from(
+                              metadata['votes'] ?? {},
+                            ),
+                            deadLine: metadata['deadLine'] as Timestamp?,
+                            authorId: (message as dynamic).authorId,
+                            createdAt: (message as dynamic).createdAt,
+                          );
                         }
-                      }
 
-                      return FadeTransition(
-                        key: messageKey,
-                        opacity: animation,
-                        child: Dismissible(
-                          key: ValueKey('dismissible_${message.id}'),
-                          direction: DismissDirection.horizontal,
-                          confirmDismiss: (direction) async {
-                            setState(() {
-                              _replyMessage = message;
-                            });
-                            return false;
-                          },
-                          background: Container(
-                            alignment: Alignment.centerLeft,
-                            padding: const EdgeInsets.only(left: 20),
-                            child: const Icon(Icons.reply, color: WHITE),
-                          ),
-                          child: Column(
-                            children: [
-                              if (showDateDivider)
-                                _buildDateDivider(
-                                  message.createdAt ?? DateTime.now(),
-                                ),
-                              ChatMessage(
+                        final String? url = _extractUrl(message.text);
+                        final bool isOnlyUrl =
+                            url != null && message.text.trim() == url;
+
+                        return Column(
+                          crossAxisAlignment: isSentByMe
+                              ? CrossAxisAlignment.end
+                              : CrossAxisAlignment.start,
+                          children: [
+                            if (!isOnlyUrl)
+                              SimpleTextMessage(
                                 message: message,
                                 index: index,
-                                animation: animation,
-                                isRemoved: isRemoved,
-                                groupStatus: groupStatus,
-                                verticalPadding: 12,
-                                verticalGroupedPadding: 10,
-                                leadingWidget: isSentByMe
-                                    ? _buildTimeWidget(message.createdAt)
-                                    : null,
-                                trailingWidget: !isSentByMe
-                                    ? _buildTimeWidget(message.createdAt)
-                                    : null,
-                                headerWidget:
-                                    (!isSentByMe &&
-                                        (groupStatus?.isFirst != false))
-                                    ? Padding(
-                                        padding: const EdgeInsets.only(
-                                          left: 12,
-                                          bottom: 0,
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Avatar(
-                                              userId: message.authorId,
-                                              size: 35,
-                                            ),
-                                            SizedBox(width: 8),
-                                            Transform.translate(
-                                              offset: Offset(0, -5),
-                                              child: Username(
-                                                userId: message.authorId,
-                                                style: TextStyle(
-                                                  color: WHITE,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      )
-                                    : null,
-                                topWidget: _buildReplySource(
-                                  message,
-                                  isSentByMe,
+                                showTime: false,
+                                sentBackgroundColor: Colors.transparent,
+                                receivedBackgroundColor: Colors.transparent,
+                                sentTextStyle: const TextStyle(
+                                  color: BLACK,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                child: Padding(
-                                  padding: EdgeInsets.only(
-                                    left: isSentByMe ? 5.0 : 40.0,
-                                    right: isSentByMe ? 10.0 : 5.0,
-                                  ),
+                                receivedTextStyle: const TextStyle(
+                                  color: BLACK,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            if (url != null)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: isOnlyUrl ? 0 : 8,
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 2,
-                                      vertical: 2,
+                                    constraints: BoxConstraints(
+                                      maxWidth:
+                                          MediaQuery.of(context).size.width *
+                                          0.8,
+                                      maxHeight: 350,
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: isSentByMe
-                                          ? Color(0xFFFBE54D)
-                                          : WHITE,
-                                      borderRadius: BorderRadius.only(
-                                        topLeft: const Radius.circular(16),
-                                        topRight: const Radius.circular(16),
-                                        bottomLeft: Radius.circular(
-                                          isSentByMe ? 16 : 4,
-                                        ),
-                                        bottomRight: Radius.circular(
-                                          isSentByMe ? 4 : 16,
-                                        ),
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: BLACK.withOpacity(0.1),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
+                                    decoration: const BoxDecoration(
+                                      color: WHITE,
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Flexible(
+                                          child: SingleChildScrollView(
+                                            physics:
+                                                const NeverScrollableScrollPhysics(),
+                                            child: LinkPreview(
+                                              enableAnimation: true,
+                                              onLinkPreviewDataFetched:
+                                                  (data) {},
+                                              text: url,
+                                            ),
+                                          ),
                                         ),
                                       ],
                                     ),
-                                    child: child,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                textMessageBuilder:
-                    (
-                      context,
-                      message,
-                      index, {
-                      required isSentByMe,
-                      groupStatus,
-                    }) {
-                      // 텍스트 메시지이지만 metadata에 투표 정보가 있으면 투표 위젯 렌더링
-                      if (message.metadata?['question'] != null) {
-                        final metadata = message.metadata!;
-                        return _buildPollPreview(
-                          messageId: message.id,
-                          question: metadata['question'] as String,
-                          options: List<String>.from(metadata['options'] ?? []),
-                          votes: Map<String, dynamic>.from(
-                            metadata['votes'] ?? {},
-                          ),
-                          deadLine: metadata['deadLine'] as Timestamp?,
-                          authorId: (message as dynamic).authorId,
-                          createdAt: (message as dynamic).createdAt,
+                          ],
                         );
-                      }
-
-                      return SimpleTextMessage(
-                        message: message,
-                        index: index,
-                        showTime: false,
-                        sentBackgroundColor: Colors.transparent,
-                        receivedBackgroundColor: Colors.transparent,
-                        sentTextStyle: const TextStyle(
-                          color: BLACK,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        receivedTextStyle: const TextStyle(
-                          color: BLACK,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      );
-                    },
-                imageMessageBuilder:
-                    (
-                      context,
-                      message,
-                      index, {
-                      required isSentByMe,
-                      groupStatus,
-                    }) {
-                      final bool isLocal = message.metadata?['isLocal'] == true;
-                      final teamProvider = context.read<TeamProvider>();
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SizedBox(
-                            width: 200,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: isLocal
-                                  ? Image.file(
-                                      File(message.source),
-                                      fit: BoxFit.cover,
-                                      cacheWidth: 400,
-                                    )
-                                  : Image.network(
-                                      message.source,
-                                      fit: BoxFit.cover,
-                                      cacheWidth: 400,
-                                      loadingBuilder:
-                                          (context, child, loadingProgress) {
-                                            if (loadingProgress == null)
-                                              return child;
-                                            return Center(
-                                              child: CircularProgressIndicator(
-                                                color: teamProvider
-                                                    .selectedTeam
-                                                    ?.color,
-                                              ),
-                                            );
-                                          },
-                                    ),
-                            ),
-                          ),
-                          if (isLocal)
-                            Container(
-                              width: 200,
-                              height: 150,
-                              color: Colors.black26,
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
+                      },
+                  imageMessageBuilder:
+                      (
+                        context,
+                        message,
+                        index, {
+                        required isSentByMe,
+                        groupStatus,
+                      }) {
+                        final bool isLocal =
+                            message.metadata?['isLocal'] == true;
+                        final teamProvider = context.read<TeamProvider>();
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => FullscreenImageViewer(
+                                  imageUrls: [message.source],
+                                  initialIndex: 0,
                                 ),
                               ),
-                            ),
-                        ],
-                      );
-                    },
-                composerBuilder: (context) => Theme(
-                  data: Theme.of(context).copyWith(
-                    textSelectionTheme: TextSelectionThemeData(
-                      cursorColor: selectedTeam?.color ?? ORANGE_PRIMARY_500,
-                      selectionColor:
-                          (selectedTeam?.color ?? ORANGE_PRIMARY_500)
-                              .withOpacity(0.3),
-                      selectionHandleColor:
-                          selectedTeam?.color ?? ORANGE_PRIMARY_500,
+                            );
+                          },
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox(
+                                width: 200,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: isLocal
+                                      ? Image.file(
+                                          File(message.source),
+                                          fit: BoxFit.cover,
+                                          cacheWidth: 400,
+                                        )
+                                      : Image.network(
+                                          message.source,
+                                          fit: BoxFit.cover,
+                                          cacheWidth: 400,
+                                          loadingBuilder:
+                                              (
+                                                context,
+                                                child,
+                                                loadingProgress,
+                                              ) {
+                                                if (loadingProgress == null) {
+                                                  return child;
+                                                }
+                                                return Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        color: teamProvider
+                                                            .selectedTeam
+                                                            ?.color,
+                                                      ),
+                                                );
+                                              },
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                return Container(
+                                                  color: GRAYSCALE_LABEL_100,
+                                                  height: 200,
+                                                  child: const Icon(
+                                                    Icons.image_not_supported,
+                                                    color: GRAYSCALE_LABEL_400,
+                                                  ),
+                                                );
+                                              },
+                                        ),
+                                ),
+                              ),
+                              if (isLocal)
+                                Positioned.fill(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        color: WHITE,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                  composerBuilder: (context) => Theme(
+                    data: Theme.of(context).copyWith(
+                      textSelectionTheme: TextSelectionThemeData(
+                        cursorColor: selectedTeam?.color ?? ORANGE_PRIMARY_500,
+                        selectionColor:
+                            (selectedTeam?.color ?? ORANGE_PRIMARY_500)
+                                .withOpacity(0.3),
+                        selectionHandleColor:
+                            selectedTeam?.color ?? ORANGE_PRIMARY_500,
+                      ),
+                    ),
+                    child: Composer(
+                      textEditingController: _textController,
+                      hintText: '메시지를 입력하세요',
+                      backgroundColor: WHITE,
+                      attachmentIcon: const Icon(Icons.add, color: BLACK),
+                      sendIconColor: selectedTeam?.color ?? ORANGE_PRIMARY_500,
+                      topWidget: _editingMessage != null
+                          ? _buildEditPreview()
+                          : (_replyMessage != null
+                                ? _buildReplyPreview()
+                                : null),
                     ),
                   ),
-                  child: Composer(
-                    textEditingController: _textController,
-                    hintText: '메시지를 입력하세요',
-                    backgroundColor: WHITE,
-                    attachmentIcon: const Icon(Icons.add, color: BLACK),
-                    sendIconColor: selectedTeam?.color ?? ORANGE_PRIMARY_500,
-                    topWidget: _editingMessage != null
-                        ? _buildEditPreview()
-                        : (_replyMessage != null ? _buildReplyPreview() : null),
-                  ),
-                ),
-                emptyChatListBuilder: (context) => const EmptyChatList(
-                  text: '아직 메시지가 없습니다',
-                  textStyle: TextStyle(
-                    color: WHITE,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  emptyChatListBuilder: (context) => const EmptyChatList(
+                    text: '아직 메시지가 없습니다',
+                    textStyle: TextStyle(
+                      color: WHITE,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1253,6 +1351,15 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                 _showDeleteConfirmDialog(message.id);
               },
               child: const Text('삭제'),
+            ),
+          ] else if (widget.meetup.userId == _user.id) ...[
+            CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              onPressed: () {
+                Navigator.pop(context);
+                _showDeleteConfirmDialog(message.id);
+              },
+              child: const Text('삭제 (방장 권한)'),
             ),
           ],
         ],
@@ -1441,23 +1548,55 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   // 사진 가로 스크롤 위젯
   Widget _buildPictureGallery() {
-    final allImages = [
+    final galleryImages = [
       ..._serverMessages,
       ..._pendingMessages,
-    ].whereType<ImageMessage>().take(5).toList();
+    ].whereType<ImageMessage>().toList();
 
-    if (allImages.isEmpty) return const SizedBox.shrink();
+    if (galleryImages.isEmpty) return const SizedBox.shrink();
+
+    final previewImages = galleryImages.take(5).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Text(
-            '사진 모아보기',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: GRAYSCALE_LABEL_500,
+        InkWell(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ChatMediaPage(images: galleryImages),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '사진 모아보기',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: GRAYSCALE_LABEL_500,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      '${galleryImages.length}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: GRAYSCALE_LABEL_400,
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 16,
+                      color: GRAYSCALE_LABEL_400,
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
@@ -1466,37 +1605,55 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             scrollDirection: Axis.horizontal,
-            itemCount: allImages.length,
+            itemCount: previewImages.length,
             itemBuilder: (context, index) {
-              final msg = allImages[index];
+              final msg = previewImages[index];
               final bool isLocal =
                   msg.metadata?['isLocal'] == true ||
                   msg.source.startsWith('/');
 
-              return Padding(
-                padding: const EdgeInsets.all(4),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: isLocal
-                      ? Image.file(
-                          File(msg.source),
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        )
-                      : Image.network(
-                          msg.source,
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                width: 100,
-                                height: 100,
-                                color: Colors.grey[200],
-                                child: const Icon(Icons.broken_image, size: 20),
-                              ),
-                        ),
+              return GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => FullscreenImageViewer(
+                        imageUrls: galleryImages.map((m) => m.source).toList(),
+                        initialIndex: index,
+                      ),
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Hero(
+                      tag: 'chat_media_preview_${msg.id}',
+                      child: isLocal
+                          ? Image.file(
+                              File(msg.source),
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.network(
+                              msg.source,
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    width: 100,
+                                    height: 100,
+                                    color: Colors.grey[200],
+                                    child: const Icon(
+                                      Icons.broken_image,
+                                      size: 20,
+                                    ),
+                                  ),
+                            ),
+                    ),
+                  ),
                 ),
               );
             },
@@ -1996,5 +2153,11 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     } else {
       return '곧 마감';
     }
+  }
+
+  String? _extractUrl(String text) {
+    final urlPattern = RegExp(r'(https?://[^\s,]+)', caseSensitive: false);
+    final match = urlPattern.firstMatch(text);
+    return match?.group(0);
   }
 }
