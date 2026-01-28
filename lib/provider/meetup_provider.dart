@@ -333,4 +333,16 @@ class MeetupProvider extends ChangeNotifier {
       'announcementCreatedAt': FieldValue.delete(),
     });
   }
+
+  Stream<List<MeetupModel>> getJoinedMeetupStream(String userId) {
+    return _firestore
+        .collection('meetups')
+        .where('participants', arrayContains: userId)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => MeetupModel.fromFirestore(doc))
+              .toList(),
+        );
+  }
 }
