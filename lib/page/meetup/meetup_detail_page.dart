@@ -1046,7 +1046,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                           },
                         ),
                         SizedBox(height: 10),
-                        if (!isMyMeetup)
+                        if (!isMyMeetup || !isParticipating)
                           GestureDetector(
                             onTap: meetup.isFull
                                 ? null
