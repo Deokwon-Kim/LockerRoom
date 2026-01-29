@@ -200,7 +200,7 @@ class _PollDetailPageState extends State<PollDetailPage> {
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             Text(
-              '종료까지',
+              isExpired || _isClosed ? '' : '종료까지',
               style: TextStyle(
                 color: GRAYSCALE_LABEL_700,
                 fontWeight: FontWeight.bold,
@@ -222,7 +222,7 @@ class _PollDetailPageState extends State<PollDetailPage> {
             ),
             SizedBox(width: 4),
             Text(
-              '$totalVotes명 참여 중',
+              isExpired || _isClosed ? '$totalVotes명 참여' : '총$totalVotes명 참여 중',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: GRAYSCALE_LABEL_700,
