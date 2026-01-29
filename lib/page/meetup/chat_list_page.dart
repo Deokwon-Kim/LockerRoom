@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/page/meetup/chat_room_page.dart';
@@ -9,6 +10,7 @@ import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:lockerroom/page/alert/confirm_diallog.dart';
 
 class ChatListPage extends StatelessWidget {
   const ChatListPage({super.key});
@@ -131,98 +133,131 @@ class ChatListItem extends StatelessWidget {
                 )
                 .length;
 
-            return ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 8,
-              ),
-              onTap: () {
-                context.read<ChatProvider>().markAsRead(
-                  meetup.id,
-                  currentUserId,
-                );
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChatRoomPage(
-                      meetupId: meetup.id,
-                      meetupTitle: meetup.title,
-                      meetup: meetup,
-                    ),
-                  ),
-                );
-              },
-              leading: CircleAvatar(
-                radius: 28,
-                backgroundColor: GRAYSCALE_LABEL_100,
-                backgroundImage: meetup.images.isNotEmpty
-                    ? NetworkImage(meetup.images[0])
-                    : null,
-                child: meetup.images.isEmpty
-                    ? const Icon(Icons.groups, color: GRAYSCALE_LABEL_400)
-                    : null,
-              ),
-              title: Row(
+            return Slidable(
+              key: ValueKey(context),
+              endActionPane: ActionPane(
+                motion: ScrollMotion(),
                 children: [
-                  Expanded(
-                    child: Text(
-                      meetup.title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  SlidableAction(
+                    onPressed: (context) {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return ConfirmationDialog(
+                            title: '채팅방 나가기',
+                            content:
+                                '${meetup.title} 채팅방을 나가시겠습니까?\n채팅방에서 나가도 대화 내용은 유지됩니다.',
+                            confirmText: '나가기',
+                            confirmColor: Colors.red,
+                            onConfirm: () async {
+                              await context.read<MeetupProvider>().leaveMeetup(
+                                meetup.id,
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    icon: Icons.exit_to_app,
+                    label: '나가기',
                   ),
-                  if (meetup.lastMessageAt != null)
-                    Text(
-                      _formatChatTime(meetup.lastMessageAt),
-                      style: const TextStyle(
-                        color: GRAYSCALE_LABEL_400,
-                        fontSize: 12,
-                      ),
-                    ),
                 ],
               ),
-              subtitle: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      meetup.lastMessage ?? '대화 내용이 없습니다.',
-                      style: TextStyle(
-                        color: GRAYSCALE_LABEL_600,
-                        fontSize: 13,
-                        fontWeight: unreadCount > 0
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
+                onTap: () {
+                  context.read<ChatProvider>().markAsRead(
+                    meetup.id,
+                    currentUserId,
+                  );
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChatRoomPage(
+                        meetupId: meetup.id,
+                        meetupTitle: meetup.title,
+                        meetup: meetup,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  if (unreadCount > 0)
-                    Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                  );
+                },
+                leading: CircleAvatar(
+                  radius: 28,
+                  backgroundColor: GRAYSCALE_LABEL_100,
+                  backgroundImage: meetup.images.isNotEmpty
+                      ? NetworkImage(meetup.images[0])
+                      : null,
+                  child: meetup.images.isEmpty
+                      ? const Icon(Icons.groups, color: GRAYSCALE_LABEL_400)
+                      : null,
+                ),
+                title: Row(
+                  children: [
+                    Expanded(
                       child: Text(
-                        unreadCount > 99 ? '99+' : '$unreadCount',
+                        meetup.title,
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
                           fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (meetup.lastMessageAt != null)
+                      Text(
+                        _formatChatTime(meetup.lastMessageAt),
+                        style: const TextStyle(
+                          color: GRAYSCALE_LABEL_400,
+                          fontSize: 12,
                         ),
                       ),
+                  ],
+                ),
+                subtitle: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        meetup.lastMessage ?? '대화 내용이 없습니다.',
+                        style: TextStyle(
+                          color: GRAYSCALE_LABEL_600,
+                          fontSize: 13,
+                          fontWeight: unreadCount > 0
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                ],
+                    if (unreadCount > 0)
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             );
           },
