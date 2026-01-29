@@ -770,6 +770,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           widget.meetupTitle,
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
+        centerTitle: true,
         backgroundColor: selectedTeam?.color,
         foregroundColor: WHITE,
         elevation: 0.5,
@@ -784,34 +785,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      top: 80,
-                      left: 20,
-                      right: 20,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${widget.meetup.awayTeam} vs ${widget.meetup.homeTeam}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: GRAYSCALE_LABEL_500,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          widget.meetupTitle,
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildDrawerHeader(meetup),
                   _buildPictureGallery(),
                   Divider(height: 1, color: GRAYSCALE_LABEL_300),
 
@@ -1487,6 +1461,130 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDrawerHeader(MeetupModel meetup) {
+    return Stack(
+      children: [
+        // 배경 이미지
+        meetup.images.isNotEmpty
+            ? SizedBox(
+                width: double.infinity,
+                height: 250,
+                child: Image.network(meetup.images[0], fit: BoxFit.cover),
+              )
+            : Container(
+                width: double.infinity,
+                height: 250,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [GRAYSCALE_LABEL_400, GRAYSCALE_LABEL_300],
+                  ),
+                ),
+                child: Icon(
+                  Icons.group_sharp,
+                  color: WHITE.withOpacity(0.5),
+                  size: 80,
+                ),
+              ),
+
+        // 그라데이션 오버레이 (텍스트 가독성 확보)
+        Container(
+          height: 250,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withOpacity(0.4),
+                Colors.transparent,
+                Colors.transparent,
+                Colors.black.withOpacity(0.7),
+              ],
+              stops: const [0.0, 0.3, 0.6, 1.0],
+            ),
+          ),
+        ),
+
+        // 모임 정보 텍스트 (하단 배치)
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${meetup.awayTeam} vs ${meetup.homeTeam}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: WHITE.withOpacity(0.9),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.meetupTitle,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: WHITE,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    StreamBuilder<bool>(
+                      stream: context
+                          .read<MeetupProvider>()
+                          .getMuteStatusStream(widget.meetupId),
+                      builder: (context, snapshot) {
+                        final isMuted = snapshot.data ?? false;
+                        return IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Icon(
+                            isMuted
+                                ? CupertinoIcons.bell_slash_fill
+                                : CupertinoIcons.bell_fill,
+                            color: WHITE.withOpacity(0.8),
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            context.read<MeetupProvider>().toggleMeetupMute(
+                              widget.meetupId,
+                              !isMuted,
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // 닫기 버튼 또는 뒤로가기 버튼 대용 (상단 배치)
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 10,
+          right: 10,
+          child: IconButton(
+            icon: const Icon(CupertinoIcons.xmark, color: WHITE),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+      ],
     );
   }
 
