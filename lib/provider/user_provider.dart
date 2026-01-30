@@ -849,4 +849,29 @@ class UserProvider extends ChangeNotifier {
       print('이름 변경 실패');
     }
   }
+
+  // 글로벌 알림 설정 업데이트
+  Future<void> updateNotificationSetting(bool enabled) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      await _firestore.collection('users').doc(uid).update({
+        'isNotificationsEnabled': enabled,
+      });
+      notifyListeners();
+    } catch (e) {
+      debugPrint('알림 설정 업데이트 에러: $e');
+    }
+  }
+
+  // 글로벌 알림 설정 스트림
+  Stream<bool> get notificationSettingStream {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return Stream.value(true);
+    return _firestore.collection('users').doc(uid).snapshots().map((doc) {
+      if (!doc.exists) return true;
+      return doc.data()?['isNotificationsEnabled'] ?? true;
+    });
+  }
 }
