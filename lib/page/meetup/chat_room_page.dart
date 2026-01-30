@@ -14,6 +14,8 @@ import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/user_model.dart';
 
 import 'package:lockerroom/page/meetup/chat_info_page.dart';
+import 'package:lockerroom/page/meetup/chat_search_page.dart';
+import 'package:lockerroom/page/meetup/custom_link_preview.dart';
 import 'package:lockerroom/page/meetup/poll_detail_page.dart';
 import 'package:lockerroom/provider/chat_provider.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
@@ -23,7 +25,6 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 
-import 'package:flutter_link_previewer/flutter_link_previewer.dart';
 import 'package:lockerroom/page/feed/fullscreen_image_viewer.dart';
 
 class ChatRoomPage extends StatefulWidget {
@@ -791,7 +792,20 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         actions: [
           Row(
             children: [
-              IconButton(onPressed: () {}, icon: Icon(CupertinoIcons.search)),
+              IconButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChatSearchPage(
+                        messages: [..._serverMessages, ..._pendingMessages],
+                        participants: _participantsInfos,
+                      ),
+                    ),
+                  );
+                },
+                icon: Icon(CupertinoIcons.search),
+              ),
               SizedBox(width: 10),
               IconButton(
                 onPressed: () {
@@ -1067,44 +1081,13 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                                 ),
                               ),
                             if (url != null)
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  top: isOnlyUrl ? 0 : 8,
+                              if (url.isNotEmpty)
+                                CustomLinkPreview(
+                                  text: url,
+                                  meetupId: widget.meetupId,
+                                  messageId: message.id,
+                                  metadata: message.metadata,
                                 ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    constraints: BoxConstraints(
-                                      maxWidth:
-                                          MediaQuery.of(context).size.width *
-                                          0.8,
-                                      maxHeight: 350,
-                                    ),
-                                    decoration: const BoxDecoration(
-                                      color: WHITE,
-                                    ),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Flexible(
-                                          child: SingleChildScrollView(
-                                            physics:
-                                                const NeverScrollableScrollPhysics(),
-                                            child: LinkPreview(
-                                              enableAnimation: true,
-                                              onLinkPreviewDataFetched:
-                                                  (data) {},
-                                              text: url,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
                           ],
                         );
                       },

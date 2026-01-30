@@ -179,6 +179,19 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> updateMessageMetadata(
+    String meetupId,
+    String messageId,
+    Map<String, dynamic> metadata,
+  ) async {
+    await _firestore
+        .collection('meetups')
+        .doc(meetupId)
+        .collection('messages')
+        .doc(messageId)
+        .update({'metadata': metadata});
+  }
+
   // 메시지 수정
   Future<void> updateMessage(
     String meetupId,
