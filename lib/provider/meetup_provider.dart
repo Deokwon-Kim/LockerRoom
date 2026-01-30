@@ -345,4 +345,31 @@ class MeetupProvider extends ChangeNotifier {
               .toList(),
         );
   }
+
+  // 알림 음소거 토글
+  Future<void> toggleMeetupMute(String meetupId, bool isMuted) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return;
+
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'mutedMeetups.$meetupId': isMuted,
+      });
+    } catch (e) {
+      print('알림 설정 변경 실패: $e');
+    }
+  }
+
+  // 특정 모임의 음소거 상태 스트림
+  Stream<bool> getMuteStatusStream(String meetupId) {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return Stream.value(false);
+
+    return _firestore.collection('users').doc(userId).snapshots().map((doc) {
+      if (!doc.exists) return false;
+      final data = doc.data() as Map<String, dynamic>;
+      final mutedMeetups = data['mutedMeetups'] as Map<String, dynamic>? ?? {};
+      return mutedMeetups[meetupId] == true;
+    });
+  }
 }
