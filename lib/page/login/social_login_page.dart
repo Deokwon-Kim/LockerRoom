@@ -160,7 +160,7 @@ class SocialLoginPage extends StatelessWidget {
                     width: double.infinity,
                     height: 58,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: GRAYSCALE_LABEL_200),
                     ),
@@ -171,11 +171,14 @@ class SocialLoginPage extends StatelessWidget {
                           'assets/images/logo/google.png',
                           height: 20,
                         ),
-                        Text(
-                          '구글로 시작하기',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
+                        Transform.translate(
+                          offset: Offset(-5, 0),
+                          child: Text(
+                            '구글로 시작하기',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -233,10 +236,28 @@ class SocialLoginPage extends StatelessWidget {
                       }
                     }
                   },
-                  child: Image.asset(
-                    'assets/images/kakao_login_large_wide.png',
-                    height: 58,
+                  child: Container(
                     width: double.infinity,
+                    height: 58,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Color(0xffFDDC3F),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset('assets/images/logo/kakao.png', height: 30),
+                        Text(
+                          '카카오로 시작하기',
+                          style: TextStyle(
+                            color: Color(0xff3A2929),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 SizedBox(height: 30),
