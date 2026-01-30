@@ -1,13 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_chat_core/flutter_chat_core.dart';
+import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/feed/fullscreen_image_viewer.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 
 class ChatMediaPage extends StatelessWidget {
-  final List<ImageMessage> images;
+  final List<types.ImageMessage> images;
   final String title;
 
   const ChatMediaPage({
@@ -49,15 +49,14 @@ class ChatMediaPage extends StatelessWidget {
               itemBuilder: (context, index) {
                 final msg = images[index];
                 final bool isLocal =
-                    msg.metadata?['isLocal'] == true ||
-                    msg.source.startsWith('/');
+                    msg.metadata?['isLocal'] == true || msg.uri.startsWith('/');
 
                 return GestureDetector(
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => FullscreenImageViewer(
-                          imageUrls: images.map((m) => m.source).toList(),
+                          imageUrls: images.map((m) => m.uri).toList(),
                           initialIndex: index,
                         ),
                       ),
@@ -69,12 +68,12 @@ class ChatMediaPage extends StatelessWidget {
                       decoration: BoxDecoration(color: GRAYSCALE_LABEL_100),
                       child: isLocal
                           ? Image.file(
-                              File(msg.source),
+                              File(msg.uri),
                               fit: BoxFit.cover,
                               cacheWidth: 300,
                             )
                           : Image.network(
-                              msg.source,
+                              msg.uri,
                               fit: BoxFit.cover,
                               cacheWidth: 300,
                               loadingBuilder:
