@@ -2,9 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
+import 'package:lockerroom/provider/quiz_ranking_provider.dart';
+import 'package:lockerroom/widgets/team_battle_dialog.dart';
+import 'package:provider/provider.dart';
 
-class QuizStartPage extends StatelessWidget {
+class QuizStartPage extends StatefulWidget {
   const QuizStartPage({super.key});
+
+  @override
+  State<QuizStartPage> createState() => _QuizStartPageState();
+}
+
+class _QuizStartPageState extends State<QuizStartPage> {
+  @override
+  void initState() {
+    super.initState();
+    // 랭킹 데이터 사전 로드 (다이얼로그 표시용)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<QuizRankingProvider>().fetchRankings();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +31,7 @@ class QuizStartPage extends StatelessWidget {
         backgroundColor: BACKGROUND_COLOR,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: Text(
+        title: const Text(
           '야구 덕력 테스트',
           style: TextStyle(
             fontFamily: 'kbo',
@@ -22,9 +39,8 @@ class QuizStartPage extends StatelessWidget {
             fontSize: 18,
           ),
         ),
-
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new),
+          icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -32,7 +48,7 @@ class QuizStartPage extends StatelessWidget {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => BottomTabBar(initialIndex: 0),
+                  builder: (context) => const BottomTabBar(initialIndex: 0),
                 ),
                 (route) => false,
               );
@@ -47,9 +63,8 @@ class QuizStartPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 헤더 섹션
-            _buildHeader(context), // 랭킹 배너 (별도 섹션)
-            // _buildRankingBanner(context),
-            SizedBox(height: 24),
+            _buildHeader(context),
+            const SizedBox(height: 24),
 
             // 카테고리 리스트
             ..._buildCategoryList(context),
@@ -59,73 +74,6 @@ class QuizStartPage extends StatelessWidget {
     );
   }
 
-  // // 랭킹 배너 위젯
-  // Widget _buildRankingBanner(BuildContext context) {
-  //   return GestureDetector(
-  //     onTap: () {
-  //       Navigator.push(
-  //         context,
-  //         MaterialPageRoute(builder: (context) => QuizRankingPage()),
-  //       );
-  //     },
-  //     child: Container(
-  //       padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-  //       decoration: BoxDecoration(
-  //         color: Colors.amber.shade50,
-  //         borderRadius: BorderRadius.circular(16),
-  //         border: Border.all(color: Colors.amber.shade200),
-  //         boxShadow: [
-  //           BoxShadow(
-  //             color: Colors.amber.withOpacity(0.1),
-  //             blurRadius: 8,
-  //             offset: Offset(0, 4),
-  //           ),
-  //         ],
-  //       ),
-  //       child: Row(
-  //         children: [
-  //           Container(
-  //             padding: EdgeInsets.all(10),
-  //             decoration: BoxDecoration(
-  //               color: Colors.white,
-  //               shape: BoxShape.circle,
-  //               border: Border.all(color: Colors.amber.shade100),
-  //             ),
-  //             child: Text('🏆', style: TextStyle(fontSize: 24)),
-  //           ),
-  //           SizedBox(width: 16),
-  //           Expanded(
-  //             child: Column(
-  //               crossAxisAlignment: CrossAxisAlignment.start,
-  //               children: [
-  //                 Text(
-  //                   '명예의 전당',
-  //                   style: TextStyle(
-  //                     fontWeight: FontWeight.bold,
-  //                     fontSize: 18,
-  //                     color: Colors.black87,
-  //                     fontFamily: 'kbo',
-  //                   ),
-  //                 ),
-  //                 SizedBox(height: 2),
-  //                 Text(
-  //                   '전체 랭킹과 내 순위 확인하기',
-  //                   style: TextStyle(fontSize: 13, color: Colors.black54),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //           Icon(
-  //             Icons.arrow_forward_ios,
-  //             size: 16,
-  //             color: Colors.grey.shade400,
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
   // 헤더 위젯
   Widget _buildHeader(BuildContext context) {
     return Column(
@@ -133,7 +81,7 @@ class QuizStartPage extends StatelessWidget {
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: const [
             Text(
               '야구 없인 못 살아?',
               style: TextStyle(
@@ -155,8 +103,8 @@ class QuizStartPage extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: 12),
-        Text(
+        const SizedBox(height: 12),
+        const Text(
           '오늘도 야구 덕력을 증명해보세요 ⚾',
           style: TextStyle(
             fontSize: 15,
@@ -181,11 +129,20 @@ class QuizStartPage extends StatelessWidget {
           gradientColors: category['colors'] as List<Color>,
           icon: category['icon'] as IconData?,
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    QuizPlayPage(category: category['category'] as String),
+            // 다이얼로그 띄우기 -> 도전 -> 페이지 이동
+            showDialog(
+              context: context,
+              builder: (context) => TeamBattleDialog(
+                onStart: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => QuizPlayPage(
+                        category: category['category'] as String,
+                      ),
+                    ),
+                  );
+                },
               ),
             );
           },
@@ -259,7 +216,7 @@ class _QuizCategoryCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: gradientColors,
@@ -271,7 +228,7 @@ class _QuizCategoryCard extends StatelessWidget {
             BoxShadow(
               color: gradientColors[0].withOpacity(0.3),
               blurRadius: 8,
-              offset: Offset(0, 4),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -280,21 +237,21 @@ class _QuizCategoryCard extends StatelessWidget {
             // 아이콘
             if (icon != null) ...[
               Container(
-                padding: EdgeInsets.all(12),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: WHITE.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: WHITE, size: 28),
               ),
-              SizedBox(width: 16),
+              const SizedBox(width: 16),
             ],
 
             // 제목
             Expanded(
               child: Text(
                 title,
-                style: TextStyle(
+                style: const TextStyle(
                   color: WHITE,
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
