@@ -144,7 +144,7 @@ class _QuizResultPageState extends State<QuizResultPage>
                         SizedBox(height: 24),
                         _buildStatsCard(),
                         SizedBox(height: 24),
-                        const QuizRankingWidget(),
+                        QuizRankingWidget(gainedScore: widget.result.score),
                         SizedBox(height: 24),
                         _buildProgressCard(),
                         if (_isCapturing) _buildBranding(),
