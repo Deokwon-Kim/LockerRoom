@@ -264,8 +264,8 @@ class QuizProvider extends ChangeNotifier {
           currentIds.addAll(questionIds);
 
           // 너무 많으면 오래된 것부터 삭제
-          if (currentIds.length > 40) {
-            currentIds = currentIds.sublist(currentIds.length - 40);
+          if (currentIds.length > 86) {
+            currentIds = currentIds.sublist(currentIds.length - 86);
           }
 
           transaction.set(docRef, {'ids': currentIds});
