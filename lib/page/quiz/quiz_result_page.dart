@@ -10,9 +10,11 @@ import 'package:lockerroom/model/quiz_result_model.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
 import 'package:lockerroom/main.dart';
 import 'package:lockerroom/provider/badge_provider.dart';
+import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/widgets/quiz_ranking_widget.dart';
+import 'package:lockerroom/widgets/team_battle_dialog.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
@@ -384,15 +386,7 @@ class _QuizResultPageState extends State<QuizResultPage>
             SizedBox(width: 12),
             Expanded(
               child: GestureDetector(
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          QuizPlayPage(category: widget.result.category),
-                    ),
-                  );
-                },
+                onTap: _handleReplay,
                 child: Container(
                   alignment: Alignment.center,
                   width: double.infinity,
@@ -416,6 +410,52 @@ class _QuizResultPageState extends State<QuizResultPage>
           ],
         ),
       ],
+    );
+  }
+
+  // 퀴즈 다시하기 처리 (팀 배틀 조건부 노출)
+  void _handleReplay() {
+    final rankingProvider = context.read<QuizRankingProvider>();
+    final teamProvider = context.read<TeamProvider>();
+    final myTeam = teamProvider.selectedTeam;
+
+    if (myTeam != null) {
+      try {
+        // 내 팀 랭킹 찾기
+        final myTeamRanking = rankingProvider.teamRankings.firstWhere(
+          (t) => t.teamName == myTeam.name || t.teamName == myTeam.symplename,
+        );
+
+        // 바로 위 순위 팀 찾기
+        final myIndex = rankingProvider.teamRankings.indexOf(myTeamRanking);
+        if (myIndex > 0) {
+          final rivalTeamRanking = rankingProvider.teamRankings[myIndex - 1];
+          final scoreDiff =
+              rivalTeamRanking.totalScore - myTeamRanking.totalScore;
+
+          // 차이가 1점 ~ 100점 사이면 배틀 다이얼로그 표시
+          if (scoreDiff >= 1 && scoreDiff <= 100) {
+            showDialog(
+              context: context,
+              builder: (context) => TeamBattleDialog(onStart: _navigateToQuiz),
+            );
+            return;
+          }
+        }
+      } catch (e) {
+        debugPrint('Replay team battle check failed: $e');
+      }
+    }
+
+    _navigateToQuiz();
+  }
+
+  void _navigateToQuiz() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QuizPlayPage(category: widget.result.category),
+      ),
     );
   }
 
