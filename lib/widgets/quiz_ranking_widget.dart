@@ -6,6 +6,7 @@ import 'package:lockerroom/model/ranking_user_model.dart';
 import 'package:lockerroom/page/quiz/quiz_ranking_page.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/widgets/rank_overtake_dialog.dart';
 import 'package:provider/provider.dart';
 
 class QuizRankingWidget extends StatefulWidget {
@@ -205,6 +206,14 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
   }
 
   void _startAnimation(int gainedScore) {
+    // 애니메이션 전 랭커 정보 저장 (내 정보 기준)
+    final oldUserIndex = _userItems.indexWhere((item) => item.isMe);
+    final oldTeamIndex = _teamItems.indexWhere((item) => item.isMe);
+
+    // 랭크 계산을 위해 이전 랭크 저장
+    final oldUserRank = oldUserIndex != -1 ? _userItems[oldUserIndex].rank : 0;
+    final oldTeamRank = oldTeamIndex != -1 ? _teamItems[oldTeamIndex].rank : 0;
+
     setState(() {
       _isAnimationStarted = true;
 
@@ -223,6 +232,61 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
         }
       }
       _teamItems.sort((a, b) => b.score.compareTo(a.score));
+    });
+
+    // 애니메이션 후 랭커 정보 확인
+    final newUserIndex = _userItems.indexWhere((item) => item.isMe);
+    final newTeamIndex = _teamItems.indexWhere((item) => item.isMe);
+
+    // 개인 순위 역전 체크
+    if (oldUserIndex != -1 &&
+        newUserIndex != -1 &&
+        newUserIndex < oldUserIndex) {
+      final myUser = _userItems[newUserIndex];
+      _showCelebration(
+        targetName: myUser.name,
+        oldRank: oldUserRank,
+        newRank: _userTopRank + newUserIndex,
+        isTeam: false,
+      );
+    }
+
+    // 팀 순위 역전 체크 (개인 순위와 별개로 체크하도록 else 제거)
+    if (oldTeamIndex != -1 &&
+        newTeamIndex != -1 &&
+        newTeamIndex < oldTeamIndex) {
+      final myTeam = _teamItems[newTeamIndex];
+      _showCelebration(
+        targetName: myTeam.name,
+        oldRank: oldTeamRank,
+        newRank: _teamTopRank + newTeamIndex,
+        isTeam: true,
+        logoPath: myTeam.profileUrl,
+      );
+    }
+  }
+
+  void _showCelebration({
+    required String targetName,
+    required int oldRank,
+    required int newRank,
+    required bool isTeam,
+    String? logoPath,
+  }) {
+    // 애니메이션이 어느 정도 진행된 후 다이얼로그 노출
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => RankOvertakeDialog(
+            targetName: targetName,
+            oldRank: oldRank,
+            newRank: newRank,
+            isTeam: isTeam,
+            logoPath: logoPath,
+          ),
+        );
+      }
     });
   }
 
@@ -470,6 +534,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
             _buildRankingRow(
               icon: Icons.groups,
               iconColor: teamColor,
+              logoPath: myTeam?.logoPath, // 팀 로고 추가
               label: myTeam != null ? '${myTeam.name} 순위' : '팀 순위',
               rank: myTeamRanking?.rank,
               score: myTeamRanking?.totalScore,
@@ -506,17 +571,24 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
     required int? rank,
     required int? score,
     required String emptyText,
+    String? logoPath,
   }) {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: iconColor, size: 20),
-        ),
+        logoPath != null
+            ? SizedBox(
+                width: 40,
+                height: 40,
+                child: Image.asset(logoPath, fit: BoxFit.contain),
+              )
+            : Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 24),
+              ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
