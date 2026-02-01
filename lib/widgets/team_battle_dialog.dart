@@ -5,10 +5,64 @@ import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 
-class TeamBattleDialog extends StatelessWidget {
+class TeamBattleDialog extends StatefulWidget {
   final VoidCallback onStart;
 
   const TeamBattleDialog({super.key, required this.onStart});
+
+  @override
+  State<TeamBattleDialog> createState() => _TeamBattleDialogState();
+}
+
+class _TeamBattleDialogState extends State<TeamBattleDialog>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _myTeamSlideAnimation;
+  late Animation<Offset> _rivalTeamSlideAnimation;
+  late Animation<double> _vsScaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+
+    // 내 팀은 왼쪽에서 (700ms)
+    _myTeamSlideAnimation =
+        Tween<Offset>(begin: const Offset(-1.5, 0.0), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
+          ),
+        );
+
+    // 라이벌 팀은 오른쪽에서 (700ms)
+    _rivalTeamSlideAnimation =
+        Tween<Offset>(begin: const Offset(1.5, 0.0), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
+          ),
+        );
+
+    // VS 텍스트는 팀들이 부딪히기 직전/직후에 팡! (600ms~1000ms)
+    _vsScaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.5, 1.0, curve: Curves.elasticOut),
+      ),
+    );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,15 +95,13 @@ class TeamBattleDialog extends StatelessWidget {
             final myTeam = teamProvider.selectedTeam;
 
             if (myTeam == null) {
-              // 팀 선택이 안되어 있으면 다이얼로그 닫고 바로 시작
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 Navigator.pop(context);
-                onStart();
+                widget.onStart();
               });
               return const SizedBox.shrink();
             }
 
-            // 내 팀 랭킹 정보 찾기
             RankingTeamModel? myTeamRanking;
             try {
               myTeamRanking = provider.teamRankings.firstWhere(
@@ -60,37 +112,32 @@ class TeamBattleDialog extends StatelessWidget {
             } catch (_) {}
 
             if (myTeamRanking == null) {
-              // 랭킹 정보 없으면 바로 시작
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 Navigator.pop(context);
-                onStart();
+                widget.onStart();
               });
               return const SizedBox.shrink();
             }
 
-            // 라이벌 팀 찾기 (바로 위 순위)
             RankingTeamModel? rivalTeamRanking;
-            bool isDefending = false; // 1위라서 방어전인지 여부
+            bool isDefending = false;
 
             if (myTeamRanking.rank == 1) {
-              // 1위인 경우 2위를 라이벌로
               if (provider.teamRankings.length > 1) {
                 rivalTeamRanking = provider.teamRankings[1];
                 isDefending = true;
               }
             } else {
-              // 그 외엔 바로 위 순위가 라이벌
               final myIndex = provider.teamRankings.indexOf(myTeamRanking);
               if (myIndex > 0) {
                 rivalTeamRanking = provider.teamRankings[myIndex - 1];
               }
             }
 
-            // 라이벌 정보가 없으면 (팀이 하나뿐?)
             if (rivalTeamRanking == null) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 Navigator.pop(context);
-                onStart();
+                widget.onStart();
               });
               return const SizedBox.shrink();
             }
@@ -99,33 +146,24 @@ class TeamBattleDialog extends StatelessWidget {
               rivalTeamRanking.teamName,
             );
 
-            // 메시지 구성
             int scoreDiff =
                 (myTeamRanking.totalScore - rivalTeamRanking.totalScore).abs();
 
             if (scoreDiff > 100) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 Navigator.pop(context);
-                onStart();
+                widget.onStart();
               });
               return const SizedBox.shrink();
             }
 
-            // 역전/방어 가능 점수 (퀴즈 1회 만점 100점 가정)
-            // 1위인 경우: "2위와 X점 차이! 격차를 벌리세요!"
-            // 추격자인 경우: "X점만 더 얻으면 역전 가능!"
-
-            String mainTitle = isDefending ? '1위 수성 배틀!' : '순위 역전 찬스!';
+            String mainTitle = isDefending ? '1위 수성을 위한 배틀!' : '순위 역전 찬스!';
             String subTitle = isDefending
                 ? '${rivalTeamRanking.teamName}의 추격을 뿌리치세요!'
                 : '${rivalTeamRanking.teamName}를 제칠 기회입니다!';
             String desc = isDefending
                 ? '이번 퀴즈로 격차를 더 벌려보세요!'
-                : '이번 퀴즈에서 ${scoreDiff + 1}점만 획득하면\n순위를 뒤집을 수 있습니다! 🔥'; // +1점이면 역전
-
-            if (!isDefending && scoreDiff > 100) {
-              desc = '이번 퀴즈 만점 도전으로\n점수 차를 좁혀보세요! 🏃';
-            }
+                : '이번 퀴즈에서 ${scoreDiff + 1}점만 획득하면\n순위를 뒤집을 수 있습니다! 🔥';
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -143,52 +181,76 @@ class TeamBattleDialog extends StatelessWidget {
                 Text(
                   subTitle,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     color: GRAYSCALE_LABEL_600,
                   ),
                 ),
                 const SizedBox(height: 32),
 
-                // VS Layout
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // 내 팀
-                    _buildTeamInfo(
-                      myTeamRanking,
-                      myTeam.logoPath,
-                      true,
-                      context,
-                    ),
-
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'VS',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'kbo',
-                          color: Colors.red.shade400,
-                          fontStyle: FontStyle.italic,
+                // VS Layout with Animation
+                Container(
+                  height: 140, // 애니메이션 공간 확보
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // 내 팀 (Left Slide)
+                      SlideTransition(
+                        position: _myTeamSlideAnimation,
+                        child: Align(
+                          alignment: const Alignment(-0.8, 0.0),
+                          child: _buildTeamInfo(
+                            myTeamRanking,
+                            myTeam.logoPath,
+                            true,
+                            context,
+                          ),
                         ),
                       ),
-                    ),
 
-                    // 라이벌 팀
-                    _buildTeamInfo(
-                      rivalTeamRanking,
-                      rivalTeam?.logoPath,
-                      false,
-                      context,
-                    ),
-                  ],
+                      // 라이벌 팀 (Right Slide)
+                      SlideTransition(
+                        position: _rivalTeamSlideAnimation,
+                        child: Align(
+                          alignment: const Alignment(0.8, 0.0),
+                          child: _buildTeamInfo(
+                            rivalTeamRanking,
+                            rivalTeam?.logoPath,
+                            false,
+                            context,
+                          ),
+                        ),
+                      ),
+
+                      // VS Text (Scale)
+                      ScaleTransition(
+                        scale: _vsScaleAnimation,
+                        child: Text(
+                          'VS',
+                          style: TextStyle(
+                            fontSize: 42,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'kbo',
+                            color: Colors.red.shade600,
+                            fontStyle: FontStyle.italic,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.3),
+                                offset: const Offset(2, 2),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 32),
 
                 // 설명 박스
                 Container(
+                  width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                     vertical: 12,
                     horizontal: 16,
@@ -235,7 +297,7 @@ class TeamBattleDialog extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context);
-                          onStart();
+                          widget.onStart();
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: myTeam.color,
@@ -273,6 +335,7 @@ class TeamBattleDialog extends StatelessWidget {
   ) {
     final teamProvider = context.read<TeamProvider>();
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 80,
@@ -290,9 +353,9 @@ class TeamBattleDialog extends StatelessWidget {
             border: isMe
                 ? Border.all(
                     color: teamProvider.selectedTeam?.color ?? BUTTON,
-                    width: 2,
+                    width: 3,
                   )
-                : null,
+                : Border.all(color: GRAYSCALE_LABEL_100, width: 1),
           ),
           padding: const EdgeInsets.all(12),
           child: logoPath != null
@@ -303,7 +366,7 @@ class TeamBattleDialog extends StatelessWidget {
         Text(
           ranking.teamName,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: FontWeight.bold,
             color: isMe ? Colors.black : GRAYSCALE_LABEL_700,
           ),
