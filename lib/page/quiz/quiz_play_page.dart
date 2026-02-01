@@ -329,15 +329,15 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
               ),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.all(16),
+                  padding: EdgeInsets.only(left: 16, right: 16, top: 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // 난이도 배지
                       Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: 10,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
                           color: _getDifficultyColor(question.difficulty),
@@ -353,7 +353,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                         ),
                       ),
 
-                      SizedBox(height: 20),
+                      SizedBox(height: 10),
 
                       // 문제
                       Text(
@@ -366,7 +366,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                         ),
                       ),
 
-                      SizedBox(height: 30),
+                      SizedBox(height: 15),
 
                       // 이미지 (있는 경우)
                       if (question.imageUrl != null) ...[
@@ -379,13 +379,13 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                             fit: BoxFit.cover,
                           ),
                         ),
-                        SizedBox(height: 20),
+                        SizedBox(height: 15),
                       ],
 
                       // 응원가 플레이어 (있는 경우)
                       if (question.audioPath != null) ...[
                         _buildAudioPlayer(question.audioPath!),
-                        SizedBox(height: 20),
+                        SizedBox(height: 15),
                       ],
 
                       // 답변 옵션들
@@ -401,7 +401,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
 
                       // 해설 (답변 후 표시)
                       if (quizProvider.showExplanation) ...[
-                        SizedBox(height: 20),
+                        SizedBox(height: 10),
                         Container(
                           padding: EdgeInsets.all(16),
                           decoration: BoxDecoration(
