@@ -55,11 +55,12 @@ class NotificationService {
       android: AndroidNotificationDetails(
         'daily_channel_id',
         'Daily Notifications',
+        sound: RawResourceAndroidNotificationSound('playball'),
         channelDescription: 'Daily Notifications',
         importance: Importance.max,
         priority: Priority.high,
       ),
-      iOS: DarwinNotificationDetails(),
+      iOS: DarwinNotificationDetails(sound: 'playball.wav'),
     );
   }
 
