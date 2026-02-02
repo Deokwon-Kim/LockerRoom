@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/page/quiz/cheer_song_category_page.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/widgets/team_battle_dialog.dart';
@@ -129,7 +130,18 @@ class _QuizStartPageState extends State<QuizStartPage> {
           gradientColors: category['colors'] as List<Color>,
           icon: category['icon'] as IconData?,
           onTap: () {
-            // 다이얼로그 띄우기 -> 도전 -> 페이지 이동
+            // 응원가 카테고리일 경우 별도 선택 페이지로 이동
+            if (category['category'] == '응원가') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CheerSongCategoryPage(),
+                ),
+              );
+              return;
+            }
+
+            // 그 외 다이얼로그 띄우기 -> 도전 -> 페이지 이동
             showDialog(
               context: context,
               builder: (context) => TeamBattleDialog(
