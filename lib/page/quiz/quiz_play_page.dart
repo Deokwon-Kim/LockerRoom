@@ -25,6 +25,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
   bool _isPlaying = false;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
+  bool _isQuestionVisible = true; // 가사 퀴즈용 시퀀셜 노출 제어
 
   // 스트림 구독 저장
   StreamSubscription? _durationSubscription;
@@ -54,6 +55,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
         setState(() {
           _isPlaying = false;
           _position = Duration.zero;
+          _isQuestionVisible = true; // 노래 끝나면 문제 노출
         });
       }
     });
@@ -63,11 +65,14 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
       final provider = context.read<QuizProvider>();
       await provider.startQuiz(widget.category);
 
-      // 응원가 카테고리일 때 설명 팝업 표시 (팝업 확인 후 오디오 재생)
-      if (widget.category == '응원가') {
+      // 카테고리별 팝업 및 재생 설정
+      if (widget.category == '응원가(인트로)') {
         _checkAndShowCheerSongPopup();
+      } else if (widget.category == '응원가(가사)') {
+        setState(() => _isQuestionVisible = false); // 시작 시 숨김
+        _checkAndShowLyricsQuizPopup();
       } else {
-        // 응원가 외 카테고리: 첫 문제에 오디오가 있으면 자동 재생
+        // 기타 카테고리: 첫 문제에 오디오가 있으면 자동 재생
         if (provider.currentQuestion?.audioPath != null) {
           _playAudio(provider.currentQuestion!.audioPath!);
         }
@@ -112,8 +117,8 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                   color: context.read<TeamProvider>().selectedTeam?.color,
                   size: 28,
                 ),
-                SizedBox(width: 8),
-                Text(
+                const SizedBox(width: 8),
+                const Text(
                   '응원가 퀴즈 안내',
                   style: TextStyle(
                     fontSize: 18,
@@ -128,15 +133,15 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildGuideItem('🎵', '응원가는 자동으로 재생됩니다'),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 _buildGuideItem('⏱️', '응원가는 1초~5초 정도로 짧아요'),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 _buildGuideItem('🔊', '이어폰 또는 스피커로 들으시면 더 좋아요'),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 _buildGuideItem('🤔', '응원가를 듣고 어느 팀의 응원가인지 맞춰보세요'),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 _buildGuideItem('🔁', '여러 번 재생할 수 있어요'),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 // 다시 보지 않기 체크박스
                 GestureDetector(
                   onTap: () {
@@ -165,8 +170,8 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                           },
                         ),
                       ),
-                      SizedBox(width: 8),
-                      Text(
+                      const SizedBox(width: 8),
+                      const Text(
                         '다시 보지 않기',
                         style: TextStyle(
                           color: GRAYSCALE_LABEL_600,
@@ -190,7 +195,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                     if (!context.mounted) return;
                     Navigator.pop(context);
                     // 팝업 닫은 후 첫 문제 오디오 재생
-                    final provider = this.context.read<QuizProvider>();
+                    final provider = context.read<QuizProvider>();
                     if (provider.currentQuestion?.audioPath != null) {
                       _playAudio(provider.currentQuestion!.audioPath!);
                     }
@@ -203,10 +208,157 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    padding: EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: Text(
+                  child: const Text(
                     '확인',
+                    style: TextStyle(
+                      color: WHITE,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'kbo',
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // 가사 퀴즈 팝업 확인
+  Future<void> _checkAndShowLyricsQuizPopup() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool dontShowAgain =
+        prefs.getBool('dontShowLyricsQuizPopup') ?? false;
+
+    if (!dontShowAgain) {
+      if (mounted) _showLyricsQuizGuidePopup();
+    } else {
+      // 팝업 안 띄우는 경우 바로 재생
+      final provider = context.read<QuizProvider>();
+      if (provider.currentQuestion?.audioPath != null) {
+        _playAudio(provider.currentQuestion!.audioPath!);
+      }
+    }
+  }
+
+  // 가사 퀴즈 설명 팝업
+  void _showLyricsQuizGuidePopup() {
+    bool isChecked = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            backgroundColor: WHITE,
+            title: Row(
+              children: [
+                Icon(
+                  Icons.lyrics,
+                  color: context.read<TeamProvider>().selectedTeam?.color,
+                  size: 28,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  '가사 퀴즈 안내',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'kbo',
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildGuideItem('🎵', '노래가 자동으로 재생됩니다'),
+                const SizedBox(height: 12),
+                _buildGuideItem('👂', '가사를 잘 듣고 빈칸을 맞춰보세요'),
+                const SizedBox(height: 12),
+                _buildGuideItem('⌨️', '주관식이 아닌 객관식으로 진행됩니다'),
+                const SizedBox(height: 12),
+                _buildGuideItem('🎤', '팬들의 떼창 가사를 느껴보세요'),
+                const SizedBox(height: 20),
+                // 다시 보지 않기 체크박스
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      isChecked = !isChecked;
+                    });
+                  },
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Checkbox(
+                          value: isChecked,
+                          activeColor: context
+                              .read<TeamProvider>()
+                              .selectedTeam
+                              ?.color,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          onChanged: (value) {
+                            setState(() {
+                              isChecked = value ?? false;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        '다시 보지 않기',
+                        style: TextStyle(
+                          color: GRAYSCALE_LABEL_600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (isChecked) {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('dontShowLyricsQuizPopup', true);
+                    }
+                    if (!context.mounted) return;
+                    Navigator.pop(context);
+                    // 팝업 닫은 후 첫 문제 오디오 재생
+                    final provider = context.read<QuizProvider>();
+                    if (provider.currentQuestion?.audioPath != null) {
+                      _playAudio(provider.currentQuestion!.audioPath!);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context
+                        .read<TeamProvider>()
+                        .selectedTeam
+                        ?.color,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text(
+                    '시작하기',
                     style: TextStyle(
                       color: WHITE,
                       fontSize: 16,
@@ -353,165 +505,172 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                         ),
                       ),
 
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
 
-                      // 문제
-                      Builder(
-                        builder: (context) {
-                          String questionDisplay = question.question;
+                      if (_isQuestionVisible ||
+                          quizProvider.showExplanation) ...[
+                        // 문제
+                        Builder(
+                          builder: (context) {
+                            String questionDisplay = question.question;
 
-                          // 가사/이어부르기 유형 판별
-                          bool isLyricType =
-                              question.question.contains('가사') ||
-                              question.question.contains('이어 부르기') ||
-                              question.question.contains('(');
+                            // 가사 유형 판별
+                            bool isLyricType = widget.category == '응원가(가사)';
 
-                          // 정답 공개 상태일 때 텍스트 변환
-                          if (isLyricType && quizProvider.showExplanation) {
-                            String correctOption =
-                                question.options[question.correctIndex];
+                            // 정답 공개 상태일 때 텍스트 변환
+                            if (isLyricType && quizProvider.showExplanation) {
+                              String correctOption =
+                                  question.options[question.correctIndex];
 
-                            if (questionDisplay.contains('(')) {
-                              // 빈칸 채우기
-                              questionDisplay = questionDisplay.replaceAll(
-                                RegExp(r'\(.*?\)'),
-                                '($correctOption)',
-                              );
-                            } else {
-                              // 이어 부르기 등은 뒤에 정답 표시
-                              questionDisplay =
-                                  '$questionDisplay\n\n👉 정답: $correctOption';
+                              if (questionDisplay.contains('(')) {
+                                // 빈칸 채우기
+                                questionDisplay = questionDisplay.replaceAll(
+                                  RegExp(r'\(.*?\)'),
+                                  '[$correctOption]',
+                                );
+                              } else {
+                                // 이어 부르기 등은 뒤에 정답 표시
+                                questionDisplay =
+                                    '$questionDisplay\n\n👉 정답: $correctOption';
+                              }
                             }
-                          }
 
-                          return Container(
-                            width: double.infinity,
-                            padding: isLyricType
-                                ? EdgeInsets.all(20)
-                                : EdgeInsets.zero,
-                            decoration: isLyricType
-                                ? BoxDecoration(
-                                    color: quizProvider.showExplanation
-                                        ? Colors.blue.withOpacity(0.1)
-                                        : Colors.black.withOpacity(0.05),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.grey.withOpacity(0.2),
-                                    ),
-                                  )
-                                : null,
-                            child: Text(
-                              questionDisplay,
-                              style: TextStyle(
-                                fontSize: isLyricType ? 20 : 22,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'kbo',
-                                height: 1.4,
-                                color:
-                                    (isLyricType &&
-                                        quizProvider.showExplanation)
-                                    ? Colors.blue.shade800
-                                    : BLACK,
+                            return Container(
+                              width: double.infinity,
+                              padding: isLyricType
+                                  ? const EdgeInsets.all(20)
+                                  : EdgeInsets.zero,
+                              decoration: isLyricType
+                                  ? BoxDecoration(
+                                      color: quizProvider.showExplanation
+                                          ? Colors.blue.withOpacity(0.1)
+                                          : Colors.black.withOpacity(0.05),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.grey.withOpacity(0.2),
+                                      ),
+                                    )
+                                  : null,
+                              child: Text(
+                                questionDisplay,
+                                style: TextStyle(
+                                  fontSize: isLyricType ? 20 : 22,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'kbo',
+                                  height: 1.4,
+                                  color:
+                                      (isLyricType &&
+                                          quizProvider.showExplanation)
+                                      ? Colors.blue.shade800
+                                      : BLACK,
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-
-                      SizedBox(height: 15),
-
-                      // 이미지 (있는 경우)
-                      if (question.imageUrl != null) ...[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.network(
-                            question.imageUrl!,
-                            width: double.infinity,
-                            height: 200,
-                            fit: BoxFit.cover,
-                          ),
+                            );
+                          },
                         ),
-                        SizedBox(height: 15),
+
+                        const SizedBox(height: 15),
+
+                        // 이미지 (있는 경우)
+                        if (question.imageUrl != null) ...[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              question.imageUrl!,
+                              width: double.infinity,
+                              height: 200,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          const SizedBox(height: 15),
+                        ],
                       ],
 
                       // 응원가 플레이어 (있는 경우)
                       if (question.audioPath != null) ...[
                         _buildAudioPlayer(question.audioPath!),
-                        SizedBox(height: 15),
+                        const SizedBox(height: 15),
                       ],
 
-                      // 답변 옵션들
-                      ...List.generate(
-                        question.options.length,
-                        (index) => _buildOptionButton(
-                          context,
-                          quizProvider,
-                          index,
-                          question.options[index],
+                      if (_isQuestionVisible ||
+                          quizProvider.showExplanation) ...[
+                        // 답변 옵션들
+                        ...List.generate(
+                          question.options.length,
+                          (index) => _buildOptionButton(
+                            context,
+                            quizProvider,
+                            index,
+                            question.options[index],
+                          ),
                         ),
-                      ),
 
-                      // 해설 (답변 후 표시)
-                      if (quizProvider.showExplanation) ...[
-                        SizedBox(height: 10),
-                        Container(
-                          padding: EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: quizProvider.isCurrentAnswerCorrect == true
-                                ? GREEN_SUCCESS_BORDER_10
-                                : RED_DANGER_SURFACE_5,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
+                        // 해설 (답변 후 표시)
+                        if (quizProvider.showExplanation) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
                               color: quizProvider.isCurrentAnswerCorrect == true
                                   ? GREEN_SUCCESS_BORDER_10
-                                  : RED_DANGER_BORDER_10,
+                                  : RED_DANGER_SURFACE_5,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color:
+                                    quizProvider.isCurrentAnswerCorrect == true
+                                    ? GREEN_SUCCESS_BORDER_10
+                                    : RED_DANGER_BORDER_10,
+                              ),
                             ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    quizProvider.isCurrentAnswerCorrect == true
-                                        ? Icons.check_circle
-                                        : Icons.cancel,
-                                    color:
-                                        quizProvider.isCurrentAnswerCorrect ==
-                                            true
-                                        ? GREEN_SUCCESS_TEXT_50
-                                        : RED_DANGER_TEXT_50,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    quizProvider.isCurrentAnswerCorrect == true
-                                        ? '정답입니다!'
-                                        : '오답입니다',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'kbo',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      quizProvider.isCurrentAnswerCorrect ==
+                                              true
+                                          ? Icons.check_circle
+                                          : Icons.cancel,
                                       color:
                                           quizProvider.isCurrentAnswerCorrect ==
                                               true
                                           ? GREEN_SUCCESS_TEXT_50
                                           : RED_DANGER_TEXT_50,
                                     ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 12),
-                              Text(
-                                question.explanation,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  height: 1.5,
-                                  color: GRAYSCALE_LABEL_900,
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      quizProvider.isCurrentAnswerCorrect ==
+                                              true
+                                          ? '정답입니다!'
+                                          : '오답입니다',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'kbo',
+                                        color:
+                                            quizProvider
+                                                    .isCurrentAnswerCorrect ==
+                                                true
+                                            ? GREEN_SUCCESS_TEXT_50
+                                            : RED_DANGER_TEXT_50,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 12),
+                                Text(
+                                  question.explanation,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    height: 1.5,
+                                    color: GRAYSCALE_LABEL_900,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ],
                   ),
@@ -537,7 +696,14 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                     if (quizProvider.currentQuestionsIndex > 0)
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => quizProvider.previousQuestion(),
+                          onTap: () {
+                            quizProvider.previousQuestion();
+                            if (widget.category == '응원가(가사)') {
+                              setState(
+                                () => _isQuestionVisible = true,
+                              ); // 이전 문제는 이미 들었으므로 노출
+                            }
+                          },
                           child: Container(
                             alignment: Alignment.center,
                             width: double.infinity,
@@ -723,6 +889,11 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
     } else {
       // 다음 문제
       quizProvider.nextQuestion();
+
+      // 가사 퀴즈인 경우 다음 문제 시작 시 다시 숨김
+      if (widget.category == '응원가(가사)') {
+        setState(() => _isQuestionVisible = false);
+      }
 
       // 다음 문제에 오디오가 있으면 자동 재생
       if (quizProvider.currentQuestion?.audioPath != null) {
