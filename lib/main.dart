@@ -56,6 +56,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toastification/toastification.dart';
 import 'package:lockerroom/services/notification_service.dart';
 import 'package:lockerroom/services/navigation_service.dart';
+import 'package:lockerroom/services/deep_link_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'dart:io';
@@ -80,6 +81,9 @@ Future<void> main() async {
 
   // 로컬 알림 초기화
   await NotificationService().initNotification();
+
+  // 딥링크 초기화
+  await DeepLinkService().initDeepLinks();
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 

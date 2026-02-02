@@ -356,7 +356,8 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
 
       await Share.shareXFiles(
         [XFile(imagePath.path)],
-        text: '[Locker Room] ${widget.meetup.title} 모임에 함께해요! ⚾',
+        text:
+            '[Locker Room] ${widget.meetup.title} 모임에 함께해요! ⚾\n\n모임 참여하기: https://lockerroom-e9f39.web.app/meetup/${widget.meetup.id}',
         sharePositionOrigin: box != null
             ? box.localToGlobal(Offset.zero) & box.size
             : null,
