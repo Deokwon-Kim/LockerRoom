@@ -114,6 +114,7 @@ class QuizRankingProvider extends ChangeNotifier {
               rankChange: 0,
               profileUrl: userData?['profileImage'],
               completedAt: (scoreData['completedAt'] as Timestamp).toDate(),
+              teamName: teamName,
             ),
           );
         } catch (e) {
@@ -128,6 +129,7 @@ class QuizRankingProvider extends ChangeNotifier {
               rankChange: 0,
               profileUrl: null,
               completedAt: (scoreData['completedAt'] as Timestamp).toDate(),
+              teamName: null,
             ),
           );
         }

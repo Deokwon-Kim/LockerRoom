@@ -356,14 +356,66 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                       SizedBox(height: 10),
 
                       // 문제
-                      Text(
-                        question.question,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'kbo',
-                          height: 1.4,
-                        ),
+                      Builder(
+                        builder: (context) {
+                          String questionDisplay = question.question;
+
+                          // 가사/이어부르기 유형 판별
+                          bool isLyricType =
+                              question.question.contains('가사') ||
+                              question.question.contains('이어 부르기') ||
+                              question.question.contains('(');
+
+                          // 정답 공개 상태일 때 텍스트 변환
+                          if (isLyricType && quizProvider.showExplanation) {
+                            String correctOption =
+                                question.options[question.correctIndex];
+
+                            if (questionDisplay.contains('(')) {
+                              // 빈칸 채우기
+                              questionDisplay = questionDisplay.replaceAll(
+                                RegExp(r'\(.*?\)'),
+                                '($correctOption)',
+                              );
+                            } else {
+                              // 이어 부르기 등은 뒤에 정답 표시
+                              questionDisplay =
+                                  '$questionDisplay\n\n👉 정답: $correctOption';
+                            }
+                          }
+
+                          return Container(
+                            width: double.infinity,
+                            padding: isLyricType
+                                ? EdgeInsets.all(20)
+                                : EdgeInsets.zero,
+                            decoration: isLyricType
+                                ? BoxDecoration(
+                                    color: quizProvider.showExplanation
+                                        ? Colors.blue.withOpacity(0.1)
+                                        : Colors.black.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.grey.withOpacity(0.2),
+                                    ),
+                                  )
+                                : null,
+                            child: Text(
+                              questionDisplay,
+                              style: TextStyle(
+                                fontSize: isLyricType ? 20 : 22,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'kbo',
+                                height: 1.4,
+                                color:
+                                    (isLyricType &&
+                                        quizProvider.showExplanation)
+                                    ? Colors.blue.shade800
+                                    : BLACK,
+                              ),
+                            ),
+                          );
+                        },
                       ),
 
                       SizedBox(height: 15),

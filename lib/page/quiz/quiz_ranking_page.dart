@@ -482,6 +482,25 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
           ),
+          if (user.teamName != null)
+            Builder(
+              builder: (context) {
+                final team = context.read<TeamProvider>().findTeamByName(
+                  user.teamName!,
+                );
+                return Text(
+                  user.teamName!,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: team?.color ?? Colors.grey.shade600,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                );
+              },
+            ),
           const SizedBox(height: 4),
           // 점수
           Text(
@@ -626,6 +645,23 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
+              SizedBox(height: 3),
+              if (user.teamName != null)
+                Builder(
+                  builder: (context) {
+                    final team = context.read<TeamProvider>().findTeamByName(
+                      user.teamName!,
+                    );
+                    return Text(
+                      user.teamName!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: team?.color ?? Colors.grey.shade600,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  },
+                ),
               if (isMe)
                 Text(
                   '나',
