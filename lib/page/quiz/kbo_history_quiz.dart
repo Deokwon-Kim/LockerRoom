@@ -418,7 +418,7 @@ final List<QuizQuestionModel> statsQuestions = [
 final List<QuizQuestionModel> cheerSongQuestions = [
   QuizQuestionModel(
     quizId: 'cheer_001',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/parkchanho.m4a',
     question: '이 응원가는 누구의 응원가 일까요?',
     options: ['김민혁', '김상수', '박찬호', '정수빈'],
@@ -429,7 +429,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_002',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/loveEagles.m4a',
     question: '이 응원가는 어느팀의 응원가 일까요?',
     options: ['삼성라이온즈', '기아타이거즈', '한화이글스', '두산베어스'],
@@ -440,7 +440,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_003',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/winloud.m4a',
     question: '이 응원가는 어느팀의 응원가 일까요?',
     options: ['기아타이거즈', '한화이글스', '키움히어로즈', 'NC다이노스'],
@@ -451,7 +451,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_004',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/kimyoungwoong.m4a',
     question: '이 응원가는 누구의 응원가 일까요?',
     options: ['김영웅', '김도영', '허경민', '양의지'],
@@ -462,7 +462,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_005',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/jungsoobin.m4a',
     question: '이 응원가는 누구의 응원가 일까요?',
     options: ['김도영', '정수빈', '이종욱', '디아즈'],
@@ -473,7 +473,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_006',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/yangEuiji.m4a',
     question: '이 응원가는 누구의 응원가 일까요?',
     options: ['김도영', '양의지', '이종욱', '노시환'],
@@ -484,7 +484,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_007',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/moonbokyung.m4a',
     question: '이 응원가는 누구의 응원가 일까요?',
     options: ['문보경', '서호철', '이종욱', '노시환'],
@@ -495,7 +495,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_008',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/leelowoon.m4a',
     question: '이 응원가는 누구의 응원가 일까요?',
     options: ['최지훈', '양의지', '이종욱', '이로운'],
@@ -506,7 +506,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_009',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/doowin.m4a',
     question: '이 응원가의 제목은?',
     options: ['승리를 위하여', '승리를 위한 함성', '마법의 성', '마산스트리트'],
@@ -517,7 +517,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_010',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/magicCatle.m4a',
     question: '이 응원가의 제목은?',
     options: ['마법의 성', '위닝 KT', '엘도라도', '투혼의 랜더스'],
@@ -528,7 +528,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_011',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/eldorado.m4a',
     question: '이 응원가의 제목은?',
     options: ['승리를 위하여', '마산스트리트', '엘도라도', '투혼의 랜더스'],
@@ -539,7 +539,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_012',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/kia1.m4a',
     question: '이 응원가는 어느팀의 응원가 일까요?',
     options: ['기아타이거즈', 'SSG랜더스', '두산베어스', '롯데자이언츠'],
@@ -550,7 +550,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_013',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/victoryChant.m4a',
     question: '이 응원가는 어느팀의 응원가 일까요?',
     options: ['기아타이거즈', 'SSG랜더스', '두산베어스', '롯데자이언츠'],
@@ -561,7 +561,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_014',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/cryOutForVictory.m4a',
     question: '이 응원가의 제목은?',
     options: ['승리를 위하여', '승전가', '승리를 외치자', '영웅출정가'],
@@ -572,7 +572,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_015',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/doosanLineUpsong.m4a',
     question: '이 노래는 특정 팀의 라인업송 입니다. 어느 팀의 라인업 송 일까요?',
     options: ['키움히어로즈', '한화이글스', '두산베어스', '롯데자이언츠'],
@@ -583,7 +583,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_016',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/fighting_spirit_Landers.m4a',
     question: '이 응원가의 제목은?',
     options: ['투혼의 랜더스', '엘도라도', '승리를 위하여', '외쳐라 최강기아'],
@@ -594,7 +594,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_017',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/heroGo.m4a',
     question: '이 응원가는 어느팀의 응원가 일까요?',
     options: ['기아타이거즈', '키움히어로즈', 'KT위즈', 'NC다이노스'],
@@ -605,7 +605,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_018',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/eaglesLineUp.m4a',
     question: '이 노래는 특정 팀의 라인업송 입니다. 어느 팀의 라인업 송 일까요?',
     options: ['기아타이거즈', '한화이글스', 'LG트윈스', '롯데자이언츠'],
@@ -616,7 +616,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_019',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/moonHyunBin.m4a',
     question: '이 응원가의 주인공은?',
     options: ['김도영', '노시환', '문현빈', '양의지'],
@@ -627,7 +627,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_020',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/jeonMinJea.m4a',
     question: '이 응원가의 주인공은?',
     options: ['전준우', '전민재', '정철원', '고승민'],
@@ -638,7 +638,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_021',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/hongChangGi.m4a',
     question: '이 응원가의 주인공은?',
     options: ['오지환', '허경민', '김현수', '홍창기'],
@@ -649,7 +649,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_022',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/choiJung.m4a',
     question: '이 응원가의 주인공은?',
     options: ['최정', '황재균', '최지훈', '홍창기'],
@@ -660,7 +660,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
 
   QuizQuestionModel(
     quizId: 'cheer_023',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/finalBoss.m4a',
     question: '이 노래의 주인공은?',
     options: ['오승환', '김택연', '김원중', '김병현'],
@@ -670,7 +670,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_024',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/rayyes.m4a',
     question: '이 응원가의 주인공은?',
     options: ['오스틴', '황재균', '최지훈', '레이예스'],
@@ -680,7 +680,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_025',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/eredia.m4a',
     question: '이 응원가의 주인공은?',
     options: ['최정', '에레디아', '최지훈', '한유섬'],
@@ -690,7 +690,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_026',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/kimDoYoung.m4a',
     question: '이 응원가의 주인공은?',
     options: ['김도영', '안치홍', '최지훈', '심우준'],
@@ -700,7 +700,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_027',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/cadines.m4a',
     question: '이 응원가의 주인공은?',
     options: ['최정', '카디네스', '송성문', '홍창기'],
@@ -710,7 +710,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_028',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/parkChanHyung.m4a',
     question: '이 응원가의 주인공은?',
     options: ['박찬형', '안치홍', '강민호', '황성빈'],
@@ -720,7 +720,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_029',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/ohSunWoo.m4a',
     question: '이 응원가의 주인공은?',
     options: ['한준수', '오선우', '김선빈', '소크라테스'],
@@ -730,7 +730,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_030',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/kimGeonHe.m4a',
     question: '이 응원가의 주인공은?',
     options: ['송성문', '김건희', '이주형', '홍창기'],
@@ -740,7 +740,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_031',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/kimHwiJip.m4a',
     question: '이 응원가의 주인공은?',
     options: ['최정', '황재균', '최지훈', '김휘집'],
@@ -750,7 +750,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_032',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/ahnHyunMin.m4a',
     question: '이 응원가의 주인공은?',
     options: ['강백호', '황재균', '안현민', '홍창기'],
@@ -760,7 +760,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_033',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/ohTaeGon.m4a',
     question: '이 응원가의 주인공은?',
     options: ['최정', '오태곤', '최지훈', '에레디아'],
@@ -770,7 +770,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_034',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/songSungMoon.m4a',
     question: '이 응원가의 주인공은?',
     options: ['송성문', '허경민', '최지훈', '홍창기'],
@@ -780,7 +780,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_035',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/kimJuwon.m4a',
     question: '이 응원가의 주인공은?',
     options: ['김주원', '김휘집', '권희동', '김형준'],
@@ -790,7 +790,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_036',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/leeJaeHyun.m4a',
     question: '이 응원가의 주인공은?',
     options: ['이재현', '김영웅', '강민호', '홍창기'],
@@ -800,7 +800,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_037',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/parkSungHan.m4a',
     question: '이 응원가의 주인공은?',
     options: ['박성한', '최정', '최지훈', '이지영'],
@@ -810,7 +810,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_038',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/shinMinJae.m4a',
     question: '이 응원가의 주인공은?',
     options: ['오지환', '신민재', '최지훈', '홍창기'],
@@ -820,7 +820,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_039',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/jungHoon.m4a',
     question: '이 응원가의 주인공은?',
     options: ['오지환', '정훈', '이대호', '홍창기'],
@@ -830,7 +830,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_040',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/cave.m4a',
     question: '이 응원가의 주인공은?',
     options: ['오스틴', '케이브', '최지훈', '홍창기'],
@@ -840,7 +840,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_041',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/liberato.m4a',
     question: '이 응원가의 주인공은?',
     options: ['리베라토', '디아즈', '케이브', '홍창기'],
@@ -850,7 +850,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_042',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/diaz.m4a',
     question: '이 응원가의 주인공은?',
     options: ['오지환', '디아즈', '최지훈', '홍창기'],
@@ -860,7 +860,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_043',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/kiaLineUp.m4a',
     question: '이 노래는 특정 팀의 라인업송 입니다. 어느 팀의 라인업 송 일까요?',
     options: ['기아타이거즈', '엘지트윈스', '두산베어스', '삼성라이온즈'],
@@ -870,7 +870,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_044',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/j.m4a',
     question: '이 응원가의 제목은?',
     options: ['남행열차', 'J에게', '그대에게', '아파트'],
@@ -880,7 +880,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_045',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/chamPionDoosan.m4a',
     question: '이 응원가의 제목은?',
     options: ['야야야 두산', '챔피언 두산', '해야', '승리를 위하여'],
@@ -890,7 +890,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_046',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/lgWinningSong.m4a',
     question: '이 응원가는 어느팀의 응원가 일까요??',
     options: ['NC다이노스', '엘지 트윈스', '키움 히어로즈', 'KT위즈'],
@@ -900,7 +900,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_047',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/heyaheya.m4a',
     question: '이 응원가의 제목은?',
     options: ['마법의 성', '해야해야', '승리를 위하여', '마산 스트리트'],
@@ -910,7 +910,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_048',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/weAreLanders.m4a',
     question: '이 응원가의 제목은?',
     options: ['서울의 아리아', '랜더스여', '영웅출정가', '엘도라도'],
@@ -920,7 +920,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_049',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/ncLineUp.m4a',
     question: '이 노래는 특정 팀의 라인업송 입니다. 어느 팀의 라인업 송 일까요?',
     options: ['KT위즈', 'SSG랜더스', '두산베어스', 'NC다이노스'],
@@ -930,7 +930,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_050',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/kiwoomLineUp.m4a',
     question: '이 노래는 특정 팀의 라인업송 입니다. 어느 팀의 라인업 송 일까요?',
     options: ['KT위즈', 'SSG랜더스', '키움히어로즈', 'NC다이노스'],
@@ -940,7 +940,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_051',
-    category: '응원가',
+    category: '응원가(가사)',
     audioPath: 'audio/leejuhyung.m4a',
     question: '🎵 노래를 듣고 빈칸을 채워보세요!\n저 높이 날아올라 빛이되리라\n(OOOO OOO)',
     options: ['히어로즈 이주형', '이유찬', '이형종', '디아즈'],
@@ -950,7 +950,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_052',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/parkjuhong.m4a',
     question: '이 응원가는 누구의 응원가 일까요?',
     options: ['박찬혁', '박주홍', '박찬호', '박경완'],
@@ -960,7 +960,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_053',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/parksoojong.m4a',
     question: '이 응원가는 누구의 응원가 일까요?',
     options: ['이정후', '박주홍', '이주형', '박수종'],
@@ -970,7 +970,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_054',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/leehyungjong.m4a',
     question: '이 응원가는 누구의 응원가 일까요?',
     options: ['홍창기', '김혜성', '이정후', '이형종'],
@@ -980,7 +980,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_055',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/limjiyeol.m4a',
     question: '이 응원가는 누구의 응원가 일까요?',
     options: ['임지열', '최주환', '박건우', '박민우'],
@@ -990,7 +990,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_056',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/choijoowhan.m4a',
     question: '이 응원가는 누구의 응원가 일까요?',
     options: ['최주환', '박병호', '오재일', '박건우'],
@@ -1000,7 +1000,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_057',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/victoryloud.m4a',
     question: '이 응원가의 제목은?',
     options: ['승리를 위한 함성', '승리를 외치자', '승리를 위하여', '영웅출정가'],
@@ -1010,7 +1010,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_058',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/wihayeo.m4a',
     question: '이 응원가의 제목은?',
     options: ['위하여', '마산스트리트', '영웅출정가', '야야야 두산'],
@@ -1020,7 +1020,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_059',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/ktWinningLoud.m4a',
     question: '이 응원가의 제목은?',
     options: ['마법의 성', '승리의 함성', '영웅출정가', '승리를 위하여'],
@@ -1030,7 +1030,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_060',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/ktLineUp.m4a',
     question: '이 노래는 특정 팀의 라인업 송 입니다. 어느 팀의 라인업 송 일까요?',
     options: ['롯데자이언츠', 'SSG랜더스', 'KT위즈', '두산베어스'],
@@ -1040,7 +1040,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_061',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/ktHitSong.m4a',
     question: '이 노래는 특정 팀의 안타 송 입니다. 어느 팀의 안타 송 일까요?',
     options: ['KT위즈', '키움히어로즈', 'NC다이노스', 'LG트윈스'],
@@ -1050,7 +1050,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_062',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/togetherNc.m4a',
     question: '이 응원가의 주인공인 팀은?',
     options: ['NC다이노스', 'SSG랜더스', '롯데자이언츠', '두산베어스'],
@@ -1060,7 +1060,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_063',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/kimMinHyeok.m4a',
     question: '이 응원가의 주인공은?',
     options: ['김민혁', '김상수', '강백호', '심우준'],
@@ -1070,7 +1070,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_064',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/beaJungDae.m4a',
     question: '이 응원가의 주인공은?',
     options: ['김민혁', '배정대', '박병호', '오재일'],
@@ -1080,7 +1080,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_065',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/moonSangChul.m4a',
     question: '이 응원가의 주인공은?',
     options: ['문상철', '배정대', '허경민', '장성우'],
@@ -1090,7 +1090,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_066',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/parkMinwoo.m4a',
     question: '이 응원가의 주인공은?',
     options: ['박민우', '김주원', '서호철', '데이비슨'],
@@ -1100,7 +1100,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_067',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/davison.m4a',
     question: '이 응원가의 주인공은?',
     options: ['알테어', '테임즈', '데이비슨', '박민우'],
@@ -1110,7 +1110,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_068',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/kwonHeedong.m4a',
     question: '이 응원가의 주인공은?',
     options: ['권희동', '양의지', '박건우', '손시헌'],
@@ -1120,7 +1120,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_069',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/doTaeHoon.m4a',
     question: '이 응원가의 주인공은?',
     options: ['박민우', '도태훈', '박건우', '김형준'],
@@ -1130,7 +1130,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_070',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/jeonJoonWoo.m4a',
     question: '이 응원가의 주인공은?',
     options: ['정훈', '이대호', '전준우', '김형준'],
@@ -1140,7 +1140,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_071',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/sonHoYoung.m4a',
     question: '이 응원가의 주인공은?',
     options: ['박민우', '손호영', '한동희', '김형준'],
@@ -1150,7 +1150,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_072',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/yooGangNam.m4a',
     question: '이 응원가의 주인공은?',
     options: ['노진혁', '유강남', '한동희', '손성빈'],
@@ -1160,7 +1160,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_073',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/hwangSungBin.m4a',
     question: '이 응원가의 주인공은?',
     options: ['황성빈', '도태훈', '윤동희', '김형준'],
@@ -1170,7 +1170,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_074',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/naSeungYeop.m4a',
     question: '이 응원가의 주인공은?',
     options: ['이대호', '정훈', '나승엽', '황성빈'],
@@ -1180,7 +1180,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_075',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/yoonDongHee.m4a',
     question: '이 응원가의 주인공은?',
     options: ['한동희', '황성빈', '전준우', '윤동희'],
@@ -1190,7 +1190,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_076',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/lotteTeamSong2.m4a',
     question: '이 응원가의 제목은?',
     options: ['승리의 순간', '영광의 순간', '승리를 위하여', '부산갈매기'],
@@ -1200,7 +1200,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_077',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/lotteTeamSong.m4a',
     question: '이 응원가는 어떤 팀의 응원가 일까요? ',
     options: ['롯데자이언츠', 'NC다이노스', '기아타이거즈', '두산베어스'],
@@ -1210,7 +1210,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_078',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/doosanTeamSong3.m4a',
     question: '이 응원가의 제목은? ',
     options: ['해야', '최강두산', '승리의 두산', '락투더 두산'],
@@ -1220,7 +1220,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_079',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/doosanTeamSong2.m4a',
     question: '이 응원가의 제목은? ',
     options: ['승리를 위하여', '해야', '두산 승리하리라', '야야야 두산'],
@@ -1230,7 +1230,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_080',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/doosanFullCount.m4a',
     question: '이 응원가는 어떤 팀의 풀카운트 송 일까요? ',
     options: ['롯데자이언츠', 'NC다이노스', '기아타이거즈', '두산베어스'],
@@ -1240,7 +1240,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_081',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/doosanBaseOnBall.m4a',
     question: '이 응원가는 어떤 팀의 볼넷 송 일까요? ',
     options: ['롯데자이언츠', 'NC다이노스', '기아타이거즈', '두산베어스'],
@@ -1250,7 +1250,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_082',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/doosanTeamSong.m4a',
     question: '이 응원가는 어떤 팀의 응원가 일까요? ',
     options: ['롯데자이언츠', '두산베어스', '기아타이거즈', '삼성라이온즈'],
@@ -1260,7 +1260,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_083',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/kimInTae.m4a',
     question: '이 응원가는 누구의 응원가 일까요? ',
     options: ['강승호', '박계범', '김인태', '오명진'],
@@ -1270,7 +1270,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_084',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/leeYooChan.m4a',
     question: '이 응원가는 누구의 응원가 일까요? ',
     options: ['박찬호', '이유찬', '김대한', '안재석'],
@@ -1280,7 +1280,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_085',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/joSooHeng.m4a',
     question: '이 응원가는 누구의 응원가 일까요? ',
     options: ['조수행', '서현숙', '양석환', '정수빈'],
@@ -1290,13 +1290,353 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   ),
   QuizQuestionModel(
     quizId: 'cheer_086',
-    category: '응원가',
+    category: '응원가(인트로)',
     audioPath: 'audio/yangSeokWhan.m4a',
     question: '이 응원가는 누구의 응원가 일까요? ',
     options: ['오명진', '양의지', '양석환', '정수빈'],
     correctIndex: 2,
     difficulty: 'hard',
     explanation: '두산베어스 양석환',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_087',
+    category: '응원가(가사)',
+    audioPath: 'audio/ncTeamSong.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n외쳐라NC여~\n(OOOOO OO OOO)',
+    options: ['다이노스의 승리위하여~', '우리의 다이노스의~', '승리를 위하여', '외쳐라'],
+    correctIndex: 0,
+    difficulty: 'easy',
+    explanation: '다이노스의 승리위하여~',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_088',
+    category: '응원가(가사)',
+    audioPath: 'audio/ncTeamSong2.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n정든 그곳을 등지고서 난 떠나왔네~\n(OOOO OOO)',
+    options: ['마산스트리트', '꿈을가득 안고서', '한강의 강물이여~', '커몬커몬'],
+    correctIndex: 1,
+    difficulty: 'hard',
+    explanation: '꿈을가득 안고서',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_089',
+    category: '응원가(가사)',
+    audioPath: 'audio/lgTeamSong.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n외쳐라 무적LG~(O OOOO OO)',
+    options: ['LG의 승리위해~', '자 모두함께 LG', '자 승리하라 LG', '자 불태워라 LG'],
+    correctIndex: 2,
+    difficulty: 'easy',
+    explanation: '자 승리하라 LG',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_090',
+    category: '응원가(가사)',
+    audioPath: 'audio/leeJungHoo.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n키움 히어로 이정후\n(OOOOOO OOOOO)',
+    options: ['홈런홈런홈런 날려버려라', '가자가자가자 날려버려라', '끝내끝내끝내 날려버려라', '안타안타안타 날려버려라'],
+    correctIndex: 3,
+    difficulty: 'easy',
+    explanation: '안타안타안타 날려버려라',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_091',
+    category: '응원가(가사)',
+    audioPath: 'audio/kimHyeSeong.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n김혜성 히어로즈 김혜성~\n(O OO OOO OOOO)',
+    options: [
+      '저 꿈을 밝히는 혜성처럼',
+      '저 멀리 빛나는 혜성처럼',
+      '저 하늘 빛나는 혜성처럼',
+      '저 하늘 스치는 혜성처럼',
+    ],
+    correctIndex: 2,
+    difficulty: 'medium',
+    explanation: '저 하늘 빛나는 혜성처럼',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_092',
+    category: '응원가(가사)',
+    audioPath: 'audio/heroesTeamSong.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n오오 울려퍼져라 이곳에~(OOOOO OO)',
+    options: ['오오 울려라', '승리를 위한', '히어로즈의 노래', '울려라 이곳에'],
+    correctIndex: 2,
+    difficulty: 'easy',
+    explanation: '히어로즈의 노래',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_093',
+    category: '응원가(가사)',
+    audioPath: 'audio/doosanTeamSong4.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n깨끗하고 힘차게~(OOO OOOO)',
+    options: ['승리의 그날까지', '승리의 영광까지', '영원한 나의친구', '승리의 순간까지'],
+    correctIndex: 3,
+    difficulty: 'medium',
+    explanation: '승리의 순간까지',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_094',
+    category: '응원가(가사)',
+    audioPath: 'audio/kimMinSeok.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n두산의 김민석~(OOO OO OOO)',
+    options: ['힘차게 치고 달려라', '저멀리 치고 달려라', '안타를 날려라', '안타안타안타 안타'],
+    correctIndex: 0,
+    difficulty: 'easy',
+    explanation: '힘차게 치고 달려라',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_095',
+    category: '응원가(가사)',
+    audioPath: 'audio/miracleDoosanBears.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n미라클 두산베어스~(OOOO OOO)',
+    options: ['뜨거운 열정이', '그대이름 베어스', '그대이름 챔피언', '그대안에 열정이'],
+    correctIndex: 2,
+    difficulty: 'medium',
+    explanation: '그대이름 챔피언',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_096',
+    category: '응원가(가사)',
+    audioPath: 'audio/kimJiChan.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n삼성의 김지찬~(OOO OOO)',
+    options: ['저멀리 날려라', '빠르게 달려라', '안타를 날려라', '홈런을 날려라'],
+    correctIndex: 2,
+    difficulty: 'easy',
+    explanation: '안타를 날려라',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_097',
+    category: '응원가(가사)',
+    audioPath: 'audio/choiHyngWoo.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n넌 주인공 인거야~(OOOOO OOO)',
+    options: ['오늘내일도 영원히', '지금이대로 영원히', '언제까지나 평생을', '언제까지나 영원히'],
+    correctIndex: 3,
+    difficulty: 'easy',
+    explanation: '언제까지나 영원히',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_098',
+    category: '응원가(가사)',
+    audioPath: 'audio/kimSungYoon.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n더 멀리 더 빨리~(OO OOO)',
+    options: ['홈런 날려라', '안타 날려라', '치고 달려라', '빨리 뛰어라'],
+    correctIndex: 2,
+    difficulty: 'easy',
+    explanation: '치고 달려라',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_099',
+    category: '응원가(가사)',
+    audioPath: 'audio/samsungLineUp.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n최강삼성 오 라이온즈여~\n(OOOO OOO)',
+    options: ['승리한다 우리는', '기억하라 우리는', '기억한다 우리는', '기억하라 승리는'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation: '기억하라 우리는',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_100',
+    category: '응원가(가사)',
+    audioPath: 'audio/samsungTeamSong.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n우리는 승리의~(OOOO OOOO)',
+    options: ['승리하라 라이온즈', '최강삼성 라이온즈', '영원하라 라이온즈', '승리한다 라이온즈'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation: '최강삼성 라이온즈',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_101',
+    category: '응원가(가사)',
+    audioPath: 'audio/kiaTeamSong.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n승리하라 최강기아~(OOOO OOOO)',
+    options: ['열광한다 타이거즈', '최강기아 타이거즈', '승리하라 타이거즈', '열광하라 타이거즈'],
+    correctIndex: 3,
+    difficulty: 'easy',
+    explanation: '열광하라 타이거즈',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_102',
+    category: '응원가(가사)',
+    audioPath: 'audio/kiaTeamSong2.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n남행열차에~(OOOO OO OOO)',
+    options: ['흔들리는 철길 너머로', '흔들리는 마음 너머로', '흔들리는 차창 너머로', '흔들리는 열차 너머로'],
+    correctIndex: 2,
+    difficulty: 'medium',
+    explanation: '흔들리는 차창 너머로',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_103',
+    category: '응원가(가사)',
+    audioPath: 'audio/kimDoYoung2.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n김도영 힘차게 날려라~(OOO OOO OOO)',
+    options: ['기아의 영광을 위하여', '오놀의 승리를 위하여', '김도영 승리를 위하여', '기아의 승리를 위하여'],
+    correctIndex: 3,
+    difficulty: 'easy',
+    explanation: '기아의 승리를 위하여',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_104',
+    category: '응원가(가사)',
+    audioPath: 'audio/hanHwaLineUp.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n승리를 위하여~(OOOO)',
+    options: ['랜더스여', '트윈스여', '베어스여', '이글스여'],
+    correctIndex: 3,
+    difficulty: 'easy',
+    explanation: '이글스여',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_105',
+    category: '응원가(가사)',
+    audioPath: 'audio/chaeEnSung.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n저 하늘로 날아올라~(OO OOO)',
+    options: ['승리 되리라', '빛이 되리라', '홈런 되리라', '안타 되리라'],
+    correctIndex: 1,
+    difficulty: 'easy',
+    explanation: '빛이 되리라',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_106',
+    category: '응원가(가사)',
+    audioPath: 'audio/lgTeamSong2.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n다같이 외쳐라~(OOO OOO)',
+    options: ['승리의 함성을', '엘지의 함성을', '우리의 함성을', '팬들의 함성을'],
+    correctIndex: 2,
+    difficulty: 'medium',
+    explanation: '우리의 함성을',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_107',
+    category: '응원가(가사)',
+    audioPath: 'audio/lgTeamSong3.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n승리의 함성을~(OOO OOO)',
+    options: ['다같이 외쳐라', '다함께 외쳐라', '힘차게 외쳐라', '신나게 외쳐라'],
+    correctIndex: 0,
+    difficulty: 'medium',
+    explanation: '다같이 외쳐라',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_108',
+    category: '응원가(인트로)',
+    audioPath: 'audio/lgTeamSong3.m4a',
+    question: '이 응원가는 어느팀의 응원가 일까요?',
+    options: ['NC다이노스', 'LG트윈스', '두산베어스', '롯데자이언츠'],
+    correctIndex: 1,
+    difficulty: 'medium',
+    explanation: 'LG트윈스 승리의 노래',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_109',
+    category: '응원가(인트로)',
+    audioPath: 'audio/landesrTeamSong4.m4a',
+    question: '이 응원가의 제목은?',
+    options: ['J에게', '연안부두', '부산갈매기', '남행열차'],
+    correctIndex: 1,
+    difficulty: 'medium',
+    explanation: 'SSG랜더스 연안부두',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_110',
+    category: '응원가(가사)',
+    audioPath: 'audio/landersTeamSong3.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n랜더스 이름으로~(OO OOOO)',
+    options: ['우리 하나되어', '모두 하나되어', '함께 하나되어', '같이 하나되어'],
+    correctIndex: 0,
+    difficulty: 'medium',
+    explanation: '우리 하나되어',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_111',
+    category: '응원가(인트로)',
+    audioPath: 'audio/landersTeamSong3.m4a',
+    question: '이 응원가의 제목은?',
+    options: ['랜더스여', '프론티어 랜더스', '나가자 랜더스', '승리의 랜더스'],
+    correctIndex: 1,
+    difficulty: 'medium',
+    explanation: '프론티어 랜더스',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_112',
+    category: '응원가(가사)',
+    audioPath: 'audio/landersTeamSong2.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n오오오오오오오오오~\n(OOO OOO OOO)',
+    options: ['랜더스 승리로 나가자', '랜더스 승리를 외친다', '랜더스 승리를 외쳐라', '랜더스 승리를 외치자'],
+    correctIndex: 2,
+    difficulty: 'hard',
+    explanation: '랜더스 승리를 외쳐라',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_113',
+    category: '응원가(인트로)',
+    audioPath: 'audio/landerTeamSong2.m4a',
+    question: '이 응원가는 어느 팀의 응원가 일까요?',
+    options: ['롯데자이언츠', 'KT위즈', '키움히어로즈', 'SSG랜더스'],
+    correctIndex: 3,
+    difficulty: 'medium',
+    explanation: 'SSG랜더스 승리를 외쳐라',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_114',
+    category: '응원가(가사)',
+    audioPath: 'audio/winningFlag.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\nWe Are Landers 승리한다~(OOO OO OOO)',
+    options: ['깃발을 높이 올려라', '힘차게 달려 나가자', '승리를 위해 나가자', '목소릴 높이 올려라'],
+    correctIndex: 0,
+    difficulty: 'medium',
+    explanation: '깃발을 높이 올려라',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_115',
+    category: '응원가(인트로)',
+    audioPath: 'audio/winningFlag.m4a',
+    question: '이 응원가의 제목은?',
+    options: ['깃발을 높이 올려라', 'We Are Landers', '승리의 깃발', '랜더스여'],
+    correctIndex: 2,
+    difficulty: 'hard',
+    explanation: '승리의 깃발',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_116',
+    category: '응원가(가사)',
+    audioPath: 'audio/landersTeamSong.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n우리의 열정을 하나로 모아~(OOOO OOO OO OOO)',
+    options: [
+      '날아올라 승리를 향해 나가자',
+      '날아올라 정상을 향해 나가자',
+      '달려가자 승리를 향해 나가자',
+      '달려가자 정상을 향해 나가자',
+    ],
+    correctIndex: 1,
+    difficulty: 'hard',
+    explanation: '날아올라 정상을 향해 나가자',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_117',
+    category: '응원가(인트로)',
+    audioPath: 'audio/landersTeamSong.m4a',
+    question: '이 응원가의 제목은?',
+    options: ['랜더스여', '승리의 깃발', '투혼의 랜더스', '프론티어 랜더스'],
+    correctIndex: 0,
+    difficulty: 'easy',
+    explanation: 'SSG랜더스 랜더스여',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_118',
+    category: '응원가(가사)',
+    audioPath: 'audio/landersLineUp.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n우리의 함성으로~(OOOO OOO)',
+    options: ['이글스의 승리를', '트윈스의 승리를', '베어스의 승리를', '랜더스의 승리를'],
+    correctIndex: 3,
+    difficulty: 'easy',
+    explanation: '랜더스의 승리를',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_119',
+    category: '응원가(인트로)',
+    audioPath: 'audio/landersLineUp.m4a',
+    question: '이 응원가는 어느팀의 응원가 일까요?',
+    options: ['KT위즈', 'LG트윈스', 'SSG랜더스', '기아타이거즈'],
+    correctIndex: 2,
+    difficulty: 'easy',
+    explanation: 'SSG랜더스 라인업 송',
   ),
 ];
 
