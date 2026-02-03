@@ -1526,7 +1526,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   QuizQuestionModel(
     quizId: 'cheer_109',
     category: '응원가(인트로)',
-    audioPath: 'audio/landesrTeamSong4.m4a',
+    audioPath: 'audio/landersTeamSong4.m4a',
     question: '이 응원가의 제목은?',
     options: ['J에게', '연안부두', '부산갈매기', '남행열차'],
     correctIndex: 1,
@@ -1566,7 +1566,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   QuizQuestionModel(
     quizId: 'cheer_113',
     category: '응원가(인트로)',
-    audioPath: 'audio/landerTeamSong2.m4a',
+    audioPath: 'audio/landersTeamSong2.m4a',
     question: '이 응원가는 어느 팀의 응원가 일까요?',
     options: ['롯데자이언츠', 'KT위즈', '키움히어로즈', 'SSG랜더스'],
     correctIndex: 3,
