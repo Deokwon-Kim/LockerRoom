@@ -51,19 +51,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!--딥링크-->
-            <intent-filter android:autoVerify="true">
+            <!--커스텀 스킴 딥링크-->
+            <intent-filter>
                <action 
                android:name="android.intent.action.VIEW" />
                <category
                android:name="android.intent.category.DEFAULT" />
                <category
                android:name="android.intent.category.BROWSABLE" />
-
-               <data 
-                  android:scheme="https"
-                  android:host="lockerroom-e9f39.web.app"
-                  android:pathPrefix="/meetup" />
 
                <data 
                   android:scheme="lockerroom"
