@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 // 두산베어스
+const ORANGE_PRIMARY_50 = Color(0xFFFFF3E0);
 const korea = Color(0xff00022E);
 
 const Doosan = Color.fromARGB(255, 13, 12, 40);

@@ -10,6 +10,7 @@ import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:lockerroom/provider/block_provider.dart';
+import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/services/navigation_service.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
@@ -20,6 +21,7 @@ class SettingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
+    final selectedTeam = Provider.of<TeamProvider>(context).selectedTeam;
 
     return Scaffold(
       backgroundColor: WHITE,
@@ -213,6 +215,42 @@ class SettingPage extends StatelessWidget {
                             ),
                           ],
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                decoration: BoxDecoration(
+                  color: GRAYSCALE_LABEL_50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 30.0, right: 20.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '전체 알림',
+                        style: TextStyle(
+                          color: GRAYSCALE_LABEL_950,
+                          fontSize: 16,
+                        ),
+                      ),
+                      StreamBuilder<bool>(
+                        stream: userProvider.notificationSettingStream,
+                        builder: (context, snapshot) {
+                          final isEnabled = snapshot.data ?? true;
+                          return Switch.adaptive(
+                            value: isEnabled,
+                            activeColor: selectedTeam?.color ?? BUTTON,
+                            onChanged: (value) {
+                              userProvider.updateNotificationSetting(value);
+                            },
+                          );
+                        },
                       ),
                     ],
                   ),

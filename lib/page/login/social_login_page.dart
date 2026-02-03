@@ -7,6 +7,7 @@ import 'package:lockerroom/provider/social_login_provider.dart';
 import 'package:lockerroom/services/navigation_service.dart';
 import 'package:lockerroom/main.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class SocialLoginPage extends StatelessWidget {
   const SocialLoginPage({super.key});
@@ -41,6 +42,12 @@ class SocialLoginPage extends StatelessWidget {
                         );
 
                         await socialProvider.signWithApple();
+
+                        // Firebase Analytics 이벤트 기록
+                        FirebaseAnalytics.instance.logEvent(
+                          name: 'login',
+                          parameters: {'method': 'apple'},
+                        );
 
                         // 다이얼 로그 닫기
                         navigatorKey.currentState?.pop();
@@ -113,6 +120,12 @@ class SocialLoginPage extends StatelessWidget {
 
                       await socialProvider.googleLogin();
 
+                      // Firebase Analytics 이벤트 기록
+                      FirebaseAnalytics.instance.logEvent(
+                        name: 'login',
+                        parameters: {'method': 'google'},
+                      );
+
                       // navigatorKey를 사용하여 다이얼로그 확실히 닫기
                       navigatorKey.currentState?.pop();
 
@@ -147,7 +160,7 @@ class SocialLoginPage extends StatelessWidget {
                     width: double.infinity,
                     height: 58,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: GRAYSCALE_LABEL_200),
                     ),
@@ -158,11 +171,14 @@ class SocialLoginPage extends StatelessWidget {
                           'assets/images/logo/google.png',
                           height: 20,
                         ),
-                        Text(
-                          '구글로 시작하기',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
+                        Transform.translate(
+                          offset: Offset(-5, 0),
+                          child: Text(
+                            '구글로 시작하기',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -183,6 +199,12 @@ class SocialLoginPage extends StatelessWidget {
                       );
 
                       await socialProvider.kakaoLogin();
+
+                      // Firebase Analytics 이벤트 기록
+                      FirebaseAnalytics.instance.logEvent(
+                        name: 'login',
+                        parameters: {'method': 'kakao'},
+                      );
 
                       // navigatorKey를 사용하여 다이얼로그 확실히 닫기
                       navigatorKey.currentState?.pop();
@@ -214,10 +236,28 @@ class SocialLoginPage extends StatelessWidget {
                       }
                     }
                   },
-                  child: Image.asset(
-                    'assets/images/kakao_login_large_wide.png',
-                    height: 58,
+                  child: Container(
                     width: double.infinity,
+                    height: 58,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Color(0xffFDDC3F),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset('assets/images/logo/kakao.png', height: 30),
+                        Text(
+                          '카카오로 시작하기',
+                          style: TextStyle(
+                            color: Color(0xff3A2929),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 SizedBox(height: 30),

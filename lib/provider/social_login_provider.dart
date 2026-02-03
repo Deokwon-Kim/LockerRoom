@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -218,6 +219,11 @@ class SocialLoginProvider extends ChangeNotifier {
         }
       }
 
+      await FirebaseAnalytics.instance.logEvent(
+        name: 'account_deleted',
+        parameters: {'method': 'google'},
+      );
+
       notifyListeners();
     } catch (e) {
       debugPrint('구글 계정 탈퇴 중 오류: $e');
@@ -401,6 +407,12 @@ class SocialLoginProvider extends ChangeNotifier {
           rethrow;
         }
       }
+
+      await FirebaseAnalytics.instance.logEvent(
+        name: 'account_deleted',
+        parameters: {'method': 'apple'},
+      );
+
       notifyListeners();
     } catch (e) {
       debugPrint('애플 계정 탈퇴 중 오류: $e');

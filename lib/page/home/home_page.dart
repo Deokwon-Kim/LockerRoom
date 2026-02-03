@@ -2,9 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:lockerroom/bottom_tab_bar/intution_tab_bar.dart';
 import 'package:lockerroom/bottom_tab_bar/quiz_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/fullscreen_image_viewer.dart';
@@ -19,9 +21,12 @@ import 'package:lockerroom/page/food_store/lionsParksStore_page.dart';
 import 'package:lockerroom/page/food_store/ncParkStore_page.dart';
 import 'package:lockerroom/page/food_store/wizParkStore_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_upload_page.dart';
+import 'package:lockerroom/page/meetup/meetup_detail_page.dart';
+import 'package:lockerroom/page/meetup/meetup_page.dart';
 import 'package:lockerroom/page/schedule/schedule.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
+import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/food_store_provider.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
@@ -65,6 +70,7 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _feedProvider.listenRecentPosts();
+      context.read<MeetupProvider>().fetchMeetups();
 
       // BlockProvider와 동기화
       _blockProvider = context.read<BlockProvider>();
@@ -359,6 +365,71 @@ class _HomePageState extends State<HomePage> {
                   // 퀴즈 순위 위젯
                   const QuizRankingWidget(),
                   const SizedBox(height: 20),
+                  Consumer<MeetupProvider>(
+                    builder: (context, meetupProvider, child) {
+                      final recruitingMeetups = meetupProvider.meetups
+                          .where((m) => !m.isFull)
+                          .take(5)
+                          .toList();
+
+                      if (recruitingMeetups.isEmpty)
+                        return const SizedBox.shrink();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                '지금 모집 중인 직관 모임 ⚾',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Spacer(),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const MeetupPage(),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  '전체보기',
+                                  style: TextStyle(color: GRAYSCALE_LABEL_500),
+                                ),
+                              ),
+                              SizedBox(width: 5),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                color: GRAYSCALE_LABEL_500,
+                                size: 12,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 140,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: recruitingMeetups.length,
+                              itemBuilder: (context, index) {
+                                return _buildMeetupMiniCard(
+                                  context,
+                                  recruitingMeetups[index],
+                                  selectedTeam,
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      );
+                    },
+                  ),
                   GestureDetector(
                     onTap: () => widget.onTabTab(1),
                     child: Row(
@@ -679,10 +750,6 @@ class _HomePageState extends State<HomePage> {
                                                   profileProvider,
                                                   child,
                                                 ) {
-                                                  profileProvider
-                                                      .subscribeUserProfile(
-                                                        post.userId,
-                                                      );
                                                   final nickName =
                                                       profileProvider
                                                           .userNicknames[post
@@ -1243,5 +1310,135 @@ class _HomePageState extends State<HomePage> {
       default:
         return null;
     }
+  }
+
+  Widget _buildMeetupMiniCard(
+    BuildContext context,
+    MeetupModel meetup,
+    TeamModel selectedTeam,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MeetupDetailPage(meetup: meetup),
+          ),
+        );
+      },
+      child: Container(
+        width: 200,
+        margin: const EdgeInsets.only(right: 12, bottom: 4),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: WHITE,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: GRAYSCALE_LABEL_300),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${meetup.homeTeam} vs ${meetup.awayTeam}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: selectedTeam.color,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${DateFormat('MM월 dd일 (E)', 'ko').format(DateTime.parse(meetup.gameDate))}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: GRAYSCALE_LABEL_500,
+                          ),
+                        ),
+                        SizedBox(height: 3),
+                        Text(
+                          meetup.gameTime,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: GRAYSCALE_LABEL_500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  meetup.title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: meetup.participants.length / meetup.maxParticipants,
+                    backgroundColor: GRAYSCALE_LABEL_300,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      selectedTeam.color,
+                    ),
+                    minHeight: 4,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  meetup.stadium,
+                  style: TextStyle(fontSize: 11, color: GRAYSCALE_LABEL_500),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selectedTeam.color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${meetup.participants.length}/${meetup.maxParticipants}명',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: selectedTeam.color,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

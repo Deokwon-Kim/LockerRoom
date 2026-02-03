@@ -21,10 +21,10 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
   @override
   void initState() {
     super.initState();
-    // 데이터 fetch
+    // 데이터 fetch (이미 데이터가 있으면 새로고침하지 않음)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<QuizRankingProvider>().fetchRankings();
+      context.read<QuizRankingProvider>().fetchRankings(force: false);
     });
 
     // 3초마다 Top 3 순위 전환

@@ -27,6 +27,7 @@ import 'package:lockerroom/page/alert/notifications_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/page/login/terms_gate_page.dart';
 import 'package:lockerroom/provider/badge_provider.dart';
+import 'package:lockerroom/provider/chat_provider.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_edit_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
@@ -37,10 +38,12 @@ import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/marketFeedEdit_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/market_upload_provider.dart';
+import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/quiz_provider.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/social_login_provider.dart';
+import 'package:lockerroom/provider/tab_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
@@ -53,7 +56,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toastification/toastification.dart';
 import 'package:lockerroom/services/notification_service.dart';
 import 'package:lockerroom/services/navigation_service.dart';
+import 'package:lockerroom/services/deep_link_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'dart:io';
 
 @pragma('vm:entry-point')
@@ -72,8 +77,14 @@ Future<void> main() async {
   );
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
+
   // 로컬 알림 초기화
   await NotificationService().initNotification();
+
+  // ⚠️ 딥링크 초기화는 MyApp.initState()에서 수행
+  // Navigator가 준비된 후에 초기화해야 링크 처리가 가능함
+  // await DeepLinkService().initDeepLinks();
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
@@ -175,16 +186,32 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (context) => QuizProvider()),
         ChangeNotifierProvider(create: (context) => QuizRankingProvider()),
         ChangeNotifierProvider(create: (context) => BadgeProvider()),
+        ChangeNotifierProvider(create: (context) => MeetupProvider()),
+        ChangeNotifierProvider(create: (context) => TabProvider()),
+        ChangeNotifierProvider(create: (context) => ChatProvider()),
       ],
       child: const MyApp(),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Navigator가 준비된 후 딥링크 초기화
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      DeepLinkService().initDeepLinks();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ToastificationWrapper(
@@ -201,6 +228,9 @@ class MyApp extends StatelessWidget {
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
+        ],
+        navigatorObservers: [
+          FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
         ],
         supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
         home: const AuthWrapper(),

@@ -8,6 +8,8 @@ class UserModel {
   final String? profileImage;
   final int followersCount;
   final int followingCount;
+  final Map<String, bool> mutedMeetups;
+  final bool isNotificationsEnabled;
 
   UserModel({
     required this.userNickName,
@@ -17,6 +19,8 @@ class UserModel {
     this.profileImage,
     required this.followersCount,
     required this.followingCount,
+    this.mutedMeetups = const {},
+    this.isNotificationsEnabled = true,
   });
 
   factory UserModel.fromDoc(DocumentSnapshot doc) {
@@ -31,6 +35,8 @@ class UserModel {
       profileImage: data['profileImage'] ?? '',
       followersCount: data['followersCount'] ?? 0,
       followingCount: data['followingCount'] ?? 0,
+      mutedMeetups: Map<String, bool>.from(data['mutedMeetups'] ?? {}),
+      isNotificationsEnabled: data['isNotificationsEnabled'] ?? true,
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class IntutionRecordUploadPage extends StatefulWidget {
   const IntutionRecordUploadPage({super.key});
@@ -212,6 +213,26 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                             if (!_formKey.currentState!.validate()) return;
                             final ok = await intutionProvider.save(context);
                             if (!mounted) return;
+
+                            if (ok) {
+                              // Firebase Analytics 이벤트 기록
+                              FirebaseAnalytics.instance.logEvent(
+                                name: 'intuition_record_created',
+                                parameters: {
+                                  'status':
+                                      intutionProvider.todayGame?.status ??
+                                      'unknown',
+                                  'stadium':
+                                      intutionProvider.todayGame?.stadium ??
+                                      'unknown',
+                                  'team':
+                                      intutionProvider
+                                          .selectedTeamSympleForRecord ??
+                                      'unknown',
+                                },
+                              );
+                            }
+
                             Navigator.pop(context);
                             toastification.show(
                               context: context,

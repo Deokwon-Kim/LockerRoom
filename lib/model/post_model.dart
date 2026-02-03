@@ -12,8 +12,8 @@ class PostModel {
   final int? viewCount; // 조회수 추가
   final String userNickName;
   final String userName;
-
   final List<String> likedBy;
+  final String? meetupId;
 
   PostModel({
     required this.id,
@@ -28,6 +28,7 @@ class PostModel {
     required this.userNickName,
     required this.userName,
     required this.likedBy,
+    this.meetupId,
   });
 
   factory PostModel.fromDoc(DocumentSnapshot doc) {
@@ -58,6 +59,7 @@ class PostModel {
       userNickName: data['userNickName'] ?? '사용자',
       userName: data['name'] ?? '',
       likedBy: List<String>.from(data['likedBy'] ?? const []),
+      meetupId: data['meetupId'],
     );
   }
 
@@ -71,6 +73,7 @@ class PostModel {
     String? userNickName,
     String? userName,
     List<String>? likedBy,
+    String? meetupId,
   }) {
     return PostModel(
       id: id, // id, userId, createdAt 등 필수 변경 불가 필드는 그대로
@@ -85,6 +88,7 @@ class PostModel {
       userNickName: userNickName ?? this.userNickName,
       userName: userName ?? this.userName,
       likedBy: likedBy ?? this.likedBy,
+      meetupId: meetupId ?? this.meetupId,
     );
   }
 
@@ -101,6 +105,7 @@ class PostModel {
       'userNickName': userNickName,
       'userName': userName,
       'likedBy': likedBy,
+      'meetupId': meetupId,
     };
   }
 }

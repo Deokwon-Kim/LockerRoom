@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_link_previewer/flutter_link_previewer.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
@@ -10,8 +11,10 @@ import 'package:lockerroom/page/feed/feed_edit_page.dart';
 import 'package:lockerroom/page/feed/feed_mypage.dart';
 import 'package:lockerroom/page/feed/feed_search_page.dart';
 import 'package:lockerroom/page/feed/fullscreen_video_player.dart';
+import 'package:lockerroom/page/meetup/meetup_detail_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
+import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
@@ -336,6 +339,187 @@ class _PostWidgetState extends State<PostWidget> {
                 // 본문
                 Text(widget.post.text),
                 const SizedBox(height: 8),
+                if (widget.post.meetupId != null) ...[
+                  FutureBuilder<MeetupModel?>(
+                    future: context.read<MeetupProvider>().getMeetupById(
+                      widget.post.meetupId!,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Container(
+                          height: 80,
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: GRAYSCALE_LABEL_100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      }
+
+                      if (!snapshot.hasData || snapshot.data == null) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final meetup = snapshot.data!;
+                      final teamProvider = context.read<TeamProvider>();
+                      final homeTeamColor =
+                          teamProvider.findTeamByName(meetup.homeTeam)?.color ??
+                          BUTTON;
+
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  MeetupDetailPage(meetup: meetup),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: WHITE,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: GRAYSCALE_LABEL_200,
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.03),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: IntrinsicHeight(
+                              child: Row(
+                                children: [
+                                  // 왼쪽 컬러 엑센트 바
+                                  Container(width: 8, color: homeTeamColor),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: homeTeamColor
+                                                      .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  '직관모임',
+                                                  style: TextStyle(
+                                                    color: homeTeamColor,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              Icon(
+                                                Icons.arrow_forward_ios,
+                                                size: 14,
+                                                color: homeTeamColor,
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Text(
+                                            meetup.title,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              height: 1.2,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.sports_baseball,
+                                                size: 14,
+                                                color: homeTeamColor,
+                                              ),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                '${meetup.homeTeam} vs ${meetup.awayTeam}',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.calendar_today_outlined,
+                                                size: 14,
+                                                color: homeTeamColor,
+                                              ),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                '${meetup.gameDate} ${meetup.gameTime}',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12,
+                                                  color: GRAYSCALE_LABEL_500,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.location_on_outlined,
+                                                color: homeTeamColor,
+                                                size: 14,
+                                              ),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                meetup.stadium,
+                                                style: TextStyle(
+                                                  color: homeTeamColor,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
                 // URL프리뷰 표시
                 if (extractUrl(widget.post.text) != null) ...[
                   SizedBox(height: 10),

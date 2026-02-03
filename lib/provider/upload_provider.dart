@@ -24,6 +24,7 @@ class UploadProvider extends ChangeNotifier {
 
   double _uploadProgress = 0.0;
   bool _isUploading = false;
+  String? _meetupId;
 
   List<File> get images => _images;
   File? get camera => _camera;
@@ -31,6 +32,12 @@ class UploadProvider extends ChangeNotifier {
   Uint8List? get videoThumbnail => _videoThumbnail;
   double get uploadProgress => _uploadProgress;
   bool get isUploading => _isUploading;
+  String? get meetupId => _meetupId;
+
+  void setMeetupId(String? id) {
+    _meetupId = id;
+    notifyListeners();
+  }
 
   void setImages(List<File> newImages) {
     _images = newImages;
@@ -69,6 +76,7 @@ class UploadProvider extends ChangeNotifier {
     _uploadProgress = 0.0;
     _isUploading = false;
     _initialCaption = null;
+    _meetupId = null;
     notifyListeners();
   }
 
@@ -315,6 +323,7 @@ class UploadProvider extends ChangeNotifier {
       'name': name,
       'text': text,
       'mediaUrls': mediaUrls,
+      'meetupId': _meetupId,
       'createdAt': FieldValue.serverTimestamp(),
     });
 

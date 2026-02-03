@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -214,6 +215,7 @@ class UserProvider extends ChangeNotifier {
     }
 
     try {
+      await FirebaseAnalytics.instance.logEvent(name: 'logout');
       await FirebaseAuth.instance.signOut();
       // 사용자 관련 모든 상태 초기화
       _currentUser = null;
@@ -290,6 +292,11 @@ class UserProvider extends ChangeNotifier {
     await FirebaseAuth.instance.currentUser?.updateDisplayName(newNickname);
     await FirebaseAuth.instance.currentUser?.reload();
 
+    await FirebaseAnalytics.instance.logEvent(
+      name: 'nickname_changed',
+      parameters: {'nickname': newNickname},
+    );
+
     _currentUser = FirebaseAuth.instance.currentUser;
 
     _nickname = newNickname;
@@ -355,6 +362,11 @@ class UserProvider extends ChangeNotifier {
         }
       }
 
+      await FirebaseAnalytics.instance.logEvent(
+        name: 'account_deleted',
+        parameters: {'method': 'kakao'},
+      );
+
       clearUserData();
     } catch (e) {
       debugPrint('카카오 계정 탈퇴 중 오류: $e');
@@ -405,6 +417,11 @@ class UserProvider extends ChangeNotifier {
       } catch (e) {
         print('Auth 사용자 삭제 중 오류 (무시): $e');
       }
+
+      await FirebaseAnalytics.instance.logEvent(
+        name: 'account_deleted',
+        parameters: {'method': 'email'},
+      );
 
       clearUserData();
     } on FirebaseAuthException {
@@ -831,5 +848,30 @@ class UserProvider extends ChangeNotifier {
     } catch (e) {
       print('이름 변경 실패');
     }
+  }
+
+  // 글로벌 알림 설정 업데이트
+  Future<void> updateNotificationSetting(bool enabled) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      await _firestore.collection('users').doc(uid).update({
+        'isNotificationsEnabled': enabled,
+      });
+      notifyListeners();
+    } catch (e) {
+      debugPrint('알림 설정 업데이트 에러: $e');
+    }
+  }
+
+  // 글로벌 알림 설정 스트림
+  Stream<bool> get notificationSettingStream {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return Stream.value(true);
+    return _firestore.collection('users').doc(uid).snapshots().map((doc) {
+      if (!doc.exists) return true;
+      return doc.data()?['isNotificationsEnabled'] ?? true;
+    });
   }
 }
