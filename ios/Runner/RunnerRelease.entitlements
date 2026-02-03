@@ -4,10 +4,5 @@
 <dict>
 	<key>aps-environment</key>
 	<string>production</string>
-	<key>com.apple.developer.associated-domains</key>
-	<array>
-		<string>applinks:lockerroom-e9f39.web.app?mode=developer</string>
-		<string>applinks:lockerroom-e9f39.firebaseapp.com?mode=developer</string>
-	</array>
 </dict>
 </plist>
