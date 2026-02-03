@@ -40,6 +40,16 @@
 				<string>kakao71c8ab0d692ecbaa94a2e029ce6b3af6</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.codegrove.thebase</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>lockerroom</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>

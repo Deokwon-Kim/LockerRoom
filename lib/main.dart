@@ -56,6 +56,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toastification/toastification.dart';
 import 'package:lockerroom/services/notification_service.dart';
 import 'package:lockerroom/services/navigation_service.dart';
+import 'package:lockerroom/services/deep_link_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'dart:io';
@@ -80,6 +81,10 @@ Future<void> main() async {
 
   // 로컬 알림 초기화
   await NotificationService().initNotification();
+
+  // ⚠️ 딥링크 초기화는 MyApp.initState()에서 수행
+  // Navigator가 준비된 후에 초기화해야 링크 처리가 가능함
+  // await DeepLinkService().initDeepLinks();
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
@@ -190,10 +195,23 @@ Future<void> main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Navigator가 준비된 후 딥링크 초기화
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      DeepLinkService().initDeepLinks();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ToastificationWrapper(

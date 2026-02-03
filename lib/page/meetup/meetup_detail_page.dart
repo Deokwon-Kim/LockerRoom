@@ -27,8 +27,9 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'dart:io';
 
 class MeetupDetailPage extends StatefulWidget {
-  final MeetupModel meetup;
-  const MeetupDetailPage({super.key, required this.meetup});
+  final MeetupModel? meetup;
+  final String? meetupId;
+  const MeetupDetailPage({super.key, this.meetup, this.meetupId});
 
   @override
   State<MeetupDetailPage> createState() => _MeetupDetailPageState();
@@ -37,11 +38,59 @@ class MeetupDetailPage extends StatefulWidget {
 class _MeetupDetailPageState extends State<MeetupDetailPage> {
   final ScreenshotController _screenshotController = ScreenshotController();
   MeetupModel? _latestMeetup;
+  bool _isLoading = false;
   StreamSubscription? _meetupSubscription;
 
+  @override
+  @override
+  void initState() {
+    super.initState();
+    _latestMeetup = widget.meetup;
+
+    if (_latestMeetup == null && widget.meetupId != null) {
+      _loadMeetupData(widget.meetupId!);
+    } else if (_latestMeetup != null) {
+      _postInit(_latestMeetup!.id);
+    }
+  }
+
+  void _postInit(String id) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<MeetupProvider>().incrementViewCount(id);
+    });
+    _setupMeetupListener(id);
+  }
+
+  Future<void> _loadMeetupData(String id) async {
+    setState(() => _isLoading = true);
+    try {
+      final fetched = await context.read<MeetupProvider>().getMeetupById(id);
+      if (fetched != null && mounted) {
+        setState(() {
+          _latestMeetup = fetched;
+        });
+      } else if (mounted) {
+        // 데이터가 없는 경우 처리
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('모임 정보를 찾을 수 없습니다.')));
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _refreshMeetup() async {
+    if (_latestMeetup == null) return;
+
     final updated = await context.read<MeetupProvider>().getMeetupById(
-      widget.meetup.id,
+      _latestMeetup!.id,
     );
     if (updated != null && mounted) {
       setState(() {
@@ -50,20 +99,10 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<MeetupProvider>().incrementViewCount(widget.meetup.id);
-    });
-    _setupMeetupListener();
-  }
-
-  void _setupMeetupListener() {
+  void _setupMeetupListener(String id) {
     _meetupSubscription = context
         .read<MeetupProvider>()
-        .getMeetupStream(widget.meetup.id)
+        .getMeetupStream(id)
         .listen((updated) {
           if (updated != null && mounted) {
             setState(() {
@@ -80,6 +119,9 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
   }
 
   Future<void> _handleJoin() async {
+    final targetMeetup = _latestMeetup;
+    if (targetMeetup == null) return;
+
     final meetupProvider = context.read<MeetupProvider>();
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -92,15 +134,15 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
       );
       return;
     }
-    final success = await meetupProvider.joinMeetup(widget.meetup.id);
+    final success = await meetupProvider.joinMeetup(targetMeetup.id);
     if (success) {
       // Firebase Analytics 이벤트 기록
       FirebaseAnalytics.instance.logEvent(
         name: 'join_meetup',
         parameters: {
-          'meetup_id': widget.meetup.id,
-          'title': widget.meetup.title,
-          'team': widget.meetup.myTeam,
+          'meetup_id': targetMeetup.id,
+          'title': targetMeetup.title,
+          'team': targetMeetup.myTeam,
         },
       );
     }
@@ -126,6 +168,9 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
   }
 
   Future<void> _handleLeave() async {
+    final targetMeetup = _latestMeetup;
+    if (targetMeetup == null) return;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -157,15 +202,15 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
         );
         return;
       }
-      final success = await meetupProvider.leaveMeetup(widget.meetup.id);
+      final success = await meetupProvider.leaveMeetup(targetMeetup.id);
       if (success) {
         // Firebase Analytics 이벤트 기록
         FirebaseAnalytics.instance.logEvent(
           name: 'leave_meetup',
           parameters: {
-            'meetup_id': widget.meetup.id,
-            'title': widget.meetup.title,
-            'team': widget.meetup.myTeam,
+            'meetup_id': targetMeetup.id,
+            'title': targetMeetup.title,
+            'team': targetMeetup.myTeam,
           },
         );
       }
@@ -184,6 +229,9 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
   }
 
   Future<void> _handleDelete() async {
+    final targetMeetup = _latestMeetup;
+    if (targetMeetup == null) return;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => DeleteDiallog(
@@ -195,7 +243,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
 
     if (confirm == true) {
       final meetupProvider = context.read<MeetupProvider>();
-      final success = await meetupProvider.deleteMeetup(widget.meetup.id);
+      final success = await meetupProvider.deleteMeetup(targetMeetup.id);
       if (!mounted) return;
       if (success) {
         Navigator.pop(context);
@@ -356,7 +404,8 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
 
       await Share.shareXFiles(
         [XFile(imagePath.path)],
-        text: '[Locker Room] ${widget.meetup.title} 모임에 함께해요! ⚾',
+        text:
+            '[더베이스] ${_latestMeetup!.title} 모임에 함께해요! ⚾\n\n모임 참여하기: https://lockerroom-e9f39.web.app/meetup/${_latestMeetup!.id}',
         sharePositionOrigin: box != null
             ? box.localToGlobal(Offset.zero) & box.size
             : null,
@@ -401,9 +450,11 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
               onTap: () {
                 Navigator.pop(context);
                 final meetUpProvider = context.read<MeetupProvider>();
+                if (_latestMeetup == null) return;
+
                 final latestMeetup = meetUpProvider.meetups.firstWhere(
-                  (m) => m.id == widget.meetup.id,
-                  orElse: () => widget.meetup,
+                  (m) => m.id == _latestMeetup!.id,
+                  orElse: () => _latestMeetup!,
                 );
                 Navigator.push(
                   context,
@@ -455,9 +506,11 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                 Navigator.pop(context);
                 final uploadProvider = context.read<UploadProvider>();
                 uploadProvider.clearAll();
-                uploadProvider.setMeetupId(widget.meetup.id);
+                if (_latestMeetup == null) return;
+
+                uploadProvider.setMeetupId(_latestMeetup!.id);
                 uploadProvider.setInitialCaption(
-                  '함께 직관 가요!✨\n${widget.meetup.title} 모임 참여하기',
+                  '함께 직관 가요!✨\n${_latestMeetup!.title} 모임 참여하기',
                 );
 
                 Navigator.push(
@@ -492,18 +545,33 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      final color = context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
+      return Scaffold(
+        backgroundColor: BACKGROUND_COLOR,
+        appBar: AppBar(backgroundColor: color, elevation: 0),
+        body: Center(child: CircularProgressIndicator(color: color)),
+      );
+    }
+
+    if (_latestMeetup == null) {
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     final teamProvider = context.read<TeamProvider>();
     final selectedTeam = teamProvider.selectedTeam;
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
     return Consumer<MeetupProvider>(
       builder: (context, meetUpProvider, child) {
-        final meetup =
-            _latestMeetup ??
-            meetUpProvider.meetups.firstWhere(
-              (m) => m.id == widget.meetup.id,
-              orElse: () => widget.meetup,
-            );
+        // Try to get updated version from provider, else use _latestMeetup
+        MeetupModel meetup = _latestMeetup!;
+        try {
+          meetup = meetUpProvider.meetups.firstWhere(
+            (m) => m.id == _latestMeetup!.id,
+            orElse: () => _latestMeetup!,
+          );
+        } catch (_) {}
 
         final isParticipating =
             currentUserId != null &&

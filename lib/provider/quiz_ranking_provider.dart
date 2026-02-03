@@ -24,26 +24,28 @@ class QuizRankingProvider extends ChangeNotifier {
     fetchRankings();
   }
 
-  // 순위 데이터 가져오기
-  Future<void> fetchRankings() async {
+  // 순위 데이터 가져오기 (force: true일 때만 강제 새로고침)
+  Future<void> fetchRankings({bool force = false}) async {
+    // 이미 로딩 중이면 중복 실행 방지
+    if (_isLoading) return;
+
+    // 데이터가 이미 있고 강제 새로고침이 아니면 생략
+    if (_rankings.isNotEmpty && !force) return;
+
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // collectionGroup을 사용하여 모든 userId의 results 서브컬렉션 조회
+      // 1. 결과 데이터 가져오기
       Query query = _firestore.collectionGroup('results');
-
-      // 카테고리 필터
       if (_selectedCategory != 'all') {
         query = query.where('category', isEqualTo: _selectedCategory);
       }
-
-      // 점수 높은 순으로 정렬
       query = query
           .orderBy('score', descending: true)
           .orderBy('completedAt', descending: true)
-          .limit(1000);
+          .limit(500); // 1000개에서 500개로 축소
 
       final snapshot = await query.get();
 
@@ -59,18 +61,14 @@ class QuizRankingProvider extends ChangeNotifier {
         final userNickName = data['userNickName'] as String? ?? '익명';
 
         if (!userTotalScores.containsKey(userId)) {
-          // 처음 발견한 사용자
           userTotalScores[userId] = {
             'totalScore': score,
             'completedAt': completedAt,
             'userNickName': userNickName,
           };
         } else {
-          // 이미 있는 사용자 - 점수 합산
           userTotalScores[userId]!['totalScore'] =
               (userTotalScores[userId]!['totalScore'] as int) + score;
-
-          // 최근 completedAt 유지
           final currentCompletedAt =
               userTotalScores[userId]!['completedAt'] as Timestamp;
           if (completedAt.compareTo(currentCompletedAt) > 0) {
@@ -79,10 +77,26 @@ class QuizRankingProvider extends ChangeNotifier {
         }
       }
 
-      // 사용자 정보 가져오기
+      // 3. 합산된 점수로 1차 정렬
+      final sortedEntries = userTotalScores.entries.toList()
+        ..sort((a, b) {
+          final scoreCompare = (b.value['totalScore'] as int).compareTo(
+            a.value['totalScore'] as int,
+          );
+          if (scoreCompare != 0) return scoreCompare;
+          return (b.value['completedAt'] as Timestamp).compareTo(
+            a.value['completedAt'] as Timestamp,
+          );
+        });
+
+      // 4. 상위 사용자 정보 가져오기 (전체 1000명이 아닌 상위 50명만 상세 정보 조회)
       final List<RankingUserModel> tempRankings = [];
 
-      for (var entry in userTotalScores.entries) {
+      // 병렬 처리를 위해 Future 리스트 생성
+      final List<Future<void>> fetchFutures = [];
+
+      for (int i = 0; i < sortedEntries.length; i++) {
+        final entry = sortedEntries[i];
         final userId = entry.key;
         final scoreData = entry.value;
         final userTotalScore = scoreData['totalScore'] as int;
@@ -134,30 +148,24 @@ class QuizRankingProvider extends ChangeNotifier {
           );
         }
       }
-      // 점수 순으로 정렬
+
+      await Future.wait(fetchFutures);
+
+      // 점수 순으로 최종 재정렬
       tempRankings.sort((a, b) {
         final scoreCompare = b.score.compareTo(a.score);
         if (scoreCompare != 0) return scoreCompare;
-        // 동점일 경우 최근 기록 우선
         return b.completedAt.compareTo(a.completedAt);
       });
 
-      // 순위 부여 및 점수 차이 계산
+      // 순위 부여 및 결과 저장
       _rankings = tempRankings.asMap().entries.map((entry) {
         final index = entry.key;
         final user = entry.value;
-
-        // 바로 위 순위와의 점수 차이 계산
-        int scoreDiff = 0;
-        if (index > 0) {
-          // 2위 이하인 경우, 바로 위 순위와의 점수 차이
-          scoreDiff = user.score - tempRankings[index - 1].score; // 음수로 나옴
-        }
-
-        return user.copyWith(
-          rank: index + 1,
-          rankChange: scoreDiff, // rankChange 필드를 점수 차이로 재활용
-        );
+        int scoreDiff = (index > 0)
+            ? (user.score - tempRankings[index - 1].score)
+            : 0;
+        return user.copyWith(rank: index + 1, rankChange: scoreDiff);
       }).toList();
 
       // 팀 랭킹 정렬 및 생성 (임시 리스트)
@@ -190,10 +198,16 @@ class QuizRankingProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _errorMessage = '순위를 불러오는데 실패했습니다: $e';
+      debugPrint('순위 불러오기 실패: $e');
+      _errorMessage = '순위를 불러오는데 실패했습니다.';
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  // 동시성 처리를 위한 헬퍼 (리스트 추가)
+  void synchronizedAdd(List<RankingUserModel> list, RankingUserModel item) {
+    list.add(item);
   }
 
   // 내 순위 찾기
