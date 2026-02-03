@@ -11,13 +11,24 @@ class QuizData {
       '야구룰': baseballRuelQuestions,
       '선수퀴즈': playerQuestions,
       '기록': statsQuestions,
-      '응원가': cheerSongQuestions,
+      '응원가(인트로)': cheerSongQuestions
+          .where((q) => q.category == '응원가(인트로)')
+          .toList(),
+      '응원가(가사)': cheerSongQuestions
+          .where((q) => q.category == '응원가(가사)')
+          .toList(),
       '랜덤': randomQuestions,
     };
   }
 
   // 카테고리별 문제 가져오기
   static List<QuizQuestionModel> getByCategory(String category) {
+    if (category == '응원가(인트로)' || category == '응원가(가사)') {
+      return cheerSongQuestions.where((q) => q.category == category).toList();
+    }
+    if (category == '응원가') {
+      return cheerSongQuestions;
+    }
     return getAllQuestions()[category] ?? [];
   }
 

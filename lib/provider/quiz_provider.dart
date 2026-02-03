@@ -132,15 +132,58 @@ class QuizProvider extends ChangeNotifier {
   }
 
   // ==== 랜덤 퀴즈 시작(오늘의 퀴즈) ====
-  void startRandomQuiz({int questionCount = 10}) {
+  Future<void> startRandomQuiz({int questionCount = 10}) async {
     _isLoading = true;
     notifyListeners();
 
     try {
       _selectedCategory = '랜덤';
 
-      // 모든 카테고리에서 랜덤 문제 가져오기
-      _currentQuestions = QuizData.getRandomQuestions(questionCount);
+      final user = _auth.currentUser;
+      List<String> lastPlayedIds = [];
+
+      // Firestore에서 직전 기록 조회
+      if (user != null) {
+        try {
+          final doc = await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .collection('quiz_data')
+              .doc('last_played')
+              .get();
+
+          if (doc.exists) {
+            lastPlayedIds = List<String>.from(doc.data()?['ids'] ?? []);
+          }
+        } catch (e) {
+          debugPrint('직전 기록 조회 실패: $e');
+        }
+      }
+
+      // 모든 카테고리에서 가져오기
+      final allQuestions = <QuizQuestionModel>[];
+      QuizData.getAllQuestions().values.forEach((questions) {
+        allQuestions.addAll(questions);
+      });
+
+      // 직전에 푼 문제 제외
+      final candidates = allQuestions
+          .where((q) => !lastPlayedIds.contains(q.quizId))
+          .toList();
+
+      candidates.shuffle();
+
+      if (candidates.length >= questionCount) {
+        _currentQuestions = candidates.take(questionCount).toList();
+      } else {
+        _currentQuestions = [...candidates];
+        final excluded = allQuestions
+            .where((q) => lastPlayedIds.contains(q.quizId))
+            .toList();
+        excluded.shuffle();
+        final needed = questionCount - candidates.length;
+        _currentQuestions.addAll(excluded.take(needed));
+      }
 
       // 상태 초기화
       _currentQuestionIndex = 0;
@@ -216,11 +259,17 @@ class QuizProvider extends ChangeNotifier {
       answerResults[_currentQuestions[index].quizId] = isCorrect;
     });
 
-    // 결과 객체 생성
+    // 카테고리 매핑 (인트로/가사 모두 '응원가' 랭킹에 합산되도록)
+    String finalCategory = _selectedCategory!;
+    if (finalCategory.startsWith('응원가')) {
+      finalCategory = '응원가';
+    }
+
+    // 결과 객체 생성 (다시하기를 위해 원본 카테고리 보존)
     final result = QuizResultModel(
       userId: _auth.currentUser?.uid ?? '',
       userNickName: userNickName ?? '',
-      category: _selectedCategory!,
+      category: _selectedCategory!, // 원본 카테고리 (인트로/가사 등)
       totalQuestions: totalQuestions,
       correctAnswers: correctCount,
       score: score,
@@ -234,12 +283,16 @@ class QuizProvider extends ChangeNotifier {
     try {
       final userId = _auth.currentUser?.uid;
       if (userId != null) {
-        // 1. 개별 결과 저장
+        // 1. 개별 결과 저장 (랭킹 시스템을 위해 카테고리 매핑 적용)
+        final firestoreData = result.toJson();
+        firestoreData['category'] =
+            finalCategory; // Firestore에는 랭킹용 통합 카테고리로 저장
+
         await _firestore
             .collection('quiz_results')
             .doc(userId)
             .collection('results')
-            .add(result.toJson());
+            .add(firestoreData);
 
         // 2. 유저 총점 업데이트 (Increment)
         await _firestore.collection('users').doc(userId).update({
@@ -263,9 +316,9 @@ class QuizProvider extends ChangeNotifier {
           // 이번 문제 ID들 뒤에 추가
           currentIds.addAll(questionIds);
 
-          // 너무 많으면 오래된 것부터 삭제
-          if (currentIds.length > 40) {
-            currentIds = currentIds.sublist(currentIds.length - 40);
+          // 너무 많으면 오래된 것부터 삭제 (최대 150개 추적)
+          if (currentIds.length > 150) {
+            currentIds = currentIds.sublist(currentIds.length - 150);
           }
 
           transaction.set(docRef, {'ids': currentIds});

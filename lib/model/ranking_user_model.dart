@@ -7,6 +7,8 @@ class RankingUserModel {
   final String? profileUrl;
   final DateTime completedAt;
 
+  final String? teamName;
+
   RankingUserModel({
     required this.rank,
     required this.userId,
@@ -15,6 +17,7 @@ class RankingUserModel {
     required this.rankChange,
     this.profileUrl,
     required this.completedAt,
+    this.teamName,
   });
 
   RankingUserModel copyWith({
@@ -25,6 +28,7 @@ class RankingUserModel {
     int? rankChange,
     String? profileUrl,
     DateTime? completedAt,
+    String? teamName,
   }) {
     return RankingUserModel(
       rank: rank ?? this.rank,
@@ -34,6 +38,7 @@ class RankingUserModel {
       rankChange: rankChange ?? this.rankChange,
       profileUrl: profileUrl ?? this.profileUrl,
       completedAt: completedAt ?? this.completedAt,
+      teamName: teamName ?? this.teamName,
     );
   }
 }

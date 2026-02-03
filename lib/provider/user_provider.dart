@@ -197,7 +197,9 @@ class UserProvider extends ChangeNotifier {
 
   Future<void> signOut() async {
     try {
-      await UserApi.instance.logout();
+      if (await AuthApi.instance.hasToken()) {
+        await UserApi.instance.logout();
+      }
     } catch (e) {
       print('카카오 로그아웃 실패 :$e');
     }
@@ -336,7 +338,9 @@ class UserProvider extends ChangeNotifier {
 
       // 1. 카카오 연동 해제
       try {
-        await UserApi.instance.unlink();
+        if (await AuthApi.instance.hasToken()) {
+          await UserApi.instance.unlink();
+        }
       } catch (e) {
         debugPrint('카카오 unlink 실패(이미 해제일 수 있음): $e');
       }
