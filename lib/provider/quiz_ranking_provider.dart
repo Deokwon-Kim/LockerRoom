@@ -24,14 +24,8 @@ class QuizRankingProvider extends ChangeNotifier {
     fetchRankings();
   }
 
-  // 순위 데이터 가져오기 (force: true일 때만 강제 새로고침)
-  Future<void> fetchRankings({bool force = false}) async {
-    // 이미 로딩 중이면 중복 실행 방지
-    if (_isLoading) return;
-
-    // 데이터가 이미 있고 강제 새로고침이 아니면 생략
-    if (_rankings.isNotEmpty && !force) return;
-
+  // 순위 데이터 가져오기
+  Future<void> fetchRankings() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -39,13 +33,17 @@ class QuizRankingProvider extends ChangeNotifier {
     try {
       // 1. 결과 데이터 가져오기
       Query query = _firestore.collectionGroup('results');
+
+      // 카테고리 필터
       if (_selectedCategory != 'all') {
         query = query.where('category', isEqualTo: _selectedCategory);
       }
+
+      // 점수 높은 순으로 정렬
       query = query
           .orderBy('score', descending: true)
           .orderBy('completedAt', descending: true)
-          .limit(500); // 1000개에서 500개로 축소
+          .limit(1000);
 
       final snapshot = await query.get();
 
@@ -61,14 +59,18 @@ class QuizRankingProvider extends ChangeNotifier {
         final userNickName = data['userNickName'] as String? ?? '익명';
 
         if (!userTotalScores.containsKey(userId)) {
+          // 처음 발견한 사용자
           userTotalScores[userId] = {
             'totalScore': score,
             'completedAt': completedAt,
             'userNickName': userNickName,
           };
         } else {
+          // 이미 있는 사용자 - 점수 합산
           userTotalScores[userId]!['totalScore'] =
               (userTotalScores[userId]!['totalScore'] as int) + score;
+
+          // 최근 completedAt 유지
           final currentCompletedAt =
               userTotalScores[userId]!['completedAt'] as Timestamp;
           if (completedAt.compareTo(currentCompletedAt) > 0) {
@@ -89,14 +91,10 @@ class QuizRankingProvider extends ChangeNotifier {
           );
         });
 
-      // 4. 상위 사용자 정보 가져오기 (전체 1000명이 아닌 상위 50명만 상세 정보 조회)
+      // 4. 상위 사용자 정보 가져오기
       final List<RankingUserModel> tempRankings = [];
 
-      // 병렬 처리를 위해 Future 리스트 생성
-      final List<Future<void>> fetchFutures = [];
-
-      for (int i = 0; i < sortedEntries.length; i++) {
-        final entry = sortedEntries[i];
+      for (var entry in sortedEntries) {
         final userId = entry.key;
         final scoreData = entry.value;
         final userTotalScore = scoreData['totalScore'] as int;
@@ -149,23 +147,30 @@ class QuizRankingProvider extends ChangeNotifier {
         }
       }
 
-      await Future.wait(fetchFutures);
-
-      // 점수 순으로 최종 재정렬
+      // 점수 순으로 정렬 (이미 되어있을 테지만 확인 사살)
       tempRankings.sort((a, b) {
         final scoreCompare = b.score.compareTo(a.score);
         if (scoreCompare != 0) return scoreCompare;
+        // 동점일 경우 최근 기록 우선
         return b.completedAt.compareTo(a.completedAt);
       });
 
-      // 순위 부여 및 결과 저장
+      // 순위 부여 및 점수 차이 계산
       _rankings = tempRankings.asMap().entries.map((entry) {
         final index = entry.key;
         final user = entry.value;
-        int scoreDiff = (index > 0)
-            ? (user.score - tempRankings[index - 1].score)
-            : 0;
-        return user.copyWith(rank: index + 1, rankChange: scoreDiff);
+
+        // 바로 위 순위와의 점수 차이 계산
+        int scoreDiff = 0;
+        if (index > 0) {
+          // 2위 이하인 경우, 바로 위 순위와의 점수 차이
+          scoreDiff = user.score - tempRankings[index - 1].score; // 음수로 나옴
+        }
+
+        return user.copyWith(
+          rank: index + 1,
+          rankChange: scoreDiff, // rankChange 필드를 점수 차이로 재활용
+        );
       }).toList();
 
       // 팀 랭킹 정렬 및 생성 (임시 리스트)
@@ -198,16 +203,10 @@ class QuizRankingProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      debugPrint('순위 불러오기 실패: $e');
-      _errorMessage = '순위를 불러오는데 실패했습니다.';
+      _errorMessage = '순위를 불러오는데 실패했습니다: $e';
       _isLoading = false;
       notifyListeners();
     }
-  }
-
-  // 동시성 처리를 위한 헬퍼 (리스트 추가)
-  void synchronizedAdd(List<RankingUserModel> list, RankingUserModel item) {
-    list.add(item);
   }
 
   // 내 순위 찾기
