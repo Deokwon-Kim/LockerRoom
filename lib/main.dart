@@ -77,8 +77,6 @@ Future<void> main() async {
   );
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
-
   // 로컬 알림 초기화
   await NotificationService().initNotification();
 

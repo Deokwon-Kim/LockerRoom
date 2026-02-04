@@ -56,7 +56,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
     // 데이터 fetch (이미 데이터가 있으면 새로고침하지 않음)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<QuizRankingProvider>().fetchRankings(force: false);
+      context.read<QuizRankingProvider>().fetchRankings();
     });
   }
 
