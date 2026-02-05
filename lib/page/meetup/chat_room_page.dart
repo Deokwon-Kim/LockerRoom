@@ -1324,7 +1324,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         actions: [
           CupertinoDialogAction(
             onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
+            child: const Text('취소', style: TextStyle(color: BLACK)),
           ),
           CupertinoDialogAction(
             isDestructiveAction: true,
