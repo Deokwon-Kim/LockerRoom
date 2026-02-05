@@ -33,7 +33,7 @@ class _TermsOfServicePageState extends State<TermsOfServicePage> {
             ),
             const SizedBox(height: 8),
             const Text(
-              '마지막 업데이트: 2025년 10월',
+              '마지막 업데이트: 2026년 2월',
               style: TextStyle(fontSize: 13, color: Color(0xFF888888)),
             ),
             const SizedBox(height: 24),
@@ -47,6 +47,8 @@ class _TermsOfServicePageState extends State<TermsOfServicePage> {
               '''"서비스"는 더베이스 모바일 애플리케이션을 통해 제공되는 모든 기능을 의미하며, 다음을 포함합니다:
 
 • 팀 기반 커뮤니티 피드
+• 직관모임 실시간 채팅 및 메시지 전송
+• 직관모임 개설 및 참여
 • 게시물 작성 및 공유
 • 댓글 및 상호작용
 • 팔로우 및 팔로워 관리
@@ -91,28 +93,36 @@ class _TermsOfServicePageState extends State<TermsOfServicePage> {
 4. 불법 물품 거래(성인용품, 의약품, 위조품 등)는 엄격히 금지됩니다.'''),
             const SizedBox(height: 20),
             _buildSection(
-              '제7조 서비스 중단 및 종료',
+              '제7조 직관모임 규정',
+              '''1. 직관모임은 이용자 간의 자율적인 오프라인 만남을 목적으로 합니다.
+2. 회사는 모임의 장소를 제공하거나 주최하는 주체가 아니며, 이용자 간의 만남과 그 결과에 대해 어떠한 법적 책임도 지지 않습니다.
+3. 이용자는 오프라인 만남 시 안전에 주의해야 하며, 범죄 행위, 금전 요구, 불법 행위 권유 등을 엄격히 금지합니다.
+4. 모임 내에서의 분쟁이나 사고는 당사자 간의 해결을 원칙으로 합니다.''',
+            ),
+            const SizedBox(height: 20),
+            _buildSection(
+              '제8조 서비스 중단 및 종료',
               '''1. 회사는 운영상 필요시 서비스를 일시 중단할 수 있습니다.
 2. 이용자가 약관을 위반하면, 경고 또는 계정 정지될 수 있습니다.
 3. 심각한 위반은 영구 차단 대상이 됩니다.
 4. 서비스 종료 시 축적된 데이터는 삭제될 수 있습니다.''',
             ),
             const SizedBox(height: 20),
-            _buildSection('제8조 면책 조항', '''1. 회사는 다음의 경우에 대해 책임을 지지 않습니다:
+            _buildSection('제9조 면책 조항', '''1. 회사는 다음의 경우에 대해 책임을 지지 않습니다:
    - 천재지변, 긴급사태 등으로 인한 서비스 중단
    - 이용자의 컴퓨터 오류, 네트워크 문제
    - 서비스 이용으로 인한 간접적 손실
-   - 이용자 간의 거래 결과
+   - 이용자 간의 거래 및 오프라인 만남 결과
    - 제3자의 불법 행위로 인한 피해
 
 2. 본 서비스는 "있는 그대로" 제공되며, 회사는 명시적/암묵적 보증을 하지 않습니다.'''),
             const SizedBox(height: 20),
-            _buildSection('제9조 분쟁 해결', '''1. 본 약관과 관련된 분쟁은 대한민국 법률에 따라 처리됩니다.
+            _buildSection('제10조 분쟁 해결', '''1. 본 약관과 관련된 분쟁은 대한민국 법률에 따라 처리됩니다.
 2. 회사와 이용자 간의 분쟁은 협의로 우선 해결합니다.
 3. 협의가 불가능한 경우, 한국소비자원 또는 관할 법원에 의뢰합니다.'''),
             const SizedBox(height: 20),
             _buildSection(
-              '제10조 약관의 변경',
+              '제11조 약관의 변경',
               '''1. 회사는 법령의 변경이나 서비스 운영상 필요시 약관을 변경할 수 있습니다.
 2. 약관 변경 시 최소 30일 전에 공지합니다.
 3. 이용자가 변경된 약관에 동의하지 않으면 서비스 이용을 중단할 수 있습니다.
@@ -132,7 +142,7 @@ class _TermsOfServicePageState extends State<TermsOfServicePage> {
             const SizedBox(height: 40),
             Center(
               child: Text(
-                '본 이용약관은 2025년 10월부터 적용됩니다.',
+                '본 이용약관은 2026년 2월부터 적용됩니다.',
                 style: TextStyle(fontSize: 12, color: Color(0xFF999999)),
               ),
             ),

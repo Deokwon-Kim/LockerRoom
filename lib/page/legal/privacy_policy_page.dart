@@ -33,13 +33,13 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
             ),
             const SizedBox(height: 8),
             const Text(
-              '마지막 업데이트: 2025년 10월',
+              '마지막 업데이트: 2026년 2월',
               style: TextStyle(fontSize: 13, color: Color(0xFF888888)),
             ),
             const SizedBox(height: 24),
             _buildSection(
               '1. 개요',
-              'TheBase(이하 "회사")은 이용자의 개인정보를 보호하고 개인정보와 관련한 이용자의 고충을 원활하게 처리하기 위하여 다음과 같은 개인정보 처리방침을 수립·공개합니다.',
+              '더베이스(이하 "회사")는 이용자의 개인정보를 보호하고 개인정보와 관련한 이용자의 고충을 원활하게 처리하기 위하여 다음과 같은 개인정보 처리방침을 수립·공개합니다.',
             ),
             const SizedBox(height: 20),
             _buildSection('2. 수집하는 개인정보의 항목 및 수집 방법', '''회사는 다음과 같은 개인정보를 수집합니다:
@@ -47,6 +47,8 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
 • 이메일, 비밀번호(암호화), 닉네임, 이름
 • 응원 팀 정보, 프로필 사진, 자기소개
 • 게시물(텍스트, 이미지, 영상), 댓글 내용
+• 직관모임 채팅 메시지 내용 및 공유 미디어
+• 직관모임 개설 및 참여 참여 정보
 • 팔로우/팔로워 정보, 좋아요 목록
 • FCM 토큰, 기기 정보'''),
             const SizedBox(height: 20),
@@ -92,7 +94,7 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
             const SizedBox(height: 40),
             Center(
               child: Text(
-                '본 개인정보 처리방침은 2025년 10월부터 적용됩니다.',
+                '본 개인정보 처리방침은 2026년 2월부터 적용됩니다.',
                 style: TextStyle(fontSize: 12, color: Color(0xFF999999)),
               ),
             ),
