@@ -15,6 +15,7 @@ import 'package:lockerroom/provider/chat_provider.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:lockerroom/page/myPage/user_detail_page.dart';
 import 'package:toastification/toastification.dart';
 
 class ChatInfoPage extends StatefulWidget {
@@ -393,55 +394,65 @@ class _ChatInfoPageState extends State<ChatInfoPage> {
     final bool amIHost =
         FirebaseAuth.instance.currentUser?.uid == widget.meetup.userId;
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundImage:
-            (user.profileImage != null && user.profileImage!.isNotEmpty)
-            ? NetworkImage(user.profileImage!)
-            : null,
-        child: (user.profileImage == null || user.profileImage!.isEmpty)
-            ? CircleAvatar(
-                backgroundColor: GRAYSCALE_LABEL_300,
-                child: Icon(Icons.person, color: BLACK),
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => UserDetailPage(userId: user.uid),
+          ),
+        );
+      },
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundImage:
+              (user.profileImage != null && user.profileImage!.isNotEmpty)
+              ? NetworkImage(user.profileImage!)
+              : null,
+          child: (user.profileImage == null || user.profileImage!.isEmpty)
+              ? CircleAvatar(
+                  backgroundColor: GRAYSCALE_LABEL_300,
+                  child: Icon(Icons.person, color: BLACK),
+                )
+              : null,
+        ),
+        title: Row(
+          children: [
+            Consumer<ProfileProvider>(
+              builder: (context, profileProvider, child) {
+                profileProvider.subscribeUserProfile(user.uid);
+                final nickname =
+                    profileProvider.userNicknames[user.uid] ??
+                    user.userNickName;
+                return Text(nickname);
+              },
+            ),
+            if (isHost) ...[
+              SizedBox(width: 4),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '방장',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        trailing: (amIHost && !isHost)
+            ? IconButton(
+                onPressed: () => _showKickDialog(user),
+                icon: Icon(Icons.exit_to_app, color: RED_DANGER_TEXT_50),
               )
             : null,
       ),
-      title: Row(
-        children: [
-          Consumer<ProfileProvider>(
-            builder: (context, profileProvider, child) {
-              profileProvider.subscribeUserProfile(user.uid);
-              final nickname =
-                  profileProvider.userNicknames[user.uid] ?? user.userNickName;
-              return Text(nickname);
-            },
-          ),
-          if (isHost) ...[
-            SizedBox(width: 4),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.amber,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                '방장',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-      trailing: (amIHost && !isHost)
-          ? IconButton(
-              onPressed: () => _showKickDialog(user),
-              icon: Icon(Icons.exit_to_app, color: RED_DANGER_TEXT_50),
-            )
-          : null,
     );
   }
 
