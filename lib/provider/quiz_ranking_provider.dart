@@ -25,7 +25,7 @@ class QuizRankingProvider extends ChangeNotifier {
   }
 
   // 순위 데이터 가져오기 (force: true일 때만 강제 새로고침)
-  Future<void> fetchRankings({bool force = false}) async {
+  Future<void> fetchRankings([bool force = false]) async {
     // 이미 로딩 중이면 중복 실행 방지
     if (_isLoading) return;
 
@@ -45,7 +45,7 @@ class QuizRankingProvider extends ChangeNotifier {
       query = query
           .orderBy('score', descending: true)
           .orderBy('completedAt', descending: true)
-          .limit(500); // 1000개에서 500개로 축소
+          .limit(1000); // 1000개로 복구
 
       final snapshot = await query.get();
 
@@ -59,12 +59,14 @@ class QuizRankingProvider extends ChangeNotifier {
         final score = data['score'] as int;
         final completedAt = data['completedAt'] as Timestamp;
         final userNickName = data['userNickName'] as String? ?? '익명';
+        final teamName = data['teamName'] as String?; // 퀴즈 결과에 있는 팀명 활용
 
         if (!userTotalScores.containsKey(userId)) {
           userTotalScores[userId] = {
             'totalScore': score,
             'completedAt': completedAt,
             'userNickName': userNickName,
+            'teamName': teamName, // 초기 팀 저장
           };
         } else {
           userTotalScores[userId]!['totalScore'] =
@@ -89,51 +91,59 @@ class QuizRankingProvider extends ChangeNotifier {
           );
         });
 
-      // 4. 상위 사용자 정보 가져오기 (전체 1000명이 아닌 상위 50명만 상세 정보 조회)
+      // 4. 상위 사용자 정보 가져오기 (상위 100명만 상세 정보 조회하여 속도 개선)
       final List<RankingUserModel> tempRankings = [];
-
-      // 병렬 처리를 위해 Future 리스트 생성
-      final List<Future<void>> fetchFutures = [];
 
       for (int i = 0; i < sortedEntries.length; i++) {
         final entry = sortedEntries[i];
         final userId = entry.key;
         final scoreData = entry.value;
         final userTotalScore = scoreData['totalScore'] as int;
+        String? teamName = scoreData['teamName'];
 
-        try {
-          // 사용자 정보 가져오기
-          final userDoc = await _firestore
-              .collection('users')
-              .doc(userId)
-              .get();
-          final userData = userDoc.data();
-          final teamName = userData?['team'] as String?;
+        // 상상위 100명만 추가 정보(최신 팀, 프로필) 페치
+        if (i < 100) {
+          try {
+            final userDoc = await _firestore
+                .collection('users')
+                .doc(userId)
+                .get();
+            final userData = userDoc.data();
+            final latestTeam = userData?['team'] as String?;
+            if (latestTeam != null) teamName = latestTeam;
 
-          // 팀 점수 집계
-          if (teamName != null && teamName.isNotEmpty) {
-            teamTotalScores[teamName] =
-                (teamTotalScores[teamName] ?? 0) + userTotalScore;
+            tempRankings.add(
+              RankingUserModel(
+                rank: 0,
+                userId: userId,
+                name:
+                    userData?['userNickName'] ??
+                    scoreData['userNickName'] ??
+                    '익명',
+                score: userTotalScore,
+                rankChange: 0,
+                profileUrl: userData?['profileImage'],
+                completedAt: (scoreData['completedAt'] as Timestamp).toDate(),
+                teamName: teamName,
+              ),
+            );
+          } catch (e) {
+            debugPrint('상세 정보 페치 실패 ($userId): $e');
+            tempRankings.add(
+              RankingUserModel(
+                rank: 0,
+                userId: userId,
+                name: scoreData['userNickName'] ?? '익명',
+                score: userTotalScore,
+                rankChange: 0,
+                profileUrl: null,
+                completedAt: (scoreData['completedAt'] as Timestamp).toDate(),
+                teamName: teamName,
+              ),
+            );
           }
-
-          tempRankings.add(
-            RankingUserModel(
-              rank: 0,
-              userId: userId,
-              name:
-                  userData?['userNickName'] ??
-                  scoreData['userNickName'] ??
-                  '익명',
-              score: userTotalScore,
-              rankChange: 0,
-              profileUrl: userData?['profileImage'],
-              completedAt: (scoreData['completedAt'] as Timestamp).toDate(),
-              teamName: teamName,
-            ),
-          );
-        } catch (e) {
-          print('사용자 정보 가져오기 실패 ($userId): $e');
-          // 사용자 정보를 못 가져와도 순위는 표시
+        } else {
+          // 100위 밖은 결과 문서 정보로만 표시
           tempRankings.add(
             RankingUserModel(
               rank: 0,
@@ -143,13 +153,17 @@ class QuizRankingProvider extends ChangeNotifier {
               rankChange: 0,
               profileUrl: null,
               completedAt: (scoreData['completedAt'] as Timestamp).toDate(),
-              teamName: null,
+              teamName: teamName,
             ),
           );
         }
-      }
 
-      await Future.wait(fetchFutures);
+        // 팀 점수 집계 (전체 항목에 대해 수행)
+        if (teamName != null && teamName.isNotEmpty) {
+          teamTotalScores[teamName] =
+              (teamTotalScores[teamName] ?? 0) + userTotalScore;
+        }
+      }
 
       // 점수 순으로 최종 재정렬
       tempRankings.sort((a, b) {

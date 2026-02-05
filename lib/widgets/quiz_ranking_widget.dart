@@ -53,16 +53,17 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
   @override
   void initState() {
     super.initState();
-    // 데이터 fetch (이미 데이터가 있으면 새로고침하지 않음)
+    // 데이터 fetch 및 애니메이션 데이터 준비 호출
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<QuizRankingProvider>().fetchRankings(force: false);
+      _fetchAndPrepareData();
     });
   }
 
   Future<void> _fetchAndPrepareData() async {
     if (!mounted) return;
-    await context.read<QuizRankingProvider>().fetchRankings();
+    // 방금 끝난 퀴즈 결과가 반영되도록 force: true 로 가져옴
+    await context.read<QuizRankingProvider>().fetchRankings(true);
     if (!mounted) return;
 
     _prepareAnimationData();
@@ -208,63 +209,77 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
   }
 
   void _startAnimation(int gainedScore) {
-    // 애니메이션 전 랭커 정보 저장 (내 정보 기준)
-    final oldUserIndex = _userItems.indexWhere((item) => item.isMe);
-    final oldTeamIndex = _teamItems.indexWhere((item) => item.isMe);
+    // 1. 애니메이션 시작 전 현재(이전) 상태 캡처
+    final myUserId = FirebaseAuth.instance.currentUser?.uid;
+    final teamProvider = context.read<TeamProvider>();
+    final myTeam = teamProvider.selectedTeam;
 
-    // 랭크 계산을 위해 이전 랭크 저장
-    final oldUserRank = oldUserIndex != -1 ? _userItems[oldUserIndex].rank : 0;
-    final oldTeamRank = oldTeamIndex != -1 ? _teamItems[oldTeamIndex].rank : 0;
+    // 이전 상태에서 내 정보와 랭킹 저장
+    _RankingItem? oldMyUser;
+    _RankingItem? oldMyTeam;
+
+    if (myUserId != null) {
+      final idx = _userItems.indexWhere((item) => item.isMe);
+      if (idx != -1) oldMyUser = _userItems[idx];
+    }
+    if (myTeam != null) {
+      final idx = _teamItems.indexWhere(
+        (item) => item.id == myTeam.name || item.id == myTeam.symplename,
+      );
+      if (idx != -1) oldMyTeam = _teamItems[idx];
+    }
+
+    final int oldUserRank = oldMyUser?.rank ?? 0;
+    final int oldTeamRank = oldMyTeam?.rank ?? 0;
 
     setState(() {
       _isAnimationStarted = true;
 
-      // User Items 업데이트
+      // User 점수 업데이트 및 재정렬
       for (var item in _userItems) {
-        if (item.isMe) {
-          item.score += gainedScore;
-        }
+        if (item.isMe) item.score += gainedScore;
       }
       _userItems.sort((a, b) => b.score.compareTo(a.score));
+      // 랭크 재계산 (내부 리스트 기준)
+      for (int i = 0; i < _userItems.length; i++) {
+        _userItems[i].rank = _userTopRank + i;
+      }
 
-      // Team Items 업데이트
+      // Team 점수 업데이트 및 재정렬
       for (var item in _teamItems) {
-        if (item.isMe) {
-          item.score += gainedScore;
-        }
+        if (item.isMe) item.score += gainedScore;
       }
       _teamItems.sort((a, b) => b.score.compareTo(a.score));
+      // 랭크 재계산
+      for (int i = 0; i < _teamItems.length; i++) {
+        _teamItems[i].rank = _teamTopRank + i;
+      }
     });
 
-    // 애니메이션 후 랭커 정보 확인
-    final newUserIndex = _userItems.indexWhere((item) => item.isMe);
-    final newTeamIndex = _teamItems.indexWhere((item) => item.isMe);
-
-    // 개인 순위 역전 체크
-    if (oldUserIndex != -1 &&
-        newUserIndex != -1 &&
-        newUserIndex < oldUserIndex) {
-      final myUser = _userItems[newUserIndex];
-      _showCelebration(
-        targetName: myUser.name,
-        oldRank: oldUserRank,
-        newRank: _userTopRank + newUserIndex,
-        isTeam: false,
-      );
+    // 2. 애니메이션 후 랭커 정보 확인 및 다이얼로그 트리거
+    if (oldMyUser != null) {
+      final newUserItem = _userItems.firstWhere((item) => item.isMe);
+      if (newUserItem.rank < oldUserRank) {
+        _showCelebration(
+          targetName: newUserItem.name,
+          oldRank: oldUserRank,
+          newRank: newUserItem.rank,
+          isTeam: false,
+        );
+      }
     }
 
-    // 팀 순위 역전 체크 (개인 순위와 별개로 체크하도록 else 제거)
-    if (oldTeamIndex != -1 &&
-        newTeamIndex != -1 &&
-        newTeamIndex < oldTeamIndex) {
-      final myTeam = _teamItems[newTeamIndex];
-      _showCelebration(
-        targetName: myTeam.name,
-        oldRank: oldTeamRank,
-        newRank: _teamTopRank + newTeamIndex,
-        isTeam: true,
-        logoPath: myTeam.profileUrl,
-      );
+    if (oldMyTeam != null) {
+      final newTeamItem = _teamItems.firstWhere((item) => item.isMe);
+      if (newTeamItem.rank < oldTeamRank) {
+        _showCelebration(
+          targetName: newTeamItem.name,
+          oldRank: oldTeamRank,
+          newRank: newTeamItem.rank,
+          isTeam: true,
+          logoPath: newTeamItem.profileUrl,
+        );
+      }
     }
   }
 
