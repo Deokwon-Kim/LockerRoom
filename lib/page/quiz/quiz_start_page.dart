@@ -173,6 +173,12 @@ class _QuizStartPageState extends State<QuizStartPage> {
         'icon': Icons.history_edu,
       },
       {
+        'title': '응원가',
+        'category': '응원가',
+        'colors': [BLUE_SECONDARY_700, BLUE_SECONDARY_600],
+        'icon': Icons.music_note_sharp,
+      },
+      {
         'title': '야구 룰',
         'category': '야구룰',
         'colors': [ORANGE_PRIMARY_500, ORANGE_PRIMARY_600],
@@ -190,12 +196,7 @@ class _QuizStartPageState extends State<QuizStartPage> {
         'colors': [GREEN_SECONDARY_700, GREEN_SECONDARY_600],
         'icon': Icons.analytics,
       },
-      {
-        'title': '응원가',
-        'category': '응원가',
-        'colors': [BLUE_SECONDARY_700, BLUE_SECONDARY_600],
-        'icon': Icons.music_note_sharp,
-      },
+
       {
         'title': '랜덤',
         'category': '랜덤',
