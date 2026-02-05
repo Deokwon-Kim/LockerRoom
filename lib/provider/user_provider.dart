@@ -878,4 +878,29 @@ class UserProvider extends ChangeNotifier {
       return doc.data()?['isNotificationsEnabled'] ?? true;
     });
   }
+
+  Future<void> reportUser({
+    required String targetUserId,
+    required String targetUserNickName,
+    required String reporterUserId,
+    required String reporterUserNickName,
+    required String reason,
+    String? details,
+  }) async {
+    try {
+      await _firestore.collection('user_reports').add({
+        'reportedUserId': targetUserId,
+        'reportedUserName': targetUserNickName,
+        'reporterUserId': reporterUserId,
+        'reporterUserName': reporterUserNickName,
+        'reason': reason,
+        'details': details,
+        'createdAt': FieldValue.serverTimestamp(),
+        'status': 'pending',
+      });
+    } catch (e) {
+      debugPrint('사용자 신고 에러: $e');
+      rethrow;
+    }
+  }
 }
