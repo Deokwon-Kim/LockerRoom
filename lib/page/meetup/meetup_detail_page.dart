@@ -26,6 +26,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:toastification/toastification.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'dart:io';
+import 'package:kakao_flutter_sdk_share/kakao_flutter_sdk_share.dart';
 
 class MeetupDetailPage extends StatefulWidget {
   final MeetupModel? meetup;
@@ -389,39 +390,214 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
     );
   }
 
-  Future<void> _shareScreenshot() async {
+  Future<void> _shareMeetupViaKakao() async {
     try {
-      final image = await _screenshotController.capture();
-      if (image == null) return;
+      if (_latestMeetup == null) return;
+
+      final imageUrl = _latestMeetup!.images.isNotEmpty
+          ? _latestMeetup!.images[0]
+          : '';
+      final title = _latestMeetup!.title;
+      final description =
+          '${_latestMeetup!.homeTeam} vs ${_latestMeetup!.awayTeam} \n ${_latestMeetup!.gameDate} ${_latestMeetup!.stadium}';
+      final deepLinkPath = 'meetup/${_latestMeetup!.id}';
+
+      // FeedTemplate 생성
+      final template = FeedTemplate(
+        content: Content(
+          title: title,
+          description: description,
+          imageUrl: Uri.parse(
+            imageUrl.isNotEmpty
+                ? imageUrl
+                : 'https://github.com/Deokwon-Kim/LockerRoom/blob/dev/ios/Runner/Assets.xcassets/AppIcon.appiconset/256.png?raw=true',
+          ),
+          link: Link(
+            webUrl: Uri.parse('https://lockerroom-e9f39.web.app/$deepLinkPath'),
+            mobileWebUrl: Uri.parse(
+              'https://lockerroom-e9f39.web.app/$deepLinkPath',
+            ),
+          ),
+        ),
+        buttons: [
+          Button(
+            title: '자세히보기',
+            link: Link(
+              webUrl: Uri.parse(
+                'https://lockerroom-e9f39.web.app/$deepLinkPath',
+              ),
+              mobileWebUrl: Uri.parse(
+                'https://lockerroom-e9f39.web.app/$deepLinkPath',
+              ),
+              androidExecutionParams: {'meetupId': _latestMeetup!.id},
+              iosExecutionParams: {'meetupId': _latestMeetup!.id},
+            ),
+          ),
+        ],
+      );
+
+      // 카카오톡 설치 여부 확인 후 공유
+      bool isKakaoTalkSharingAvailable = await ShareClient.instance
+          .isKakaoTalkSharingAvailable();
+
+      if (isKakaoTalkSharingAvailable) {
+        try {
+          Uri uri = await ShareClient.instance.shareDefault(template: template);
+          await ShareClient.instance.launchKakaoTalk(uri);
+        } catch (error) {
+          debugPrint('카카오톡 공유 실패 $error');
+        }
+      } else {
+        try {
+          Uri shareUrl = await WebSharerClient.instance.makeDefaultUrl(
+            template: template,
+          );
+          await launchBrowserTab(shareUrl);
+        } catch (error) {
+          debugPrint('카카오톡 공유 실패 $error');
+        }
+      }
+    } catch (e) {
+      debugPrint('Kakao share error: $e');
+    }
+  }
+
+  Future<void> _shareMeetupWithImage() async {
+    try {
+      if (_latestMeetup == null) return;
+
+      final title = '[더베이스] ${_latestMeetup!.title} 모임 초대';
+      final text =
+          '$title ⚾\n\n모임 참여하기: https://lockerroom-e9f39.web.app/meetup/${_latestMeetup!.id}';
+
+      // 1. 커스텀 카드 고퀄리티 이미지 생성 (메모리 내 렌더링 및 캡쳐)
+      final imageBytes = await _screenshotController.captureFromWidget(
+        _buildShareCardWidget(),
+        delay: const Duration(milliseconds: 200),
+        context: context,
+      );
 
       final directory = await getTemporaryDirectory();
-      final imagePath = await File(
-        '${directory.path}/meetup_share.png',
-      ).create();
-      await imagePath.writeAsBytes(image);
+      final imagePath = File('${directory.path}/meetup_share_card.png');
+      await imagePath.writeAsBytes(imageBytes);
 
       if (!mounted) return;
       final box = context.findRenderObject() as RenderBox?;
 
       await Share.shareXFiles(
-        [XFile(imagePath.path)],
-        text:
-            '[더베이스] ${_latestMeetup!.title} 모임에 초대합니다! ⚾\n\n모임 참여하기: https://lockerroom-e9f39.web.app/meetup/${_latestMeetup!.id}',
+        [XFile(imagePath.path, mimeType: 'image/png')],
+        text: text,
+        subject: title,
         sharePositionOrigin: box != null
             ? box.localToGlobal(Offset.zero) & box.size
             : null,
       );
     } catch (e) {
-      debugPrint('Screenshot share error: $e');
-      if (mounted) {
-        toastification.show(
-          context: context,
-          type: ToastificationType.error,
-          title: Text('공유하기에 실패했습니다'),
-          autoCloseDuration: Duration(seconds: 2),
-        );
-      }
+      debugPrint('Share card generation error: $e');
+      // 실패 시 폴백 (기본 텍스트 공유)
+      final text =
+          '[더베이스] ${_latestMeetup!.title} 모임 초대 ⚾\n\n모임 참여하기: https://lockerroom-e9f39.web.app/meetup/${_latestMeetup!.id}';
+      Share.share(text);
     }
+  }
+
+  Widget _buildShareCardWidget() {
+    final meetup = _latestMeetup!;
+    // 배경 이미지: 모임 사진이 있으면 사용, 없으면 야구장 기본 이미지 사용
+    final backgroundImage = meetup.images.isNotEmpty
+        ? meetup.images[0]
+        : 'https://images.unsplash.com/photo-1508344928928-71641a3fe09c?q=80&w=1000&auto=format&fit=crop';
+
+    return Container(
+      width: 400,
+      height: 520,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        image: DecorationImage(
+          image: NetworkImage(backgroundImage),
+          fit: BoxFit.cover,
+          colorFilter: ColorFilter.mode(
+            Colors.black.withOpacity(0.6),
+            BlendMode.darken,
+          ),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 경기 정보 (팀 vs 팀)
+          Text(
+            '${meetup.homeTeam} vs ${meetup.awayTeam}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 44,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'kbo',
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          // 모임 제목 및 "직관 모임!"
+          Text(
+            meetup.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 38,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'kbo',
+            ),
+            textAlign: TextAlign.center,
+          ),
+          // 하단 일시 정보
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.calendar_today_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
+              const SizedBox(width: 14),
+              Text(
+                meetup.gameDate,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // 하단 장소 정보
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+
+            children: [
+              const Icon(
+                Icons.location_on_rounded,
+                color: Colors.white,
+                size: 32,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                meetup.stadium,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.left,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   void _moreBottomSheet(BuildContext context) {
@@ -531,11 +707,19 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
               },
             ),
             ListTile(
-              leading: Icon(CupertinoIcons.share_up),
-              title: Text('SNS로 공유'),
+              leading: Image.asset('assets/images/logo/kakao.png', height: 24),
+              title: Text('카카오톡으로 공유'),
               onTap: () {
                 Navigator.pop(context);
-                _shareScreenshot();
+                _shareMeetupViaKakao();
+              },
+            ),
+            ListTile(
+              leading: Icon(CupertinoIcons.share_up),
+              title: Text('기타 SNS로 공유'),
+              onTap: () {
+                Navigator.pop(context);
+                _shareMeetupWithImage();
               },
             ),
           ],
