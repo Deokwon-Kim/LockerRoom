@@ -13,6 +13,7 @@ import 'package:lockerroom/page/feed/fullscreen_image_viewer.dart';
 import 'package:lockerroom/page/meetup/chat_media_page.dart';
 import 'package:lockerroom/provider/chat_provider.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
+import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -407,7 +408,14 @@ class _ChatInfoPageState extends State<ChatInfoPage> {
       ),
       title: Row(
         children: [
-          Text(user.userNickName),
+          Consumer<ProfileProvider>(
+            builder: (context, profileProvider, child) {
+              profileProvider.subscribeUserProfile(user.uid);
+              final nickname =
+                  profileProvider.userNicknames[user.uid] ?? user.userNickName;
+              return Text(nickname);
+            },
+          ),
           if (isHost) ...[
             SizedBox(width: 4),
             Container(

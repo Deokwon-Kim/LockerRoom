@@ -3,6 +3,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/user_model.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
+import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -257,12 +258,31 @@ class MeetupPeoplePage extends StatelessWidget {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            user.userNickName,
-                                            style: TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                          Consumer<ProfileProvider>(
+                                            builder:
+                                                (
+                                                  context,
+                                                  profileProvider,
+                                                  child,
+                                                ) {
+                                                  profileProvider
+                                                      .subscribeUserProfile(
+                                                        user.uid,
+                                                      );
+                                                  final nickname =
+                                                      profileProvider
+                                                          .userNicknames[user
+                                                          .uid] ??
+                                                      user.userNickName;
+                                                  return Text(
+                                                    nickname,
+                                                    style: const TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  );
+                                                },
                                           ),
                                           if (meetUp.attendedParticipants
                                               .contains(user.uid))

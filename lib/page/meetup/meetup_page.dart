@@ -10,6 +10,7 @@ import 'package:lockerroom/page/meetup/chat_list_page.dart';
 import 'package:lockerroom/page/meetup/meetup_detail_page.dart';
 import 'package:lockerroom/page/meetup/meetup_upload_page.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
+import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:badges/badges.dart' as badges;
@@ -260,72 +261,84 @@ class _MeetupPageState extends State<MeetupPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 12,
-                    backgroundColor: GRAYSCALE_LABEL_300,
-                    backgroundImage: meetup.userProfileImage != null
-                        ? NetworkImage(meetup.userProfileImage!)
-                        : null,
-                    child: meetup.userProfileImage == null
-                        ? const Icon(Icons.person, size: 20, color: WHITE)
-                        : null,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    meetup.userNickName,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: BLACK,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Spacer(),
-                  if (meetup.isFull)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+              Consumer<ProfileProvider>(
+                builder: (context, profileProvider, child) {
+                  profileProvider.subscribeUserProfile(meetup.userId);
+
+                  final url = profileProvider.userProfiles[meetup.userId];
+                  final userNickName =
+                      profileProvider.userNicknames[meetup.userId] ??
+                      meetup.userNickName;
+                  return Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundImage: url != null ? NetworkImage(url) : null,
+                        backgroundColor: GRAYSCALE_LABEL_300,
+                        child: url == null
+                            ? Icon(Icons.person, color: Colors.black, size: 15)
+                            : null,
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(4),
+                      const SizedBox(width: 8),
+                      Text(
+                        userNickName,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: BLACK,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      child: const Text(
-                        '마감',
-                        style: TextStyle(color: WHITE, fontSize: 12),
-                      ),
-                    )
-                  else if (!isParticipating)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: selectedTeam?.color ?? BUTTON,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        '모집 중',
-                        style: TextStyle(color: WHITE, fontSize: 12),
-                      ),
-                    ),
-                  if (isParticipating)
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '참여중',
-                        style: TextStyle(color: WHITE, fontSize: 12),
-                      ),
-                    ),
-                ],
+                      Spacer(),
+                      if (meetup.isFull)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            '마감',
+                            style: TextStyle(color: WHITE, fontSize: 12),
+                          ),
+                        )
+                      else if (!isParticipating)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: selectedTeam?.color ?? BUTTON,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            '모집 중',
+                            style: TextStyle(color: WHITE, fontSize: 12),
+                          ),
+                        ),
+                      if (isParticipating)
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '참여중',
+                            style: TextStyle(color: WHITE, fontSize: 12),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
+
               SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

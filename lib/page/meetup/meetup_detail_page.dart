@@ -13,6 +13,7 @@ import 'package:lockerroom/page/meetup/chat_room_page.dart';
 import 'package:lockerroom/page/meetup/meetup_people_page.dart';
 import 'package:lockerroom/page/meetup/meetup_upload_page.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
+import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/tab_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
@@ -1097,14 +1098,28 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                         ],
                                       ),
                                       const SizedBox(height: 8),
-                                      Text(
-                                        user.userNickName,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w500,
-                                          color: BLACK,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
+                                      Consumer<ProfileProvider>(
+                                        builder:
+                                            (context, profileProvider, child) {
+                                              profileProvider
+                                                  .subscribeUserProfile(
+                                                    user.uid,
+                                                  );
+                                              final nickname =
+                                                  profileProvider
+                                                      .userNicknames[user
+                                                      .uid] ??
+                                                  user.userNickName;
+                                              return Text(
+                                                nickname,
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: BLACK,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              );
+                                            },
                                       ),
                                     ],
                                   );
