@@ -413,7 +413,7 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
     final third = topThree.firstWhere((user) => user.rank == 3);
 
     return Container(
-      height: 380,
+      height: 400,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,

@@ -20,8 +20,9 @@ class QuizRankingProvider extends ChangeNotifier {
 
   // 카테고리 변경
   void setCategory(String category) {
+    if (_selectedCategory == category) return;
     _selectedCategory = category;
-    fetchRankings();
+    fetchRankings(true);
   }
 
   // 순위 데이터 가져오기 (force: true일 때만 강제 새로고침)
