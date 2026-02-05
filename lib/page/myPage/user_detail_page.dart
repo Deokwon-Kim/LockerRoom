@@ -11,6 +11,7 @@ import 'package:lockerroom/page/follow/follow_list_page.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:toastification/toastification.dart';
@@ -442,6 +443,16 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                             color: BACKGROUND_COLOR,
                                             items: [
                                               PopupMenuItem(
+                                                value: 'report',
+                                                child: Text(
+                                                  '사용자 신고',
+                                                  style: TextStyle(
+                                                    color: RED_DANGER_TEXT_50,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              PopupMenuItem(
                                                 value: 'block',
                                                 child: Text(
                                                   '사용자 차단',
@@ -464,6 +475,12 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                                 nickName,
                                                 widget.userId,
                                                 uid,
+                                              );
+                                            } else if (value == 'report') {
+                                              _showUserReportDialog(
+                                                context,
+                                                nickName,
+                                                widget.userId,
                                               );
                                             }
                                           });
@@ -723,6 +740,219 @@ class _UserDetailPageState extends State<UserDetailPage> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showUserReportDialog(
+    BuildContext context,
+    String targetNickName,
+    String targetUserId,
+  ) {
+    final TextEditingController reportController = TextEditingController();
+    final List<String> reportReasons = [
+      '스팸 및 광고',
+      '부적절한 콘텐츠',
+      '혐오 표현',
+      '욕설 및 음란물',
+      '개인정보 침해',
+      '기타',
+    ];
+    String selectedReason = reportReasons[0];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: BACKGROUND_COLOR,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: GRAYSCALE_LABEL_400,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20),
+                Text(
+                  '사용자 신고',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  '신고 사유를 선택해주세요',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 12),
+                ...reportReasons.map((reason) {
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedReason = reason;
+                      });
+                    },
+                    child: Container(
+                      margin: EdgeInsets.symmetric(vertical: 4),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: selectedReason == reason
+                              ? BUTTON
+                              : GRAYSCALE_LABEL_400,
+                          width: selectedReason == reason ? 2 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        color: selectedReason == reason
+                            ? BUTTON.withOpacity(0.1)
+                            : Colors.transparent,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(child: Text(reason)),
+                          if (selectedReason == reason)
+                            Icon(Icons.check, color: BUTTON),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+                SizedBox(height: 16),
+                Text(
+                  '추가 설명 (선택사항)',
+                  style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+                ),
+                SizedBox(height: 8),
+                TextField(
+                  controller: reportController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: '자세한 내용을 입력해주세요',
+                    hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: BUTTON),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: GRAYSCALE_LABEL_300),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '취소',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: GRAYSCALE_LABEL_900,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          final userProvider = context.read<UserProvider>();
+                          final currentUser = FirebaseAuth.instance.currentUser;
+                          if (currentUser == null) return;
+
+                          try {
+                            await userProvider.reportUser(
+                              targetUserId: targetUserId,
+                              targetUserNickName: targetNickName,
+                              reporterUserId: currentUser.uid,
+                              reporterUserNickName:
+                                  currentUser.displayName ?? '익명',
+                              reason: selectedReason,
+                              details: reportController.text,
+                            );
+
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              toastification.show(
+                                context: context,
+                                type: ToastificationType.success,
+                                alignment: Alignment.bottomCenter,
+                                autoCloseDuration: Duration(seconds: 2),
+                                title: Text('사용자 신고가 접수되었습니다'),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              toastification.show(
+                                context: context,
+                                type: ToastificationType.error,
+                                alignment: Alignment.bottomCenter,
+                                autoCloseDuration: Duration(seconds: 2),
+                                title: Text('신고 접수 중 오류가 발생했습니다'),
+                              );
+                            }
+                          }
+                        },
+                        child: Container(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: RED_DANGER_TEXT_50,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '신고하기',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: WHITE,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
