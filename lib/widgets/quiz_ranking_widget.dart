@@ -26,6 +26,7 @@ class _RankingItem {
   int rank;
   final bool isMe;
   final Color? color; // for team color or user icon color
+  final DateTime completedAt;
 
   _RankingItem({
     required this.id,
@@ -36,6 +37,7 @@ class _RankingItem {
     required this.rank,
     required this.isMe,
     this.color,
+    required this.completedAt,
   });
 }
 
@@ -112,11 +114,15 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
             rank: 0, // 나중에 계산
             isMe: isMe,
             color: Colors.blueAccent,
+            completedAt: u.completedAt,
           );
         }).toList();
 
-        // 점수 내림차순 정렬 (이전 상태)
-        tempItems.sort((a, b) => b.score.compareTo(a.score));
+        // 점수 내림차순 정렬 (이전 상태, 동점일 경우 최근 기록 우선)
+        tempItems.sort((a, b) {
+          if (b.score != a.score) return b.score.compareTo(a.score);
+          return b.completedAt.compareTo(a.completedAt);
+        });
 
         // 랭크 매기기 (이전 랭크)
         for (int i = 0; i < tempItems.length; i++) {
@@ -171,6 +177,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
             rank: 0,
             isMe: isMe,
             color: isMe ? myTeam.color : Colors.grey,
+            completedAt: DateTime(2000), // 팀은 시간 정렬 의미 없음
           );
         }).toList();
 
@@ -239,7 +246,10 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
       for (var item in _userItems) {
         if (item.isMe) item.score += gainedScore;
       }
-      _userItems.sort((a, b) => b.score.compareTo(a.score));
+      _userItems.sort((a, b) {
+        if (b.score != a.score) return b.score.compareTo(a.score);
+        return b.completedAt.compareTo(a.completedAt);
+      });
       // 랭크 재계산 (내부 리스트 기준)
       for (int i = 0; i < _userItems.length; i++) {
         _userItems[i].rank = _userTopRank + i;
@@ -249,7 +259,10 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
       for (var item in _teamItems) {
         if (item.isMe) item.score += gainedScore;
       }
-      _teamItems.sort((a, b) => b.score.compareTo(a.score));
+      _teamItems.sort((a, b) {
+        if (b.score != a.score) return b.score.compareTo(a.score);
+        return 0; // Team doesn't have completedAt in _RankingItem easily, but let's keep it simple
+      });
       // 랭크 재계산
       for (int i = 0; i < _teamItems.length; i++) {
         _teamItems[i].rank = _teamTopRank + i;
