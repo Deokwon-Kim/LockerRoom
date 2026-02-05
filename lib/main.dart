@@ -60,6 +60,7 @@ import 'package:lockerroom/services/deep_link_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'dart:io';
+import 'package:flutter/services.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -68,6 +69,13 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 앱 전체 화면 방향을 세로로 고정 (이미지/비디오 뷰어 제외)
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+
   // env 파일 로드 (카카오 SDK 초기화 전에 필요)
   await dotenv.load(fileName: 'lib/api_key/youtube_key.env');
   //kakao 로그인 초기화

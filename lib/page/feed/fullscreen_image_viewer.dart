@@ -4,6 +4,7 @@ import 'package:gal/gal.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:toastification/toastification.dart';
+import 'package:flutter/services.dart';
 
 class FullscreenImageViewer extends StatefulWidget {
   final List<String> imageUrls;
@@ -70,6 +71,13 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
   @override
   void initState() {
     super.initState();
+    // 전체 방향 허용 (가로/세로)
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
     _transformationControllers = List.generate(
@@ -80,6 +88,11 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
 
   @override
   void dispose() {
+    // 세로 모드로 원복
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     _pageController.dispose();
     for (var controller in _transformationControllers) {
       controller.dispose();
