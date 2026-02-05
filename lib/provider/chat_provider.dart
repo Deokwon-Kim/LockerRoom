@@ -211,12 +211,53 @@ class ChatProvider extends ChangeNotifier {
 
   // 메시지 삭제
   Future<void> deleteMessage(String meetupId, String messageId) async {
+    // 1. 메시지 삭제
     await _firestore
         .collection('meetups')
         .doc(meetupId)
         .collection('messages')
         .doc(messageId)
         .delete();
+
+    // 2. 삭제된 후 가장 최근 메시지 다시 조회 (lastMessage 업데이트용)
+    final snapshot = await _firestore
+        .collection('meetups')
+        .doc(meetupId)
+        .collection('messages')
+        .orderBy('createdAt', descending: true)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isNotEmpty) {
+      final lastMsgDoc = snapshot.docs.first;
+      final lastMsgData = lastMsgDoc.data();
+      String lastText = '';
+
+      if (lastMsgData['type'] == 'image') {
+        lastText = '사진을 보냈습니다.';
+      } else if (lastMsgData['type'] == 'custom') {
+        lastText = '투표가 올라왔습니다.';
+      } else {
+        lastText = lastMsgData['text'] ?? '';
+      }
+
+      final lastTime =
+          (lastMsgData['createdAt'] as Timestamp?)
+              ?.toDate()
+              .toIso8601String() ??
+          DateTime.now().toIso8601String();
+
+      await _firestore.collection('meetups').doc(meetupId).update({
+        'lastMessage': lastText,
+        'lastMessageAt': lastTime,
+      });
+    } else {
+      // 메시지가 하나도 없는 경우
+      await _firestore.collection('meetups').doc(meetupId).update({
+        'lastMessage': null,
+        'lastMessageAt': null,
+      });
+    }
   }
 
   // 투표 메시지 전송
