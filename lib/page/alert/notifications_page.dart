@@ -8,7 +8,9 @@ import 'package:lockerroom/model/market_post_model.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/afterMarket/after_market_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
+import 'package:lockerroom/page/meetup/meetup_detail_page.dart';
 import 'package:lockerroom/page/myPage/user_detail_page.dart';
+import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -282,6 +284,50 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     title: Text('오류가 발생했습니다'),
                                   );
                                 }
+                              } else if (n.meetupId != null) {
+                                // 모임 관련 알림 - 모임 상세 페이지로 이동
+                                try {
+                                  final meetupDoc = await FirebaseFirestore
+                                      .instance
+                                      .collection('meetups')
+                                      .doc(n.meetupId)
+                                      .get();
+
+                                  if (meetupDoc.exists) {
+                                    final meetup = MeetupModel.fromFirestore(
+                                      meetupDoc,
+                                    );
+                                    if (!context.mounted) return;
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => MeetupDetailPage(
+                                          meetup: meetup,
+                                          meetupId: n.meetupId!,
+                                        ),
+                                      ),
+                                    );
+                                  } else {
+                                    // 모임이 삭제된 경우
+                                    if (!context.mounted) return;
+                                    toastification.show(
+                                      context: context,
+                                      type: ToastificationType.error,
+                                      alignment: Alignment.bottomCenter,
+                                      autoCloseDuration: Duration(seconds: 2),
+                                      title: Text('모임을 찾을 수 없습니다'),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  toastification.show(
+                                    context: context,
+                                    type: ToastificationType.error,
+                                    alignment: Alignment.bottomCenter,
+                                    autoCloseDuration: Duration(seconds: 2),
+                                    title: Text('오류가 발생했습니다'),
+                                  );
+                                }
                               }
                             },
                             child: Padding(
@@ -360,6 +406,42 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       child: Text(
                                         '님이 회원님의 게시글의 댓글을 남겼습니다.',
                                         style: TextStyle(fontSize: 14),
+                                      ),
+                                    ),
+                                  ] else if (n.type == 'meetup_request') ...[
+                                    Expanded(
+                                      child: Transform.translate(
+                                        offset: Offset(-10, 0),
+                                        child: Text(
+                                          n.preview ?? '님이 모임 참여를 신청했습니다.',
+                                          style: TextStyle(fontSize: 14),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 2,
+                                        ),
+                                      ),
+                                    ),
+                                  ] else if (n.type == 'meetup_approved') ...[
+                                    Expanded(
+                                      child: Transform.translate(
+                                        offset: Offset(-10, 0),
+                                        child: Text(
+                                          n.preview ?? '모임 참여가 승인되었습니다!',
+                                          style: TextStyle(fontSize: 14),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 2,
+                                        ),
+                                      ),
+                                    ),
+                                  ] else if (n.type == 'meetup_rejected') ...[
+                                    Expanded(
+                                      child: Transform.translate(
+                                        offset: Offset(-10, 0),
+                                        child: Text(
+                                          n.preview ?? '모임 참여가 거절되었습니다.',
+                                          style: TextStyle(fontSize: 14),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 2,
+                                        ),
                                       ),
                                     ),
                                   ] else if (isMarketPostReport) ...[
