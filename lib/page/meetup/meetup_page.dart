@@ -721,34 +721,45 @@ class _UnreadListenerState extends State<_UnreadListener> {
         .collection('readStatus')
         .doc(widget.meetupId)
         .snapshots()
-        .listen((readSnapshot) {
-          if (!mounted) return;
-          final readData = readSnapshot.data();
-          final lastReadAt = readData?['lastReadAt'] as Timestamp?;
+        .listen(
+          (readSnapshot) {
+            if (!mounted) return;
+            final readData = readSnapshot.data();
+            final lastReadAt = readData?['lastReadAt'] as Timestamp?;
 
-          _subscription?.cancel();
-          // 2. 마지막 읽은 시간 이후의 메시지 개수 감시 (본인 메시지 제외)
-          _subscription = FirebaseFirestore.instance
-              .collection('meetups')
-              .doc(widget.meetupId)
-              .collection('messages')
-              .where(
-                'createdAt',
-                isGreaterThan:
-                    lastReadAt ?? Timestamp.fromMillisecondsSinceEpoch(0),
-              )
-              .snapshots()
-              .listen((msgSnapshot) {
-                if (!mounted) return;
-                final docs = msgSnapshot.docs;
-                int unreadCount = docs
-                    .where(
-                      (doc) => (doc.data())['authorId'] != widget.currentUserId,
-                    )
-                    .length;
-                widget.onCountChanged(unreadCount);
-              });
-        });
+            _subscription?.cancel();
+            // 2. 마지막 읽은 시간 이후의 메시지 개수 감시 (본인 메시지 제외)
+            _subscription = FirebaseFirestore.instance
+                .collection('meetups')
+                .doc(widget.meetupId)
+                .collection('messages')
+                .where(
+                  'createdAt',
+                  isGreaterThan:
+                      lastReadAt ?? Timestamp.fromMillisecondsSinceEpoch(0),
+                )
+                .snapshots()
+                .listen(
+                  (msgSnapshot) {
+                    if (!mounted) return;
+                    final docs = msgSnapshot.docs;
+                    int unreadCount = docs
+                        .where(
+                          (doc) =>
+                              (doc.data())['authorId'] != widget.currentUserId,
+                        )
+                        .length;
+                    widget.onCountChanged(unreadCount);
+                  },
+                  onError: (e) {
+                    debugPrint('안읽은 메시지 메시지 스트림 오류: $e');
+                  },
+                );
+          },
+          onError: (e) {
+            debugPrint('안읽은 메시지 읽음상태 스트림 오류: $e');
+          },
+        );
   }
 
   @override

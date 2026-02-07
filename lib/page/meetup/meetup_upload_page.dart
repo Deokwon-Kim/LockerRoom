@@ -34,6 +34,11 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
   DateTime? _selectedDate;
   String? _selectedMyTeam;
   int _maxParticipants = 5;
+  int? _minBirthYear;
+  int? _maxBirthYear;
+  bool _isApprovalRequired = false;
+  final _minYearController = TextEditingController();
+  final _maxYearController = TextEditingController();
 
   final ImagePicker _picker = ImagePicker();
   List<XFile> _selectedImages = [];
@@ -51,6 +56,13 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
       _existingImageUrls = List.from(meetup.images);
       _selectedDate = DateTime.parse(meetup.gameDate);
       _selectedMyTeam = meetup.myTeam;
+      _minBirthYear = meetup.minBirthYear;
+      _maxBirthYear = meetup.maxBirthYear;
+      _isApprovalRequired = meetup.isApprovalRequired;
+      if (_minBirthYear != null)
+        _minYearController.text = _minBirthYear.toString();
+      if (_maxBirthYear != null)
+        _maxYearController.text = _maxBirthYear.toString();
       // Note: _selectedSchedules will be set in _loadSchedules after it completes
     }
     _loadSchedules();
@@ -99,34 +111,18 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
   }
 
   Future<void> _pickImages() async {
-    if (_selectedImages.length >= 4) {
-      toastification.show(
-        context: context,
-        type: ToastificationType.warning,
-        title: const Text('사진은 최대 4장까지 첨부할 수 있습니다'),
-      );
-      return;
-    }
-
     try {
-      final List<XFile> images = await _picker.pickMultiImage(
-        limit: 4 - _selectedImages.length,
-      );
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
 
-      if (images.isNotEmpty) {
+      if (image != null) {
         setState(() {
-          _selectedImages.addAll(images);
+          _existingImageUrls.clear();
+          _selectedImages = [image];
         });
       }
     } catch (e) {
       print('이미지 선택 실패: $e');
     }
-  }
-
-  void _removeImage(int index) {
-    setState(() {
-      _selectedImages.removeAt(index);
-    });
   }
 
   Future<List<String>> _uploadImages() async {
@@ -333,7 +329,7 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                 children: [
                   Expanded(
                     child: Text(
-                      '${schedule.homeTeam} vs ${schedule.awayTeam}',
+                      '${schedule.awayTeam} vs ${schedule.homeTeam}',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -365,11 +361,25 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
+    _minYearController.dispose();
+    _maxYearController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // 사진 필수 체크
+    if (_existingImageUrls.isEmpty && _selectedImages.isEmpty) {
+      toastification.show(
+        context: context,
+        type: ToastificationType.error,
+        alignment: Alignment.bottomCenter,
+        autoCloseDuration: const Duration(seconds: 2),
+        title: const Text('대표 사진을 등록해주세요'),
+      );
+      return;
+    }
     if (_selectedSchedules == null) {
       toastification.show(
         context: context,
@@ -428,6 +438,9 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
           'myTeam': _selectedMyTeam!,
           'maxParticipants': _maxParticipants,
           'images': [..._existingImageUrls, ...imageUrls],
+          'minBirthYear': int.tryParse(_minYearController.text),
+          'maxBirthYear': int.tryParse(_maxYearController.text),
+          'isApprovalRequired': _isApprovalRequired,
         };
 
         final success = await context.read<MeetupProvider>().updateMeetup(
@@ -476,6 +489,9 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
           participants: [user.uid],
           createdAt: DateTime.now(),
           images: imageUrls,
+          minBirthYear: int.tryParse(_minYearController.text),
+          maxBirthYear: int.tryParse(_maxYearController.text),
+          isApprovalRequired: _isApprovalRequired,
         );
 
         final success = await context.read<MeetupProvider>().createMeetup(
@@ -812,6 +828,87 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                       ),
                     ],
                   ),
+                  SizedBox(height: 24),
+                  Text(
+                    '연령 제한 (선택)',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _minYearController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: '출생연도 최소 (ex: 1990)',
+                            hintStyle: TextStyle(fontSize: 13),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: GRAYSCALE_LABEL_300,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: selectedTeam?.color ?? BUTTON,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('~'),
+                      ),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _maxYearController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: '출생연도 최대 (ex: 2000)',
+                            hintStyle: TextStyle(fontSize: 13),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: GRAYSCALE_LABEL_300,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: selectedTeam?.color ?? BUTTON,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '방장 승인 후 참여',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Switch(
+                        activeColor: selectedTeam?.color ?? BUTTON,
+                        value: _isApprovalRequired,
+                        onChanged: (value) {
+                          setState(() {
+                            _isApprovalRequired = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
 
                   SizedBox(height: 16),
 
@@ -850,147 +947,67 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            '사진 첨부',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            '${_existingImageUrls.length + _selectedImages.length}/4',
-                            style: TextStyle(
-                              color:
-                                  (_existingImageUrls.length +
-                                          _selectedImages.length) ==
-                                      4
-                                  ? Colors.red
-                                  : GRAYSCALE_LABEL_500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            // 사진 추가 버튼
-                            if (_existingImageUrls.length +
-                                    _selectedImages.length <
-                                4)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 12),
-                                child: InkWell(
-                                  onTap: _pickImages,
-                                  child: Container(
-                                    width: 80,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: GRAYSCALE_LABEL_300,
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      Icons.camera_alt,
-                                      color:
-                                          selectedTeam?.color ??
-                                          GRAYSCALE_LABEL_500,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            // 기존 이미지 목록
-                            ..._existingImageUrls.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final url = entry.value;
-                              return Stack(
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(right: 12),
-                                    width: 80,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      image: DecorationImage(
-                                        image: NetworkImage(url),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 4,
-                                    right: 16,
-                                    child: InkWell(
-                                      onTap: () {
-                                        setState(() {
-                                          _existingImageUrls.removeAt(index);
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.black54,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.close,
-                                          size: 12,
-                                          color: WHITE,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }),
-                            // 선택된 사진 목록
-                            ..._selectedImages.asMap().entries.map((entry) {
-                              final index = entry.key;
-                              final image = entry.value;
-                              return Stack(
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(right: 12),
-                                    width: 80,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      image: DecorationImage(
-                                        image: FileImage(File(image.path)),
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 4,
-                                    right: 16,
-                                    child: InkWell(
-                                      onTap: () => _removeImage(index),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.black54,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.close,
-                                          size: 12,
-                                          color: WHITE,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }),
-                          ],
+                      const Text(
+                        '대표 사진 (필수)',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const SizedBox(height: 12),
+
+                      if (_existingImageUrls.isNotEmpty)
+                        _buildImagePreview(
+                          imageProvider: NetworkImage(_existingImageUrls.first),
+                          onRemove: () {
+                            setState(() {
+                              _existingImageUrls.clear();
+                            });
+                          },
+                        )
+                      else if (_selectedImages.isNotEmpty)
+                        _buildImagePreview(
+                          imageProvider: FileImage(
+                            File(_selectedImages.first.path),
+                          ),
+                          onRemove: () {
+                            setState(() {
+                              _selectedImages.clear();
+                            });
+                          },
+                        )
+                      else
+                        InkWell(
+                          onTap: _pickImages,
+                          child: Container(
+                            width: double.infinity,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: GRAYSCALE_LABEL_300),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.camera_alt,
+                                  size: 40,
+                                  color:
+                                      selectedTeam?.color ??
+                                      GRAYSCALE_LABEL_500,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '대표 사진 업로드',
+                                  style: TextStyle(
+                                    color: GRAYSCALE_LABEL_500,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ],
@@ -999,6 +1016,39 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildImagePreview({
+    required ImageProvider imageProvider,
+    required VoidCallback onRemove,
+  }) {
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          height: 200,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
+          ),
+        ),
+        Positioned(
+          top: 10,
+          right: 10,
+          child: InkWell(
+            onTap: onRemove,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, size: 20, color: WHITE),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

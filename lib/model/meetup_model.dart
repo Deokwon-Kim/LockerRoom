@@ -27,6 +27,10 @@ class MeetupModel {
   final List<String> attendedParticipants;
   final String? lastMessage;
   final String? lastMessageAt;
+  final int? minBirthYear;
+  final int? maxBirthYear;
+  final bool isApprovalRequired;
+  final List<String> pendingParticipants;
 
   // 공지사항 메시지 ID (announcementId 필드를 사용)
   String? get noticeMessageId => announcementId;
@@ -58,6 +62,10 @@ class MeetupModel {
     this.announcementCreatedAt,
     this.lastMessage,
     this.lastMessageAt,
+    this.minBirthYear,
+    this.maxBirthYear,
+    this.isApprovalRequired = false,
+    this.pendingParticipants = const [],
   });
 
   factory MeetupModel.fromFirestore(DocumentSnapshot doc) {
@@ -92,6 +100,10 @@ class MeetupModel {
           ?.toDate(),
       lastMessage: data['lastMessage'],
       lastMessageAt: data['lastMessageAt'],
+      minBirthYear: data['minBirthYear'],
+      maxBirthYear: data['maxBirthYear'],
+      isApprovalRequired: data['isApprovalRequired'] ?? false,
+      pendingParticipants: List<String>.from(data['pendingParticipants'] ?? []),
     );
   }
   Map<String, dynamic> toFirestore() {
@@ -123,6 +135,10 @@ class MeetupModel {
           : null,
       'lastMessage': lastMessage,
       'lastMessageAt': lastMessageAt,
+      'minBirthYear': minBirthYear,
+      'maxBirthYear': maxBirthYear,
+      'isApprovalRequired': isApprovalRequired,
+      'pendingParticipants': pendingParticipants,
     };
   }
 
@@ -153,6 +169,10 @@ class MeetupModel {
     List<String>? attendedParticipants,
     String? lastMessage,
     String? lastMessageAt,
+    int? minBirthYear,
+    int? maxBirthYear,
+    bool? isApprovalRequired,
+    List<String>? pendingParticipants,
   }) {
     return MeetupModel(
       id: id ?? this.id,
@@ -177,6 +197,10 @@ class MeetupModel {
       attendedParticipants: attendedParticipants ?? this.attendedParticipants,
       lastMessage: lastMessage ?? this.lastMessage,
       lastMessageAt: lastMessageAt ?? this.lastMessageAt,
+      minBirthYear: minBirthYear ?? this.minBirthYear,
+      maxBirthYear: maxBirthYear ?? this.maxBirthYear,
+      isApprovalRequired: isApprovalRequired ?? this.isApprovalRequired,
+      pendingParticipants: pendingParticipants ?? this.pendingParticipants,
     );
   }
 
