@@ -112,15 +112,15 @@ class _BottomTabBarState extends State<BottomTabBar> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildGuideItem('', '새로운 기능이 추가되었습니다!'),
+                _buildGuideItem('', '더베이스 업데이트 안내 ⚾️'),
                 SizedBox(height: 12),
-                _buildGuideItem('', '1. 야구 퀴즈 오픈 (KBO 역사·응원가 포함)'),
+                _buildGuideItem('', '1. 퀴즈 팀랭킹 및 뱃지 & 응원가 듣고 가사 맞추기 추가!'),
                 SizedBox(height: 12),
-                _buildGuideItem('', '2. 직관 기록 분석 페이지 추가'),
+                _buildGuideItem('', '2. 직관 모임 개설 & 실시간 채팅 기능 오픈!'),
                 SizedBox(height: 12),
-                _buildGuideItem('', '3. 직관 기록 승률 전용 페이지 신설'),
+                _buildGuideItem('', '3. 2026 시즌 직관 승률 기록 관리 시작!'),
                 SizedBox(height: 12),
-                _buildGuideItem('', '지금 바로 확인해보세요!'),
+                _buildGuideItem('', '새로워진 더베이스를 지금 만나보세요.'),
                 SizedBox(height: 20),
                 // 다시 보지 않기 체크박스
                 GestureDetector(
