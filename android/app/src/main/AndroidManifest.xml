@@ -14,7 +14,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
-        android:label="lockerroom"
+        android:label="더베이스"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
