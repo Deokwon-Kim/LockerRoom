@@ -10,6 +10,7 @@ class AppNotification {
   final String? postId;
   final String? commentId;
   final String? preview;
+  final String? meetupId;
 
   AppNotification({
     required this.id,
@@ -21,6 +22,7 @@ class AppNotification {
     this.postId,
     this.commentId,
     this.preview,
+    this.meetupId,
   });
 
   factory AppNotification.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -37,6 +39,7 @@ class AppNotification {
       postId: data['postId'] as String?,
       commentId: data['commentId'] as String?,
       preview: data['preview'] as String?,
+      meetupId: data['meetupId'] as String?,
     );
   }
 }
