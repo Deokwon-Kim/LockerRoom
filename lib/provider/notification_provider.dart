@@ -7,6 +7,8 @@ import 'package:toastification/toastification.dart';
 import 'package:lockerroom/services/navigation_service.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
+import 'package:lockerroom/model/meetup_model.dart';
+import 'package:lockerroom/page/meetup/meetup_detail_page.dart';
 
 class NotificationProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -251,6 +253,26 @@ class NotificationProvider extends ChangeNotifier {
         type = ToastificationType.info;
         icon = Icons.comment;
         break;
+      case 'meetup_request':
+        title = '모임 참여 신청';
+        description = userNickName != '알 수 없음'
+            ? '$userNickName님이 모임 참여를 신청했습니다'
+            : '회원님의 모임에 새로운 참여 신청이 도착했습니다';
+        type = ToastificationType.info;
+        icon = Icons.person_add;
+        break;
+      case 'meetup_approved':
+        title = '모임 참여 승인';
+        description = '신청하신 모임 참여가 승인되었습니다!';
+        type = ToastificationType.success;
+        icon = Icons.check_circle;
+        break;
+      case 'meetup_rejected':
+        title = '모임 참여 거절';
+        description = '신청하신 모임 참여가 거절되었습니다.';
+        type = ToastificationType.error;
+        icon = Icons.cancel;
+        break;
       default:
         title = '새 알림';
         description = '새로운 알림이 도착했습니다';
@@ -386,6 +408,31 @@ class NotificationProvider extends ChangeNotifier {
           autoCloseDuration: Duration(seconds: 2),
           title: Text('오류가 발생했습니다'),
         );
+      }
+    } else if (n.type == 'meetup_request' ||
+        n.type == 'meetup_approved' ||
+        n.type == 'meetup_rejected') {
+      // 모임 관련 알림 처리
+      final meetupId = n.meetupId;
+      if (meetupId != null) {
+        try {
+          final meetupDoc = await _firestore
+              .collection('meetups')
+              .doc(meetupId)
+              .get();
+          if (meetupDoc.exists) {
+            final meetup = MeetupModel.fromFirestore(meetupDoc);
+            if (!context.mounted) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MeetupDetailPage(meetup: meetup),
+              ),
+            );
+          }
+        } catch (e) {
+          debugPrint('모임 이동 오류: $e');
+        }
       }
     }
   }

@@ -117,9 +117,29 @@ class MeetupProvider extends ChangeNotifier {
         final meetup = MeetupModel.fromFirestore(snapshot);
         if (meetup.isFull) throw Exception('모임이 마감되었습니다');
         if (meetup.participants.contains(userId)) throw Exception('이미 참여중입니다');
+        if (meetup.pendingParticipants.contains(userId)) {
+          throw Exception('이미 승인 대기 중입니다');
+        }
 
-        final updatedParticipants = [...meetup.participants, userId];
-        transaction.update(docRef, {'participants': updatedParticipants});
+        if (meetup.isApprovalRequired) {
+          final updatedPending = [...meetup.pendingParticipants, userId];
+          transaction.update(docRef, {'pendingParticipants': updatedPending});
+
+          // 방장에게 알림 전송
+          final notificationRef = _firestore.collection('notifications').doc();
+          transaction.set(notificationRef, {
+            'type': 'meetup_request',
+            'meetupId': meetupId,
+            'fromUserId': userId,
+            'toUserId': meetup.userId,
+            'createdAt': FieldValue.serverTimestamp(),
+            'isRead': false,
+            'preview': '${meetup.title} 모임에 참여 신청이 도착했습니다.',
+          });
+        } else {
+          final updatedParticipants = [...meetup.participants, userId];
+          transaction.update(docRef, {'participants': updatedParticipants});
+        }
       });
 
       await fetchMeetups();
@@ -289,6 +309,94 @@ class MeetupProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       print('강제 퇴장 실패: $e');
+      return false;
+    }
+  }
+
+  // 참여 승인 (방장전용)
+  Future<bool> approveParticipant(String meetupId, String targetUserId) async {
+    try {
+      final docRef = _firestore.collection('meetups').doc(meetupId);
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) throw Exception('모임을 찾을 수 없습니다');
+
+        final meetup = MeetupModel.fromFirestore(snapshot);
+        if (meetup.isFull) throw Exception('모임이 마감되었습니다');
+
+        final updatedPending = meetup.pendingParticipants
+            .where((id) => id != targetUserId)
+            .toList();
+        final updatedParticipants = [...meetup.participants, targetUserId];
+
+        transaction.update(docRef, {
+          'pendingParticipants': updatedPending,
+          'participants': updatedParticipants,
+        });
+
+        // 신청자에게 승인 알림 전송
+        final notificationRef = _firestore.collection('notifications').doc();
+        transaction.set(notificationRef, {
+          'type': 'meetup_approved',
+          'meetupId': meetupId,
+          'fromUserId': _auth.currentUser?.uid,
+          'toUserId': targetUserId,
+          'createdAt': FieldValue.serverTimestamp(),
+          'isRead': false,
+          'preview': '${meetup.title} 모임 참여가 승인되었습니다!',
+        });
+      });
+
+      await fetchMeetups();
+      return true;
+    } catch (e) {
+      print('참여 승인 실패: $e');
+      return false;
+    }
+  }
+
+  // 참여 거절 (방장전용)
+  Future<bool> rejectParticipant(
+    String meetupId,
+    String targetUserId, {
+    String? reason,
+  }) async {
+    try {
+      final docRef = _firestore.collection('meetups').doc(meetupId);
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) throw Exception('모임을 찾을 수 없습니다');
+
+        final meetup = MeetupModel.fromFirestore(snapshot);
+
+        final updatedPending = meetup.pendingParticipants
+            .where((id) => id != targetUserId)
+            .toList();
+
+        transaction.update(docRef, {'pendingParticipants': updatedPending});
+
+        // 신청자에게 거절 알림 전송
+        final notificationRef = _firestore.collection('notifications').doc();
+        String preview = '${meetup.title} 모임 참여가 거절되었습니다.';
+        if (reason != null && reason.isNotEmpty) {
+          preview += '\n사유: $reason';
+        }
+
+        transaction.set(notificationRef, {
+          'type': 'meetup_rejected',
+          'meetupId': meetupId,
+          'fromUserId': _auth.currentUser?.uid,
+          'toUserId': targetUserId,
+          'createdAt': FieldValue.serverTimestamp(),
+          'isRead': false,
+          'preview': preview,
+        });
+      });
+
+      await fetchMeetups();
+      return true;
+    } catch (e) {
+      print('참여 거절 실패: $e');
       return false;
     }
   }

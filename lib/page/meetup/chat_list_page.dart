@@ -109,6 +109,7 @@ class ChatListItem extends StatelessWidget {
           .doc(meetup.id)
           .snapshots(),
       builder: (context, readSnapshot) {
+        if (readSnapshot.hasError) return const SizedBox.shrink();
         final readData = readSnapshot.data?.data() as Map<String, dynamic>?;
         final lastReadAt = readData?['lastReadAt'] as Timestamp?;
 
@@ -125,6 +126,7 @@ class ChatListItem extends StatelessWidget {
               )
               .snapshots(),
           builder: (context, unreadSnapshot) {
+            if (unreadSnapshot.hasError) return const SizedBox.shrink();
             final unreadDocs = unreadSnapshot.data?.docs ?? [];
             int unreadCount = unreadDocs
                 .where(
@@ -144,6 +146,7 @@ class ChatListItem extends StatelessWidget {
                   .limit(1)
                   .snapshots(),
               builder: (context, lastMsgSnapshot) {
+                if (lastMsgSnapshot.hasError) return const SizedBox.shrink();
                 String? displayMessage = meetup.lastMessage;
                 String? displayTime = meetup.lastMessageAt;
 

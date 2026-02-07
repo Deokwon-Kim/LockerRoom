@@ -265,6 +265,18 @@ class QuizProvider extends ChangeNotifier {
       finalCategory = '응원가';
     }
 
+    // 유저의 현재 팀 정보 가져오기
+    String? currentTeam;
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId != null) {
+        final userDoc = await _firestore.collection('users').doc(userId).get();
+        currentTeam = userDoc.data()?['team'] as String?;
+      }
+    } catch (e) {
+      debugPrint('팀 정보 조회 실패: $e');
+    }
+
     // 결과 객체 생성 (다시하기를 위해 원본 카테고리 보존)
     final result = QuizResultModel(
       userId: _auth.currentUser?.uid ?? '',
@@ -277,6 +289,7 @@ class QuizProvider extends ChangeNotifier {
       timeTakenSeconds: timeTaken.inSeconds,
       questionIds: questionIds,
       answerResults: answerResults,
+      teamName: currentTeam, // 현재 팀 저장
     );
 
     // Firestore에 저장 (userId별 서브컬렉션 구조)

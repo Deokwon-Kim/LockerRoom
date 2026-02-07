@@ -89,28 +89,37 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     _messagesSubscription = context
         .read<ChatProvider>()
         .getMessagesStream(widget.meetupId)
-        .listen((messages) {
-          if (mounted) {
-            _serverMessages = messages.map(_convertMessage).toList();
+        .listen(
+          (messages) {
+            if (mounted) {
+              _serverMessages = messages.map(_convertMessage).toList();
 
-            // 서버에서 온 이미지 메시지와 동일한 사용자의 pending 이미지 메시지 제거 (중복 방지)
-            final serverImageIds = _serverMessages
-                .where((m) => m is ImageMessage)
-                .map((m) => m.authorId)
-                .toSet();
-            _pendingMessages.removeWhere(
-              (m) =>
-                  m is ImageMessage &&
-                  m.id.startsWith('temp-') &&
-                  serverImageIds.contains(m.authorId),
-            );
+              // 서버에서 온 이미지 메시지와 동일한 사용자의 pending 이미지 메시지 제거 (중복 방지)
+              final serverImageIds = _serverMessages
+                  .where((m) => m is ImageMessage)
+                  .map((m) => m.authorId)
+                  .toSet();
+              _pendingMessages.removeWhere(
+                (m) =>
+                    m is ImageMessage &&
+                    m.id.startsWith('temp-') &&
+                    serverImageIds.contains(m.authorId),
+              );
 
-            _updateDisplayMessages();
+              _updateDisplayMessages();
 
-            // 채팅방에 있는 동안 들어오는 메시지들은 모두 읽음 처리
-            context.read<ChatProvider>().markAsRead(widget.meetupId, _user.id);
-          }
-        });
+              // 채팅방에 있는 동안 들어오는 메시지들은 모두 읽음 처리
+              context.read<ChatProvider>().markAsRead(
+                widget.meetupId,
+                _user.id,
+              );
+            }
+          },
+          onError: (e) {
+            debugPrint('채팅 메시지 구독 오류: $e');
+            // 나가기 시 permission-denied 발생 가능
+          },
+        );
     _loadParticipantInfos();
 
     _setupParticipantsListener();
@@ -121,29 +130,39 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     _meetupSubscription = context
         .read<MeetupProvider>()
         .getMeetupStream(widget.meetupId)
-        .listen((updated) {
-          if (updated != null && mounted) {
-            setState(() {
-              _latestMeetup = updated;
-            });
-          }
-        });
+        .listen(
+          (updated) {
+            if (updated != null && mounted) {
+              setState(() {
+                _latestMeetup = updated;
+              });
+            }
+          },
+          onError: (e) {
+            debugPrint('채팅 모임 정보 구독 오류: $e');
+          },
+        );
   }
 
   void _setupParticipantsListener() {
     _participantsSubscription = context
         .read<MeetupProvider>()
         .getChatParticipantIdsStream(widget.meetupId)
-        .listen((ids) async {
-          final infos = await context
-              .read<MeetupProvider>()
-              .getParticipantsInfo(ids);
-          if (mounted) {
-            setState(() {
-              _participantsInfos = infos;
-            });
-          }
-        });
+        .listen(
+          (ids) async {
+            final infos = await context
+                .read<MeetupProvider>()
+                .getParticipantsInfo(ids);
+            if (mounted) {
+              setState(() {
+                _participantsInfos = infos;
+              });
+            }
+          },
+          onError: (e) {
+            debugPrint('채팅 참여자 ID 구독 오류: $e');
+          },
+        );
   }
 
   Future<void> _loadParticipantInfos() async {

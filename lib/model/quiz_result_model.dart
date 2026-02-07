@@ -11,6 +11,7 @@ class QuizResultModel {
   final int timeTakenSeconds;
   final List<String> questionIds;
   final Map<String, bool> answerResults;
+  final String? teamName; // 추가: 퀴즈 당시의 소속 팀
 
   QuizResultModel({
     required this.userId,
@@ -23,6 +24,7 @@ class QuizResultModel {
     required this.timeTakenSeconds,
     required this.questionIds,
     required this.answerResults,
+    this.teamName,
   });
 
   // 점수 계산 헬퍼
@@ -56,6 +58,7 @@ class QuizResultModel {
       'timeTakenSeconds': timeTakenSeconds,
       'questionIds': questionIds,
       'answerResults': answerResults,
+      'teamName': teamName,
     };
   }
 
@@ -71,6 +74,7 @@ class QuizResultModel {
       timeTakenSeconds: json['timeTakenSeconds'] as int,
       questionIds: List<String>.from(json['questionIds'] as List),
       answerResults: Map<String, bool>.from(json['answerResults'] as Map),
+      teamName: json['teamName'] as String?,
     );
   }
 

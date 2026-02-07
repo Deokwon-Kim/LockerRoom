@@ -41,11 +41,26 @@ class NotificationService {
       importance: Importance.high,
     );
 
+    // High Importance Channel (FCM용)
+    const highImportanceChannel = AndroidNotificationChannel(
+      'high_importance_channel',
+      'High Importance Notifications',
+      description: 'This channel is used for important notifications.',
+      importance: Importance.high,
+      sound: RawResourceAndroidNotificationSound('playball'),
+    );
+
     await notificationsPlugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >()
         ?.createNotificationChannel(androidChannel);
+
+    await notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(highImportanceChannel);
 
     _isInitialized = true;
   }

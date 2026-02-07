@@ -41,14 +41,19 @@ class _ChatInfoPageState extends State<ChatInfoPage> {
     _messagesSubscription = context
         .read<ChatProvider>()
         .getMessagesStream(widget.meetup.id)
-        .listen((messages) {
-          if (mounted) {
-            setState(() {
-              // ChatProvider에서 이미 types.Message로 변환됨
-              _serverMessages = messages.cast<types.Message>().toList();
-            });
-          }
-        });
+        .listen(
+          (messages) {
+            if (mounted) {
+              setState(() {
+                // ChatProvider에서 이미 types.Message로 변환됨
+                _serverMessages = messages.cast<types.Message>().toList();
+              });
+            }
+          },
+          onError: (e) {
+            debugPrint('채팅 정보 메시지 구독 오류: $e');
+          },
+        );
     _loadParticipantInfos();
     _setupParticipantsListener();
   }
@@ -57,16 +62,21 @@ class _ChatInfoPageState extends State<ChatInfoPage> {
     _participantsSubscription = context
         .read<MeetupProvider>()
         .getChatParticipantIdsStream(widget.meetup.id)
-        .listen((ids) async {
-          final infos = await context
-              .read<MeetupProvider>()
-              .getParticipantsInfo(ids);
-          if (mounted) {
-            setState(() {
-              _participantsInfos = infos;
-            });
-          }
-        });
+        .listen(
+          (ids) async {
+            final infos = await context
+                .read<MeetupProvider>()
+                .getParticipantsInfo(ids);
+            if (mounted) {
+              setState(() {
+                _participantsInfos = infos;
+              });
+            }
+          },
+          onError: (e) {
+            debugPrint('채팅 정보 참여자 구독 오류: $e');
+          },
+        );
   }
 
   Future<void> _loadParticipantInfos() async {
@@ -227,6 +237,9 @@ class _ChatInfoPageState extends State<ChatInfoPage> {
                           .read<MeetupProvider>()
                           .getMuteStatusStream(widget.meetup.id),
                       builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return const SizedBox.shrink();
+                        }
                         final isMuted = snapshot.data ?? false;
                         return IconButton(
                           onPressed: () {

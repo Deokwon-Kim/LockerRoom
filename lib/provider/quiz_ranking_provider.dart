@@ -56,8 +56,27 @@ class QuizRankingProvider extends ChangeNotifier {
 
       // 사용자별 총 점수 합산 및 팀 점수 집계를 위한 맵
       final Map<String, Map<String, dynamic>> userTotalScores = {};
-      final Map<String, int> teamTotalScores = {};
+      final Map<String, int> teamTotalScores = {
+        '두산베어스': 100,
+        '삼성라이온즈': 100,
+        '롯데자이언츠': 100,
+        '기아타이거즈': 100,
+        'LG트윈스': 100,
+        'SSG랜더스': 100,
+        '한화이글스': 100,
+        '키움히어로즈': 100,
+        'NC다이노스': 100,
+        'KT위즈': 100,
+      };
 
+      final DateTime teamSeasonStartDate = DateTime(
+        2026,
+        2,
+        6,
+        17,
+        0,
+        0,
+      ); // 리셋 시점
       for (var doc in snapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
         final userId = data['userId'] as String;
@@ -66,6 +85,7 @@ class QuizRankingProvider extends ChangeNotifier {
         final userNickName = data['userNickName'] as String? ?? '익명';
         final teamName = data['teamName'] as String?; // 퀴즈 결과에 있는 팀명 활용
 
+        // 1-1. 개인 점수 합산 (전체 기간)
         if (!userTotalScores.containsKey(userId)) {
           // 처음 발견한 사용자
           userTotalScores[userId] = {
@@ -84,6 +104,21 @@ class QuizRankingProvider extends ChangeNotifier {
               userTotalScores[userId]!['completedAt'] as Timestamp;
           if (completedAt.compareTo(currentCompletedAt) > 0) {
             userTotalScores[userId]!['completedAt'] = completedAt;
+          }
+        }
+
+        // 1-2. 팀 점수 집계 (시즌제 초기화: 2026-02-05 이후 데이터만 집계)
+        if (completedAt.toDate().isAfter(teamSeasonStartDate) ||
+            completedAt.toDate().isAtSameMomentAs(teamSeasonStartDate)) {
+          // 문서에 teamName이 있으면 사용하고, 없으면 유저 정보의 최신 팀을 나중에 보완(여기서는 일단 넘어가고 아래에서 처리)
+          if (teamName != null && teamName.isNotEmpty) {
+            teamTotalScores[teamName] =
+                (teamTotalScores[teamName] ?? 0) + score;
+          } else {
+            // teamName이 없는 경우 (레거시/누락), 나중에 사용자 정보와 대조하기 위해 임시 저장
+            userTotalScores[userId]!['legacyTeamScore'] =
+                (userTotalScores[userId]!['legacyTeamScore'] as int? ?? 0) +
+                score;
           }
         }
       }
@@ -167,10 +202,12 @@ class QuizRankingProvider extends ChangeNotifier {
           );
         }
 
-        // 팀 점수 집계 (전체 항목에 대해 수행)
-        if (teamName != null && teamName.isNotEmpty) {
+        // 공통: 팀 점수 집계 보완 (문서에 없어서 누락된 점수를 유저의 현재 팀으로 합산)
+        // 상위 100명/하위 모두에 적용되어야 함
+        final int legacyScore = scoreData['legacyTeamScore'] as int? ?? 0;
+        if (legacyScore > 0 && teamName != null && teamName.isNotEmpty) {
           teamTotalScores[teamName] =
-              (teamTotalScores[teamName] ?? 0) + userTotalScore;
+              (teamTotalScores[teamName] ?? 0) + legacyScore;
         }
       }
 

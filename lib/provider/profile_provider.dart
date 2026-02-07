@@ -112,22 +112,38 @@ class ProfileProvider extends ChangeNotifier {
   // 로그인한 유저 프로필 구독
   void subscribeMyProfileImage(String userId) {
     _myProfileSub?.cancel();
-    _myProfileSub = _userCollection.doc(userId).snapshots().listen((doc) {
-      _myProfileImage = doc.data()?['profileImage'] as String?;
-      notifyListeners();
-    });
+    _myProfileSub = _userCollection
+        .doc(userId)
+        .snapshots()
+        .listen(
+          (doc) {
+            _myProfileImage = doc.data()?['profileImage'] as String?;
+            notifyListeners();
+          },
+          onError: (e) {
+            debugPrint('내 프로필 구독 오류: $e');
+          },
+        );
   }
 
   // 특정 유저 프로필 구독(피드 전용) - 프로필 이미지와 닉네임 모두 구독
   void subscribeUserProfile(String userId) {
     if (_subscriptions.containsKey(userId)) return; // 이미 구독 중이면 무시
 
-    final sub = _userCollection.doc(userId).snapshots().listen((doc) {
-      final data = doc.data();
-      _userProfiles[userId] = data?['profileImage'] as String?;
-      _userNicknames[userId] = data?['userNickName'] as String?;
-      notifyListeners();
-    });
+    final sub = _userCollection
+        .doc(userId)
+        .snapshots()
+        .listen(
+          (doc) {
+            final data = doc.data();
+            _userProfiles[userId] = data?['profileImage'] as String?;
+            _userNicknames[userId] = data?['userNickName'] as String?;
+            notifyListeners();
+          },
+          onError: (e) {
+            debugPrint('유저 프로필 구독 오류 ($userId): $e');
+          },
+        );
 
     _subscriptions[userId] = sub;
   }

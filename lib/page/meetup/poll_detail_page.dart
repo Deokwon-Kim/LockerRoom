@@ -66,32 +66,37 @@ class _PollDetailPageState extends State<PollDetailPage> {
         .collection('messages')
         .doc(widget.messageId)
         .snapshots()
-        .listen((snapshot) {
-          if (snapshot.exists && mounted) {
-            final data = snapshot.data()!;
-            final metadata = data['metadata'];
-            if (metadata != null) {
-              setState(() {
-                _currentQuestion = metadata['question'] ?? _currentQuestion;
-                _currentOptions = List<String>.from(
-                  metadata['options'] ?? _currentOptions,
-                );
-                _currentDeadLine =
-                    metadata['deadLine'] as Timestamp? ?? _currentDeadLine;
-                _isClosed = metadata['isClosed'] ?? false;
-                _allowMultiple = metadata['allowMultiple'] ?? false;
-                _currentVotes = Map<String, List<String>>.from(
-                  (metadata['votes'] as Map? ?? {}).map(
-                    (k, v) => MapEntry(
-                      k.toString(),
-                      List<String>.from(v as List? ?? []),
+        .listen(
+          (snapshot) {
+            if (snapshot.exists && mounted) {
+              final data = snapshot.data()!;
+              final metadata = data['metadata'];
+              if (metadata != null) {
+                setState(() {
+                  _currentQuestion = metadata['question'] ?? _currentQuestion;
+                  _currentOptions = List<String>.from(
+                    metadata['options'] ?? _currentOptions,
+                  );
+                  _currentDeadLine =
+                      metadata['deadLine'] as Timestamp? ?? _currentDeadLine;
+                  _isClosed = metadata['isClosed'] ?? false;
+                  _allowMultiple = metadata['allowMultiple'] ?? false;
+                  _currentVotes = Map<String, List<String>>.from(
+                    (metadata['votes'] as Map? ?? {}).map(
+                      (k, v) => MapEntry(
+                        k.toString(),
+                        List<String>.from(v as List? ?? []),
+                      ),
                     ),
-                  ),
-                );
-              });
+                  );
+                });
+              }
             }
-          }
-        });
+          },
+          onError: (e) {
+            debugPrint('투표 상세 스트림 오류: $e');
+          },
+        );
   }
 
   @override

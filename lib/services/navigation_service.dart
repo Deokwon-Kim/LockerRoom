@@ -40,6 +40,15 @@ Future<void> navigateFromData(Map<String, dynamic> data) async {
     return;
   }
 
+  // 2. 직관모임 알림 처리 (승인/거절/신청)
+  if (['meetup_request', 'meetup_approved', 'meetup_rejected'].contains(type)) {
+    final String? meetupId = data['meetupId'];
+    if (meetupId != null) {
+      navigateToMeetup(meetupId);
+    }
+    return;
+  }
+
   // 2. 기타 알림 처리 (기존 로직)
   final String? explicitRoute = _extractRoute(data);
   if (explicitRoute == null) return;

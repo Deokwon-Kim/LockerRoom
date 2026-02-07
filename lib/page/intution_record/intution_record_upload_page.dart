@@ -39,7 +39,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
       context: context,
       initialDate: selectedDate ?? DateTime.now(),
       firstDate: DateTime(2010),
-      lastDate: DateTime(2026),
+      lastDate: DateTime(2027),
       builder: (context, child) {
         final base = Theme.of(context);
         return Localizations.override(

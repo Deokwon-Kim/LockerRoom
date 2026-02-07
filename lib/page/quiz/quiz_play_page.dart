@@ -286,8 +286,6 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                 _buildGuideItem('👂', '가사를 잘 듣고 빈칸을 맞춰보세요'),
                 const SizedBox(height: 12),
                 _buildGuideItem('⌨️', '주관식이 아닌 객관식으로 진행됩니다'),
-                const SizedBox(height: 12),
-                _buildGuideItem('🎤', '팬들의 떼창 가사를 느껴보세요'),
                 const SizedBox(height: 20),
                 // 다시 보지 않기 체크박스
                 GestureDetector(
