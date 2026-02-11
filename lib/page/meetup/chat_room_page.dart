@@ -26,6 +26,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 
 import 'package:lockerroom/page/feed/fullscreen_image_viewer.dart';
+import 'package:toastification/toastification.dart';
 
 class ChatRoomPage extends StatefulWidget {
   final String meetupId;
@@ -133,6 +134,26 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         .listen(
           (updated) {
             if (updated != null && mounted) {
+              // 강제 퇴장 여부 확인 (신청자 명단에 없고, 방장이 아닌 경우)
+              final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+              final isHost = updated.userId == currentUserId;
+              final isParticipant = updated.participants.contains(
+                currentUserId,
+              );
+
+              if (!isHost && !isParticipant) {
+                // 모임에서 제외됨
+                Navigator.of(context).pop();
+                toastification.show(
+                  context: context,
+                  type: ToastificationType.warning,
+                  alignment: Alignment.bottomCenter,
+                  autoCloseDuration: const Duration(seconds: 3),
+                  title: const Text('모임에서 제외되었습니다.'),
+                );
+                return;
+              }
+
               setState(() {
                 _latestMeetup = updated;
               });

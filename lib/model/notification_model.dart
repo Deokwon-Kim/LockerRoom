@@ -11,6 +11,7 @@ class AppNotification {
   final String? commentId;
   final String? preview;
   final String? meetupId;
+  final int? fromUserBirthYear;
 
   AppNotification({
     required this.id,
@@ -23,6 +24,7 @@ class AppNotification {
     this.commentId,
     this.preview,
     this.meetupId,
+    this.fromUserBirthYear,
   });
 
   factory AppNotification.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -40,6 +42,9 @@ class AppNotification {
       commentId: data['commentId'] as String?,
       preview: data['preview'] as String?,
       meetupId: data['meetupId'] as String?,
+      fromUserBirthYear: data['fromUserBirthYear'] == null
+          ? null
+          : (data['fromUserBirthYear'] as num).toInt(),
     );
   }
 }

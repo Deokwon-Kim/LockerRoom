@@ -10,6 +10,7 @@ class UserModel {
   final int followingCount;
   final Map<String, bool> mutedMeetups;
   final bool isNotificationsEnabled;
+  final int? birthYear;
 
   UserModel({
     required this.userNickName,
@@ -21,6 +22,7 @@ class UserModel {
     required this.followingCount,
     this.mutedMeetups = const {},
     this.isNotificationsEnabled = true,
+    this.birthYear,
   });
 
   factory UserModel.fromDoc(DocumentSnapshot doc) {
@@ -37,6 +39,9 @@ class UserModel {
       followingCount: data['followingCount'] ?? 0,
       mutedMeetups: Map<String, bool>.from(data['mutedMeetups'] ?? {}),
       isNotificationsEnabled: data['isNotificationsEnabled'] ?? true,
+      birthYear: data['birthYear'] == null
+          ? null
+          : (data['birthYear'] as num).toInt(),
     );
   }
 }

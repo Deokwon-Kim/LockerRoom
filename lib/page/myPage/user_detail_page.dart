@@ -143,6 +143,9 @@ class _UserDetailPageState extends State<UserDetailPage> {
                 (t) => t.name == teamName || t.symplename == teamName,
               );
             } catch (_) {}
+            final birthYear = data['birthYear'] == null
+                ? null
+                : (data['birthYear'] as num).toInt();
             final imageUrl = (data['profileImage'] as String?) ?? '';
 
             return Scaffold(
@@ -161,6 +164,20 @@ class _UserDetailPageState extends State<UserDetailPage> {
                         ),
                       ),
                     ),
+                    if (birthYear != null) ...[
+                      SizedBox(width: 8),
+                      Transform.translate(
+                        offset: Offset(-15, 5),
+                        child: Text(
+                          '($birthYear년생)',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: GRAYSCALE_LABEL_500,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                     SizedBox(width: 5),
                     Transform.translate(
                       offset: Offset(-15, 5),

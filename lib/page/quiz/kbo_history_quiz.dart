@@ -109,22 +109,20 @@ final List<QuizQuestionModel> baseballRuelQuestions = [
   QuizQuestionModel(
     quizId: 'ruel_001',
     category: '야구룰',
-    question:
-        '투수가 와인드업 자세에서 투구 모션을 시작한 뒤, 공을 던지지 않고 갑자기 2루로 견제했다. 주자가 없을 때 이 행동은?',
+    question: '1아웃 주자 1루 상황에 투수가 세트 포지션에서 정지자세 없이 투구를 할 경우 이 행동은 무엇인가',
     options: ['정상플레이', '보크', '볼', '타임'],
     correctIndex: 1,
     difficulty: 'easy',
-    explanation:
-        '주자가 없어도, 투수 동작이 투구로 간주된 모션에서 갑자기 견제하면 보크. 투구 동작의 일관성이 깨졌기 때문.',
+    explanation: '세트포지션에서 정지자세 없이 바로 투구를 하면 주자 기만행위로 보크로 선언된다',
   ),
 
   QuizQuestionModel(
     quizId: 'ruel_002',
     category: '야구룰',
     question: '스트라이크 존이란 무엇을 기준으로 정해질까?',
-    options: ['심판 기분', '타자의 키', '타자의 어깨부터 무릎까지', '타자의 겨드랑이와 무릎 윗부분'],
-    correctIndex: 2,
-    difficulty: 'easy',
+    options: ['심판 기분', '타자의 키', '타자의 어깨부터 무릎까지', '타자의 겨드랑이 아래 부분 ~ 무릎 윗부분'],
+    correctIndex: 3,
+    difficulty: 'medium',
     explanation: '겨드랑이 아래 부분 ~ 무릎 윗부분’이 공식 정의다',
   ),
 
@@ -358,9 +356,10 @@ final List<QuizQuestionModel> statsQuestions = [
     category: '기록',
     question: '규정타석을 채우지 못한 선수는 타율 1위를 달성할 수 있을까?',
     options: ['가능', '불가능', '심판재량', '팀 순위에 따라 다름'],
-    correctIndex: 1,
-    difficulty: 'medium',
-    explanation: '타격 타이틀은 반드시 ‘규정타석’ 충족해야 인정된다.',
+    correctIndex: 0,
+    difficulty: 'hard',
+    explanation:
+        '규정타석 미달이여도 규정타석까지 남은타석에서 모두 아웃으로 물러날 경우 타율이 1위라면 타격왕 수상이 가능하다(토니 그윈룰)',
   ),
 
   QuizQuestionModel(

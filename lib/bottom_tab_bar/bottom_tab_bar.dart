@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
-import 'package:lockerroom/page/afterMarket/after_market.dart';
 import 'package:lockerroom/page/feed/feed_page.dart';
 import 'package:lockerroom/page/home/home_page.dart';
+import 'package:lockerroom/page/meetup/meetup_page.dart';
 import 'package:lockerroom/page/myPage/mypage.dart';
 import 'package:lockerroom/page/feed/feed_upload_page.dart';
 import 'package:lockerroom/provider/tab_provider.dart';
@@ -276,7 +276,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
           });
         },
       ),
-      AfterMarket(),
+      MeetupPage(),
       Mypage(userId: FirebaseAuth.instance.currentUser?.uid ?? ''),
     ];
 
@@ -315,7 +315,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
             items: [
               BottomNavigationBarItem(
                 icon: _buildSvgTabIcon(0, AppIcons.home, AppIcons.homeFill),
-                label: '',
+                label: '홈',
               ),
               BottomNavigationBarItem(
                 icon: _buildTabIcon(
@@ -331,7 +331,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
               ),
 
               BottomNavigationBarItem(
-                icon: _buildSvgTabIcon(3, AppIcons.shop, AppIcons.shopFill),
+                icon: _buildTabIcon(3, Icons.group_outlined, Icons.group),
                 label: '',
               ),
               BottomNavigationBarItem(

@@ -100,8 +100,12 @@ class MeetupModel {
           ?.toDate(),
       lastMessage: data['lastMessage'],
       lastMessageAt: data['lastMessageAt'],
-      minBirthYear: data['minBirthYear'],
-      maxBirthYear: data['maxBirthYear'],
+      minBirthYear: data['minBirthYear'] == null
+          ? null
+          : (data['minBirthYear'] as num).toInt(),
+      maxBirthYear: data['maxBirthYear'] == null
+          ? null
+          : (data['maxBirthYear'] as num).toInt(),
       isApprovalRequired: data['isApprovalRequired'] ?? false,
       pendingParticipants: List<String>.from(data['pendingParticipants'] ?? []),
     );

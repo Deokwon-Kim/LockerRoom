@@ -104,12 +104,14 @@ class MeetupProvider extends ChangeNotifier {
   }
 
   // 모임 참여
-  Future<bool> joinMeetup(String meetupId) async {
+  Future<bool> joinMeetup(String meetupId, {int? birthYear}) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return false;
 
     try {
       final docRef = _firestore.collection('meetups').doc(meetupId);
+      final userRef = _firestore.collection('users').doc(userId);
+
       await _firestore.runTransaction((transaction) async {
         final snapshot = await transaction.get(docRef);
         if (!snapshot.exists) throw Exception('모임을 찾을 수 없습니다');
@@ -119,6 +121,11 @@ class MeetupProvider extends ChangeNotifier {
         if (meetup.participants.contains(userId)) throw Exception('이미 참여중입니다');
         if (meetup.pendingParticipants.contains(userId)) {
           throw Exception('이미 승인 대기 중입니다');
+        }
+
+        // 생년월일 정보 업데이트 (있는 경우)
+        if (birthYear != null) {
+          transaction.update(userRef, {'birthYear': birthYear});
         }
 
         if (meetup.isApprovalRequired) {
@@ -131,10 +138,12 @@ class MeetupProvider extends ChangeNotifier {
             'type': 'meetup_request',
             'meetupId': meetupId,
             'fromUserId': userId,
+            'fromUserBirthYear': birthYear,
             'toUserId': meetup.userId,
             'createdAt': FieldValue.serverTimestamp(),
             'isRead': false,
-            'preview': '${meetup.title} 모임에 참여 신청이 도착했습니다.',
+            'preview':
+                '${meetup.title} 모임에 참여 신청이 도착했습니다.${birthYear != null ? ' ($birthYear년생)' : ''}',
           });
         } else {
           final updatedParticipants = [...meetup.participants, userId];
@@ -297,13 +306,17 @@ class MeetupProvider extends ChangeNotifier {
         transaction.update(docRef, {'participants': updatedParticipants});
       });
 
-      // 강퇴당한 유저의 채팅방 입장 기록도 삭제
-      await _firestore
-          .collection('meetups')
-          .doc(meetupId)
-          .collection('participants')
-          .doc(targetUserId)
-          .delete();
+      // 강퇴당한 유저의 채팅방 입장 기록도 삭제 시도 (권한 부족 시 무시)
+      try {
+        await _firestore
+            .collection('meetups')
+            .doc(meetupId)
+            .collection('participants')
+            .doc(targetUserId)
+            .delete();
+      } catch (e) {
+        debugPrint('참여자 하위 컬렉션 삭제 오류 (무시됨): $e');
+      }
 
       await fetchMeetups();
       return true;
@@ -411,12 +424,13 @@ class MeetupProvider extends ChangeNotifier {
   }
 
   Stream<List<String>> getChatParticipantIdsStream(String meetupId) {
-    return _firestore
-        .collection('meetups')
-        .doc(meetupId)
-        .collection('participants')
-        .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) => doc.id).toList());
+    return _firestore.collection('meetups').doc(meetupId).snapshots().map((
+      doc,
+    ) {
+      if (!doc.exists) return [];
+      final data = doc.data() as Map<String, dynamic>;
+      return List<String>.from(data['participants'] ?? []);
+    });
   }
 
   // 공지 등록

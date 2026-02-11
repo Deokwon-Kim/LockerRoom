@@ -64,6 +64,16 @@ class _ChatInfoPageState extends State<ChatInfoPage> {
         .getChatParticipantIdsStream(widget.meetup.id)
         .listen(
           (ids) async {
+            // 강제 퇴장 여부 확인
+            final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+            final isHost = widget.meetup.userId == currentUserId;
+            final isParticipant = ids.contains(currentUserId);
+
+            if (!isHost && !isParticipant && mounted) {
+              Navigator.of(context).pop();
+              return;
+            }
+
             final infos = await context
                 .read<MeetupProvider>()
                 .getParticipantsInfo(ids);

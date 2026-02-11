@@ -372,9 +372,6 @@ class _HomePageState extends State<HomePage> {
                           .take(5)
                           .toList();
 
-                      if (recruitingMeetups.isEmpty)
-                        return const SizedBox.shrink();
-
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -411,20 +408,42 @@ class _HomePageState extends State<HomePage> {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          SizedBox(
-                            height: 140,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: recruitingMeetups.length,
-                              itemBuilder: (context, index) {
-                                return _buildMeetupMiniCard(
-                                  context,
-                                  recruitingMeetups[index],
-                                  selectedTeam,
-                                );
-                              },
+                          if (recruitingMeetups.isEmpty)
+                            Container(
+                              width: double.infinity,
+                              height: 140,
+                              decoration: BoxDecoration(
+                                color: WHITE,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: GRAYSCALE_LABEL_300.withAlpha(50),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '모집 중인 모임이 없습니다',
+                                  style: TextStyle(
+                                    color: GRAYSCALE_LABEL_500,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
+                            SizedBox(
+                              height: 140,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: recruitingMeetups.length,
+                                itemBuilder: (context, index) {
+                                  return _buildMeetupMiniCard(
+                                    context,
+                                    recruitingMeetups[index],
+                                    selectedTeam,
+                                  );
+                                },
+                              ),
                             ),
-                          ),
                           const SizedBox(height: 20),
                         ],
                       );

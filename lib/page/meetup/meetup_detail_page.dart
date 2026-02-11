@@ -223,7 +223,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                   }
 
                   Navigator.pop(context);
-                  _joinProcess(meetup);
+                  _joinProcess(meetup, birthYear: enteredYear);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: teamColor,
@@ -400,9 +400,12 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
     }
   }
 
-  Future<void> _joinProcess(MeetupModel targetMeetup) async {
+  Future<void> _joinProcess(MeetupModel targetMeetup, {int? birthYear}) async {
     final meetupProvider = context.read<MeetupProvider>();
-    final success = await meetupProvider.joinMeetup(targetMeetup.id);
+    final success = await meetupProvider.joinMeetup(
+      targetMeetup.id,
+      birthYear: birthYear,
+    );
 
     if (success) {
       FirebaseAnalytics.instance.logEvent(
@@ -515,11 +518,12 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              user.userNickName,
+                              '${user.userNickName}${user.birthYear != null ? ' (${user.birthYear}년생)' : ''}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                             const Text(
                               '참여를 신청했습니다',
@@ -1598,13 +1602,12 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                 ],
                               ),
                               SizedBox(height: 5),
-                              if (meetup.minBirthYear != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 30),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 30),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (meetup.minBirthYear != null)
                                       Row(
                                         children: [
                                           Icon(
@@ -1613,48 +1616,44 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                             color: Color(0xffB45309),
                                           ),
                                           SizedBox(width: 6),
-                                          if (meetup.minBirthYear ==
-                                              meetup.maxBirthYear) ...[
-                                            Text(
-                                              '${meetup.maxBirthYear}년생 출생자만 참여 가능',
-                                              style: TextStyle(
-                                                color: Color(0xffB45309),
-                                                fontWeight: FontWeight.w500,
-                                              ),
+                                          Text(
+                                            meetup.minBirthYear ==
+                                                    meetup.maxBirthYear
+                                                ? '${meetup.maxBirthYear}년생 출생자만 참여 가능'
+                                                : '${meetup.minBirthYear}~${meetup.maxBirthYear}년생 출생자만 참여 가능',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: Color(0xffB45309),
+                                              fontWeight: FontWeight.w500,
                                             ),
-                                          ] else
-                                            Text(
-                                              '${meetup.minBirthYear}~${meetup.maxBirthYear}년생 출생자만 참여 가능',
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                color: Color(0xffB45309),
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
+                                          ),
                                         ],
                                       ),
-                                      if (meetup.isApprovalRequired)
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.admin_panel_settings,
-                                              size: 14,
+                                    if (meetup.isApprovalRequired) ...[
+                                      if (meetup.minBirthYear != null)
+                                        SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.admin_panel_settings,
+                                            size: 14,
+                                            color: Color(0xffB45309),
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            '방장 승인 후 참여 가능',
+                                            style: TextStyle(
+                                              fontSize: 13,
                                               color: Color(0xffB45309),
+                                              fontWeight: FontWeight.w500,
                                             ),
-                                            SizedBox(width: 6),
-                                            Text(
-                                              '방장 승인 후 참여 가능',
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                color: Color(0xffB45309),
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
+                                      ),
                                     ],
-                                  ),
+                                  ],
                                 ),
+                              ),
                             ],
                           ),
                         ),
