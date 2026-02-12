@@ -1851,6 +1851,48 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                               ),
                                             ),
                                           ),
+                                        if (meetup.attendedParticipants
+                                            .contains(user.uid))
+                                          Positioned(
+                                            bottom: 0,
+                                            right: 0,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green,
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                border: Border.all(
+                                                  color: WHITE,
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: const Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.check,
+                                                    color: WHITE,
+                                                    size: 10,
+                                                  ),
+                                                  SizedBox(width: 2),
+                                                  Text(
+                                                    '출석완료',
+                                                    style: TextStyle(
+                                                      fontSize: 8,
+                                                      color: WHITE,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
