@@ -58,8 +58,8 @@ class _QuizStartPageState extends State<QuizStartPage> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -67,8 +67,56 @@ class _QuizStartPageState extends State<QuizStartPage> {
             _buildHeader(context),
             const SizedBox(height: 24),
 
-            // 카테고리 리스트
-            ..._buildCategoryList(context),
+            // 카테고리 그리드
+            Expanded(
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.1,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: _getCategories().length,
+                itemBuilder: (context, index) {
+                  final category = _getCategories()[index];
+                  return _QuizCategoryCard(
+                    title: category['title'] as String,
+                    category: category['category'] as String,
+                    gradientColors: category['colors'] as List<Color>,
+                    icon: category['icon'] as IconData?,
+                    onTap: () {
+                      // 응원가 카테고리일 경우 별도 선택 페이지로 이동
+                      if (category['category'] == '응원가') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CheerSongCategoryPage(),
+                          ),
+                        );
+                        return;
+                      }
+
+                      // 그 외 다이얼로그 띄우기 -> 도전 -> 페이지 이동
+                      showDialog(
+                        context: context,
+                        builder: (context) => TeamBattleDialog(
+                          onStart: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => QuizPlayPage(
+                                  category: category['category'] as String,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -115,52 +163,6 @@ class _QuizStartPageState extends State<QuizStartPage> {
         ),
       ],
     );
-  }
-
-  // 카테고리 리스트 빌더
-  List<Widget> _buildCategoryList(BuildContext context) {
-    final categories = _getCategories();
-
-    return categories.map((category) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 12.0),
-        child: _QuizCategoryCard(
-          title: category['title'] as String,
-          category: category['category'] as String,
-          gradientColors: category['colors'] as List<Color>,
-          icon: category['icon'] as IconData?,
-          onTap: () {
-            // 응원가 카테고리일 경우 별도 선택 페이지로 이동
-            if (category['category'] == '응원가') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CheerSongCategoryPage(),
-                ),
-              );
-              return;
-            }
-
-            // 그 외 다이얼로그 띄우기 -> 도전 -> 페이지 이동
-            showDialog(
-              context: context,
-              builder: (context) => TeamBattleDialog(
-                onStart: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => QuizPlayPage(
-                        category: category['category'] as String,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      );
-    }).toList();
   }
 
   // 카테고리 데이터
@@ -228,58 +230,87 @@ class _QuizCategoryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: gradientColors,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
               color: gradientColors[0].withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
-        child: Row(
-          children: [
-            // 아이콘
-            if (icon != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: WHITE.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            children: [
+              // 1. Watermark Icon (Large & Rotated)
+              if (icon != null)
+                Positioned(
+                  right: -20,
+                  bottom: -20,
+                  child: Transform.rotate(
+                    angle: -0.2, // Slight rotation
+                    child: Icon(
+                      icon,
+                      size: 100, // Large size
+                      color: Colors.white.withOpacity(0.15),
+                    ),
+                  ),
                 ),
-                child: Icon(icon, color: WHITE, size: 28),
+
+              // 2. Content
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Top Icon (Small)
+                    if (icon != null)
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(icon, color: Colors.white, size: 20),
+                      ),
+
+                    // Title & Action
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'kbo',
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_circle_right_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(width: 16),
             ],
-
-            // 제목
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: WHITE,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'kbo',
-                ),
-              ),
-            ),
-
-            // 화살표 아이콘
-            Icon(
-              Icons.arrow_forward_ios,
-              color: WHITE.withOpacity(0.8),
-              size: 20,
-            ),
-          ],
+          ),
         ),
       ),
     );
