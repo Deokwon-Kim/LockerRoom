@@ -31,6 +31,8 @@ class MeetupModel {
   final int? maxBirthYear;
   final bool isApprovalRequired;
   final List<String> pendingParticipants;
+  final List<String> likedBy;
+  final int likeCount;
 
   // 공지사항 메시지 ID (announcementId 필드를 사용)
   String? get noticeMessageId => announcementId;
@@ -66,6 +68,8 @@ class MeetupModel {
     this.maxBirthYear,
     this.isApprovalRequired = false,
     this.pendingParticipants = const [],
+    this.likedBy = const [],
+    this.likeCount = 0,
   });
 
   factory MeetupModel.fromFirestore(DocumentSnapshot doc) {
@@ -108,6 +112,8 @@ class MeetupModel {
           : (data['maxBirthYear'] as num).toInt(),
       isApprovalRequired: data['isApprovalRequired'] ?? false,
       pendingParticipants: List<String>.from(data['pendingParticipants'] ?? []),
+      likedBy: List<String>.from(data['likedBy'] ?? []),
+      likeCount: data['likeCount'] ?? 0,
     );
   }
   Map<String, dynamic> toFirestore() {
@@ -143,6 +149,8 @@ class MeetupModel {
       'maxBirthYear': maxBirthYear,
       'isApprovalRequired': isApprovalRequired,
       'pendingParticipants': pendingParticipants,
+      'likedBy': likedBy,
+      'likeCount': likeCount,
     };
   }
 
@@ -177,6 +185,8 @@ class MeetupModel {
     int? maxBirthYear,
     bool? isApprovalRequired,
     List<String>? pendingParticipants,
+    List<String>? likedBy,
+    int? likeCount,
   }) {
     return MeetupModel(
       id: id ?? this.id,
@@ -205,6 +215,8 @@ class MeetupModel {
       maxBirthYear: maxBirthYear ?? this.maxBirthYear,
       isApprovalRequired: isApprovalRequired ?? this.isApprovalRequired,
       pendingParticipants: pendingParticipants ?? this.pendingParticipants,
+      likedBy: likedBy ?? this.likedBy,
+      likeCount: likeCount ?? this.likeCount,
     );
   }
 

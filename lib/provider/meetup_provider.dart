@@ -494,4 +494,36 @@ class MeetupProvider extends ChangeNotifier {
       return mutedMeetups[meetupId] == true;
     });
   }
+
+  // 좋아요 토글
+  Future<void> toggleLike(String meetupId) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return;
+
+    try {
+      final docRef = _firestore.collection('meetups').doc(meetupId);
+      final snapshot = await docRef.get();
+      if (!snapshot.exists) return;
+
+      final meetup = MeetupModel.fromFirestore(snapshot);
+      final isLiked = meetup.likedBy.contains(userId);
+
+      if (isLiked) {
+        await docRef.update({
+          'likedBy': FieldValue.arrayRemove([userId]),
+          'likeCount': FieldValue.increment(-1),
+        });
+      } else {
+        await docRef.update({
+          'likedBy': FieldValue.arrayUnion([userId]),
+          'likeCount': FieldValue.increment(1),
+        });
+      }
+
+      // 로컬 목록 업데이트 (불필요할 수 있으나 명시적으로 fetch하거나 스트림에 의존)
+      await fetchMeetups();
+    } catch (e) {
+      print('좋아요 토글 실패: $e');
+    }
+  }
 }
