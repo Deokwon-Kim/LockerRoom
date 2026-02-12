@@ -1473,7 +1473,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                 ),
                                 child: IconButton(
                                   onPressed: () {
-                                    (context);
+                                    _showShareOptions(context);
                                   },
                                   icon: const Icon(
                                     CupertinoIcons.share,
