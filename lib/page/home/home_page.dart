@@ -1373,7 +1373,7 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '${meetup.homeTeam} vs ${meetup.awayTeam}',
+                      '${meetup.awayTeam} vs ${meetup.homeTeam}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
