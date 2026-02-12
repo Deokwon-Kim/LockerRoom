@@ -118,25 +118,7 @@ Future<void> main() async {
         );
   }
 
-  final token = await FirebaseMessaging.instance.getToken();
-  // print('FCM token: $token');
-  // 토큰 저장 및 갱신 반영
-  final user = FirebaseAuth.instance.currentUser;
-  if (user != null && token != null) {
-    await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-      'fcmToken': token,
-    }, SetOptions(merge: true));
-  }
-
-  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-    // print('FCM token refreshed: $newToken');
-    final u = FirebaseAuth.instance.currentUser;
-    if (u != null) {
-      await FirebaseFirestore.instance.collection('users').doc(u.uid).set({
-        'fcmToken': newToken,
-      }, SetOptions(merge: true));
-    }
-  });
+  // FCM 토큰 로직은 NotificationService 및 AuthWrapper로 이동됨
 
   // 포그라운드 수신 시 로컬 알림 표시
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -302,6 +284,10 @@ class AuthWrapper extends StatelessWidget {
               ).listen(uid);
               // 차단 목록 구독 시작
               Provider.of<BlockProvider>(context, listen: false).listen(uid);
+
+              // FCM 토큰 업데이트 (로그인 시점)
+              NotificationService().updateFcmToken();
+
               // 뱃지 정보 로드
               final badgeProvider = Provider.of<BadgeProvider>(
                 context,
@@ -333,6 +319,9 @@ class AuthWrapper extends StatelessWidget {
               ).listen(uid);
               // 차단 목록 구독 시작
               Provider.of<BlockProvider>(context, listen: false).listen(uid);
+
+              // FCM 토큰 업데이트 (로그인 시점)
+              NotificationService().updateFcmToken();
             }
           });
           final user = snapshot.data!;

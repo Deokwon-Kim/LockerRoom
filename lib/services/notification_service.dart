@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
@@ -87,5 +90,32 @@ class NotificationService {
   }) async {
     await initNotification();
     return notificationsPlugin.show(id, title, body, notificationDetails());
+  }
+
+  Future<void> updateFcmToken() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'fcmToken': token,
+        }, SetOptions(merge: true));
+        // print('FCM Token Updated: $token');
+      }
+
+      // Token Refresh Listener
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+        final u = FirebaseAuth.instance.currentUser;
+        if (u != null) {
+          await FirebaseFirestore.instance.collection('users').doc(u.uid).set({
+            'fcmToken': newToken,
+          }, SetOptions(merge: true));
+        }
+      });
+    } catch (e) {
+      print('Error updating FCM token: $e');
+    }
   }
 }
