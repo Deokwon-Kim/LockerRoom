@@ -307,10 +307,8 @@ class QuizProvider extends ChangeNotifier {
             .collection('results')
             .add(firestoreData);
 
-        // 2. 유저 총점 업데이트 (Increment)
-        await _firestore.collection('users').doc(userId).update({
-          'totalQuizScore': FieldValue.increment(score),
-        });
+        // 2. 유저 총점 업데이트: 이제 Cloud Function(onQuizResultCreated)에서 트랜잭션으로 처리함
+        // (동시성 문제 및 순위 역전 알림의 정확도를 위해 서버측으로 로직 이동)
 
         // 직전 문제 리스트 저장 (중복방지)
         final docRef = _firestore

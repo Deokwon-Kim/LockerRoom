@@ -49,6 +49,12 @@ Future<void> navigateFromData(Map<String, dynamic> data) async {
     return;
   }
 
+  // 3. 퀴즈 랭킹 알림 처리
+  if (type == 'quiz_ranking') {
+    navigatorKey.currentState?.pushNamed('quiz_ranking');
+    return;
+  }
+
   // 2. 기타 알림 처리 (기존 로직)
   final String? explicitRoute = _extractRoute(data);
   if (explicitRoute == null) return;

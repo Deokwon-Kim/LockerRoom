@@ -190,7 +190,7 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
           actions: [
             IconButton(
               onPressed: () {
-                context.read<QuizRankingProvider>().fetchRankings();
+                context.read<QuizRankingProvider>().fetchRankings(true);
               },
               icon: const Icon(Icons.refresh),
             ),
@@ -259,7 +259,7 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
     if (qrp.rankings.isEmpty) {
       return RefreshIndicator(
         color: RED_DANGER_TEXT_50,
-        onRefresh: () => qrp.fetchRankings(),
+        onRefresh: () => qrp.fetchRankings(true),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Container(
@@ -279,7 +279,7 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
 
     return RefreshIndicator(
       color: RED_DANGER_TEXT_50,
-      onRefresh: () => qrp.fetchRankings(),
+      onRefresh: () => qrp.fetchRankings(true),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
@@ -331,7 +331,7 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
 
     return RefreshIndicator(
       color: RED_DANGER_TEXT_50,
-      onRefresh: () => qrp.fetchRankings(),
+      onRefresh: () => qrp.fetchRankings(true),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
