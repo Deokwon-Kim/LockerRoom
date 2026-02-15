@@ -50,7 +50,7 @@ class QuizRankingProvider extends ChangeNotifier {
       query = query
           .orderBy('score', descending: true)
           .orderBy('completedAt', descending: true)
-          .limit(1000); // 1000개로 복구
+          .limit(10000);
 
       final snapshot = await query.get();
 
