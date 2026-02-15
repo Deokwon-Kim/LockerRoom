@@ -24,6 +24,7 @@ import 'package:lockerroom/page/setting/nickname_change_page.dart';
 import 'package:lockerroom/page/setting/setting_page.dart';
 import 'package:lockerroom/page/setting/block_list_page.dart';
 import 'package:lockerroom/page/alert/notifications_page.dart';
+import 'package:lockerroom/page/quiz/quiz_ranking_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/page/login/terms_gate_page.dart';
 import 'package:lockerroom/provider/badge_provider.dart';
@@ -237,6 +238,7 @@ class _MyAppState extends State<MyApp> {
           'changePassword': (context) => const ChangePasswordPage(),
           'blockList': (context) => const BlockListPage(),
           'likedPost': (context) => const LikedPostsPage(),
+          'quiz_ranking': (context) => const QuizRankingPage(),
         },
       ),
     );
