@@ -69,119 +69,112 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // 앱 전체 화면 방향을 세로로 고정 (이미지/비디오 뷰어 제외)
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+    // 앱 전체 화면 방향을 세로로 고정 (이미지/비디오 뷰어 제외)
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
 
-  // env 파일 로드 (카카오 SDK 초기화 전에 필요)
-  await dotenv.load(fileName: 'lib/api_key/youtube_key.env');
-  //kakao 로그인 초기화
-  KakaoSdk.init(
-    nativeAppKey: dotenv.env['KAKAO_NATIVE_APP_KEY'],
-    javaScriptAppKey: dotenv.env['KAKAO_JAVASCRIPT_APP_KEY'],
-  );
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // 로컬 알림 초기화
-  await NotificationService().initNotification();
-
-  // ⚠️ 딥링크 초기화는 MyApp.initState()에서 수행
-  // Navigator가 준비된 후에 초기화해야 링크 처리가 가능함
-  // await DeepLinkService().initDeepLinks();
-
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  // 플랫폼별 알림 권한 요청
-  if (Platform.isAndroid) {
-    // Android 13+ (API 33+) 알림 권한 요청
-    final status = await Permission.notification.request();
-    if (status.isGranted) {
-      // 알림 권한이 허용된 경우에만 FCM 토큰 등록
+    // env 파일 로드 (카카오 SDK 초기화 전에 필요)
+    try {
+      await dotenv.load(fileName: 'lib/api_key/youtube_key.env');
+    } catch (e) {
+      debugPrint('dotenv load error: $e');
     }
-  } else if (Platform.isIOS) {
-    // iOS 권한 요청
-    await FirebaseMessaging.instance.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
+
+    //kakao 로그인 초기화
+    KakaoSdk.init(
+      nativeAppKey: dotenv.env['KAKAO_NATIVE_APP_KEY'],
+      javaScriptAppKey: dotenv.env['KAKAO_JAVASCRIPT_APP_KEY'],
     );
 
-    // iOS 포그라운드 표시 옵션
-    await FirebaseMessaging.instance
-        .setForegroundNotificationPresentationOptions(
-          alert: false,
-          badge: false,
-          sound: false,
-        );
-  }
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  // FCM 토큰 로직은 NotificationService 및 AuthWrapper로 이동됨
+    // 로컬 알림 초기화
+    await NotificationService().initNotification();
 
-  // 포그라운드 수신 시 로컬 알림 표시
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    final n = message.notification;
-    if (n != null) {
-      // NotificationService().showForegroundNotification(
-      //   title: n.title ?? '알림',
-      //   body: n.body ?? '',
-      //   payload: jsonEncode(message.data),
-      // );
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    // 플랫폼별 알림 권한 요청
+    if (Platform.isAndroid) {
+      await Permission.notification.request();
+    } else if (Platform.isIOS) {
+      await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      await FirebaseMessaging.instance
+          .setForegroundNotificationPresentationOptions(
+            alert: false,
+            badge: false,
+            sound: false,
+          );
     }
-  });
 
-  // 앱이 완전 종료된 상태에서 알림을 눌러 시작된 경우 딥링크 처리
-  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-  if (initialMessage != null) {
-    navigateFromData(initialMessage.data);
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      navigateFromData(initialMessage.data);
+    }
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      navigateFromData(message.data);
+    });
+
+    final repo = UserRepository();
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+    runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (context) => TeamProvider()),
+          ChangeNotifierProvider(create: (context) => UserProvider()),
+          ChangeNotifierProvider(create: (context) => UploadProvider()),
+          ChangeNotifierProvider(create: (context) => FeedProvider()),
+          ChangeNotifierProvider(create: (context) => ProfileProvider()),
+          ChangeNotifierProvider(create: (context) => VideoProvider()),
+          ChangeNotifierProvider(create: (context) => CommentProvider()),
+          ChangeNotifierProvider(create: (context) => MarketUploadProvider()),
+          ChangeNotifierProvider(create: (context) => MarketFeedProvider()),
+          ChangeNotifierProvider(create: (context) => IntutionRecordProvider()),
+          ChangeNotifierProvider(
+            create: (context) => IntutionRecordListProvider(),
+          ),
+          ChangeNotifierProvider(create: (context) => NotificationProvider()),
+          ChangeNotifierProvider(create: (context) => BlockProvider(repo)),
+          ChangeNotifierProvider(
+            create: (context) => FollowProvider(repo, currentUserId ?? ''),
+          ),
+          ChangeNotifierProvider(create: (context) => FoodStoreProvider()),
+          ChangeNotifierProvider(create: (context) => FeedEditProvider()),
+          ChangeNotifierProvider(create: (context) => MarketfeededitProvider()),
+          ChangeNotifierProvider(create: (context) => SocialLoginProvider()),
+          ChangeNotifierProvider(create: (context) => QuizProvider()),
+          ChangeNotifierProvider(create: (context) => QuizRankingProvider()),
+          ChangeNotifierProvider(create: (context) => BadgeProvider()),
+          ChangeNotifierProvider(create: (context) => MeetupProvider()),
+          ChangeNotifierProvider(create: (context) => TabProvider()),
+          ChangeNotifierProvider(create: (context) => ChatProvider()),
+        ],
+        child: const MyApp(),
+      ),
+    );
+  } catch (e, stack) {
+    debugPrint('CRITICAL STARTUP ERROR: $e');
+    debugPrint(stack.toString());
+    // 최소한의 앱 실행이라도 시도
+    runApp(
+      MaterialApp(
+        home: Scaffold(body: Center(child: Text('앱 시작 중 오류가 발생했습니다: $e'))),
+      ),
+    );
   }
-
-  // 백그라운드에서 열었을 때 처리
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    navigateFromData(message.data);
-  });
-
-  final repo = UserRepository();
-  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (context) => TeamProvider()),
-        ChangeNotifierProvider(create: (context) => UserProvider()),
-        ChangeNotifierProvider(create: (context) => UploadProvider()),
-        ChangeNotifierProvider(create: (context) => FeedProvider()),
-        ChangeNotifierProvider(create: (context) => ProfileProvider()),
-        ChangeNotifierProvider(create: (context) => VideoProvider()),
-        ChangeNotifierProvider(create: (context) => CommentProvider()),
-        ChangeNotifierProvider(create: (context) => MarketUploadProvider()),
-        ChangeNotifierProvider(create: (context) => MarketFeedProvider()),
-        ChangeNotifierProvider(create: (context) => IntutionRecordProvider()),
-        ChangeNotifierProvider(
-          create: (context) => IntutionRecordListProvider(),
-        ),
-        ChangeNotifierProvider(create: (context) => NotificationProvider()),
-        ChangeNotifierProvider(create: (context) => BlockProvider(repo)),
-        ChangeNotifierProvider(
-          create: (context) => FollowProvider(repo, currentUserId ?? ''),
-        ),
-        ChangeNotifierProvider(create: (context) => FoodStoreProvider()),
-        ChangeNotifierProvider(create: (context) => FeedEditProvider()),
-        ChangeNotifierProvider(create: (context) => MarketfeededitProvider()),
-        ChangeNotifierProvider(create: (context) => SocialLoginProvider()),
-        ChangeNotifierProvider(create: (context) => QuizProvider()),
-        ChangeNotifierProvider(create: (context) => QuizRankingProvider()),
-        ChangeNotifierProvider(create: (context) => BadgeProvider()),
-        ChangeNotifierProvider(create: (context) => MeetupProvider()),
-        ChangeNotifierProvider(create: (context) => TabProvider()),
-        ChangeNotifierProvider(create: (context) => ChatProvider()),
-      ],
-      child: const MyApp(),
-    ),
-  );
 }
 
 class MyApp extends StatefulWidget {
