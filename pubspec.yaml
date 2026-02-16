@@ -83,6 +83,7 @@ dependencies:
   flutter_chat_ui: ^2.11.1
   uuid: ^4.5.2
   firebase_analytics: ^12.1.1
+  agora_rtc_engine: ^6.5.3
 
 
 
