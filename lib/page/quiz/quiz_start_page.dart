@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:lockerroom/model/user_model.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/quiz/cheer_song_category_page.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
+import 'package:lockerroom/page/quiz/speed_quiz_loby.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/widgets/team_battle_dialog.dart';
 import 'package:provider/provider.dart';
 
@@ -67,6 +70,10 @@ class _QuizStartPageState extends State<QuizStartPage> {
             _buildHeader(context),
             const SizedBox(height: 24),
 
+            // 스피드 퀴즈 (가로형)
+            _buildSpeedQuizCard(context),
+            const SizedBox(height: 12),
+
             // 카테고리 그리드
             Expanded(
               child: GridView.builder(
@@ -91,6 +98,28 @@ class _QuizStartPageState extends State<QuizStartPage> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => const CheerSongCategoryPage(),
+                          ),
+                        );
+                        return;
+                      }
+
+                      // 스피드 퀴즈 로비로 이동
+                      if (category['category'] == '스피드퀴즈') {
+                        final userProvider = context.read<UserProvider>();
+                        final userModel = UserModel(
+                          userNickName: userProvider.nickname ?? '',
+                          name: userProvider.name ?? '',
+                          useremail: userProvider.email ?? '',
+                          uid: userProvider.currentUser?.uid ?? '',
+                          followersCount: 0,
+                          followingCount: 0,
+                        );
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                SpeedQuizLoby(userModel: userModel),
                           ),
                         );
                         return;
@@ -198,7 +227,6 @@ class _QuizStartPageState extends State<QuizStartPage> {
         'colors': [GREEN_SECONDARY_700, GREEN_SECONDARY_600],
         'icon': Icons.analytics,
       },
-
       {
         'title': '랜덤',
         'category': '랜덤',
@@ -206,6 +234,35 @@ class _QuizStartPageState extends State<QuizStartPage> {
         'icon': Icons.shuffle,
       },
     ];
+  }
+
+  // 스피드 퀴즈 카드 위젯
+  Widget _buildSpeedQuizCard(BuildContext context) {
+    return _QuizCategoryCard(
+      title: '스피드 퀴즈 🎤',
+      category: '스피드퀴즈',
+      gradientColors: const [Color(0xFFE040FB), Color(0xFFD500F9)],
+      icon: Icons.mic,
+      isFullWidth: true, // 가로 꽉 찬 스타일
+      onTap: () {
+        final userProvider = context.read<UserProvider>();
+        final userModel = UserModel(
+          userNickName: userProvider.nickname ?? '',
+          name: userProvider.name ?? '',
+          useremail: userProvider.email ?? '',
+          uid: userProvider.currentUser?.uid ?? '',
+          followersCount: 0,
+          followingCount: 0,
+        );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SpeedQuizLoby(userModel: userModel),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -223,7 +280,10 @@ class _QuizCategoryCard extends StatelessWidget {
     required this.gradientColors,
     this.icon,
     required this.onTap,
+    this.isFullWidth = false,
   });
+
+  final bool isFullWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -247,69 +307,72 @@ class _QuizCategoryCard extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
-          child: Stack(
-            children: [
-              // 1. Watermark Icon (Large & Rotated)
-              if (icon != null)
-                Positioned(
-                  right: -20,
-                  bottom: -20,
-                  child: Transform.rotate(
-                    angle: -0.2, // Slight rotation
-                    child: Icon(
-                      icon,
-                      size: 100, // Large size
-                      color: Colors.white.withOpacity(0.15),
+          child: SizedBox(
+            height: isFullWidth ? 100 : null, // 가로형일 때 높이 고정
+            child: Stack(
+              children: [
+                // 1. Watermark Icon (Large & Rotated)
+                if (icon != null)
+                  Positioned(
+                    right: -20,
+                    bottom: -20,
+                    child: Transform.rotate(
+                      angle: -0.2, // Slight rotation
+                      child: Icon(
+                        icon,
+                        size: 100, // Large size
+                        color: Colors.white.withOpacity(0.15),
+                      ),
                     ),
                   ),
-                ),
 
-              // 2. Content
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Top Icon (Small)
-                    if (icon != null)
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
+                // 2. Content
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Top Icon (Small)
+                      if (icon != null)
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(icon, color: Colors.white, size: 20),
                         ),
-                        child: Icon(icon, color: Colors.white, size: 20),
-                      ),
 
-                    // Title & Action
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'kbo',
-                              height: 1.2,
+                      // Title & Action
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'kbo',
+                                height: 1.2,
+                              ),
                             ),
                           ),
-                        ),
-                        const Icon(
-                          Icons.arrow_circle_right_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ],
-                    ),
-                  ],
+                          const Icon(
+                            Icons.arrow_circle_right_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

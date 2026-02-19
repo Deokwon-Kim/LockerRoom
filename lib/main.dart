@@ -40,6 +40,7 @@ import 'package:lockerroom/provider/marketFeedEdit_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/market_upload_provider.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
+import 'package:lockerroom/provider/multiplayer_game_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/quiz_provider.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
@@ -161,6 +162,9 @@ Future<void> main() async {
           ChangeNotifierProvider(create: (context) => MeetupProvider()),
           ChangeNotifierProvider(create: (context) => TabProvider()),
           ChangeNotifierProvider(create: (context) => ChatProvider()),
+          ChangeNotifierProvider(
+            create: (context) => MultiplayerGameProvider(),
+          ),
         ],
         child: const MyApp(),
       ),

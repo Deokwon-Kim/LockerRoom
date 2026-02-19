@@ -120,6 +120,13 @@ class BadgeProvider extends ChangeNotifier {
       icon: Icons.share,
       isLocked: true,
     ),
+    BadgeModel(
+      id: 'speed_quiz_mvp',
+      name: '설명왕',
+      description: '스피드 퀴즈에서 설명으로\n누적 50회 득점 달성',
+      icon: Icons.record_voice_over,
+      isLocked: true,
+    ),
   ];
 
   List<BadgeModel> get badges => _badges;
@@ -499,6 +506,48 @@ class BadgeProvider extends ChangeNotifier {
         await unlockBadge('sing_along_master');
         newBadges.add('떼창 유발자');
       }
+    }
+
+    return newBadges;
+  }
+
+  // 스피드 퀴즈 결과에 따른 뱃지 체크 로직
+  Future<List<String>> checkSpeedQuizBadges(List players) async {
+    List<String> newBadges = [];
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return [];
+
+    final myPlayerData = players.firstWhere(
+      (p) => p['uid'] == user.uid,
+      orElse: () => null,
+    );
+    if (myPlayerData == null) return [];
+
+    final describerScore = myPlayerData['describerScore'] ?? 0;
+
+    try {
+      final userRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
+      final userDoc = await userRef.get();
+
+      // 누적 설명 점수 업데이트
+      int totalDescriberScore = (userDoc.data()?['totalDescriberScore'] ?? 0)
+          .toInt();
+      int newTotalDescriberScore =
+          totalDescriberScore + (describerScore as int);
+
+      await userRef.update({'totalDescriberScore': newTotalDescriberScore});
+
+      // 뱃지 조건 체크 (누적 50점 이상)
+      if (newTotalDescriberScore >= 50) {
+        if (_isLocked('speed_quiz_mvp')) {
+          await unlockBadge('speed_quiz_mvp');
+          newBadges.add('설명왕');
+        }
+      }
+    } catch (e) {
+      print('스피드 퀴즈 뱃지 체크 실패: $e');
     }
 
     return newBadges;
