@@ -56,6 +56,8 @@ youtube_key.env
 # kakao App Key
 kakao_key.env
 
+agora_key.env
+
 # node-moduels 
 functions/node_modules/
 
