@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/provider/badge_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:kakao_flutter_sdk_share/kakao_flutter_sdk_share.dart';
 
 class SpeedQuizPage extends StatefulWidget {
   const SpeedQuizPage({super.key});
@@ -66,6 +67,93 @@ class _SpeedQuizPageState extends State<SpeedQuizPage> {
       }
     }
     return result;
+  }
+
+  Future<void> _shareViaKakao(String roomCode) async {
+    try {
+      final template = FeedTemplate(
+        content: Content(
+          title: '[LockerRoom] 스피드 퀴즈 초대! 🎤',
+          description: '방 코드: $roomCode\n지금 바로 접속해서 함께 퀴즈를 풀어보세요!',
+          imageUrl: Uri.parse(
+            'https://github.com/Deokwon-Kim/LockerRoom/blob/dev/ios/Runner/Assets.xcassets/AppIcon.appiconset/256.png?raw=true',
+          ),
+          link: Link(
+            webUrl: Uri.parse('https://lockerroom-e9f39.web.app/'),
+            mobileWebUrl: Uri.parse('https://lockerroom-e9f39.web.app/'),
+          ),
+        ),
+        buttons: [
+          Button(
+            title: '퀴즈 참여하기',
+            link: Link(
+              webUrl: Uri.parse('https://lockerroom-e9f39.web.app/'),
+              mobileWebUrl: Uri.parse('https://lockerroom-e9f39.web.app/'),
+            ),
+          ),
+        ],
+      );
+
+      bool isKakaoTalkSharingAvailable = await ShareClient.instance
+          .isKakaoTalkSharingAvailable();
+
+      if (isKakaoTalkSharingAvailable) {
+        Uri uri = await ShareClient.instance.shareDefault(template: template);
+        await ShareClient.instance.launchKakaoTalk(uri);
+      } else {
+        Uri shareUrl = await WebSharerClient.instance.makeDefaultUrl(
+          template: template,
+        );
+        await launchBrowserTab(shareUrl);
+      }
+    } catch (e) {
+      debugPrint('Kakao sharing error: $e');
+    }
+  }
+
+  void _shareViaGeneral(String roomCode) {
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+    Share.share(
+      '[LockerRoom] 스피드 퀴즈 방에 초대합니다! 🎤\n방 코드: $roomCode\n\n지금 바로 접속해서 함께 퀴즈를 풀어보세요!',
+      sharePositionOrigin: box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null,
+    );
+  }
+
+  void _showShareOptions(BuildContext context, String roomCode) {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: BACKGROUND_COLOR,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.only(bottom: 20, left: 10, right: 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Image.asset('assets/images/logo/kakao.png', height: 24),
+              title: const Text('카카오톡으로 공유'),
+              onTap: () {
+                Navigator.pop(context);
+                _shareViaKakao(roomCode);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.share),
+              title: const Text('기타 SNS로 공유'),
+              onTap: () {
+                Navigator.pop(context);
+                _shareViaGeneral(roomCode);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showFeedback(String text, bool isSuccess) {
@@ -370,16 +458,7 @@ class _SpeedQuizPageState extends State<SpeedQuizPage> {
               onPressed: () {
                 final roomCode = gameProvider.currentRoomId;
                 if (roomCode != null) {
-                  // Get the RenderBox to determine the button's position (required for iPad/Mac)
-                  final RenderBox? box =
-                      context.findRenderObject() as RenderBox?;
-
-                  Share.share(
-                    '[LockerRoom] 스피드 퀴즈 방에 초대합니다! 🎤\n방 코드: $roomCode\n\n지금 바로 접속해서 함께 퀴즈를 풀어보세요!',
-                    sharePositionOrigin: box != null
-                        ? box.localToGlobal(Offset.zero) & box.size
-                        : null,
-                  );
+                  _showShareOptions(context, roomCode);
                 }
               },
               icon: const Icon(Icons.share, size: 20),

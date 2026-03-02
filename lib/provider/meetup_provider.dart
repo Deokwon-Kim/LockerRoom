@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/user_model.dart';
+import 'package:rxdart/rxdart.dart';
 
 class MeetupProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -466,6 +467,45 @@ class MeetupProvider extends ChangeNotifier {
               .map((doc) => MeetupModel.fromFirestore(doc))
               .toList(),
         );
+  }
+
+  // 참여 중이거나 승인 대기 중인 모든 모임 스트림
+  Stream<List<MeetupModel>> getAppliedMeetupStream(String userId) {
+    // participants 또는 pendingParticipants 중 하나에 userId가 포함된 문서를 가져와야 함
+    // Firestore의 where query는 단일 필드에 대해 array-contains를 지원하므로,
+    // 두 스트림을 합치거나 클라이언트 측에서 처리하는 것이 일반적입니다.
+    // 여기서는 두 필드 모두에 대해 쿼리하기 위해 두 데이터를 가져와서 합치는 방식을 사용합니다.
+
+    final participantsStream = _firestore
+        .collection('meetups')
+        .where('participants', arrayContains: userId)
+        .snapshots();
+
+    final pendingStream = _firestore
+        .collection('meetups')
+        .where('pendingParticipants', arrayContains: userId)
+        .snapshots();
+
+    // 두 스냅샷을 합쳐서 처리
+    return Rx.combineLatest2<QuerySnapshot, QuerySnapshot, List<MeetupModel>>(
+      participantsStream,
+      pendingStream,
+      (snaps1, snaps2) {
+        final allDocs = [...snaps1.docs, ...snaps2.docs];
+        // 중복 제거 (드문 경우지만 있을 수 있음)
+        final uniqueIds = <String>{};
+        final meetups = <MeetupModel>[];
+
+        for (var doc in allDocs) {
+          if (uniqueIds.add(doc.id)) {
+            meetups.add(MeetupModel.fromFirestore(doc));
+          }
+        }
+        // 최신순 정렬
+        meetups.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return meetups;
+      },
+    );
   }
 
   // 알림 음소거 토글
