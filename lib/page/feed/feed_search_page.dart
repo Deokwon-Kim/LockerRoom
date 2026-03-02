@@ -355,18 +355,8 @@ class _PostWidgetState extends State<PostWidget> {
                                     .userId] ??
                                 widget.post.userNickName;
 
-                            return TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FeedMypage(
-                                      post: widget.post,
-                                      targetUserId: widget.post.userId,
-                                    ),
-                                  ),
-                                );
-                              },
+                            return Padding(
+                              padding: const EdgeInsets.only(left: 10, top: 8),
                               child: Text(
                                 nickname,
                                 style: TextStyle(
@@ -378,8 +368,8 @@ class _PostWidgetState extends State<PostWidget> {
                             );
                           },
                         ),
-                        Transform.translate(
-                          offset: Offset(10, -10),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 10.0),
                           child: Text(
                             timeAgo(widget.post.createdAt),
                             style: TextStyle(

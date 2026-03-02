@@ -396,7 +396,7 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
         type: ToastificationType.error,
         alignment: Alignment.bottomCenter,
         autoCloseDuration: Duration(seconds: 2),
-        title: Text('응원팀을 선택해주세요'),
+        title: Text('같이 응원하고 싶은 팀을 선택해주세요'),
       );
       return;
     }
@@ -737,7 +737,7 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                   dropdownColor: WHITE,
                   value: _selectedMyTeam,
                   decoration: InputDecoration(
-                    labelText: '내가 응원하는 팀',
+                    labelText: '같이 응원하고 싶은 팀',
                     labelStyle: TextStyle(color: GRAYSCALE_LABEL_400),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -756,7 +756,8 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                         return DropdownMenuItem(value: team, child: Text(team));
                       }).toList(),
                   onChanged: (value) => setState(() => _selectedMyTeam = value),
-                  validator: (value) => value == null ? '응원팀을 선택해주세요' : null,
+                  validator: (value) =>
+                      value == null ? '같이 응원하고 싶은 팀을 선택해주세요' : null,
                 ),
               SizedBox(height: 16),
 

@@ -210,52 +210,77 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                             builder: (context, profileProvider, child) {
                               final url = profileProvider
                                   .userProfiles[_currentPost.userId];
-                              return CircleAvatar(
-                                radius: 25,
-                                backgroundImage: url != null
-                                    ? NetworkImage(url)
-                                    : null,
-                                backgroundColor: GRAYSCALE_LABEL_300,
-                                child: url == null
-                                    ? const Icon(
-                                        Icons.person,
-                                        color: Colors.black,
-                                        size: 25,
-                                      )
-                                    : null,
+                              final nickName =
+                                  profileProvider.userNicknames[widget
+                                      .post
+                                      .userId] ??
+                                  widget.post.userNickName;
+
+                              return Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => FeedMypage(
+                                            post: _currentPost,
+                                            targetUserId: _currentPost.userId,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: CircleAvatar(
+                                      radius: 25,
+                                      backgroundImage: url != null
+                                          ? NetworkImage(url)
+                                          : null,
+                                      backgroundColor: GRAYSCALE_LABEL_300,
+                                      child: url == null
+                                          ? const Icon(
+                                              Icons.person,
+                                              color: Colors.black,
+                                              size: 25,
+                                            )
+                                          : null,
+                                    ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: 10,
+                                          top: 8,
+                                        ),
+                                        child: Text(
+                                          nickName,
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: 10.0,
+                                        ),
+                                        child: Text(
+                                          timeAgo(_currentPost.createdAt),
+                                          style: TextStyle(
+                                            color: GRAYSCALE_LABEL_500,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               );
                             },
                           ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FeedMypage(
-                                      post: _currentPost,
-                                      targetUserId: _currentPost.userId,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Text(
-                                _currentPost.userNickName,
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            Transform.translate(
-                              offset: Offset(10, -10),
-                              child: Text(timeAgo(_currentPost.createdAt)),
-                            ),
-                          ],
                         ),
 
                         Spacer(),

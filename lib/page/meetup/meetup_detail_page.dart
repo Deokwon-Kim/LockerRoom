@@ -1338,7 +1338,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${meetup.homeTeam} vs ${meetup.awayTeam}',
+                              '${meetup.awayTeam} vs ${meetup.homeTeam}',
                               style: TextStyle(
                                 fontSize: 18,
                                 color: WHITE,
@@ -1603,6 +1603,84 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 10),
+                      // 응원팀 안내 섹션
+                      if (meetup.myTeam.isNotEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color:
+                                context
+                                    .read<TeamProvider>()
+                                    .findTeamByName(meetup.myTeam)
+                                    ?.color
+                                    .withOpacity(0.1) ??
+                                BUTTON.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color:
+                                  context
+                                      .read<TeamProvider>()
+                                      .findTeamByName(meetup.myTeam)
+                                      ?.color
+                                      .withOpacity(0.3) ??
+                                  GRAYSCALE_LABEL_300,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color:
+                                      context
+                                          .read<TeamProvider>()
+                                          .findTeamByName(meetup.myTeam)
+                                          ?.color ??
+                                      BUTTON,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.campaign_rounded,
+                                  color: WHITE,
+                                  size: 18,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: RichText(
+                                  text: TextSpan(
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: BLACK,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: meetup.myTeam,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color:
+                                              context
+                                                  .read<TeamProvider>()
+                                                  .findTeamByName(meetup.myTeam)
+                                                  ?.color ??
+                                              BUTTON,
+                                        ),
+                                      ),
+                                      const TextSpan(
+                                        text: ' 팬과 함께 응원하고 싶어요! ⚾️',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       SizedBox(height: 10),
 
                       // 연령제한 및 승인필요 안내

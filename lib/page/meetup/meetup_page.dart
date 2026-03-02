@@ -25,6 +25,7 @@ class MeetupPage extends StatefulWidget {
 class _MeetupPageState extends State<MeetupPage> {
   bool _isButtonVisible = true;
   double _lastScrollPosition = 0;
+  bool _isMyMeetupsExpanded = true;
   @override
   void initState() {
     super.initState();
@@ -221,19 +222,237 @@ class _MeetupPageState extends State<MeetupPage> {
         }
 
         final meetups = meetUpProvider.filteredMeetups;
+        final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-        if (meetups.isEmpty) {
-          return Center(child: Text('등록된 모임이 없습니다'));
-        }
-
-        return ListView.builder(
+        return ListView(
           padding: EdgeInsets.all(16),
-          itemCount: meetups.length,
-          itemBuilder: (context, index) {
-            return _buildMeetupCard(meetups[index]);
-          },
+          children: [
+            if (currentUserId != null)
+              StreamBuilder<List<MeetupModel>>(
+                stream: meetUpProvider.getAppliedMeetupStream(currentUserId),
+                builder: (context, snapshot) {
+                  final myMeetups = snapshot.data ?? [];
+                  if (myMeetups.isEmpty) return const SizedBox.shrink();
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            '내 모임',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _isMyMeetupsExpanded = !_isMyMeetupsExpanded;
+                              });
+                            },
+                            icon: Icon(
+                              _isMyMeetupsExpanded
+                                  ? CupertinoIcons.chevron_up
+                                  : CupertinoIcons.chevron_down,
+                              size: 18,
+                              color: GRAYSCALE_LABEL_500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_isMyMeetupsExpanded) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 140,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: myMeetups.length,
+                            itemBuilder: (context, index) {
+                              final meetup = myMeetups[index];
+                              final isPending = meetup.pendingParticipants
+                                  .contains(currentUserId);
+                              return _buildMyMeetupCard(meetup, isPending);
+                            },
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      const Text(
+                        '모든 모임',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  );
+                },
+              ),
+            if (meetups.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Text('등록된 모임이 없습니다'),
+                ),
+              )
+            else
+              ...meetups.map((meetup) => _buildMeetupCard(meetup)),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildMyMeetupCard(MeetupModel meetup, bool isPending) {
+    final teamProvider = context.read<TeamProvider>();
+    final teamColor =
+        teamProvider.findTeamByName(meetup.myTeam)?.color ?? BUTTON;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MeetupDetailPage(meetup: meetup),
+          ),
+        );
+      },
+      child: Container(
+        width: 200,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: WHITE,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: GRAYSCALE_LABEL_300),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            children: [
+              // 배경 이미지
+              if (meetup.images.isNotEmpty)
+                Image.network(
+                  meetup.images.first,
+                  width: 200,
+                  height: 140,
+                  fit: BoxFit.cover,
+                )
+              else
+                Container(
+                  width: 200,
+                  height: 140,
+                  color: GRAYSCALE_LABEL_100,
+                  child: Icon(Icons.image, color: GRAYSCALE_LABEL_300),
+                ),
+
+              // 그라데이션 오버레이 (텍스트 가독성)
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.3),
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.7),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 카드 내용
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isPending
+                                ? WHITE.withOpacity(0.9)
+                                : teamColor,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            isPending ? '대기중' : '참여중',
+                            style: TextStyle(
+                              color: isPending ? BLACK : WHITE,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${DateFormat('MM/dd(E)', 'ko').format(DateTime.parse(meetup.gameDate))} ${meetup.gameTime}', // MM-DD
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: WHITE,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Text(
+                      meetup.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: WHITE,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          meetup.awayTeam,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: WHITE,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Text(
+                          ' vs ',
+                          style: TextStyle(fontSize: 11, color: WHITE),
+                        ),
+                        Text(
+                          meetup.homeTeam,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: WHITE,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

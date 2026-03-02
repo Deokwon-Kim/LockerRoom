@@ -420,13 +420,45 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           // 2위 (왼쪽)
-          _buildPodiumBar(second, Colors.grey.shade400, 180),
+          _buildPodiumBar(
+            second,
+            LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.grey.shade300, Colors.grey.shade500],
+            ),
+            180,
+          ),
           const SizedBox(width: 10),
-          // 1위 (가운데 )
-          _buildPodiumBar(first, Colors.amber, 230),
+          // 1위 (가운데)
+          _buildPodiumBar(
+            first,
+            const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFFE57F), // 샴페인 골드
+                Color(0xFFFFD700), // 리얼 골드
+                Color(0xFFFFB300), // 앰버 골드
+                Color(0xFFD4AF37), // 메탈릭
+                Color(0xFFFFD700),
+              ],
+              stops: [0.0, 0.2, 0.5, 0.8, 1.0],
+            ),
+            230,
+            isFirst: true,
+          ),
           const SizedBox(width: 10),
           // 3위 (오른쪽)
-          _buildPodiumBar(third, Colors.brown.shade300, 160),
+          _buildPodiumBar(
+            third,
+            LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.brown.shade200, Colors.brown.shade400],
+            ),
+            160,
+          ),
         ],
       ),
     );
@@ -444,7 +476,12 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
     );
   }
 
-  Widget _buildPodiumBar(RankingUserModel user, Color color, double height) {
+  Widget _buildPodiumBar(
+    RankingUserModel user,
+    Gradient gradient,
+    double height, {
+    bool isFirst = false,
+  }) {
     return Expanded(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -453,7 +490,14 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: color, width: 3),
+              border: Border.all(
+                color: isFirst
+                    ? const Color(0xFFFFD700)
+                    : (gradient is LinearGradient
+                          ? gradient.colors.first
+                          : Colors.grey),
+                width: 3,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.2),
@@ -512,11 +556,7 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
           Container(
             height: height,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [color, color.withOpacity(0.7)],
-              ),
+              gradient: gradient,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -747,13 +787,45 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (second != null) ...[
-            _buildTeamPodiumBar(second, Colors.grey.shade400, 180),
+            _buildTeamPodiumBar(
+              second,
+              LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.grey.shade300, Colors.grey.shade500],
+              ),
+              180,
+            ),
             const SizedBox(width: 10),
           ],
-          _buildTeamPodiumBar(first, Colors.amber, 230),
+          _buildTeamPodiumBar(
+            first,
+            const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFFE57F),
+                Color(0xFFFFD700),
+                Color(0xFFFFB300),
+                Color(0xFFD4AF37),
+                Color(0xFFFFD700),
+              ],
+              stops: [0.0, 0.2, 0.5, 0.8, 1.0],
+            ),
+            230,
+            isFirst: true,
+          ),
           if (third != null) ...[
             const SizedBox(width: 10),
-            _buildTeamPodiumBar(third, Colors.brown.shade300, 160),
+            _buildTeamPodiumBar(
+              third,
+              LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.brown.shade200, Colors.brown.shade400],
+              ),
+              160,
+            ),
           ],
         ],
       ),
@@ -773,9 +845,10 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
 
   Widget _buildTeamPodiumBar(
     RankingTeamModel team,
-    Color color,
-    double height,
-  ) {
+    Gradient gradient,
+    double height, {
+    bool isFirst = false,
+  }) {
     // 팀 정보 가져오기
     final teamModel = context.read<TeamProvider>().findTeamByName(
       team.teamName,
@@ -789,7 +862,14 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: color, width: 3),
+              border: Border.all(
+                color: isFirst
+                    ? const Color(0xFFFFD700)
+                    : (gradient is LinearGradient
+                          ? gradient.colors.first
+                          : Colors.grey),
+                width: 3,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.2),
@@ -834,11 +914,7 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
           Container(
             height: height,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [color, color.withOpacity(0.7)],
-              ),
+              gradient: gradient,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),

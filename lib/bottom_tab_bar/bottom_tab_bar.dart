@@ -309,8 +309,8 @@ class _BottomTabBarState extends State<BottomTabBar> {
             unselectedItemColor: GRAYSCALE_LABEL_500,
             backgroundColor: WHITE,
             elevation: 0,
-            selectedFontSize: 0,
-            unselectedFontSize: 0,
+            selectedFontSize: 11,
+            unselectedFontSize: 11,
             iconSize: 25,
             items: [
               BottomNavigationBarItem(
@@ -323,20 +323,20 @@ class _BottomTabBarState extends State<BottomTabBar> {
                   Icons.sports_baseball_outlined,
                   Icons.sports_baseball,
                 ),
-                label: '',
+                label: '피드',
               ),
               BottomNavigationBarItem(
                 icon: _buildSvgTabIcon(2, AppIcons.add, AppIcons.add),
-                label: '',
+                label: '업로드',
               ),
 
               BottomNavigationBarItem(
                 icon: _buildTabIcon(3, Icons.group_outlined, Icons.group),
-                label: '',
+                label: '직관모임',
               ),
               BottomNavigationBarItem(
                 icon: _buildSvgTabIcon(4, AppIcons.person, AppIcons.personFill),
-                label: '',
+                label: '내정보',
               ),
             ],
           ),
