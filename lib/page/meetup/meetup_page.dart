@@ -317,6 +317,7 @@ class _MeetupPageState extends State<MeetupPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
+            settings: const RouteSettings(name: 'MeetupDetailPage'),
             builder: (context) => MeetupDetailPage(meetup: meetup),
           ),
         );
@@ -471,6 +472,7 @@ class _MeetupPageState extends State<MeetupPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
+              settings: const RouteSettings(name: 'MeetupDetailPage'),
               builder: (context) => MeetupDetailPage(meetup: meetup),
             ),
           );

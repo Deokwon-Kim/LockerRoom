@@ -2092,6 +2092,9 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
+                                  settings: const RouteSettings(
+                                    name: 'ChatRoomPage',
+                                  ),
                                   builder: (context) => ChatRoomPage(
                                     meetupId: meetup.id,
                                     meetupTitle: meetup.title,

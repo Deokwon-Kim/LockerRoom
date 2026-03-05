@@ -301,6 +301,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
+                                        settings: const RouteSettings(
+                                          name: 'MeetupDetailPage',
+                                        ),
                                         builder: (context) => MeetupDetailPage(
                                           meetup: meetup,
                                           meetupId: n.meetupId!,
@@ -442,6 +445,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 2,
                                         ),
+                                      ),
+                                    ),
+                                  ] else if (n.type == 'meetup_joined') ...[
+                                    Transform.translate(
+                                      offset: Offset(-10, 0),
+                                      child: Text(
+                                        '님이 모임에 참여했습니다!',
+                                        style: TextStyle(fontSize: 14),
                                       ),
                                     ),
                                   ] else if (isMarketPostReport) ...[

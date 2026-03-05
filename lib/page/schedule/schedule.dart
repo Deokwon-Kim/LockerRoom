@@ -3,7 +3,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/schedule_model.dart';
 import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/provider/team_provider.dart';
-import 'package:lockerroom/services/schedule_service.dart';
+import 'package:lockerroom/provider/schdule_Provider.dart';
 import 'package:provider/provider.dart';
 
 class SchedulePage extends StatefulWidget {
@@ -153,18 +153,17 @@ class _SchedulePageState extends State<SchedulePage> {
                 ],
               ),
               Expanded(
-                child: FutureBuilder(
-                  future: ScheduleService().loadSchedules(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
+                child: Consumer<ScheduleProvider>(
+                  builder: (context, scheduleProvider, child) {
+                    final schedules = scheduleProvider.allSchedules;
+                    if (!scheduleProvider.loaded) {
                       return const Center(
                         child: CircularProgressIndicator(color: BUTTON),
                       );
                     }
-                    if (snapshot.hasError) {
-                      return const Center(child: Text('일정 로드 실패'));
+                    if (schedules.isEmpty) {
+                      return const Center(child: Text('일정 로드 중...'));
                     }
-                    final schedules = snapshot.data ?? [];
                     final teamName = selectedTeam.symplename;
                     final teamSchedules = schedules
                         .where(
@@ -675,7 +674,7 @@ class _SchedulePageState extends State<SchedulePage> {
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  '${s.awayScroe}',
+                                  '${s.awayScore}',
                                   style: TextStyle(
                                     fontSize: 32,
                                     color: GRAYSCALE_LABEL_900,
@@ -997,7 +996,7 @@ class _SchedulePageState extends State<SchedulePage> {
                         ),
                         SizedBox(width: 6),
                         Text(
-                          '경기중',
+                          '진행중 ${s.inning ?? ""}'.trim(),
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: ORANGE_PRIMARY_700,
@@ -1060,7 +1059,7 @@ class _SchedulePageState extends State<SchedulePage> {
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  '${s.awayScroe}',
+                                  '${s.awayScore}',
                                   style: TextStyle(
                                     fontSize: 32,
                                     color: GRAYSCALE_LABEL_900,

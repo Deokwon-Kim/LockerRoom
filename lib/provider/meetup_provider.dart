@@ -14,12 +14,20 @@ class MeetupProvider extends ChangeNotifier {
   String? _selectedStadium;
   String? _selectedTeam;
   DateTime? _selectedDate;
+  final Map<String, bool> _isLeavingMeetup = {}; // meetupId -> isLeaving
 
   List<MeetupModel> get meetups => _meetups;
   bool get isLoading => _isLoading;
   String? get selectedStadium => _selectedStadium;
   String? get selecteedTeam => _selectedTeam;
   DateTime? get selectedDate => _selectedDate;
+
+  bool isLeaving(String meetupId) => _isLeavingMeetup[meetupId] ?? false;
+
+  void setLeaving(String meetupId, bool value) {
+    _isLeavingMeetup[meetupId] = value;
+    notifyListeners();
+  }
 
   // 필터링된 모임 목록
   List<MeetupModel> get filteredMeetups {
@@ -149,6 +157,20 @@ class MeetupProvider extends ChangeNotifier {
         } else {
           final updatedParticipants = [...meetup.participants, userId];
           transaction.update(docRef, {'participants': updatedParticipants});
+
+          // 방장에게 즉시 참여 알림 전송
+          final notificationRef = _firestore.collection('notifications').doc();
+          transaction.set(notificationRef, {
+            'type': 'meetup_joined',
+            'meetupId': meetupId,
+            'fromUserId': userId,
+            'fromUserBirthYear': birthYear,
+            'toUserId': meetup.userId,
+            'createdAt': FieldValue.serverTimestamp(),
+            'isRead': false,
+            'preview':
+                '${meetup.title} 모임에 새로운 참여자가 들어왔습니다!${birthYear != null ? ' ($birthYear년생)' : ''}',
+          });
         }
       });
 
@@ -164,6 +186,8 @@ class MeetupProvider extends ChangeNotifier {
   Future<bool> leaveMeetup(String meetupId) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return false;
+
+    setLeaving(meetupId, true);
 
     try {
       final docRef = _firestore.collection('meetups').doc(meetupId);
@@ -191,6 +215,8 @@ class MeetupProvider extends ChangeNotifier {
     } catch (e) {
       print('모임 나가기 실패: $e');
       return false;
+    } finally {
+      setLeaving(meetupId, false);
     }
   }
 

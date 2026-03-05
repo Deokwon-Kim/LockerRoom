@@ -273,6 +273,14 @@ class NotificationProvider extends ChangeNotifier {
         type = ToastificationType.error;
         icon = Icons.cancel;
         break;
+      case 'meetup_joined':
+        title = '새로운 참여자';
+        description = userNickName != '알 수 없음'
+            ? '$userNickName님이 모임에 참여했습니다'
+            : '모임에 새로운 참여자가 들어왔습니다';
+        type = ToastificationType.success;
+        icon = Icons.person_add_alt_1;
+        break;
       default:
         title = '새 알림';
         description = '새로운 알림이 도착했습니다';
@@ -411,7 +419,8 @@ class NotificationProvider extends ChangeNotifier {
       }
     } else if (n.type == 'meetup_request' ||
         n.type == 'meetup_approved' ||
-        n.type == 'meetup_rejected') {
+        n.type == 'meetup_rejected' ||
+        n.type == 'meetup_joined') {
       // 모임 관련 알림 처리
       final meetupId = n.meetupId;
       if (meetupId != null) {
@@ -426,6 +435,7 @@ class NotificationProvider extends ChangeNotifier {
             Navigator.push(
               context,
               MaterialPageRoute(
+                settings: const RouteSettings(name: 'MeetupDetailPage'),
                 builder: (context) => MeetupDetailPage(meetup: meetup),
               ),
             );

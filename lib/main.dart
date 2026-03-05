@@ -43,6 +43,7 @@ import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/quiz_provider.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
+import 'package:lockerroom/provider/schdule_Provider.dart';
 import 'package:lockerroom/provider/social_login_provider.dart';
 import 'package:lockerroom/provider/tab_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -159,6 +160,7 @@ Future<void> main() async {
           ChangeNotifierProvider(create: (context) => QuizRankingProvider()),
           ChangeNotifierProvider(create: (context) => BadgeProvider()),
           ChangeNotifierProvider(create: (context) => MeetupProvider()),
+          ChangeNotifierProvider(create: (_) => ScheduleProvider()..load()),
           ChangeNotifierProvider(create: (context) => TabProvider()),
           ChangeNotifierProvider(create: (context) => ChatProvider()),
         ],

@@ -134,16 +134,22 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         .listen(
           (updated) {
             if (updated != null && mounted) {
-              // 강제 퇴장 여부 확인 (신청자 명단에 없고, 방장이 아닌 경우)
               final currentUserId = FirebaseAuth.instance.currentUser?.uid;
               final isHost = updated.userId == currentUserId;
               final isParticipant = updated.participants.contains(
                 currentUserId,
               );
 
-              if (!isHost && !isParticipant) {
-                // 모임에서 제외됨
-                Navigator.of(context).pop();
+              final meetupProvider = context.read<MeetupProvider>();
+              final isLeaving = meetupProvider.isLeaving(widget.meetupId);
+
+              if (!isHost && !isParticipant && !isLeaving) {
+                // 모임에서 제외됨 (강제 퇴장 등)
+                Navigator.of(context).popUntil(
+                  (route) =>
+                      route.settings.name == 'MeetupDetailPage' ||
+                      route.isFirst,
+                );
                 toastification.show(
                   context: context,
                   type: ToastificationType.warning,

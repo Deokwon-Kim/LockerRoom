@@ -158,7 +158,7 @@ class _ChatInfoPageState extends State<ChatInfoPage> {
               ],
             ),
           ),
-          _buildLeaveButton(),
+          _buildBottomActions(),
         ],
       ),
     );
@@ -479,8 +479,14 @@ class _ChatInfoPageState extends State<ChatInfoPage> {
     );
   }
 
-  // 나가기 버튼
-  Widget _buildLeaveButton() {
+  // 하단 액션 버튼 (모임 탈퇴하기)
+  Widget _buildBottomActions() {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final bool isHost = currentUserId == widget.meetup.userId;
+
+    // 방장에게는 탈퇴 버튼을 보여주지 않음
+    if (isHost) return const SizedBox.shrink();
+
     return Container(
       padding: EdgeInsets.only(
         left: 20,
@@ -494,14 +500,15 @@ class _ChatInfoPageState extends State<ChatInfoPage> {
       ),
       child: InkWell(
         onTap: _showLeaveDialog,
-        child: Row(
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.logout, color: GRAYSCALE_LABEL_500, size: 20),
+            Icon(Icons.logout, color: RED_DANGER_TEXT_50, size: 20),
             const SizedBox(width: 10),
             const Text(
-              '채팅방 나가기',
+              '모임 탈퇴하기',
               style: TextStyle(
-                color: GRAYSCALE_LABEL_500,
+                color: RED_DANGER_TEXT_50,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
               ),
@@ -545,16 +552,25 @@ class _ChatInfoPageState extends State<ChatInfoPage> {
     showDialog(
       context: context,
       builder: (context) => ConfirmationDialog(
-        title: '채팅방 나가기',
-        content: '정말 이 채팅방에서 나가시겠습니까?\n나간 이후에는 다시 참여해야 대화가 가능합니다.',
+        title: '모임 나가기',
+        content: '정말 이 모임을 나가시겠습니까?\n나간 이후에는 참여자 명단에서 제외됩니다.',
         confirmText: '나가기',
         onConfirm: () async {
           final success = await context.read<MeetupProvider>().leaveMeetup(
             widget.meetup.id,
           );
           if (success && mounted) {
-            navigator.pop();
-            navigator.pop();
+            toastification.show(
+              context: context,
+              type: ToastificationType.success,
+              alignment: Alignment.bottomCenter,
+              autoCloseDuration: const Duration(seconds: 2),
+              title: const Text('모임에서 나갔습니다.'),
+            );
+            navigator.popUntil(
+              (route) =>
+                  route.settings.name == 'MeetupDetailPage' || route.isFirst,
+            );
           }
         },
       ),

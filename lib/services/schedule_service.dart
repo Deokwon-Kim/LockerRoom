@@ -194,7 +194,7 @@ class ScheduleService {
                 ? r[idxGameType]?.toString() ?? ''
                 : '',
             homeScore: homeScore,
-            awayScroe: awayScore,
+            awayScore: awayScore,
           ),
         );
       } catch (_) {

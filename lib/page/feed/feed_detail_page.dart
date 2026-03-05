@@ -339,6 +339,9 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
+                                  settings: const RouteSettings(
+                                    name: 'MeetupDetailPage',
+                                  ),
                                   builder: (context) =>
                                       MeetupDetailPage(meetup: meetup),
                                 ),

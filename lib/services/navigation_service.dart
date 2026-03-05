@@ -102,6 +102,7 @@ Future<void> navigateToMeetup(String meetupId) async {
     // 로딩 다이얼로그 없이 바로 페이지 이동 (페이지 내부에서 로딩 처리)
     navigatorKey.currentState?.push(
       MaterialPageRoute(
+        settings: const RouteSettings(name: 'MeetupDetailPage'),
         builder: (context) => MeetupDetailPage(meetupId: meetupId),
       ),
     );

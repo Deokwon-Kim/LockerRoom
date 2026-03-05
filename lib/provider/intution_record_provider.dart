@@ -162,10 +162,10 @@ class IntutionRecordProvider extends ChangeNotifier {
           if (match.homeTeam == symple) {
             // 응원팀이 홈팀인 경우
             myScoreController.text = match.homeScore.toString();
-            oppScoreContreller.text = match.awayScroe.toString();
+            oppScoreContreller.text = match.awayScore.toString();
           } else {
             // 응원팀이 원정팀인 경우
-            myScoreController.text = match.awayScroe.toString();
+            myScoreController.text = match.awayScore.toString();
             oppScoreContreller.text = match.homeScore.toString();
           }
         }
@@ -282,10 +282,10 @@ class IntutionRecordProvider extends ChangeNotifier {
           if (match.homeTeam == teamSymple) {
             // 선택한 팀이 홈팀인 경우
             myScoreController.text = match.homeScore.toString();
-            oppScoreContreller.text = match.awayScroe.toString();
+            oppScoreContreller.text = match.awayScore.toString();
           } else {
             // 선택한 팀이 원정팀인 경우
-            myScoreController.text = match.awayScroe.toString();
+            myScoreController.text = match.awayScore.toString();
             oppScoreContreller.text = match.homeScore.toString();
           }
         }
@@ -375,10 +375,10 @@ class IntutionRecordProvider extends ChangeNotifier {
             if (match.homeTeam == teamToUse) {
               // 선택한 팀이 홈팀인 경우
               myScoreController.text = match.homeScore.toString();
-              oppScoreContreller.text = match.awayScroe.toString();
+              oppScoreContreller.text = match.awayScore.toString();
             } else {
               // 선택한 팀이 원정팀인 경우
-              myScoreController.text = match.awayScroe.toString();
+              myScoreController.text = match.awayScore.toString();
               oppScoreContreller.text = match.homeScore.toString();
             }
           }
