@@ -16,9 +16,8 @@ class SchedulePage extends StatefulWidget {
 
 class _SchedulePageState extends State<SchedulePage> {
   final ScrollController _scrollController = ScrollController();
-  final Map<String, GlobalKey> _dateKeys = {};
   DateTime? _pendingScrollDate;
-  int _pendingScrollIndex = -1;
+  TeamModel? _selectedFilterTeam; // 추가된 필터 팀 상태
 
   @override
   void dispose() {
@@ -35,18 +34,14 @@ class _SchedulePageState extends State<SchedulePage> {
   void _prevMonth() {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
-      _dateKeys.clear();
       _pendingScrollDate = null;
-      _pendingScrollIndex = -1;
     });
   }
 
   void _nextMonth() {
     setState(() {
       _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
-      _dateKeys.clear();
       _pendingScrollDate = null;
-      _pendingScrollIndex = -1;
     });
   }
 
@@ -89,7 +84,6 @@ class _SchedulePageState extends State<SchedulePage> {
       setState(() {
         _currentMonth = DateTime(pickedDate.year, pickedDate.month, 1);
         _pendingScrollDate = pickedDate;
-        _dateKeys.clear();
         print('🔍 _pendingScrollDate 설정: $_pendingScrollDate');
       });
     }
@@ -109,6 +103,7 @@ class _SchedulePageState extends State<SchedulePage> {
           backgroundColor: WHITE,
           appBar: AppBar(
             backgroundColor: selectedTeam.color,
+            scrolledUnderElevation: 0,
             leading: IconButton(
               onPressed: () {
                 Navigator.pop(context);
@@ -152,58 +147,166 @@ class _SchedulePageState extends State<SchedulePage> {
                   ),
                 ],
               ),
+              // 팀 필터 버튼 추가
+              SizedBox(height: 10),
+              SizedBox(
+                height: 80, // 필터 버튼 높이 확대
+                child: Consumer<TeamProvider>(
+                  builder: (context, teamProvider, child) {
+                    final allTeams = teamProvider.getTeam('team');
+
+                    // 팀 선택 뷰와 동일한 제외 목록 적용
+                    final excludedTeamNames = <String>[
+                      '일본',
+                      '체코',
+                      '대만',
+                      '쿠바',
+                      '호주',
+                      '도미니카',
+                      '태국',
+                      '홍콩',
+                      '중국',
+                      'LAD',
+                      'SD',
+                      'SK와이번스',
+                      '넥센히어로즈',
+                      '미국',
+                      '이스라엘',
+                      '멕시코',
+                      '인도네시아',
+                      '베네수엘라',
+                      '파키스탄',
+                      '네덜란드',
+                      '캐나다',
+                    ];
+
+                    final selectableTeams = allTeams
+                        .where((t) => !excludedTeamNames.contains(t.name))
+                        .toList();
+
+                    // '전체' 옵션을 추가
+                    final filterOptions = [
+                      TeamModel(
+                        name: '전체',
+                        symplename: '전체',
+                        stadium: '',
+                        logoPath: 'assets/images/logo/kbo_logo.png',
+                        calenderLogo: 'assets/images/logo/kbo_logo.png',
+                        symbolPath: '',
+                        youtubeName: '',
+                        youtubeUrl: '',
+                        channelId: '',
+                        color: BUTTON,
+                      ),
+                      ...selectableTeams,
+                    ];
+
+                    return ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: filterOptions.length,
+                      itemBuilder: (context, index) {
+                        final team = filterOptions[index];
+                        final isSelected =
+                            _selectedFilterTeam?.symplename ==
+                                team.symplename ||
+                            (_selectedFilterTeam == null &&
+                                team.symplename ==
+                                    (teamProvider.selectedTeam ??
+                                            widget.teamModel)
+                                        .symplename);
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedFilterTeam = team;
+                              });
+                            },
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isSelected
+                                        ? WHITE
+                                        : GRAYSCALE_LABEL_50,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? (team.symplename == '전체'
+                                                ? BUTTON
+                                                : team.color)
+                                          : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.1,
+                                              ),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: ClipOval(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4.0),
+                                      child: team.calenderLogo.isNotEmpty
+                                          ? Image.asset(
+                                              team.calenderLogo,
+                                              fit: BoxFit.contain,
+                                              errorBuilder:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => const Icon(
+                                                    Icons.calendar_month,
+                                                    size: 20,
+                                                    color: GRAYSCALE_LABEL_400,
+                                                  ),
+                                            )
+                                          : const Icon(
+                                              Icons.shield,
+                                              size: 20,
+                                              color: GRAYSCALE_LABEL_400,
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  team.symplename,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: isSelected
+                                        ? GRAYSCALE_LABEL_900
+                                        : GRAYSCALE_LABEL_500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              SizedBox(height: 10),
               Expanded(
                 child: Consumer<ScheduleProvider>(
                   builder: (context, scheduleProvider, child) {
-                    final schedules = scheduleProvider.allSchedules;
-                    if (!scheduleProvider.loaded) {
-                      return const Center(
-                        child: CircularProgressIndicator(color: BUTTON),
-                      );
-                    }
-                    if (schedules.isEmpty) {
-                      return const Center(child: Text('일정 로드 중...'));
-                    }
-                    final teamName = selectedTeam.symplename;
-                    final teamSchedules = schedules
-                        .where(
-                          (s) =>
-                              s.homeTeam == teamName || s.awayTeam == teamName,
-                        )
-                        .toList();
-
-                    // 현재 월 필터
-                    final filterd = teamSchedules
-                        .where(
-                          (s) =>
-                              s.dateTimeKst.year == _currentMonth.year &&
-                              s.dateTimeKst.month == _currentMonth.month,
-                        )
-                        .toList();
-
-                    if (filterd.isEmpty) {
-                      return const Center(child: Text('해당 월 일정이 없습니다.'));
-                    }
-
-                    // 날짜별로 그룹화
-                    final Map<String, List<ScheduleModel>> schedulesByDate = {};
-                    for (final schedule in filterd) {
-                      final dateKey =
-                          '${schedule.dateTimeKst.year}-'
-                          '${schedule.dateTimeKst.month.toString().padLeft(2, '0')}-'
-                          '${schedule.dateTimeKst.day.toString().padLeft(2, '0')}';
-                      schedulesByDate
-                          .putIfAbsent(dateKey, () => [])
-                          .add(schedule);
-                    }
-
-                    // 날짜순으로 정렬
-                    final sortedDates = schedulesByDate.keys.toList()..sort();
-
-                    // 새로운 리스트를 그리기 전에 키를 초기화
-                    _dateKeys.clear();
-
-                    // 팀 이름 → TeamModel 매핑을 만들어 로고 경로를 찾는다
+                    // 팀 이름에 어울리는 TeamProvider 객체 맵
                     final nameToTeam = {
                       for (final t in context.read<TeamProvider>().getTeam(
                         'team',
@@ -211,180 +314,189 @@ class _SchedulePageState extends State<SchedulePage> {
                         t.symplename: t,
                     };
 
-                    final sections = sortedDates.map((dateKey) {
-                      final schedulesForDate = schedulesByDate[dateKey]!;
+                    final teamProvider = Provider.of<TeamProvider>(
+                      context,
+                      listen: false,
+                    );
+                    final selectedTeam =
+                        teamProvider.selectedTeam ??
+                        TeamModel(
+                          name: '두산베어스',
+                          symplename: '두산',
+                          stadium: '잠실',
+                          logoPath: '',
+                          calenderLogo: '',
+                          symbolPath: '',
+                          youtubeName: '',
+                          youtubeUrl: '',
+                          channelId: '',
+                          color: BUTTON,
+                        );
 
-                      // 날짜 파싱
-                      final dateParts = dateKey.split('-');
-                      final year = int.parse(dateParts[0]);
-                      final month = int.parse(dateParts[1]);
-                      final day = int.parse(dateParts[2]);
-                      final date = DateTime(year, month, day);
+                    // 필터링에 사용할 팀 결정: 명시적 선택이 없으면 내 응원팀 사용
+                    final currentFilterTeam =
+                        _selectedFilterTeam ?? selectedTeam;
 
-                      // 요일 계산
-                      final weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-                      final weekday = weekdays[date.weekday - 1];
+                    final scheduleProvider = Provider.of<ScheduleProvider>(
+                      context,
+                    );
 
-                      final sectionKey = _dateKeys.putIfAbsent(
-                        dateKey,
-                        () => GlobalKey(),
+                    // 데이터 업데이트 호출 (빌드 시점)
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      scheduleProvider.updateDisplayItems(
+                        _currentMonth,
+                        currentFilterTeam.symplename == '전체'
+                            ? null
+                            : currentFilterTeam.symplename,
                       );
+                    });
 
-                      return Column(
-                        key: sectionKey,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 날짜 헤더
-                          Padding(
+                    final items = scheduleProvider.displayItems;
+
+                    if (!scheduleProvider.loaded) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: BUTTON),
+                      );
+                    }
+                    if (items.isEmpty) {
+                      return const Center(child: Text('해당 월 일정이 없습니다.'));
+                    }
+
+                    // 스크롤 로직 (인덱스 기반)
+                    if (_pendingScrollDate != null) {
+                      final targetKey = _dateKey(_pendingScrollDate!);
+                      final index = scheduleProvider.getIndexForDate(targetKey);
+
+                      if (index >= 0) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          Future.delayed(const Duration(milliseconds: 100), () {
+                            if (_scrollController.hasClients) {
+                              // 아이템별 고정 높이가 아니므로 정확한 위치 계산은 어렵지만
+                              // 대략적인 위치로 이동 (평균 200px)
+                              final scrollTo = index * 200.0;
+                              final maxScroll =
+                                  _scrollController.position.maxScrollExtent;
+
+                              _scrollController.animateTo(
+                                scrollTo.clamp(0.0, maxScroll),
+                                duration: const Duration(milliseconds: 500),
+                                curve: Curves.easeInOut,
+                              );
+                              _pendingScrollDate = null;
+                            }
+                          });
+                        });
+                      } else {
+                        _pendingScrollDate = null;
+                      }
+                    }
+
+                    return ListView.builder(
+                      controller: _scrollController,
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+
+                        if (item.type == ScheduleItemType.header) {
+                          // 날짜 헤더 렌더링
+                          final dateParts = item.dateKey!.split('-');
+                          final year = int.parse(dateParts[0]);
+                          final month = int.parse(dateParts[1]);
+                          final day = int.parse(dateParts[2]);
+                          final date = DateTime(year, month, day);
+                          final weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+                          final weekday = weekdays[date.weekday - 1];
+
+                          return Padding(
                             padding: const EdgeInsets.only(
-                              top: 10.0,
-                              left: 10.0,
+                              top: 20.0,
+                              left: 16.0,
+                              bottom: 8.0,
                             ),
                             child: Text(
                               '$year년 $month월 $day일 ($weekday)',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: GRAYSCALE_LABEL_900,
                               ),
                             ),
-                          ),
-                          // 해당 날짜의 일정들
-                          ...schedulesForDate.map((s) {
-                            final scheduleDate = s.dateTimeKst;
-                            final timeStr =
-                                '${scheduleDate.hour.toString().padLeft(2, '0')}:${scheduleDate.minute.toString().padLeft(2, '0')}';
+                          );
+                        } else {
+                          // 경기 카드 렌더링
+                          final s = item.game!;
+                          final scheduleDate = s.dateTimeKst;
+                          final timeStr =
+                              '${scheduleDate.hour.toString().padLeft(2, '0')}:${scheduleDate.minute.toString().padLeft(2, '0')}';
 
-                            // 상태/더블헤더 배지 텍스트 구성
-                            final List<String> badges = [];
-                            final statusUpper = s.status.toUpperCase();
-                            if (statusUpper.startsWith('CANCELLED')) {
-                              badges.add('경기취소');
-                            }
-                            final dh = s.doubleHeaderNo?.toString().trim();
-                            if (dh != null && dh.isNotEmpty) {
-                              badges.add('DH $dh');
-                            }
-                            final headerLine = '$timeStr  ${s.stadium}';
+                          final List<String> badges = [];
+                          final statusUpper = s.status.toUpperCase();
+                          if (statusUpper.startsWith('CANCELLED'))
+                            badges.add('경기취소');
+                          final dh = s.doubleHeaderNo?.toString().trim();
+                          if (dh != null && dh.isNotEmpty) badges.add('DH $dh');
 
-                            // status에 따라 UI 분기
-                            final isCancelled =
-                                s.status == '우천취소' ||
-                                statusUpper.startsWith('CANCELLED');
-                            final isInPlay =
-                                statusUpper.contains('MS-T') ||
-                                statusUpper.contains('SS-T') ||
-                                statusUpper.contains('IN_PLAY');
-                            final isCompleted =
-                                s.status == '종료' ||
-                                statusUpper.startsWith('FINAL');
+                          final headerLine = '$timeStr  ${s.stadium}';
+                          final isCancelled =
+                              s.status == '우천취소' ||
+                              statusUpper.startsWith('CANCELLED');
+                          final isInPlay =
+                              statusUpper.contains('MS-T') ||
+                              statusUpper.contains('SS-T') ||
+                              statusUpper.contains('IN_PLAY') ||
+                              statusUpper.contains('LIVE') ||
+                              statusUpper.contains('진행중');
+                          final isCompleted =
+                              s.status == '종료' ||
+                              statusUpper.startsWith('FINAL') ||
+                              statusUpper.contains('종료');
 
-                            final homeTeamModel = nameToTeam[s.homeTeam];
-                            final awayTeamModel = nameToTeam[s.awayTeam];
+                          final homeTeamModel = nameToTeam[s.homeTeam];
+                          final awayTeamModel = nameToTeam[s.awayTeam];
 
-                            // status에 따라 다른 UI 렌더링
-                            if (isCancelled) {
-                              return _buildCancelledGameCard(
-                                s,
-                                headerLine,
-                                badges,
-                                statusUpper,
-                                homeTeamModel,
-                                awayTeamModel,
-                                selectedTeam.color,
-                              );
-                            } else if (isInPlay) {
-                              return _buildInPlayGameCard(
-                                s,
-                                headerLine,
-                                badges,
-                                statusUpper,
-                                homeTeamModel,
-                                awayTeamModel,
-                                selectedTeam.color,
-                              );
-                            } else if (isCompleted) {
-                              return _buildCompletedGameCard(
-                                s,
-                                headerLine,
-                                badges,
-                                statusUpper,
-                                homeTeamModel,
-                                awayTeamModel,
-                                selectedTeam.color,
-                              );
-                            } else {
-                              // SCHEDULED 상태 (경기 예정)
-                              return _buildScheduledGameCard(
-                                s,
-                                headerLine,
-                                badges,
-                                statusUpper,
-                                homeTeamModel,
-                                awayTeamModel,
-                                selectedTeam.color,
-                              );
-                            }
-                          }).toList(),
-                        ],
-                      );
-                    }).toList();
-
-                    // 스크롤할 인덱스 찾기
-                    if (_pendingScrollDate != null &&
-                        _pendingScrollIndex == -1) {
-                      final pendingDate = _pendingScrollDate!;
-                      final targetKey = _dateKey(pendingDate);
-                      print(
-                        '🔍 스크롤 시도: pendingDate=$pendingDate, targetKey=$targetKey',
-                      );
-                      print('🔍 sortedDates: $sortedDates');
-
-                      final index = sortedDates.indexOf(targetKey);
-                      if (index >= 0) {
-                        _pendingScrollIndex = index;
-                        print('🔍 찾은 인덱스: $index');
-                      } else {
-                        print('❌ sortedDates에 targetKey가 없습니다');
-                        _pendingScrollDate = null;
-                      }
-                    }
-
-                    // 스크롤 실행
-                    if (_pendingScrollIndex >= 0) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        Future.delayed(const Duration(milliseconds: 100), () {
-                          if (_scrollController.hasClients) {
-                            // 각 섹션의 대략적인 높이 (날짜 헤더 + 경기 카드들)
-                            // 평균적으로 날짜당 1-2경기 * 230px(카드 높이) + 헤더 40px 정도
-                            final estimatedItemHeight = 260.0;
-                            final targetOffset =
-                                _pendingScrollIndex * estimatedItemHeight;
-                            final maxScroll =
-                                _scrollController.position.maxScrollExtent;
-                            final scrollTo = targetOffset > maxScroll
-                                ? maxScroll
-                                : targetOffset;
-
-                            print('✅ 스크롤 실행! offset: $scrollTo');
-                            _scrollController.animateTo(
-                              scrollTo,
-                              duration: const Duration(milliseconds: 500),
-                              curve: Curves.easeInOut,
+                          if (isCancelled) {
+                            return _buildCancelledGameCard(
+                              s,
+                              headerLine,
+                              badges,
+                              statusUpper,
+                              homeTeamModel,
+                              awayTeamModel,
+                              selectedTeam.color,
                             );
-
-                            _pendingScrollDate = null;
-                            _pendingScrollIndex = -1;
+                          } else if (isInPlay) {
+                            return _buildInPlayGameCard(
+                              s,
+                              headerLine,
+                              badges,
+                              statusUpper,
+                              homeTeamModel,
+                              awayTeamModel,
+                              selectedTeam.color,
+                            );
+                          } else if (isCompleted) {
+                            return _buildCompletedGameCard(
+                              s,
+                              headerLine,
+                              badges,
+                              statusUpper,
+                              homeTeamModel,
+                              awayTeamModel,
+                              selectedTeam.color,
+                            );
                           } else {
-                            print('❌ ScrollController가 아직 준비되지 않음');
+                            return _buildScheduledGameCard(
+                              s,
+                              headerLine,
+                              badges,
+                              statusUpper,
+                              homeTeamModel,
+                              awayTeamModel,
+                              selectedTeam.color,
+                            );
                           }
-                        });
-                      });
-                    }
-
-                    return ListView(
-                      controller: _scrollController,
-                      children: sections,
+                        }
+                      },
                     );
                   },
                 ),

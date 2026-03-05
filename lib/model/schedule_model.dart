@@ -37,6 +37,14 @@ class ScheduleModel {
 
   factory ScheduleModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    int parseScore(dynamic val) {
+      if (val == null) return 0;
+      if (val is int) return val;
+      if (val is String) return int.tryParse(val) ?? 0;
+      return 0;
+    }
+
     return ScheduleModel(
       season: data['season'] ?? 2026,
       gameId: doc.id,
@@ -51,8 +59,8 @@ class ScheduleModel {
       doubleHeaderNo: data['doubleHeaderNo']?.toString(),
       note: data['note'],
       gameType: data['gameType'] ?? '',
-      homeScore: data['homeScore'] ?? 0,
-      awayScore: data['awayScore'] ?? 0,
+      homeScore: parseScore(data['homeScore']),
+      awayScore: parseScore(data['awayScore']),
     );
   }
 

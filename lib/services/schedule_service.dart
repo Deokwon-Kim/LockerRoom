@@ -169,7 +169,7 @@ class ScheduleService {
         schedules.add(
           ScheduleModel(
             season: int.tryParse(r[idxSeason].toString()) ?? 2025,
-            gameId: r[idxGameId].toString(),
+            gameId: r[idxGameId].toString().trim(),
             dateTimeKst: parseKst(r[idxDate].toString(), r[idxTime].toString()),
             weekday: idxWeekday >= 0 && idxWeekday < r.length
                 ? r[idxWeekday]?.toString()
