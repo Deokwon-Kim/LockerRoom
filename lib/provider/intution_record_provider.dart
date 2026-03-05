@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lockerroom/model/attendance_model.dart';
 import 'package:lockerroom/model/schedule_model.dart';
+import 'package:lockerroom/provider/schdule_Provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
 import 'package:provider/provider.dart';
@@ -120,7 +121,16 @@ class IntutionRecordProvider extends ChangeNotifier {
     ScheduleModel? match;
 
     if (symple != null) {
-      final schedules = await ScheduleService().loadSchedules();
+      // ScheduleProvider에서 이미 로드된 데이터를 우선 사용
+      final scheduleProvider = context.read<ScheduleProvider>();
+      List<ScheduleModel> schedules;
+
+      if (scheduleProvider.loaded) {
+        schedules = scheduleProvider.allSchedules;
+      } else {
+        schedules = await ScheduleService().loadSchedules();
+      }
+
       final todays = schedules
           .where((s) => _yyyyMmDd(s.dateTimeKst) == today)
           .toList();
@@ -192,9 +202,19 @@ class IntutionRecordProvider extends ChangeNotifier {
   }
 
   // 선택한 날짜의 모든 경기 가져오기
-  Future<void> loadGamesByDate(DateTime date) async {
+  Future<void> loadGamesByDate(DateTime date, {BuildContext? context}) async {
     final String dateStr = _yyyyMmDd(date);
-    final schedules = await ScheduleService().loadSchedules();
+
+    List<ScheduleModel> schedules;
+    if (context != null) {
+      final sp = context.read<ScheduleProvider>();
+      schedules = sp.loaded
+          ? sp.allSchedules
+          : await ScheduleService().loadSchedules();
+    } else {
+      schedules = await ScheduleService().loadSchedules();
+    }
+
     final gamesForDate =
         schedules.where((s) => _yyyyMmDd(s.dateTimeKst) == dateStr).toList()
           ..sort((a, b) => a.dateTimeKst.compareTo(b.dateTimeKst));
@@ -333,7 +353,11 @@ class IntutionRecordProvider extends ChangeNotifier {
     final teamToUse = _selectedTeamSympleForRecord ?? _myTeamSymple;
 
     if (teamToUse != null) {
-      final schedules = await ScheduleService().loadSchedules();
+      final sp = context.read<ScheduleProvider>();
+      final schedules = sp.loaded
+          ? sp.allSchedules
+          : await ScheduleService().loadSchedules();
+
       final inDay =
           schedules.where((s) => _yyyyMmDd(s.dateTimeKst) == dateStr).toList()
             ..sort((a, b) => a.dateTimeKst.compareTo(b.dateTimeKst));

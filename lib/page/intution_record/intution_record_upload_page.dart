@@ -73,7 +73,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
         _isTeamSelectorExpanded = false; // 날짜 변경 시 드롭다운 닫기
       });
       // 선택한 날짜의 모든 경기 가져오기
-      await provider.loadGamesByDate(pickedDate);
+      await provider.loadGamesByDate(pickedDate, context: context);
       // 선택한 날짜 기준으로 같은 Provider 인스턴스에 갱신 요청
       // 날짜 변경 시에는 응원팀의 경기로 리셋
       provider.resetTeamSelection();

@@ -25,10 +25,19 @@ class ScheduleService {
     'assets/schedules/kbo_2026.csv',
   ];
 
+  static List<ScheduleModel>? _cachedSchedules;
+
   Future<List<ScheduleModel>> loadSchedules({
     String assetPath = defaultAssetPath,
     List<String>? assetPaths,
+    bool forceRefresh = false,
   }) async {
+    if (!forceRefresh &&
+        _cachedSchedules != null &&
+        (assetPaths == null || assetPaths.isEmpty)) {
+      return _cachedSchedules!;
+    }
+
     final List<String> targets = (assetPaths == null || assetPaths.isEmpty)
         ? defaultAssetPaths
         : assetPaths;
@@ -38,6 +47,11 @@ class ScheduleService {
       final List<ScheduleModel> one = await _loadSingleCsv(path);
       all.addAll(one);
     }
+
+    if (assetPaths == null || assetPaths.isEmpty) {
+      _cachedSchedules = all;
+    }
+
     return all;
   }
 
