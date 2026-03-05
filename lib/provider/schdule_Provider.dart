@@ -105,10 +105,20 @@ class ScheduleProvider with ChangeNotifier {
   Future<void> load() async {
     if (_loaded) return;
 
-    // 1. 초기 CSV 데이터 로드
-    final staticList = await ScheduleService().loadSchedules();
-    for (var s in staticList) {
-      _scheduleMap[s.gameId] = s;
+    try {
+      // 1. 초기 CSV 데이터 로드
+      final staticList = await ScheduleService().loadSchedules();
+      for (var s in staticList) {
+        _scheduleMap[s.gameId] = s;
+      }
+
+      // 초기 로드 완료 플래그 (Firestore 응답 전이라도 UI 출력 허용)
+      _loaded = true;
+      _processData(); // 기존 필터링 데이터가 있다면 갱신
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading static schedules: $e');
+      // 에러가 나더라도 Firestore 리스너 시도는 하게 둠
     }
 
     // 2. Firestore 실시간 리스너 연결
@@ -122,8 +132,6 @@ class ScheduleProvider with ChangeNotifier {
             for (var doc in snapshot.docs) {
               try {
                 final model = ScheduleModel.fromFirestore(doc);
-                // 실질적으로 데이터가 바뀌었는지 체크하면 더 좋겠지만,
-                // 일단 수신 시 맵 업데이트 및 재가공 트리거
                 _scheduleMap[model.gameId] = model;
                 hasChanged = true;
               } catch (e) {
@@ -133,12 +141,15 @@ class ScheduleProvider with ChangeNotifier {
             _loaded = true;
             if (hasChanged) {
               _processData(); // 데이터 수신 시 UI 리스트 재가공
-            } else {
-              notifyListeners();
             }
+            // 스냅샷 수신 시 무조건 알림 (데이터 변경 또는 에러 시에도 로딩 취소를 위해)
+            notifyListeners();
           },
           onError: (error) {
             debugPrint('Firestore Schedule Subscription Error: $error');
+            // 에러 발생 시에도 무조건 로딩은 끝난 것으로 간주 (실패 화면이라도 보여주기 위해)
+            _loaded = true;
+            notifyListeners();
           },
         );
   }

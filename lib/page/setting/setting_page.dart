@@ -473,54 +473,54 @@ class SettingPage extends StatelessWidget {
                             ],
                           ),
                         ),
-                        TextButton(
-                          onPressed: () async {
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (context) => const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            );
-                            try {
-                              final migrationService = KboMigrationService();
-                              final count = await migrationService
-                                  .performMigration();
-                              Navigator.pop(context); // Close loading dialog
-                              toastification.show(
-                                context: context,
-                                type: ToastificationType.success,
-                                alignment: Alignment.bottomCenter,
-                                autoCloseDuration: const Duration(seconds: 3),
-                                title: Text('$count개의 경기가 동기화되었습니다.'),
-                              );
-                            } catch (e) {
-                              Navigator.pop(context);
-                              toastification.show(
-                                context: context,
-                                type: ToastificationType.error,
-                                title: Text('동기화 실패: $e'),
-                              );
-                            }
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'KBO 경기 데이터 동기화',
-                                style: TextStyle(
-                                  color: selectedTeam?.color ?? BUTTON,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Icon(
-                                Icons.sync,
-                                color: selectedTeam?.color ?? BUTTON,
-                              ),
-                            ],
-                          ),
-                        ),
+                        // TextButton(
+                        //   onPressed: () async {
+                        //     showDialog(
+                        //       context: context,
+                        //       barrierDismissible: false,
+                        //       builder: (context) => const Center(
+                        //         child: CircularProgressIndicator(),
+                        //       ),
+                        //     );
+                        //     try {
+                        //       final migrationService = KboMigrationService();
+                        //       final count = await migrationService
+                        //           .performMigration();
+                        //       Navigator.pop(context); // Close loading dialog
+                        //       toastification.show(
+                        //         context: context,
+                        //         type: ToastificationType.success,
+                        //         alignment: Alignment.bottomCenter,
+                        //         autoCloseDuration: const Duration(seconds: 3),
+                        //         title: Text('$count개의 경기가 동기화되었습니다.'),
+                        //       );
+                        //     } catch (e) {
+                        //       Navigator.pop(context);
+                        //       toastification.show(
+                        //         context: context,
+                        //         type: ToastificationType.error,
+                        //         title: Text('동기화 실패: $e'),
+                        //       );
+                        //     }
+                        //   },
+                        //   child: Row(
+                        //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        //     children: [
+                        //       Text(
+                        //         'KBO 경기 데이터 동기화',
+                        //         style: TextStyle(
+                        //           color: selectedTeam?.color ?? BUTTON,
+                        //           fontSize: 16,
+                        //           fontWeight: FontWeight.bold,
+                        //         ),
+                        //       ),
+                        //       Icon(
+                        //         Icons.sync,
+                        //         color: selectedTeam?.color ?? BUTTON,
+                        //       ),
+                        //     ],
+                        //   ),
+                        // ),
                         TextButton(
                           onPressed: () async {
                             // 로그아웃 전에 모든 실시간 구독 해제
