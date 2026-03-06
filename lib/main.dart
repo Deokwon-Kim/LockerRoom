@@ -3,7 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide User;
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
@@ -27,6 +29,7 @@ import 'package:lockerroom/page/alert/notifications_page.dart';
 import 'package:lockerroom/page/quiz/quiz_ranking_page.dart';
 import 'package:lockerroom/page/team_select_page.dart';
 import 'package:lockerroom/page/login/terms_gate_page.dart';
+import 'package:lockerroom/page/admin/admin_game_page.dart';
 import 'package:lockerroom/provider/badge_provider.dart';
 import 'package:lockerroom/provider/chat_provider.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
@@ -61,7 +64,7 @@ import 'package:lockerroom/services/navigation_service.dart';
 import 'package:lockerroom/services/deep_link_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'package:flutter/services.dart';
 
 @pragma('vm:entry-point')
@@ -72,6 +75,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
+    await initializeDateFormatting('ko_KR', null);
 
     // 앱 전체 화면 방향을 세로로 고정 (이미지/비디오 뷰어 제외)
     await SystemChrome.setPreferredOrientations([
@@ -96,37 +100,44 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
-    // 로컬 알림 초기화
-    await NotificationService().initNotification();
-
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
     // 플랫폼별 알림 권한 요청
-    if (Platform.isAndroid) {
-      await Permission.notification.request();
-    } else if (Platform.isIOS) {
-      await FirebaseMessaging.instance.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
+    if (kIsWeb) {
+      // 웹 특화 초기화 (필요시)
+    } else {
+      // 로컬 알림 초기화
+      await NotificationService().initNotification();
+
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
       );
 
-      await FirebaseMessaging.instance
-          .setForegroundNotificationPresentationOptions(
-            alert: false,
-            badge: false,
-            sound: false,
-          );
-    }
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        await Permission.notification.request();
+      } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+        await FirebaseMessaging.instance.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
 
-    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-    if (initialMessage != null) {
-      navigateFromData(initialMessage.data);
-    }
+        await FirebaseMessaging.instance
+            .setForegroundNotificationPresentationOptions(
+              alert: false,
+              badge: false,
+              sound: false,
+            );
+      }
 
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      navigateFromData(message.data);
-    });
+      final initialMessage = await FirebaseMessaging.instance
+          .getInitialMessage();
+      if (initialMessage != null) {
+        navigateFromData(initialMessage.data);
+      }
+
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        navigateFromData(message.data);
+      });
+    }
 
     final repo = UserRepository();
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -234,6 +245,7 @@ class _MyAppState extends State<MyApp> {
           'blockList': (context) => const BlockListPage(),
           'likedPost': (context) => const LikedPostsPage(),
           'quiz_ranking': (context) => const QuizRankingPage(),
+          'admin': (context) => const AdminGamePage(),
         },
       ),
     );
