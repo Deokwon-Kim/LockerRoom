@@ -484,7 +484,7 @@ final List<QuizQuestionModel> cheerSongQuestions = [
   QuizQuestionModel(
     quizId: 'cheer_007',
     category: '응원가(인트로)',
-    audioPath: 'audio/moonbokyung.m4a',
+    audioPath: 'audio/moonBoKyeong.m4a',
     question: '이 응원가는 누구의 응원가 일까요?',
     options: ['문보경', '서호철', '이종욱', '노시환'],
     correctIndex: 0,
@@ -1841,6 +1841,26 @@ final List<QuizQuestionModel> cheerSongQuestions = [
     correctIndex: 1,
     difficulty: 'easy',
     explanation: '롯데자이언츠 한동희',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_140',
+    category: '응원가(인트로)',
+    audioPath: 'audio/DoosanNewTeamSong.m4a',
+    question: '이 응원가는 어느팀의 응원가 일까요?',
+    options: ['두산베어스', 'LG트윈스', '롯데자이언츠', '키움히어로즈'],
+    correctIndex: 0,
+    difficulty: 'hard',
+    explanation: '두산베어스 서울의 베어스',
+  ),
+  QuizQuestionModel(
+    quizId: 'cheer_141',
+    category: '응원가(가사)',
+    audioPath: 'audio/DoosanNewTeamSong.m4a',
+    question: '🎵 노래를 듣고 빈칸을 채워보세요!\n하늘의 가득찬~(OOO OO)',
+    options: ['우리의 함성', '승리의 함성', '뜨거운 함성', '희망의 함성'],
+    correctIndex: 0,
+    difficulty: 'hard',
+    explanation: '우리의 함성',
   ),
 ];
 
