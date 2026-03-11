@@ -8,6 +8,7 @@ class QuizQuestionModel {
   final String explanation;
   final String? imageUrl;
   final String? audioPath;
+  final String? teamName; // 특정 구단 문제일 경우 구단명 저장
 
   QuizQuestionModel({
     required this.quizId,
@@ -19,6 +20,7 @@ class QuizQuestionModel {
     required this.explanation,
     this.imageUrl,
     this.audioPath,
+    this.teamName,
   });
 
   // json 변환 (나중을 위해)
@@ -32,6 +34,7 @@ class QuizQuestionModel {
       'explanation': explanation,
       'imageUrl': imageUrl,
       'audioPath': audioPath,
+      'teamName': teamName,
     };
   }
 
@@ -46,6 +49,7 @@ class QuizQuestionModel {
       explanation: json['explanation'] as String,
       imageUrl: json['imageUrl'] as String?,
       audioPath: json['audioPath'] as String?,
+      teamName: json['teamName'] as String?,
     );
   }
 
@@ -60,6 +64,7 @@ class QuizQuestionModel {
     String? explanation,
     String? imageUrl,
     String? audioPath,
+    String? teamName,
   }) {
     return QuizQuestionModel(
       quizId: quizId ?? this.quizId,
@@ -71,6 +76,7 @@ class QuizQuestionModel {
       explanation: explanation ?? this.explanation,
       imageUrl: imageUrl ?? this.imageUrl,
       audioPath: audioPath ?? this.audioPath,
+      teamName: teamName ?? this.teamName,
     );
   }
 }
