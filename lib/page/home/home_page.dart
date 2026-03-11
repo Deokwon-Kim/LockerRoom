@@ -481,14 +481,17 @@ class _HomePageState extends State<HomePage> {
                                 },
                                 child: Text(
                                   '전체보기',
-                                  style: TextStyle(color: GRAYSCALE_LABEL_500),
+                                  style: TextStyle(
+                                    color: GRAYSCALE_LABEL_500,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                               SizedBox(width: 5),
                               Icon(
                                 Icons.arrow_forward_ios,
                                 color: GRAYSCALE_LABEL_500,
-                                size: 12,
+                                size: 10,
                               ),
                             ],
                           ),
@@ -547,8 +550,11 @@ class _HomePageState extends State<HomePage> {
                         ),
                         Spacer(),
                         Text(
-                          '모든 게시물 보기 ',
-                          style: TextStyle(color: GRAYSCALE_LABEL_500),
+                          '모든 게시물 보기',
+                          style: TextStyle(
+                            color: GRAYSCALE_LABEL_500,
+                            fontSize: 12,
+                          ),
                         ),
                         SizedBox(width: 5),
                         Icon(
@@ -906,16 +912,17 @@ class _HomePageState extends State<HomePage> {
                         ),
                         Spacer(),
                         Text(
-                          '푸드존 정보 더보기 ',
+                          '푸드존 정보 더보기',
                           style: TextStyle(
                             color: GRAYSCALE_LABEL_500,
+                            fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         SizedBox(width: 5),
                         Icon(
                           Icons.arrow_forward_ios,
-                          size: 12,
+                          size: 10,
                           color: GRAYSCALE_LABEL_500,
                         ),
                       ],
@@ -946,12 +953,13 @@ class _HomePageState extends State<HomePage> {
                           style: TextStyle(
                             color: GRAYSCALE_LABEL_500,
                             fontWeight: FontWeight.w500,
+                            fontSize: 12,
                           ),
                         ),
                         SizedBox(width: 5),
                         Icon(
                           Icons.arrow_forward_ios,
-                          size: 12,
+                          size: 10,
                           color: GRAYSCALE_LABEL_500,
                         ),
                       ],
@@ -1177,7 +1185,7 @@ class _HomePageState extends State<HomePage> {
                 child: Row(
                   children: [
                     const Text(
-                      '나의 직관기록 🏟️',
+                      '나의 직관기록',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -1682,7 +1690,7 @@ class _HomeRankingCardState extends State<_HomeRankingCard> {
   }
 
   void _startAutoSlide() {
-    _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (_pageController.hasClients) {
         int nextPage = (_currentPage + 1) % 2; // 페이지가 2개인 경우
         _pageController.animateToPage(
@@ -1743,54 +1751,62 @@ class _HomeRankingCardState extends State<_HomeRankingCard> {
             children: [
               SizedBox(
                 height: 185,
-                child: PageView(
-                  controller: _pageController,
-                  onPageChanged: (index) =>
-                      setState(() => _currentPage = index),
-                  children: [
-                    _buildRankingPage(
-                      title: '개인 순위 TOP 3',
-                      top3: top3Individuals
-                          .map(
-                            (e) => _RankingItemData(
-                              name: e.name,
-                              score: e.score,
-                              rank: e.rank,
-                              imageUrl: e.profileUrl,
-                            ),
-                          )
-                          .toList(),
-                      myRank: myIndividualRanking != null
-                          ? '${myIndividualRanking.rank}위'
-                          : '순위 없음',
-                      myScore: myIndividualRanking != null
-                          ? '${myIndividualRanking.score}점'
-                          : '-',
-                      myLabel: '내 순위',
-                    ),
-                    _buildRankingPage(
-                      title: '팀 순위 TOP 3',
-                      top3: top3Teams.map((e) {
-                        final team = teamProvider.findTeamByName(e.teamName);
-                        return _RankingItemData(
-                          name: team?.symplename ?? e.teamName,
-                          score: e.totalScore,
-                          rank: e.rank,
-                          imagePath: team?.logoPath,
-                        );
-                      }).toList(),
-                      myRank: myTeamRanking != null
-                          ? '${myTeamRanking.rank}위'
-                          : (myTeam == null ? '팀 선택 필요' : '기록 없음'),
-                      myScore: myTeamRanking != null
-                          ? '${myTeamRanking.totalScore}점'
-                          : '-',
-                      myLabel: myTeam != null
-                          ? '${myTeam.symplename} 순위'
-                          : '내 팀 순위',
-                    ),
-                  ],
-                ),
+                child: rankProvider.isLoading && rankProvider.rankings.isEmpty
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: widget.selectedTeam.color,
+                        ),
+                      )
+                    : PageView(
+                        controller: _pageController,
+                        onPageChanged: (index) =>
+                            setState(() => _currentPage = index),
+                        children: [
+                          _buildRankingPage(
+                            title: '개인 순위 TOP 3',
+                            top3: top3Individuals
+                                .map(
+                                  (e) => _RankingItemData(
+                                    name: e.name,
+                                    score: e.score,
+                                    rank: e.rank,
+                                    imageUrl: e.profileUrl,
+                                  ),
+                                )
+                                .toList(),
+                            myRank: myIndividualRanking != null
+                                ? '${myIndividualRanking.rank}위'
+                                : '순위 없음',
+                            myScore: myIndividualRanking != null
+                                ? '${myIndividualRanking.score}점'
+                                : '-',
+                            myLabel: '내 순위',
+                          ),
+                          _buildRankingPage(
+                            title: '팀 순위 TOP 3',
+                            top3: top3Teams.map((e) {
+                              final team = teamProvider.findTeamByName(
+                                e.teamName,
+                              );
+                              return _RankingItemData(
+                                name: team?.symplename ?? e.teamName,
+                                score: e.totalScore,
+                                rank: e.rank,
+                                imagePath: team?.logoPath,
+                              );
+                            }).toList(),
+                            myRank: myTeamRanking != null
+                                ? '${myTeamRanking.rank}위'
+                                : (myTeam == null ? '팀 선택 필요' : '기록 없음'),
+                            myScore: myTeamRanking != null
+                                ? '${myTeamRanking.totalScore}점'
+                                : '-',
+                            myLabel: myTeam != null
+                                ? '${myTeam.symplename} 순위'
+                                : '내 팀 순위',
+                          ),
+                        ],
+                      ),
               ),
               Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
