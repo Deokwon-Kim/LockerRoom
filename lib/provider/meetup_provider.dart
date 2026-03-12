@@ -531,7 +531,7 @@ class MeetupProvider extends ChangeNotifier {
         meetups.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         return meetups;
       },
-    );
+    ).asBroadcastStream();
   }
 
   // 알림 음소거 토글
