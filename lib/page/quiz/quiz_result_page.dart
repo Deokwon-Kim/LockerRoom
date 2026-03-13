@@ -32,10 +32,17 @@ class QuizResultPage extends StatefulWidget {
 class _QuizResultPageState extends State<QuizResultPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
+  // _scaleAnimation 제거 (이미 사용되지 않음)
   late ConfettiController _confettiController;
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _isCapturing = false;
+
+  // 애니메이션용 상태
+  int _animatingScore = 0;
+  String _scorePhaseLabel = "";
+  bool _showFinalGrade = false;
+  double _scoreScale = 1.0;
+  bool _isImpactActive = false;
 
   @override
   void initState() {
@@ -53,16 +60,11 @@ class _QuizResultPageState extends State<QuizResultPage>
       vsync: this,
     );
 
-    _scaleAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    );
-
     _animationController.forward();
 
     _confettiController = ConfettiController(duration: Duration(seconds: 3));
 
-    if (widget.result.score >= 80) {
+    if (widget.result.grade == 'S' || widget.result.grade == 'A') {
       Future.delayed(Duration(milliseconds: 500), () {
         _confettiController.play();
       });
@@ -80,9 +82,81 @@ class _QuizResultPageState extends State<QuizResultPage>
               _showBadgeUnlockToast('🏆 [${newBadges[i]}] 뱃지를 획득했습니다!');
             }
           });
-          // 뱃지 획득 팝업 띄우기
         }
       }
+
+      // 점수 애니메이션 시작
+      _startScoreAnimation();
+    });
+  }
+
+  // 점수 애니메이션 시퀀스 (보너스 개별 노출 -> 최종 합계)
+  Future<void> _startScoreAnimation() async {
+    await Future.delayed(Duration(milliseconds: 800));
+
+    // 1. 기본 점수 팡!
+    if (!mounted) return;
+    setState(() {
+      _isImpactActive = true;
+      _scoreScale = 1.4;
+      _animatingScore = widget.result.baseScore;
+      _scorePhaseLabel = "기본 점수";
+    });
+    await Future.delayed(Duration(milliseconds: 500));
+    setState(() {
+      _isImpactActive = false;
+      _scoreScale = 1.0;
+    });
+
+    // 2. 난이도 보너스 팡!
+    if (widget.result.difficultyBonus > 0) {
+      await Future.delayed(Duration(milliseconds: 1000));
+      if (!mounted) return;
+      setState(() {
+        _animatingScore = 0; // 초기화 후 다시 카운트업
+      });
+      await Future.delayed(Duration(milliseconds: 100));
+      setState(() {
+        _isImpactActive = true;
+        _scoreScale = 1.4;
+        _animatingScore = widget.result.difficultyBonus;
+        _scorePhaseLabel = "난이도 보너스";
+      });
+      await Future.delayed(Duration(milliseconds: 500));
+      setState(() {
+        _isImpactActive = false;
+        _scoreScale = 1.0;
+      });
+    }
+
+    // 3. 콤보 보너스 팡!
+    if (widget.result.comboBonus > 0) {
+      await Future.delayed(Duration(milliseconds: 1000));
+      if (!mounted) return;
+      setState(() {
+        _animatingScore = 0;
+      });
+      await Future.delayed(Duration(milliseconds: 100));
+      setState(() {
+        _isImpactActive = true;
+        _scoreScale = 1.4;
+        _animatingScore = widget.result.comboBonus;
+        _scorePhaseLabel = "콤보 보너스";
+      });
+      await Future.delayed(Duration(milliseconds: 500));
+      setState(() {
+        _isImpactActive = false;
+        _scoreScale = 1.0;
+      });
+    }
+
+    // 4. 최종 결과 확정 (페이드로 최종 점수 등장)
+    await Future.delayed(Duration(milliseconds: 1200));
+    if (!mounted) return;
+    setState(() {
+      _animatingScore = widget.result.score; // 최종 합계
+      _scorePhaseLabel = "최종 점수";
+      _showFinalGrade = true;
     });
   }
 
@@ -109,56 +183,174 @@ class _QuizResultPageState extends State<QuizResultPage>
 
   @override
   Widget build(BuildContext context) {
+    final team = context.watch<TeamProvider>().selectedTeam;
+    final teamColor = team?.color ?? BLUE_SECONDARY_600;
+
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
-
       body: Stack(
         children: [
+          // 1. 다이나믹 팀 그라데이션 배경
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  teamColor.withOpacity(0.15),
+                  BACKGROUND_COLOR,
+                  BACKGROUND_COLOR,
+                ],
+                stops: [0.0, 0.4, 1.0],
+              ),
+            ),
+          ),
+
+          // 2. 메인 컨텐츠
           SingleChildScrollView(
-            padding: EdgeInsets.only(left: 16, right: 16, bottom: 16),
+            physics: BouncingScrollPhysics(),
+            padding: EdgeInsets.only(left: 20, right: 20, bottom: 40),
             child: Column(
               children: [
-                AppBar(
-                  backgroundColor: BACKGROUND_COLOR,
-                  elevation: 0,
-                  scrolledUnderElevation: 0,
-                  automaticallyImplyLeading: false,
-                  title: Text(
-                    '퀴즈 결과',
-                    style: TextStyle(
-                      fontFamily: 'kbo',
-                      fontWeight: FontWeight.bold,
+                SizedBox(height: MediaQuery.of(context).padding.top + 10),
+
+                // 상단 헤더
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.close, color: GRAYSCALE_LABEL_700),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                  ),
+                    Text(
+                      '퀴즈 리포트',
+                      style: TextStyle(
+                        fontFamily: 'kbo',
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: GRAYSCALE_LABEL_900,
+                      ),
+                    ),
+                    SizedBox(width: 48), // 밸런스용
+                  ],
                 ),
-                // Screenshot 위젯은 공유할 영역만 감싸기
+
+                SizedBox(height: 10),
+
                 Screenshot(
                   controller: _screenshotController,
                   child: Container(
-                    color: BACKGROUND_COLOR,
-                    padding: EdgeInsets.all(16),
+                    color: Colors.transparent, // 스크린샷 시 배경 포함을 위해 처리 필요
                     child: Column(
                       children: [
-                        ScaleTransition(
-                          scale: _scaleAnimation,
-                          child: _buildScoreCard(),
+                        // 최종 점수 히어로 (애니메이션 후 등장)
+                        AnimatedOpacity(
+                          opacity: _showFinalGrade ? 1.0 : 0.0,
+                          duration: Duration(milliseconds: 800),
+                          child: _buildScoreHero(),
                         ),
+
                         SizedBox(height: 24),
-                        _buildStatsCard(),
-                        SizedBox(height: 24),
-                        QuizRankingWidget(gainedScore: widget.result.score),
-                        SizedBox(height: 24),
-                        _buildProgressCard(),
-                        if (_isCapturing) _buildBranding(),
+
+                        // 마스코트 피드백 & 랭킹 위젯 (애니메이션 중에는 숨김)
+                        AnimatedOpacity(
+                          opacity: (_isImpactActive || !_showFinalGrade)
+                              ? 0.0
+                              : 1.0,
+                          duration: Duration(milliseconds: 400),
+                          child: Column(
+                            children: [
+                              // _buildMascotFeedback(team),
+                              // SizedBox(height: 24),
+                              _buildPerformanceReport(),
+                              SizedBox(height: 24),
+                              QuizRankingWidget(
+                                gainedScore: widget.result.score,
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
-                SizedBox(height: 24),
-                if (!_isCapturing) _buildButtons(),
+
+                SizedBox(height: 32),
+
+                // 하단 액션 버튼
+                if (!_isCapturing)
+                  AnimatedOpacity(
+                    opacity: (_isImpactActive || !_showFinalGrade) ? 0.0 : 1.0,
+                    duration: Duration(milliseconds: 400),
+                    child: _buildActionButtons(teamColor),
+                  ),
               ],
             ),
           ),
+
+          // 3. 전체 페이지 암전 오버레이 (보너스 연출 시)
+          IgnorePointer(
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: 400),
+              color: _isImpactActive
+                  ? Colors.black.withOpacity(0.92)
+                  : Colors.transparent,
+            ),
+          ),
+
+          // 4. 중앙 보너스 임팩트 연출
+          if (_isImpactActive)
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _scorePhaseLabel,
+                    style: TextStyle(
+                      fontSize: 22,
+                      color: WHITE.withOpacity(0.7),
+                      fontFamily: 'kbo',
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  AnimatedScale(
+                    scale: _scoreScale,
+                    duration: Duration(milliseconds: 300),
+                    curve: Curves.elasticOut,
+                    child: TweenAnimationBuilder<double>(
+                      key: ValueKey(_scorePhaseLabel),
+                      tween: Tween<double>(
+                        begin: 0,
+                        end: _animatingScore.toDouble(),
+                      ),
+                      duration: Duration(milliseconds: 500),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, child) {
+                        return ShaderMask(
+                          shaderCallback: (bounds) => LinearGradient(
+                            colors: [WHITE, Color(0xffffd700), WHITE],
+                          ).createShader(bounds),
+                          child: Text(
+                            '+${value.round()}',
+                            style: TextStyle(
+                              fontSize: 100,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'kbo',
+                              color: WHITE,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // 폭죽 효과
           if (!_isCapturing)
             Align(
               alignment: Alignment.topCenter,
@@ -169,6 +361,7 @@ class _QuizResultPageState extends State<QuizResultPage>
                 emissionFrequency: 0.05,
                 numberOfParticles: 20,
                 gravity: 0.1,
+                colors: [teamColor, Colors.blue, Colors.orange, Colors.white],
               ),
             ),
         ],
@@ -176,22 +369,22 @@ class _QuizResultPageState extends State<QuizResultPage>
     );
   }
 
-  Widget _buildScoreCard() {
+  Widget _buildScoreHero() {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(32),
+      padding: EdgeInsets.symmetric(vertical: 40, horizontal: 20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: _getGradeGradient(widget.result.score),
+          colors: _getGradeGradient(widget.result.grade),
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: Offset(0, 4),
+            color: _getScoreColor(widget.result.grade).withOpacity(0.3),
+            blurRadius: 20,
+            offset: Offset(0, 10),
           ),
         ],
       ),
@@ -200,151 +393,336 @@ class _QuizResultPageState extends State<QuizResultPage>
           Text(
             widget.result.grade,
             style: TextStyle(
-              fontSize: 64,
+              fontSize: 80,
               fontWeight: FontWeight.bold,
               fontFamily: 'kbo',
               color: WHITE,
               shadows: [
-                Shadow(blurRadius: 4, color: Colors.black.withOpacity(0.3)),
+                Shadow(
+                  blurRadius: 20,
+                  color: Colors.black.withOpacity(0.2),
+                  offset: Offset(0, 5),
+                ),
               ],
             ),
           ),
-          SizedBox(height: 8),
+
           Text(
             '${widget.result.score}점',
             style: TextStyle(
               fontSize: 48,
               fontWeight: FontWeight.bold,
               fontFamily: 'kbo',
-              color: WHITE,
+              color: WHITE.withOpacity(0.95),
+              letterSpacing: 2,
             ),
           ),
-          SizedBox(height: 8),
-          Text(
-            _getScoreMessage(widget.result.score),
-            style: TextStyle(fontSize: 18, color: WHITE, fontFamily: 'kbo'),
+          SizedBox(height: 10),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            decoration: BoxDecoration(
+              color: WHITE.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              _getScoreMessage(widget.result.grade),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: WHITE,
+                fontFamily: 'kbo',
+                letterSpacing: 0.5,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatsCard() {
-    return Container(
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: WHITE,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          _buildStatRow('카테고리', widget.result.category, Icons.category),
-          Divider(height: 24),
-          _buildStatRow(
-            '정답',
-            '${widget.result.correctAnswers}/${widget.result.totalQuestions}',
-            Icons.check_circle,
-            GREEN_SUCCESS_TEXT_50,
-          ),
-          Divider(height: 24),
-          _buildStatRow(
-            '오답',
-            '${widget.result.totalQuestions - widget.result.correctAnswers}/${widget.result.totalQuestions}',
-            Icons.cancel,
-            RED_DANGER_TEXT_50,
-          ),
-          Divider(height: 24),
-          _buildStatRow('소요 시간', widget.result.formattedTime, Icons.timer),
-        ],
-      ),
-    );
-  }
+  // Widget _buildMascotFeedback(dynamic team) {
+  //   // 뱃지 이미지나 마스코트가 있다면 사용 (없으면 기본 아이콘)
+  //   final mascotImage = team?.symplename == '한화'
+  //       ? 'assets/images/applogo/hanwha_mascot.png' // 예시 경로
+  //       : null;
 
-  Widget _buildProgressCard() {
+  //   return Container(
+  //     width: double.infinity,
+  //     padding: EdgeInsets.all(16),
+  //     child: Row(
+  //       children: [
+  //         // 마스코트 영역 (실제 이미지가 있다면 좋음)
+  //         Container(
+  //           width: 80,
+  //           height: 80,
+  //           decoration: BoxDecoration(
+  //             color: WHITE,
+  //             shape: BoxShape.circle,
+  //             boxShadow: [
+  //               BoxShadow(
+  //                 color: Colors.black12,
+  //                 blurRadius: 10,
+  //                 offset: Offset(0, 4),
+  //               ),
+  //             ],
+  //           ),
+  //           child: Center(
+  //             child: Icon(
+  //               Icons.sports_baseball,
+  //               size: 40,
+  //               color: team?.color ?? BLUE_SECONDARY_600,
+  //             ),
+  //           ),
+  //         ),
+  //         SizedBox(width: 16),
+  //         // 말풍선
+  //         Expanded(
+  //           child: Container(
+  //             padding: EdgeInsets.all(16),
+  //             decoration: BoxDecoration(
+  //               color: WHITE,
+  //               borderRadius: BorderRadius.only(
+  //                 topRight: Radius.circular(16),
+  //                 bottomLeft: Radius.circular(16),
+  //                 bottomRight: Radius.circular(16),
+  //               ),
+  //               boxShadow: [
+  //                 BoxShadow(
+  //                   color: Colors.black12,
+  //                   blurRadius: 5,
+  //                   offset: Offset(0, 2),
+  //                 ),
+  //               ],
+  //             ),
+  //             child: Text(
+  //               '${widget.result.userNickName}님! ${widget.result.score}점이라니 정말 대단해요! ${team?.symplename ?? ''} 팬들의 자랑입니다! 🔥',
+  //               style: TextStyle(
+  //                 fontSize: 14,
+  //                 height: 1.5,
+  //                 color: GRAYSCALE_LABEL_800,
+  //                 fontWeight: FontWeight.w500,
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  Widget _buildPerformanceReport() {
     return Container(
-      padding: EdgeInsets.all(20),
+      width: double.infinity,
+      padding: EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: WHITE,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '정답률',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'kbo',
-            ),
-          ),
-          SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: widget.result.score / 100,
-              minHeight: 16,
-              backgroundColor: GRAYSCALE_LABEL_200,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                _getScoreColor(widget.result.score),
+          Row(
+            children: [
+              Icon(Icons.analytics_outlined, color: GRAYSCALE_LABEL_900),
+              SizedBox(width: 8),
+              Text(
+                '퍼포먼스 리포트',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'kbo',
+                  color: GRAYSCALE_LABEL_900,
+                ),
               ),
+            ],
+          ),
+          SizedBox(height: 24),
+
+          // 핵심 스탯 그리드
+          Row(
+            children: [
+              _buildLargeStatItem(
+                '정답률',
+                '${((widget.result.correctAnswers / widget.result.totalQuestions) * 100).toInt()}%',
+                Icons.check_circle_outline,
+                Colors.green,
+              ),
+              SizedBox(width: 12),
+              _buildLargeStatItem(
+                '소요 시간',
+                widget.result.formattedTime,
+                Icons.timer_outlined,
+                Colors.blue,
+              ),
+            ],
+          ),
+
+          SizedBox(height: 24),
+          Divider(color: GRAYSCALE_LABEL_200),
+          SizedBox(height: 16),
+
+          Text(
+            '점수 상세 내역',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: GRAYSCALE_LABEL_600,
             ),
           ),
-          SizedBox(height: 8),
-          Text(
-            '${widget.result.score}%',
-            style: TextStyle(fontSize: 14, color: GRAYSCALE_LABEL_600),
+          SizedBox(height: 16),
+
+          _buildScoreBreakdownRow(
+            '기본 점수',
+            '${widget.result.baseScore}',
+            Colors.black87,
+          ),
+          if (widget.result.difficultyBonus > 0)
+            _buildScoreBreakdownRow(
+              '난이도 보너스',
+              '+${widget.result.difficultyBonus}',
+              BLUE_SECONDARY_600,
+            ),
+          if (widget.result.comboBonus > 0)
+            _buildScoreBreakdownRow(
+              '콤보 보너스',
+              '+${widget.result.comboBonus}',
+              ORANGE_PRIMARY_600,
+            ),
+
+          SizedBox(height: 16),
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: GRAYSCALE_LABEL_100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'TOTAL SCORE',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: GRAYSCALE_LABEL_600,
+                  ),
+                ),
+                Text(
+                  '${widget.result.score}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: GRAYSCALE_LABEL_900,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBranding() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Image.asset('assets/images/applogo/app_logo.png', height: 150),
-        Text(
-          '더베이스 야구 퀴즈',
-          style: TextStyle(
-            fontSize: 16,
-            fontFamily: 'kbo',
-            color: GRAYSCALE_LABEL_600,
-          ),
+  Widget _buildLargeStatItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Expanded(
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.1)),
         ),
-        SizedBox(height: 20),
-      ],
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 24),
+            SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_600),
+            ),
+            SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'kbo',
+                color: GRAYSCALE_LABEL_900,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildButtons() {
-    final selectedTeamColor = context.watch<TeamProvider>().selectedTeam?.color;
+  Widget _buildScoreBreakdownRow(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: 14, color: GRAYSCALE_LABEL_700),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(Color teamColor) {
     return Column(
       children: [
         GestureDetector(
           onTap: _showShareBottomSheet,
           child: Container(
             width: double.infinity,
-            height: 50,
+            padding: EdgeInsets.symmetric(vertical: 18),
             decoration: BoxDecoration(
               color: WHITE,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: selectedTeamColor!),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: teamColor.withOpacity(0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: teamColor.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.share, color: selectedTeamColor),
-                SizedBox(width: 10),
+                Icon(Icons.share_outlined, color: teamColor),
+                SizedBox(width: 8),
                 Text(
-                  '공유하기',
+                  '결과 공유하기',
                   style: TextStyle(
                     fontFamily: 'kbo',
                     fontSize: 16,
-                    color: selectedTeamColor,
                     fontWeight: FontWeight.bold,
+                    color: teamColor,
                   ),
                 ),
               ],
@@ -355,61 +733,74 @@ class _QuizResultPageState extends State<QuizResultPage>
         Row(
           children: [
             Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => QuizTabBar()),
-                    (route) => false,
-                  );
-                },
-                child: Container(
-                  alignment: Alignment.center,
-                  width: double.infinity,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: WHITE,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: selectedTeamColor),
-                  ),
-                  child: Text(
-                    '홈으로',
-                    style: TextStyle(
-                      fontFamily: 'kbo',
-                      fontSize: 16,
-                      color: selectedTeamColor,
-                    ),
-                  ),
-                ),
-              ),
+              child: _buildSecondaryButton('홈으로', () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => QuizTabBar()),
+                  (route) => false,
+                );
+              }),
             ),
             SizedBox(width: 12),
             Expanded(
-              child: GestureDetector(
-                onTap: _handleReplay,
-                child: Container(
-                  alignment: Alignment.center,
-                  width: double.infinity,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: selectedTeamColor,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    '다시하기',
-                    style: TextStyle(
-                      color: WHITE,
-                      fontSize: 16,
-                      fontFamily: 'kbo',
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
+              child: _buildPrimaryButton('다시하기', teamColor, _handleReplay),
             ),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildPrimaryButton(String text, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 56,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.3),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: WHITE,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'kbo',
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSecondaryButton(String text, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 56,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: GRAYSCALE_LABEL_100,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: GRAYSCALE_LABEL_800,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'kbo',
+          ),
+        ),
+      ),
     );
   }
 
@@ -456,34 +847,6 @@ class _QuizResultPageState extends State<QuizResultPage>
       MaterialPageRoute(
         builder: (context) => QuizPlayPage(category: widget.result.category),
       ),
-    );
-  }
-
-  Widget _buildStatRow(
-    String label,
-    String value,
-    IconData icon, [
-    Color? iconColor,
-  ]) {
-    return Row(
-      children: [
-        Icon(icon, color: iconColor ?? GRAYSCALE_LABEL_600, size: 24),
-        SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(fontSize: 15, color: GRAYSCALE_LABEL_700),
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'kbo',
-          ),
-        ),
-      ],
     );
   }
 
@@ -693,27 +1056,49 @@ class _QuizResultPageState extends State<QuizResultPage>
     );
   }
 
-  List<Color> _getGradeGradient(int score) {
-    if (score >= 90) return [Color(0xffffd700), Color(0xffffa500)];
-    if (score >= 80) return [Color(0xff4a90e2), Color(0xff357abd)];
-    if (score >= 60) return [Color(0xffffa500), Color(0xffff8c00)];
-    return [Color(0xffe73c3c), Color(0xffc0392b)];
+  List<Color> _getGradeGradient(String grade) {
+    switch (grade) {
+      case 'S':
+        return [Color(0xffffd700), Color(0xffffa500)]; // Gold
+      case 'A':
+        return [Color(0xff4a90e2), Color(0xff357abd)]; // blue
+      case 'B':
+        return [Color(0xff2ecc71), Color(0xff27ae60)]; // Green
+      case 'C':
+        return [Color(0xffffa500), Color(0xffff8c00)]; // Orange
+      default:
+        return [Color(0xffe73c3c), Color(0xffc0392b)]; // Red
+    }
   }
 
-  String _getScoreMessage(int score) {
-    if (score >= 90) return '완벽해요! 야구 박사네요! 🏆';
-    if (score >= 80) return '대단해요! 진정한 야빠! ⚾';
-    if (score >= 70) return '잘했어요! 야구 지식이 풍부해요!';
-    if (score >= 60) return '괜찮아요! 조금만 더 공부하면 완벽!';
-    return '다시 도전해보세요! 화이팅! 💪';
+  String _getScoreMessage(String grade) {
+    switch (grade) {
+      case 'S':
+        return '완벽해요! 야구 박사네요! 🏆';
+      case 'A':
+        return '대단해요! 진정한 야빠! ⚾';
+      case 'B':
+        return '최고예요! 지식이 상당하시네요!';
+      case 'C':
+        return '잘했어요! 조금만 더 공부하면 완벽!';
+      default:
+        return '다시 도전해보세요! 화이팅! 💪';
+    }
   }
 
-  Color _getScoreColor(int score) {
-    if (score >= 90) return Color(0xFFFFD700);
-    if (score >= 80) return BLUE_SECONDARY_600;
-    if (score >= 70) return GREEN_SUCCESS_TEXT_50;
-    if (score >= 60) return ORANGE_PRIMARY_500;
-    return RED_DANGER_TEXT_50;
+  Color _getScoreColor(String grade) {
+    switch (grade) {
+      case 'S':
+        return Color(0xFFFFD700);
+      case 'A':
+        return BLUE_SECONDARY_600;
+      case 'B':
+        return GREEN_SUCCESS_TEXT_50;
+      case 'C':
+        return ORANGE_PRIMARY_500;
+      default:
+        return RED_DANGER_TEXT_50;
+    }
   }
 }
 

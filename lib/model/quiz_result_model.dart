@@ -7,6 +7,9 @@ class QuizResultModel {
   final int totalQuestions;
   final int correctAnswers;
   final int score;
+  final int baseScore; // 기본 점수 (맞힌 개수 * 10)
+  final int difficultyBonus; // 난이도 가중치 점수
+  final int comboBonus; // 콤보 보너스 점수
   final DateTime completedAt;
   final int timeTakenSeconds;
   final List<String> questionIds;
@@ -20,6 +23,9 @@ class QuizResultModel {
     required this.totalQuestions,
     required this.correctAnswers,
     required this.score,
+    this.baseScore = 0,
+    this.difficultyBonus = 0,
+    this.comboBonus = 0,
     required this.completedAt,
     required this.timeTakenSeconds,
     required this.questionIds,
@@ -33,17 +39,25 @@ class QuizResultModel {
     return ((correct / total) * 100).round();
   }
 
-  // 등급 계산
+  // 등급 계산 (정확도 기반)
   String get grade {
-    if (score >= 90) return 'S';
-    if (score >= 80) return 'A';
-    if (score >= 70) return 'B';
-    if (score >= 60) return 'C';
+    final accuracy = totalQuestions > 0
+        ? (correctAnswers / totalQuestions) * 100
+        : 0;
+    if (accuracy >= 100) return 'S';
+    if (accuracy >= 90) return 'A';
+    if (accuracy >= 80) return 'B';
+    if (accuracy >= 70) return 'C';
     return 'D';
   }
 
-  // 통과 여부
-  bool get isPassed => score >= 60;
+  // 통과 여부 (정확도 60% 이상)
+  bool get isPassed {
+    final accuracy = totalQuestions > 0
+        ? (correctAnswers / totalQuestions) * 100
+        : 0;
+    return accuracy >= 60;
+  }
 
   // Firestore 변환
   Map<String, dynamic> toJson() {
@@ -54,6 +68,9 @@ class QuizResultModel {
       'totalQuestions': totalQuestions,
       'correctAnswers': correctAnswers,
       'score': score,
+      'baseScore': baseScore,
+      'difficultyBonus': difficultyBonus,
+      'comboBonus': comboBonus,
       'completedAt': completedAt,
       'timeTakenSeconds': timeTakenSeconds,
       'questionIds': questionIds,
@@ -70,6 +87,9 @@ class QuizResultModel {
       totalQuestions: json['totalQuestions'] as int,
       correctAnswers: json['correctAnswers'] as int,
       score: json['score'] as int,
+      baseScore: json['baseScore'] as int? ?? 0,
+      difficultyBonus: json['difficultyBonus'] as int? ?? 0,
+      comboBonus: json['comboBonus'] as int? ?? 0,
       completedAt: (json['completedAt'] as Timestamp).toDate(),
       timeTakenSeconds: json['timeTakenSeconds'] as int,
       questionIds: List<String>.from(json['questionIds'] as List),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/cupertino.dart';
@@ -425,7 +426,7 @@ class _HomePageState extends State<HomePage> {
                     child: Row(
                       children: [
                         Text(
-                          '야구 덕력 테스트! 퀴즈 풀기 🏆',
+                          '야구 덕력 테스트! 퀴즈 풀기',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -480,14 +481,17 @@ class _HomePageState extends State<HomePage> {
                                 },
                                 child: Text(
                                   '전체보기',
-                                  style: TextStyle(color: GRAYSCALE_LABEL_500),
+                                  style: TextStyle(
+                                    color: GRAYSCALE_LABEL_500,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                               SizedBox(width: 5),
                               Icon(
                                 Icons.arrow_forward_ios,
                                 color: GRAYSCALE_LABEL_500,
-                                size: 12,
+                                size: 10,
                               ),
                             ],
                           ),
@@ -546,8 +550,11 @@ class _HomePageState extends State<HomePage> {
                         ),
                         Spacer(),
                         Text(
-                          '모든 게시물 보기 ',
-                          style: TextStyle(color: GRAYSCALE_LABEL_500),
+                          '모든 게시물 보기',
+                          style: TextStyle(
+                            color: GRAYSCALE_LABEL_500,
+                            fontSize: 12,
+                          ),
                         ),
                         SizedBox(width: 5),
                         Icon(
@@ -905,16 +912,17 @@ class _HomePageState extends State<HomePage> {
                         ),
                         Spacer(),
                         Text(
-                          '푸드존 정보 더보기 ',
+                          '푸드존 정보 더보기',
                           style: TextStyle(
                             color: GRAYSCALE_LABEL_500,
+                            fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         SizedBox(width: 5),
                         Icon(
                           Icons.arrow_forward_ios,
-                          size: 12,
+                          size: 10,
                           color: GRAYSCALE_LABEL_500,
                         ),
                       ],
@@ -945,12 +953,13 @@ class _HomePageState extends State<HomePage> {
                           style: TextStyle(
                             color: GRAYSCALE_LABEL_500,
                             fontWeight: FontWeight.w500,
+                            fontSize: 12,
                           ),
                         ),
                         SizedBox(width: 5),
                         Icon(
                           Icons.arrow_forward_ios,
-                          size: 12,
+                          size: 10,
                           color: GRAYSCALE_LABEL_500,
                         ),
                       ],
@@ -1176,7 +1185,7 @@ class _HomePageState extends State<HomePage> {
                 child: Row(
                   children: [
                     const Text(
-                      '나의 직관기록 🏟️',
+                      '나의 직관기록',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -1661,9 +1670,44 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class _HomeRankingCard extends StatelessWidget {
+class _HomeRankingCard extends StatefulWidget {
   final TeamModel selectedTeam;
   const _HomeRankingCard({required this.selectedTeam});
+
+  @override
+  State<_HomeRankingCard> createState() => _HomeRankingCardState();
+}
+
+class _HomeRankingCardState extends State<_HomeRankingCard> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startAutoSlide();
+  }
+
+  void _startAutoSlide() {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (_pageController.hasClients) {
+        int nextPage = (_currentPage + 1) % 2; // 페이지가 2개인 경우
+        _pageController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1671,10 +1715,15 @@ class _HomeRankingCard extends StatelessWidget {
       builder: (context, rankProvider, teamProvider, _) {
         final currentUserId = FirebaseAuth.instance.currentUser?.uid;
         final myTeam = teamProvider.selectedTeam;
-        final myRanking = currentUserId != null
+
+        // 개인 랭킹 데이터
+        final top3Individuals = rankProvider.rankings.take(3).toList();
+        final myIndividualRanking = currentUserId != null
             ? rankProvider.getMyRanking(currentUserId)
             : null;
 
+        // 팀 랭킹 데이터
+        final top3Teams = rankProvider.teamRankings.take(3).toList();
         RankingTeamModel? myTeamRanking;
         if (myTeam != null) {
           try {
@@ -1685,131 +1734,305 @@ class _HomeRankingCard extends StatelessWidget {
           } catch (_) {}
         }
 
-        return GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => QuizTabBar(initialIndex: 3)),
-          ),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(5, 16, 5, 16),
-            decoration: BoxDecoration(
-              color: WHITE,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: IntrinsicHeight(
-              child: Row(
-                children: [
-                  // 개인 순위
-                  Expanded(
-                    child: _RankSummaryItem(
-                      icon: Icons.person_outline_rounded,
-                      iconColor: Colors.blueAccent,
-                      label: '개인 순위',
-                      rank: myRanking?.rank,
-                      score: myRanking?.score,
-                      emptyText: '기록 없음',
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    color: const Color(0xFFEEEEEE),
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                  ),
-                  // 팀 순위
-                  Expanded(
-                    child: _RankSummaryItem(
-                      icon: Icons.groups_rounded,
-                      iconColor: myTeam?.color ?? BUTTON,
-                      logoPath: myTeam?.logoPath,
-                      label: myTeam != null ? '${myTeam.name} 순위' : '팀 순위',
-                      rank: myTeamRanking?.rank,
-                      score: myTeamRanking?.totalScore,
-                      emptyText: myTeam == null ? '팀 선택 필요' : '기록 없음',
-                    ),
-                  ),
-                ],
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: WHITE,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-            ),
+            ],
+          ),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 185,
+                child: rankProvider.isLoading && rankProvider.rankings.isEmpty
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          color: widget.selectedTeam.color,
+                        ),
+                      )
+                    : PageView(
+                        controller: _pageController,
+                        onPageChanged: (index) =>
+                            setState(() => _currentPage = index),
+                        children: [
+                          _buildRankingPage(
+                            title: '개인 순위 TOP 3',
+                            top3: top3Individuals
+                                .map(
+                                  (e) => _RankingItemData(
+                                    name: e.name,
+                                    score: e.score,
+                                    rank: e.rank,
+                                    imageUrl: e.profileUrl,
+                                  ),
+                                )
+                                .toList(),
+                            myRank: myIndividualRanking != null
+                                ? '${myIndividualRanking.rank}위'
+                                : '순위 없음',
+                            myScore: myIndividualRanking != null
+                                ? '${myIndividualRanking.score}점'
+                                : '-',
+                            myLabel: '내 순위',
+                          ),
+                          _buildRankingPage(
+                            title: '팀 순위 TOP 3',
+                            top3: top3Teams.map((e) {
+                              final team = teamProvider.findTeamByName(
+                                e.teamName,
+                              );
+                              return _RankingItemData(
+                                name: team?.symplename ?? e.teamName,
+                                score: e.totalScore,
+                                rank: e.rank,
+                                imagePath: team?.logoPath,
+                              );
+                            }).toList(),
+                            myRank: myTeamRanking != null
+                                ? '${myTeamRanking.rank}위'
+                                : (myTeam == null ? '팀 선택 필요' : '기록 없음'),
+                            myScore: myTeamRanking != null
+                                ? '${myTeamRanking.totalScore}점'
+                                : '-',
+                            myLabel: myTeam != null
+                                ? '${myTeam.symplename} 순위'
+                                : '내 팀 순위',
+                          ),
+                        ],
+                      ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    2,
+                    (index) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _currentPage == index
+                            ? widget.selectedTeam.color
+                            : GRAYSCALE_LABEL_300,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
     );
   }
-}
 
-class _RankSummaryItem extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String? logoPath;
-  final String label;
-  final int? rank;
-  final int? score;
-  final String emptyText;
-
-  const _RankSummaryItem({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-    required this.emptyText,
-    this.logoPath,
-    this.rank,
-    this.score,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              logoPath != null
-                  ? Image.asset(logoPath!, width: 20, height: 20)
-                  : Icon(icon, color: iconColor, size: 18),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: GRAYSCALE_LABEL_500,
-                  fontWeight: FontWeight.w500,
+  Widget _buildRankingPage({
+    required String title,
+    required List<_RankingItemData> top3,
+    required String myRank,
+    required String myScore,
+    required String myLabel,
+  }) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => QuizTabBar(initialIndex: 3)),
+      ),
+      child: Container(
+        color: Colors.transparent, // 터치 영역 확보
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: GRAYSCALE_LABEL_900,
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (rank != null) ...[
-            Text(
-              '$rank위',
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'kbo',
-                color: GRAYSCALE_LABEL_900,
-              ),
+                const Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: GRAYSCALE_LABEL_400,
+                ),
+              ],
             ),
-            Text(
-              '${score ?? 0}점',
-              style: const TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_400),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Rank 2
+                if (top3.length > 1)
+                  _buildTop3Item(top3[1], 2)
+                else
+                  const SizedBox(width: 60),
+                // Rank 1
+                if (top3.isNotEmpty)
+                  _buildTop3Item(top3[0], 1)
+                else
+                  const SizedBox(width: 70),
+                // Rank 3
+                if (top3.length > 2)
+                  _buildTop3Item(top3[2], 3)
+                else
+                  const SizedBox(width: 60),
+              ],
             ),
-          ] else
-            Text(
-              emptyText,
-              style: const TextStyle(fontSize: 14, color: GRAYSCALE_LABEL_400),
+            const Spacer(),
+            const Divider(height: 1, color: Color(0xFFF5F5F5)),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  myLabel,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: GRAYSCALE_LABEL_500,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      myRank,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: GRAYSCALE_LABEL_900,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      myScore,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: GRAYSCALE_LABEL_400,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
+  Widget _buildTop3Item(_RankingItemData data, int rank) {
+    double avatarSize = rank == 1 ? 48 : 40;
+    Color medalColor = rank == 1
+        ? const Color(0xFFFFD700)
+        : (rank == 2 ? const Color(0xFFC0C0C0) : const Color(0xFFCD7F32));
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          alignment: Alignment.bottomRight,
+          children: [
+            Container(
+              width: avatarSize,
+              height: avatarSize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: medalColor, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: medalColor.withOpacity(0.2),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: data.imagePath != null
+                    ? Image.asset(data.imagePath!, fit: BoxFit.cover)
+                    : (data.imageUrl != null
+                          ? Image.network(
+                              data.imageUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(Icons.person, size: 20),
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 20,
+                              color: GRAYSCALE_LABEL_300,
+                            )),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: medalColor,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '$rank',
+                style: const TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                  color: WHITE,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        SizedBox(
+          width: 70,
+          child: Text(
+            data.name,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: GRAYSCALE_LABEL_800,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ),
+        Text(
+          '${data.score}점',
+          style: const TextStyle(
+            fontSize: 10,
+            color: GRAYSCALE_LABEL_500,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RankingItemData {
+  final String name;
+  final int score;
+  final int rank;
+  final String? imageUrl;
+  final String? imagePath;
+  _RankingItemData({
+    required this.name,
+    required this.score,
+    required this.rank,
+    this.imageUrl,
+    this.imagePath,
+  });
 }

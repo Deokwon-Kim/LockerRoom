@@ -17,6 +17,13 @@ class QuizProvider extends ChangeNotifier {
   DateTime? _quizStartTime;
   bool _showExplanation = false;
 
+  // 점수 상세
+  int _currentCombo = 0;
+  int _maxCombo = 0;
+  int _baseScore = 0; // 맞힌 개수 * 10
+  int _difficultyBonus = 0; // hard:+10, medium:+5
+  int _comboBonus = 0; // 3콤보:+5, 5콤보:+10, 10콤보:+30
+
   // Firestroe
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -32,6 +39,13 @@ class QuizProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get selectedCategory => _selectedCategory;
   bool get showExplanation => _showExplanation;
+
+  // 점수 세부 정보 게터
+  int get currentCombo => _currentCombo;
+  int get maxCombo => _maxCombo;
+  int get baseScore => _baseScore;
+  int get difficultyBonus => _difficultyBonus;
+  int get comboBonus => _comboBonus;
 
   // 진행도 (0.0 ~ 1.0)
   double get progress {
@@ -56,10 +70,9 @@ class QuizProvider extends ChangeNotifier {
   int get incorrectCount =>
       _answerCorrectness.values.where((v) => v == false).length;
 
-  // 점수 (100점 만점)
+  // 최종 점수 (모든 보너스 합산)
   int get score {
-    if (_currentQuestions.isEmpty) return 0;
-    return QuizResultModel.calculateScore(correctCount, totalQuestions);
+    return _baseScore + _difficultyBonus + _comboBonus;
   }
 
   // ====== 퀴즈 시작 ======
@@ -125,6 +138,13 @@ class QuizProvider extends ChangeNotifier {
       _answerCorrectness.clear();
       _quizStartTime = DateTime.now();
       _showExplanation = false;
+
+      // 점수 초기화
+      _currentCombo = 0;
+      _maxCombo = 0;
+      _baseScore = 0;
+      _difficultyBonus = 0;
+      _comboBonus = 0;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -191,6 +211,13 @@ class QuizProvider extends ChangeNotifier {
       _answerCorrectness.clear();
       _quizStartTime = DateTime.now();
       _showExplanation = false;
+
+      // 점수 초기화
+      _currentCombo = 0;
+      _maxCombo = 0;
+      _baseScore = 0;
+      _difficultyBonus = 0;
+      _comboBonus = 0;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -207,6 +234,34 @@ class QuizProvider extends ChangeNotifier {
     // 정답 체크
     final isCorrect = optionIndex == currentQuestion!.correctIndex;
     _answerCorrectness[_currentQuestionIndex] = isCorrect;
+
+    // === 점수 계산 로직 추가 ===
+    if (isCorrect) {
+      // 1. 기본 점수 (+10)
+      _baseScore += 10;
+
+      // 2. 난이도 보너스 (hard:+10, medium:+5)
+      if (currentQuestion!.difficulty == 'hard') {
+        _difficultyBonus += 10;
+      } else if (currentQuestion!.difficulty == 'medium') {
+        _difficultyBonus += 5;
+      }
+
+      // 3. 콤보 보너스
+      _currentCombo++;
+      if (_currentCombo > _maxCombo) _maxCombo = _currentCombo;
+
+      if (_currentCombo == 3) {
+        _comboBonus += 5;
+      } else if (_currentCombo == 5) {
+        _comboBonus += 10;
+      } else if (_currentCombo == 10) {
+        _comboBonus += 30;
+      }
+    } else {
+      // 오답 시 콤보 리셋
+      _currentCombo = 0;
+    }
 
     // 해설 표시
     _showExplanation = true;
@@ -285,6 +340,9 @@ class QuizProvider extends ChangeNotifier {
       totalQuestions: totalQuestions,
       correctAnswers: correctCount,
       score: score,
+      baseScore: _baseScore,
+      difficultyBonus: _difficultyBonus,
+      comboBonus: _comboBonus,
       completedAt: DateTime.now(),
       timeTakenSeconds: timeTaken.inSeconds,
       questionIds: questionIds,
