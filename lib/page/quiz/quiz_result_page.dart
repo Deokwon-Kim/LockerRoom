@@ -150,7 +150,28 @@ class _QuizResultPageState extends State<QuizResultPage>
       });
     }
 
-    // 4. 최종 결과 확정 (페이드로 최종 점수 등장)
+    // 4. 스피드 보너스 팡!
+    if (widget.result.speedBonus > 0) {
+      await Future.delayed(Duration(milliseconds: 1000));
+      if (!mounted) return;
+      setState(() {
+        _animatingScore = 0;
+      });
+      await Future.delayed(Duration(milliseconds: 100));
+      setState(() {
+        _isImpactActive = true;
+        _scoreScale = 1.4;
+        _animatingScore = widget.result.speedBonus;
+        _scorePhaseLabel = "스피드 보너스";
+      });
+      await Future.delayed(Duration(milliseconds: 500));
+      setState(() {
+        _isImpactActive = false;
+        _scoreScale = 1.0;
+      });
+    }
+
+    // 5. 최종 결과 확정 (페이드로 최종 점수 등장)
     await Future.delayed(Duration(milliseconds: 1200));
     if (!mounted) return;
     setState(() {
@@ -566,17 +587,97 @@ class _QuizResultPageState extends State<QuizResultPage>
 
           SizedBox(height: 24),
           Divider(color: GRAYSCALE_LABEL_200),
-          SizedBox(height: 16),
 
-          Text(
-            '점수 상세 내역',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: GRAYSCALE_LABEL_600,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '점수 상세 내역',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: GRAYSCALE_LABEL_600,
+                ),
+              ),
+              // 600번 라인 부근의 Tooltip 부분을 아래와 같이 보강합니다.
+              Tooltip(
+                triggerMode: TooltipTriggerMode.tap,
+                showDuration: Duration(seconds: 4), // 4초 동안 보여줌
+                waitDuration: Duration.zero,
+                padding: EdgeInsets.all(12),
+                margin: EdgeInsets.symmetric(horizontal: 24),
+                richMessage: TextSpan(
+                  text: '점수 산정 기준 안내\n',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  children: [
+                    TextSpan(
+                      text: '\n[일반 점수]\n',
+                      style: TextStyle(
+                        color: Colors.orangeAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextSpan(
+                      text:
+                          '• 기본 점수: 정답당 10점\n• 난이도: 어려움(+10) / 중간(+5)\n• 콤보: 3/5/10연속 정답 시 추가 보너스\n',
+                      style: TextStyle(
+                        fontWeight: FontWeight.normal,
+                        height: 1.5,
+                      ),
+                    ),
+                    TextSpan(
+                      text: '\n[⚡️ 스피드 보너스]\n',
+                      style: TextStyle(
+                        color: Colors.greenAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextSpan(
+                      text: '문제가 화면에 나타난 순간부터 정답을 클릭할 때까지의 시간을 측정합니다.\n',
+                      style: TextStyle(
+                        fontWeight: FontWeight.normal,
+                        fontSize: 11,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    TextSpan(
+                      text:
+                          '• 5초 이내 정답: +10점 (초광속!)\n• 10초 이내 정답: +5점 (나이스 스피드!)\n',
+                      style: TextStyle(
+                        fontWeight: FontWeight.normal,
+                        height: 1.5,
+                      ),
+                    ),
+                    TextSpan(
+                      text: '\n[🏅 등급 기준 (정답률)]\n',
+                      style: TextStyle(
+                        color: Colors.lightBlueAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextSpan(
+                      text:
+                          '• S: 100%  • A: 90%↑  • B: 80%↑\n• C: 70%↑  • D: 70% 미만',
+                      style: TextStyle(
+                        fontWeight: FontWeight.normal,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Icon(
+                    Icons.info_outline,
+                    color: GRAYSCALE_LABEL_600,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 16),
+          SizedBox(height: 10),
 
           _buildScoreBreakdownRow(
             '기본 점수',
@@ -594,6 +695,12 @@ class _QuizResultPageState extends State<QuizResultPage>
               '콤보 보너스',
               '+${widget.result.comboBonus}',
               ORANGE_PRIMARY_600,
+            ),
+          if (widget.result.speedBonus > 0)
+            _buildScoreBreakdownRow(
+              '스피드 보너스',
+              '+${widget.result.speedBonus}',
+              GREEN_SECONDARY_700,
             ),
 
           SizedBox(height: 16),

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lockerroom/utils/quiz_season_utils.dart';
 
 class QuizResultModel {
   final String userId;
@@ -10,11 +11,13 @@ class QuizResultModel {
   final int baseScore; // 기본 점수 (맞힌 개수 * 10)
   final int difficultyBonus; // 난이도 가중치 점수
   final int comboBonus; // 콤보 보너스 점수
+  final int speedBonus;
   final DateTime completedAt;
   final int timeTakenSeconds;
   final List<String> questionIds;
   final Map<String, bool> answerResults;
   final String? teamName; // 추가: 퀴즈 당시의 소속 팀
+  final String seasonId;
 
   QuizResultModel({
     required this.userId,
@@ -26,11 +29,13 @@ class QuizResultModel {
     this.baseScore = 0,
     this.difficultyBonus = 0,
     this.comboBonus = 0,
+    this.speedBonus = 0,
     required this.completedAt,
     required this.timeTakenSeconds,
     required this.questionIds,
     required this.answerResults,
     this.teamName,
+    required this.seasonId,
   });
 
   // 점수 계산 헬퍼
@@ -71,11 +76,13 @@ class QuizResultModel {
       'baseScore': baseScore,
       'difficultyBonus': difficultyBonus,
       'comboBonus': comboBonus,
+      'speedBonus': speedBonus,
       'completedAt': completedAt,
       'timeTakenSeconds': timeTakenSeconds,
       'questionIds': questionIds,
       'answerResults': answerResults,
       'teamName': teamName,
+      'seasonId': seasonId,
     };
   }
 
@@ -90,11 +97,17 @@ class QuizResultModel {
       baseScore: json['baseScore'] as int? ?? 0,
       difficultyBonus: json['difficultyBonus'] as int? ?? 0,
       comboBonus: json['comboBonus'] as int? ?? 0,
+      speedBonus: json['speedBonus'] as int? ?? 0,
       completedAt: (json['completedAt'] as Timestamp).toDate(),
       timeTakenSeconds: json['timeTakenSeconds'] as int,
       questionIds: List<String>.from(json['questionIds'] as List),
       answerResults: Map<String, bool>.from(json['answerResults'] as Map),
       teamName: json['teamName'] as String?,
+      seasonId:
+          json['seasonId'] as String? ??
+          QuizSeasonUtils.getSeasonIdFromDate(
+            (json['completedAt'] as Timestamp).toDate(),
+          ),
     );
   }
 
