@@ -7,6 +7,8 @@ import 'package:lockerroom/model/ranking_user_model.dart';
 
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/utils/quiz_season_utils.dart';
+import 'package:lockerroom/page/quiz/quiz_hall_of_fame_page.dart';
 import 'package:provider/provider.dart';
 
 class QuizRankingPage extends StatefulWidget {
@@ -121,6 +123,93 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
     );
   }
 
+  void _showSeasonPicker(BuildContext context, QuizRankingProvider qrp) {
+    // 최근 6개월 시즌 목록 생성
+    final List<String> seasons = List.generate(6, (i) {
+      final date = DateTime.now().subtract(Duration(days: i * 30));
+      return QuizSeasonUtils.getSeasonIdFromDate(date);
+    });
+
+    int selectedIndex = seasons.indexOf(qrp.selectedSeason);
+    if (selectedIndex == -1) selectedIndex = 0;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 250,
+          color: CupertinoColors.systemBackground.resolveFrom(context),
+          child: Column(
+            children: [
+              Container(
+                height: 44,
+                decoration: BoxDecoration(
+                  color: CupertinoColors.systemBackground.resolveFrom(context),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: CupertinoColors.separator.resolveFrom(context),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        '취소',
+                        style: TextStyle(
+                          color: context
+                              .read<TeamProvider>()
+                              .selectedTeam
+                              ?.color,
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        '완료',
+                        style: TextStyle(
+                          color: context
+                              .read<TeamProvider>()
+                              .selectedTeam
+                              ?.color,
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: CupertinoPicker(
+                  scrollController: FixedExtentScrollController(
+                    initialItem: selectedIndex,
+                  ),
+                  onSelectedItemChanged: (int index) {
+                    qrp.setSeason(seasons[index]);
+                  },
+                  itemExtent: 40,
+                  children: seasons.map((s) {
+                    return Center(
+                      child: Text(
+                        QuizSeasonUtils.getSeasonLabel(s),
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   String _getCategoryLabel(String value) {
     final category = _categories.firstWhere(
       (c) => c['value'] == value,
@@ -141,114 +230,189 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
         appBar: AppBar(
           scrolledUnderElevation: 0,
           backgroundColor: Colors.grey[100],
-          title: Consumer<QuizRankingProvider>(
-            builder: (context, qrp, child) {
-              return Row(
-                children: [
-                  const Text(
-                    '퀴즈 랭킹',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'kbo',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: () => _showCategoryPicker(context, qrp),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: WHITE,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: GRAYSCALE_LABEL_300),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _getCategoryLabel(qrp.selectedCategory),
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const Icon(Icons.keyboard_arrow_down, size: 20),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
+          title: const Text(
+            '퀴즈 랭킹',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'kbo',
+            ),
           ),
           centerTitle: false,
           elevation: 0,
           actions: [
+            // 명예의 전당 버튼
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const QuizHallOfFamePage(),
+                  ),
+                ).then((_) {
+                  context.read<QuizRankingProvider>().setAllTimeMode(false);
+                });
+              },
+              child: Container(
+                height: 40,
+                width: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.amber.shade300, Colors.amber.shade600],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.amber.withOpacity(0.4),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.military_tech, color: Colors.white, size: 15),
+                    Text(
+                      'HALL',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // 새로고침 버튼
             IconButton(
               onPressed: () {
                 context.read<QuizRankingProvider>().fetchRankings(true);
               },
               icon: const Icon(Icons.refresh),
             ),
+            const SizedBox(width: 8),
           ],
-          bottom: TabBar(
-            labelColor: Colors.black,
-            labelStyle: TextStyle(color: BLACK, fontWeight: FontWeight.bold),
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: teamProvider.selectedTeam?.color,
-            indicatorSize: TabBarIndicatorSize.tab,
-            indicatorWeight: 3.0,
-            tabs: [
-              Tab(text: '개인 랭킹'),
-              Tab(text: '팀 랭킹'),
-            ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(60),
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: TabBar(
+                padding: const EdgeInsets.all(4),
+                labelColor: Colors.white,
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  fontFamily: 'kbo',
+                ),
+                unselectedLabelColor: Colors.grey.shade600,
+                unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  fontFamily: 'kbo',
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicator: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: teamProvider.selectedTeam?.color ?? BUTTON,
+                ),
+                dividerColor: Colors.transparent,
+                tabs: const [
+                  Tab(text: '개인 랭킹'),
+                  Tab(text: '팀 랭킹'),
+                ],
+              ),
+            ),
           ),
         ),
-        body: Consumer<QuizRankingProvider>(
-          builder: (context, qrp, child) {
-            if (qrp.isLoading) {
-              return const Center(
-                child: CircularProgressIndicator(color: BUTTON),
-              );
-            }
-
-            if (qrp.errorMessage != null) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      qrp.errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () => qrp.fetchRankings(),
-                      child: const Text('다시 시도'),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return TabBarView(
+        body: Stack(
+          children: [
+            // 야구장 그래픽 배경
+            // Positioned.fill(
+            //   child: Consumer<TeamProvider>(
+            //     builder: (context, tp, child) {
+            //       final teamColor = tp.selectedTeam?.color ?? BUTTON;
+            //       return Container(
+            //         color: teamColor.withOpacity(0.85), // 팀 컬러 기반 배경
+            //         child: CustomPaint(
+            //           painter: _BaseballFieldPainter(
+            //             lineColor: Colors.white.withOpacity(0.12),
+            //           ),
+            //         ),
+            //       );
+            //     },
+            //   ),
+            // ),
+            // 실제 콘텐츠
+            Column(
               children: [
-                _buildUserRankingView(qrp, currentUserId),
-                _buildTeamRankingView(qrp),
+                Consumer<QuizRankingProvider>(
+                  builder: (context, qrp, child) {
+                    return _buildSlimSeasonBanner(context, qrp);
+                  },
+                ),
+                Expanded(
+                  child: Consumer<QuizRankingProvider>(
+                    builder: (context, qrp, child) {
+                      if (qrp.isLoading) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: WHITE),
+                        );
+                      }
+
+                      if (qrp.errorMessage != null) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                size: 48,
+                                color: WHITE,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                qrp.errorMessage!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: WHITE),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () => qrp.fetchRankings(),
+                                child: const Text('다시 시도'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return TabBarView(
+                        children: [
+                          _buildUserRankingView(qrp, currentUserId),
+                          _buildTeamRankingView(qrp),
+                        ],
+                      );
+                    },
+                  ),
+                ),
               ],
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
@@ -284,25 +448,39 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           children: [
-            // 내 순위 표시 (항상 표시)
-            if (myRanking != null) _buildMyRankingCard(myRanking),
+            // 내 순위 표시 (상단 고정 - 프리미엄 효과)
+            if (myRanking != null)
+              TweenAnimationBuilder(
+                duration: const Duration(milliseconds: 800),
+                tween: Tween<double>(begin: 0, end: 1),
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: _buildMyRankingCard(myRanking),
+                    ),
+                  );
+                },
+              ),
 
-            // Top 3 포디움
+            // Top 3 포디움 (애니메이션 탑재)
             if (topThree.length >= 3)
-              Transform.translate(
-                offset: const Offset(0, -10),
-                child: _buildPodium(topThree),
-              )
+              _buildModernPodium(topThree)
             else
               _buildIncompletedPodium(topThree),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 10),
 
-            // 4위 이하 순위
+            // 4위 이하 순위 (프리미엄 리스트)
             if (restRankings.isNotEmpty)
-              _buildRankingList(restRankings, currentUserId, topThree.length),
+              _buildPremiumRankingList(
+                restRankings,
+                currentUserId,
+                topThree.length,
+              ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -328,6 +506,10 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
 
     final topThree = qrp.teamRankings.take(3).toList();
     final restRankings = qrp.teamRankings.skip(3).toList();
+    final myTeamName = context.read<TeamProvider>().selectedTeam?.name;
+    final myTeamRanking = myTeamName != null
+        ? qrp.teamRankings.where((t) => t.teamName == myTeamName).firstOrNull
+        : null;
 
     return RefreshIndicator(
       color: RED_DANGER_TEXT_50,
@@ -336,7 +518,21 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           children: [
-            const SizedBox(height: 20),
+            // 내 팀 순위 표시
+            if (myTeamRanking != null)
+              TweenAnimationBuilder(
+                duration: const Duration(milliseconds: 800),
+                tween: Tween<double>(begin: 0, end: 1),
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: _buildMyTeamRankingCard(myTeamRanking),
+                    ),
+                  );
+                },
+              ),
 
             // Top 3 포디움 (팀)
             if (topThree.length >= 3)
@@ -344,122 +540,530 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
             else
               _buildIncompletedTeamPodium(topThree),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 10),
 
-            // 4위 이하 순위 (팀)
+            // 4위 이하 팀 순위
             if (restRankings.isNotEmpty)
-              _buildTeamRankingList(restRankings, topThree.length),
+              _buildTeamRankingList(restRankings, topThree.length, myTeamName),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  // 내 순위 카드 (상단 고정)
-  Widget _buildMyRankingCard(RankingUserModel myRanking) {
+  // 내 팀 순위 카드
+  Widget _buildMyTeamRankingCard(RankingTeamModel myTeam) {
+    final teamModel = context.read<TeamProvider>().findTeamByName(
+      myTeam.teamName,
+    );
+
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      padding: const EdgeInsets.all(1),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.blue.shade400, Colors.blue.shade600],
+          colors: [
+            teamModel?.color ?? Colors.blue,
+            Colors.white.withOpacity(0.5),
+            teamModel?.color ?? Colors.blue,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: (teamModel?.color ?? Colors.blue).withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          const Icon(Icons.emoji_events, color: Colors.white, size: 32),
-          const SizedBox(width: 12),
-          const Text(
-            '내 순위',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(19),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.white,
+                backgroundImage: teamModel?.logoPath != null
+                    ? AssetImage(teamModel!.logoPath)
+                    : null,
+              ),
             ),
-          ),
-          const Spacer(),
-          Text(
-            '${myRanking.rank}위',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+            const SizedBox(width: 15),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '나의 팀 순위',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  teamModel?.name ?? myTeam.teamName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '${myRanking.score}점',
-            style: const TextStyle(color: Colors.white70, fontSize: 16),
-          ),
-        ],
+            const Spacer(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${myTeam.rank}위',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'kbo',
+                  ),
+                ),
+                Text(
+                  '${myTeam.totalScore} pts',
+                  style: TextStyle(
+                    color: teamModel?.color ?? Colors.blueAccent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // Top 3 포디움 (개인)
-  Widget _buildPodium(List<RankingUserModel> topThree) {
+  // 내 순위 카드 (더 세련된 디자인)
+  Widget _buildMyRankingCard(RankingUserModel myRanking) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+      padding: const EdgeInsets.all(1), // 테두리 그라데이션용
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Colors.blue, Colors.purple, Colors.blue],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B), // 다크한 배경으로 포인트
+          borderRadius: BorderRadius.circular(19),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.stars,
+                color: Colors.blueAccent,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 15),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '나의 랭킹 현황',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  myRanking.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${myRanking.rank}위',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'kbo',
+                  ),
+                ),
+                Text(
+                  '${myRanking.score} pts',
+                  style: const TextStyle(
+                    color: Colors.blueAccent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- Ultra Modern Podium ---
+
+  Widget _buildModernPodium(List<RankingUserModel> topThree) {
     final first = topThree.firstWhere((user) => user.rank == 1);
     final second = topThree.firstWhere((user) => user.rank == 2);
     final third = topThree.firstWhere((user) => user.rank == 3);
 
-    return Container(
-      height: 400,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // 2위 (왼쪽)
-          _buildPodiumBar(
-            second,
-            LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.grey.shade300, Colors.grey.shade500],
-            ),
-            180,
-          ),
-          const SizedBox(width: 10),
-          // 1위 (가운데)
-          _buildPodiumBar(
-            first,
-            const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFFE57F), // 샴페인 골드
-                Color(0xFFFFD700), // 리얼 골드
-                Color(0xFFFFB300), // 앰버 골드
-                Color(0xFFD4AF37), // 메탈릭
-                Color(0xFFFFD700),
+    return Transform.translate(
+      offset: Offset(0, -50),
+      child: Container(
+        height: 500,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // 2등 바
+                Expanded(
+                  child: _buildAnimatedPodiumBar(second, 180, [
+                    const Color(0xFF9E9E9E),
+                    const Color(0xFF616161),
+                  ], 2),
+                ),
+                const SizedBox(width: 8),
+                // 1등 바
+                Expanded(
+                  child: _buildAnimatedPodiumBar(
+                    first,
+                    240,
+                    [const Color(0xFFFFC107), const Color(0xFFB8860B)],
+                    1,
+                    isMain: true,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // 3등 바
+                Expanded(
+                  child: _buildAnimatedPodiumBar(third, 160, [
+                    const Color(0xFF8D6E63),
+                    const Color(0xFF5D4037),
+                  ], 3),
+                ),
               ],
-              stops: [0.0, 0.2, 0.5, 0.8, 1.0],
             ),
-            230,
-            isFirst: true,
-          ),
-          const SizedBox(width: 10),
-          // 3위 (오른쪽)
-          _buildPodiumBar(
-            third,
-            LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.brown.shade200, Colors.brown.shade400],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedPodiumBar(
+    RankingUserModel user,
+    double targetHeight,
+    List<Color> colors,
+    int rank, {
+    bool isMain = false,
+  }) {
+    return TweenAnimationBuilder(
+      duration: Duration(milliseconds: 1000 + (rank * 200)),
+      curve: Curves.elasticOut,
+      tween: Tween<double>(begin: 0, end: targetHeight),
+      builder: (context, height, child) {
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            // 프로필 & 이름 (상단 배치)
+            Column(
+              children: [
+                CircleAvatar(
+                  radius: isMain ? 32 : 26,
+                  backgroundColor: colors[0],
+                  child: CircleAvatar(
+                    radius: isMain ? 29 : 23,
+                    backgroundImage: user.profileUrl != null
+                        ? NetworkImage(user.profileUrl!)
+                        : null,
+                    backgroundColor: Colors.grey.shade100,
+                    child: user.profileUrl == null
+                        ? Icon(
+                            Icons.person,
+                            size: isMain ? 25 : 20,
+                            color: Colors.grey.shade400,
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  user.name,
+                  style: TextStyle(
+                    fontSize: isMain ? 13 : 11,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1E293B),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                // 점수 버블 (사진처럼 상단에)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade300),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    '${user.score}P',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            160,
+            const SizedBox(height: 12),
+            // 완벽하게 정렬된 3D 아이소메트릭 블록
+            CustomPaint(
+              size: Size(double.infinity, height + 40),
+              painter: _Iso3DBlockPainter(
+                baseColor: colors[0],
+                sideColor: colors[1],
+                height: height,
+                rank: rank,
+              ),
+              child: SizedBox(
+                height: height + 40,
+                width: double.infinity,
+                child: Stack(
+                  children: [
+                    Center(
+                      child: SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 15),
+                            Icon(
+                              rank == 1
+                                  ? Icons.emoji_events
+                                  : Icons.military_tech,
+                              color: Colors.white.withOpacity(0.9),
+                              size: isMain ? 32 : 24,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '$rank',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: isMain ? 34 : 24,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'kbo',
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    offset: const Offset(1, 1),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPremiumRankingList(
+    List<RankingUserModel> rankings,
+    String? currentUserId,
+    int podiumCount,
+  ) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: rankings.length,
+        itemBuilder: (context, index) {
+          final user = rankings[index];
+          final actualRank = index + podiumCount + 1;
+          return _buildPremiumRankingListItem(
+            user.copyWith(rank: actualRank),
+            currentUserId,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPremiumRankingListItem(
+    RankingUserModel user,
+    String? currentUserId,
+  ) {
+    final isMe = currentUserId != null && user.userId == currentUserId;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: isMe ? Colors.blue.shade50 : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
+        border: isMe ? Border.all(color: Colors.blue.shade200, width: 2) : null,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            // 순위 (leading 필드 대체)
+            SizedBox(
+              width: 45,
+              child: Center(
+                child: Text(
+                  '${user.rank}',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'kbo',
+                    color: isMe ? Colors.blue : Colors.grey.shade400,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // 유저 정보 (title 필드 대체)
+            Expanded(
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundImage: user.profileUrl != null
+                        ? NetworkImage(user.profileUrl!)
+                        : null,
+                    backgroundColor: Colors.grey.shade200,
+                    child: user.profileUrl == null
+                        ? const Icon(Icons.person, color: Colors.grey)
+                        : null,
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (user.teamName != null)
+                          Text(
+                            user.teamName!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            // 점수 및 변동 (trailing 필드 대체)
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${user.score}P',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                _buildRankChangeIndicator(user.rankChange, user.rank),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -467,300 +1071,13 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
   // 포디움이 완성되지 않은 경우 (개인)
   Widget _buildIncompletedPodium(List<RankingUserModel> rankings) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: Column(
         children: rankings.map((user) {
-          return _buildRankingListItem(user, null);
+          return _buildPremiumRankingListItem(user, null);
         }).toList(),
       ),
     );
-  }
-
-  Widget _buildPodiumBar(
-    RankingUserModel user,
-    Gradient gradient,
-    double height, {
-    bool isFirst = false,
-  }) {
-    return Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          // 프로필 사진
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isFirst
-                    ? const Color(0xFFFFD700)
-                    : (gradient is LinearGradient
-                          ? gradient.colors.first
-                          : Colors.grey),
-                width: 3,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: CircleAvatar(
-              radius: 35,
-              backgroundImage: user.profileUrl != null
-                  ? NetworkImage(user.profileUrl!)
-                  : null,
-              backgroundColor: Colors.grey.shade300,
-              child: user.profileUrl == null
-                  ? Icon(Icons.person, size: 35, color: Colors.grey.shade600)
-                  : null,
-            ),
-          ),
-          const SizedBox(height: 8),
-          // 닉네임
-          Text(
-            user.name,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-          if (user.teamName != null)
-            Builder(
-              builder: (context) {
-                final team = context.read<TeamProvider>().findTeamByName(
-                  user.teamName!,
-                );
-                return Text(
-                  user.teamName!,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: team?.color ?? Colors.grey.shade600,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                );
-              },
-            ),
-          const SizedBox(height: 4),
-          // 점수
-          Text(
-            '${user.score}점',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-          ),
-          const SizedBox(height: 8),
-          // 포디움 막대
-          Container(
-            height: height,
-            decoration: BoxDecoration(
-              gradient: gradient,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    user.rank == 1 ? Icons.emoji_events : Icons.military_tech,
-                    color: Colors.white,
-                    size: 40,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${user.rank}위',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRankingList(
-    List<RankingUserModel> rankings,
-    String? currentUserId,
-    int podiumCount,
-  ) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.zero,
-        itemCount: rankings.length,
-        itemBuilder: (context, index) {
-          final user = rankings[index];
-          // 포디엄 이후의 순위이므로, 실제 순위는 index + podiumCount + 1
-          final int actualRank = index + podiumCount + 1;
-
-          return _buildRankingListItem(
-            user.copyWith(rank: actualRank), // 강제 랭크 보정
-            currentUserId,
-            isCard: false,
-            isLast: index == rankings.length - 1,
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildRankingListItem(
-    RankingUserModel user,
-    String? currentUserId, {
-    bool isCard = true,
-    bool isLast = false,
-  }) {
-    final isMe = currentUserId != null && user.userId == currentUserId;
-
-    final rowContent = Row(
-      children: [
-        // 순위
-        SizedBox(
-          width: 40,
-          child: Text(
-            '${user.rank}',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: isMe ? Colors.blue.shade700 : Colors.black87,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-        const SizedBox(width: 12),
-        // 프로필 사진
-        CircleAvatar(
-          radius: 25,
-          backgroundImage: user.profileUrl != null
-              ? NetworkImage(user.profileUrl!)
-              : null,
-          backgroundColor: Colors.grey.shade300,
-          child: user.profileUrl == null
-              ? Icon(Icons.person, color: Colors.grey.shade600)
-              : null,
-        ),
-        const SizedBox(width: 12),
-        // 닉네임
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                user.name,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: isMe ? Colors.blue.shade700 : Colors.black,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              SizedBox(height: 3),
-              if (user.teamName != null)
-                Builder(
-                  builder: (context) {
-                    final team = context.read<TeamProvider>().findTeamByName(
-                      user.teamName!,
-                    );
-                    return Text(
-                      user.teamName!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: team?.color ?? Colors.grey.shade600,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    );
-                  },
-                ),
-              if (isMe)
-                Text(
-                  '나',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.blue.shade600,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-            ],
-          ),
-        ),
-        // 점수
-        Text(
-          '${user.score}점',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade700,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 12),
-        // 순위 변동 화살표
-        _buildRankChangeIndicator(user.rankChange, user.rank),
-      ],
-    );
-
-    if (isCard) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isMe ? Colors.blue.shade50 : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: isMe
-              ? Border.all(color: Colors.blue.shade300, width: 2)
-              : null,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: rowContent,
-      );
-    } else {
-      return Container(
-        color: isMe ? Colors.blue.shade50 : Colors.transparent,
-        child: Column(
-          children: [
-            Padding(padding: const EdgeInsets.all(16), child: rowContent),
-            if (!isLast)
-              Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
-          ],
-        ),
-      );
-    }
   }
 
   // --- Team Ranking Widgets ---
@@ -779,56 +1096,189 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
         ? topThree.firstWhere((t) => t.rank == 3, orElse: () => topThree[2])
         : null;
 
-    return Container(
-      height: 380,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (second != null) ...[
-            _buildTeamPodiumBar(
-              second,
-              LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.grey.shade300, Colors.grey.shade500],
-              ),
-              180,
-            ),
-            const SizedBox(width: 10),
-          ],
-          _buildTeamPodiumBar(
-            first,
-            const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFFE57F),
-                Color(0xFFFFD700),
-                Color(0xFFFFB300),
-                Color(0xFFD4AF37),
-                Color(0xFFFFD700),
+    return Transform.translate(
+      offset: const Offset(0, -30),
+      child: Container(
+        height: 500,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (second != null)
+                  Expanded(
+                    child: _buildAnimatedTeamPodiumBar(second, 180, [
+                      const Color(0xFF9E9E9E),
+                      const Color(0xFF616161),
+                    ], 2),
+                  ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildAnimatedTeamPodiumBar(
+                    first,
+                    240,
+                    [const Color(0xFFFFC107), const Color(0xFFB8860B)],
+                    1,
+                    isMain: true,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (third != null)
+                  Expanded(
+                    child: _buildAnimatedTeamPodiumBar(third, 160, [
+                      const Color(0xFF8D6E63),
+                      const Color(0xFF5D4037),
+                    ], 3),
+                  ),
               ],
-              stops: [0.0, 0.2, 0.5, 0.8, 1.0],
-            ),
-            230,
-            isFirst: true,
-          ),
-          if (third != null) ...[
-            const SizedBox(width: 10),
-            _buildTeamPodiumBar(
-              third,
-              LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.brown.shade200, Colors.brown.shade400],
-              ),
-              160,
             ),
           ],
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildAnimatedTeamPodiumBar(
+    RankingTeamModel team,
+    double targetHeight,
+    List<Color> colors,
+    int rank, {
+    bool isMain = false,
+  }) {
+    final teamModel = context.read<TeamProvider>().findTeamByName(
+      team.teamName,
+    );
+
+    return TweenAnimationBuilder(
+      duration: Duration(milliseconds: 1000 + (rank * 200)),
+      curve: Curves.elasticOut,
+      tween: Tween<double>(begin: 0, end: targetHeight),
+      builder: (context, height, child) {
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            // 팀 로고 & 이름
+            Column(
+              children: [
+                CircleAvatar(
+                  radius: isMain ? 35 : 28,
+                  backgroundColor: colors[0],
+                  child: CircleAvatar(
+                    radius: isMain ? 32 : 25,
+                    backgroundColor: Colors.white,
+                    backgroundImage: teamModel?.logoPath != null
+                        ? AssetImage(teamModel!.logoPath)
+                        : null,
+                    child: teamModel?.logoPath == null
+                        ? Icon(
+                            Icons.sports_baseball,
+                            size: isMain ? 25 : 20,
+                            color: Colors.grey.shade400,
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  teamModel?.name ?? team.teamName,
+                  style: TextStyle(
+                    fontSize: isMain ? 13 : 11,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1E293B),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                // 점수 버블
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade300),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    '${team.totalScore}P',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // 3D 아이소메트릭 블록
+            CustomPaint(
+              size: Size(double.infinity, height + 40),
+              painter: _Iso3DBlockPainter(
+                baseColor: colors[0],
+                sideColor: colors[1],
+                height: height,
+                rank: rank,
+              ),
+              child: SizedBox(
+                height: height + 40,
+                width: double.infinity,
+                child: Stack(
+                  children: [
+                    Center(
+                      child: SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 15),
+                            Icon(
+                              rank == 1
+                                  ? Icons.emoji_events
+                                  : Icons.military_tech,
+                              color: Colors.white.withOpacity(0.9),
+                              size: isMain ? 32 : 24,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '$rank',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: isMain ? 34 : 24,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'kbo',
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    offset: const Offset(1, 1),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -837,119 +1287,8 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: rankings.map((team) {
-          return _buildTeamRankingListItem(team, isCard: true, isLast: true);
+          return _buildPremiumTeamRankingListItem(team, null);
         }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildTeamPodiumBar(
-    RankingTeamModel team,
-    Gradient gradient,
-    double height, {
-    bool isFirst = false,
-  }) {
-    // 팀 정보 가져오기
-    final teamModel = context.read<TeamProvider>().findTeamByName(
-      team.teamName,
-    );
-
-    return Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          // 팀 로고
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isFirst
-                    ? const Color(0xFFFFD700)
-                    : (gradient is LinearGradient
-                          ? gradient.colors.first
-                          : Colors.grey),
-                width: 3,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(4), // 로고 패딩
-            child: CircleAvatar(
-              radius: 35,
-              backgroundColor: Colors.white,
-              backgroundImage: teamModel?.logoPath != null
-                  ? AssetImage(teamModel!.logoPath)
-                  : null,
-              child: teamModel?.logoPath == null
-                  ? const Icon(
-                      Icons.sports_baseball,
-                      size: 35,
-                      color: Colors.grey,
-                    )
-                  : null,
-            ),
-          ),
-          const SizedBox(height: 8),
-          // 팀 이름
-          Text(
-            teamModel?.name ?? team.teamName,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          // 점수
-          Text(
-            '${team.totalScore}점',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-          ),
-          const SizedBox(height: 8),
-          // 포디움 막대
-          Container(
-            height: height,
-            decoration: BoxDecoration(
-              gradient: gradient,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    team.rank == 1 ? Icons.emoji_events : Icons.military_tech,
-                    color: Colors.white,
-                    size: 40,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${team.rank}위',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -957,133 +1296,148 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
   Widget _buildTeamRankingList(
     List<RankingTeamModel> rankings,
     int podiumCount,
+    String? myTeamName,
   ) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.zero,
         itemCount: rankings.length,
         itemBuilder: (context, index) {
           final team = rankings[index];
-          // 포디엄 이후 순위 보정
-          final int actualRank = index + podiumCount + 1;
+          final actualRank = index + podiumCount + 1;
 
-          return _buildTeamRankingListItem(
-            team.copyWith(rank: actualRank), // 강제 랭크 보정
-            isCard: false,
-            isLast: index == rankings.length - 1,
+          return _buildPremiumTeamRankingListItem(
+            team.copyWith(rank: actualRank),
+            myTeamName,
           );
         },
       ),
     );
   }
 
-  Widget _buildTeamRankingListItem(
-    RankingTeamModel team, {
-    bool isCard = true,
-    bool isLast = false,
-  }) {
+  Widget _buildPremiumTeamRankingListItem(
+    RankingTeamModel team,
+    String? myTeamName,
+  ) {
+    final isMyTeam = myTeamName != null && team.teamName == myTeamName;
     final teamModel = context.read<TeamProvider>().findTeamByName(
       team.teamName,
     );
 
-    final rowContent = Row(
-      children: [
-        // 순위
-        SizedBox(
-          width: 40,
-          child: Text(
-            '${team.rank}',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-            textAlign: TextAlign.center,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: isMyTeam
+            ? (teamModel?.color.withOpacity(0.1) ?? Colors.blue.shade50)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
-        ),
-        const SizedBox(width: 12),
-        // 팀 로고
-        CircleAvatar(
-          radius: 25,
-          backgroundColor: Colors.white,
-          backgroundImage: teamModel?.logoPath != null
-              ? AssetImage(teamModel!.logoPath)
-              : null,
-          child: teamModel?.logoPath == null
-              ? const Icon(Icons.sports_baseball, color: Colors.grey)
-              : null,
-        ),
-        const SizedBox(width: 12),
-        // 팀 이름
-        Expanded(
-          child: Text(
-            teamModel?.name ?? team.teamName,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        // 점수
-        Text(
-          '${team.totalScore}점',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade700,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 12),
-        // 순위 변동 (팀은 초기 0일 수 있으니 표시)
-        _buildRankChangeIndicator(team.rankChange, team.rank),
-      ],
-    );
-
-    if (isCard) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: rowContent,
-      );
-    } else {
-      return Container(
-        color: Colors.transparent,
-        child: Column(
+        ],
+        border: isMyTeam
+            ? Border.all(
+                color:
+                    teamModel?.color.withOpacity(0.5) ?? Colors.blue.shade200,
+                width: 2,
+              )
+            : null,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
           children: [
-            Padding(padding: const EdgeInsets.all(16), child: rowContent),
-            if (!isLast)
-              Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
+            // 순위
+            SizedBox(
+              width: 45,
+              child: Center(
+                child: Text(
+                  '${team.rank}',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'kbo',
+                    color: isMyTeam
+                        ? (teamModel?.color ?? Colors.blue)
+                        : Colors.grey.shade400,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // 팀 정보
+            Expanded(
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: Colors.white,
+                    backgroundImage: teamModel?.logoPath != null
+                        ? AssetImage(teamModel!.logoPath)
+                        : null,
+                    child: teamModel?.logoPath == null
+                        ? const Icon(Icons.sports_baseball, color: Colors.grey)
+                        : null,
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          teamModel?.name ?? team.teamName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (teamModel?.stadium != null)
+                          Text(
+                            teamModel!.stadium,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            // 점수 및 변동
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${team.totalScore}P',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                _buildRankChangeIndicator(team.rankChange, team.rank),
+              ],
+            ),
           ],
         ),
-      );
-    }
+      ),
+    );
   }
 
   Widget _buildRankChangeIndicator(int scoreDiff, int rank) {
@@ -1135,4 +1489,493 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
       ],
     );
   }
+
+  // --- Season Arena Widgets ---
+
+  // 슬림한 시즌 배너 (개편된 디자인)
+  Widget _buildSlimSeasonBanner(BuildContext context, QuizRankingProvider qrp) {
+    final teamColor =
+        context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: teamColor,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: teamColor.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+      child: Row(
+        children: [
+          // 시즌 라벨 및 선택
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _showSeasonPicker(context, qrp),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        QuizSeasonUtils.getSeasonLabel(qrp.selectedSeason),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'kbo',
+                          color: Colors.white,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 20,
+                        color: Colors.white70,
+                      ),
+                    ],
+                  ),
+                  Text(
+                    _getRemainingDaysText(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // 카테고리 필터
+          GestureDetector(
+            onTap: () => _showCategoryPicker(context, qrp),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withOpacity(0.2)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _getCategoryLabel(qrp.selectedCategory),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.tune, size: 16, color: Colors.white70),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 기존 빌보드 (유지하되 호출하지 않음)
+  Widget _buildSeasonBillboard(BuildContext context) {
+    final qrp = context.watch<QuizRankingProvider>();
+    final teamColor = qrp.teamRankings.isNotEmpty
+        ? context
+                  .read<TeamProvider>()
+                  .findTeamByName(qrp.teamRankings.first.teamName)
+                  ?.color ??
+              BUTTON
+        : BUTTON;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 25),
+      decoration: BoxDecoration(
+        color: teamColor,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: teamColor.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${qrp.selectedSeason.split('_')[0]} OFFICIAL SEASON',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    QuizSeasonUtils.getSeasonLabel(qrp.selectedSeason),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'kbo',
+                      shadows: [
+                        Shadow(
+                          color: Colors.black26,
+                          blurRadius: 10,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const QuizHallOfFamePage(),
+                    ),
+                  ).then((_) {
+                    context.read<QuizRankingProvider>().setAllTimeMode(false);
+                  });
+                },
+                child: Container(
+                  height: 60,
+                  width: 60,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.amber.shade300, Colors.amber.shade600],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.amber.withOpacity(0.4),
+                        blurRadius: 12,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.military_tech, color: Colors.white, size: 24),
+                      Text(
+                        'HALL',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _buildModernStatsItem(
+                Icons.people_alt,
+                '${qrp.rankings.length}명 참여',
+              ),
+              const SizedBox(width: 12),
+              _buildModernStatsItem(Icons.timer, _getRemainingDaysText()),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernStatsItem(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white70, size: 14),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getRemainingDaysText() {
+    final now = DateTime.now();
+    final lastDay = DateTime(now.year, now.month + 1, 0);
+    final diff = lastDay.difference(now).inDays;
+    return diff > 0 ? '시즌 종료까지 D-$diff' : '시즌 종료 임박!';
+  }
+}
+
+class _Iso3DBlockPainter extends CustomPainter {
+  final Color baseColor;
+  final Color sideColor;
+  final double height;
+  final int rank;
+
+  _Iso3DBlockPainter({
+    required this.baseColor,
+    required this.sideColor,
+    required this.height,
+    required this.rank,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const double skew = 12.0;
+    const double radius = 12.0;
+    final double w = size.width;
+    final double h = height;
+
+    final paint = Paint()..style = PaintingStyle.fill;
+
+    // ── blockPath: 정면(topPath 연장) + 오른쪽 측면도 full-height ──
+    final blockPath = Path()
+      ..moveTo(radius + skew, 0)
+      ..lineTo(w - radius, 0)
+      // 오른쪽 뒤 모서리 커브 → 뒤쪽 엣지(w) 진입
+      ..quadraticBezierTo(w, 0, w, skew * 0.4)
+      // ★ 뒤쪽 엣지(w)를 h만큼 그대로 내려감 (측면 뒤 엣지)
+      ..lineTo(w, h + skew * 1.6)
+      // 오른쪽 아래: 뒤에서 정면 하단으로 꺾임
+      ..quadraticBezierTo(w, h + skew * 2, w - skew - radius, h + skew * 2)
+      // 바닥 직선
+      ..lineTo(radius, h + skew * 2)
+      // 왼쪽 아래 모서리
+      ..quadraticBezierTo(0, h + skew * 2, 0, h + skew * 2 - radius)
+      // 왼쪽 수직 연장
+      ..lineTo(0, skew * 2)
+      // 왼쪽 위 모서리 (캡)
+      ..quadraticBezierTo(0, skew * 2, skew * 0.5, skew)
+      ..lineTo(skew, 0)
+      ..quadraticBezierTo(skew, 0, radius + skew, 0)
+      ..close();
+
+    // 1. 전체 블록 기본색 (정면색)
+    canvas.drawPath(blockPath, paint..color = baseColor);
+
+    // 2. 윗면 캡 오버레이 (밝게) - blockPath 와 동일한 상단 경로
+    final capPath = Path()
+      ..moveTo(radius + skew, 0)
+      ..lineTo(w - radius, 0)
+      ..quadraticBezierTo(w, 0, w, skew * 0.4) // blockPath 와 동일한 커브
+      ..lineTo(w, skew * 2)
+      ..lineTo(0, skew * 2)
+      ..quadraticBezierTo(0, skew * 2, skew * 0.5, skew)
+      ..lineTo(skew, 0)
+      ..quadraticBezierTo(skew, 0, radius + skew, 0)
+      ..close();
+
+    canvas.save();
+    canvas.clipPath(blockPath);
+    canvas.drawPath(
+      capPath,
+      paint..color = Color.lerp(baseColor, Colors.white, 0.38)!,
+    );
+    canvas.restore();
+
+    // 3. 오른쪽 측면 오버레이 (sideColor) - 뒤쪽 엣지(x=w) 전체 높이
+    final sideFacePath = Path()
+      ..moveTo(w - skew, skew * 2) // 정면 top-right
+      ..quadraticBezierTo(w, 0, w, skew * 0.4) // 뒤쪽 top-right
+      ..lineTo(w, h + skew * 1.6) // 뒤쪽 bottom-right
+      ..quadraticBezierTo(w, h + skew * 2, w - skew - radius, h + skew * 2)
+      ..lineTo(w - skew, h + skew * 2) // 정면 bottom-right
+      ..close();
+
+    canvas.save();
+    canvas.clipPath(blockPath);
+    canvas.drawPath(sideFacePath, paint..color = sideColor);
+    canvas.restore();
+
+    // 3. 대각선 광택
+    canvas.save();
+    canvas.clipPath(blockPath);
+    canvas.drawPath(
+      Path()
+        ..moveTo(0, h * 0.45 + skew * 2)
+        ..lineTo(w - skew, skew * 2)
+        ..lineTo(w - skew, h * 0.25 + skew * 2)
+        ..lineTo(0, h * 0.65 + skew * 2)
+        ..close(),
+      Paint()..color = Colors.white.withOpacity(0.12),
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _Iso3DBlockPainter oldDelegate) =>
+      oldDelegate.height != height || oldDelegate.baseColor != baseColor;
+}
+
+class _BaseballFieldPainter extends CustomPainter {
+  final Color lineColor;
+
+  _BaseballFieldPainter({required this.lineColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // 1. 공통 도구 설정
+    final linePaint = Paint()
+      ..color = lineColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    final fillPaint = Paint()
+      ..color = lineColor.withOpacity(lineColor.opacity * 0.4)
+      ..style = PaintingStyle.fill;
+
+    // 2. 외야 펜스 / 경계선 (Wider and higher)
+    final outfieldPath = Path()
+      ..moveTo(-w * 0.5, h * 0.55)
+      ..quadraticBezierTo(w * 0.5, h * 0.05, w * 1.5, h * 0.55);
+    canvas.drawPath(outfieldPath, linePaint..strokeWidth = 1.0);
+
+    // 3. 내야 다이아몬드 베이스 라인 (Double lines for detail)
+    // final diamondPath = Path()
+    //   ..moveTo(w * 0.5, h * 0.95) // Home
+    //   ..lineTo(w * 0.9, h * 0.7) // 1st
+    //   ..lineTo(w * 0.5, h * 0.45) // 2nd
+    //   ..lineTo(w * 0.1, h * 0.7) // 3rd
+    //   ..close();
+    // canvas.drawPath(diamondPath, linePaint..strokeWidth = 2.5);
+
+    // 내야 흙 영역 (Shaded dirt area)
+    final dirtPath = Path()
+      ..moveTo(w * 0.05, h * 0.75)
+      ..quadraticBezierTo(w * 0.5, h * 0.3, w * 0.95, h * 0.75)
+      ..lineTo(w * 0.5, h * 0.98)
+      ..close();
+    canvas.drawPath(dirtPath, fillPaint);
+
+    // 4. 투수 마운드 (Mound with shadow look)
+    final moundCenter = Offset(w * 0.5, h * 0.68);
+    canvas.drawCircle(moundCenter, 35, fillPaint);
+    canvas.drawCircle(moundCenter, 35, linePaint..strokeWidth = 1.5);
+    // 마운드 안쪽 보조선
+    canvas.drawCircle(moundCenter, 15, linePaint..strokeWidth = 0.8);
+
+    // 5. 홈 플레이트 주변 디테일 (Batting boxes & Home line)
+    // 배팅 박스 (좌/우)
+    final homeX = w * 0.5;
+    final homeY = h * 0.95;
+    final boxW = 20.0;
+    final boxH = 30.0;
+
+    // 좌측 박스
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(homeX - 25, homeY),
+        width: boxW,
+        height: boxH,
+      ),
+      linePaint..strokeWidth = 1.0,
+    );
+    // 우측 박스
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(homeX + 25, homeY),
+        width: boxW,
+        height: boxH,
+      ),
+      linePaint..strokeWidth = 1.0,
+    );
+
+    // 홈 플레이트 주변 서클 (워닝 트랙 느낌)
+    canvas.drawCircle(Offset(homeX, homeY), 65, linePaint..strokeWidth = 1.2);
+
+    // // 6. 더그아웃 (1루측, 3루측 박스)
+    // // 1루 더그아웃
+    // final dugout1P = Path()
+    //   ..moveTo(w * 0.82, h * 0.82)
+    //   ..lineTo(w * 0.98, h * 0.75)
+    //   ..lineTo(w * 1.05, h * 0.8)
+    //   ..lineTo(w * 0.88, h * 0.88)
+    //   ..close();
+    // canvas.drawPath(dugout1P, linePaint..strokeWidth = 1.5);
+
+    // // 3루 더그아웃
+    // final dugout3P = Path()
+    //   ..moveTo(w * 0.18, h * 0.82)
+    //   ..lineTo(w * 0.02, h * 0.75)
+    //   ..lineTo(-w * 0.05, h * 0.8)
+    //   ..lineTo(w * 0.12, h * 0.88)
+    //   ..close();
+    // canvas.drawPath(dugout3P, linePaint..strokeWidth = 1.5);
+
+    // 7. 파울 라인 연장선 (Foul lines to the edge)
+    // canvas.drawLine(
+    //   Offset(homeX, homeY),
+    //   Offset(w * 1.2, h * 0.6),
+    //   linePaint..strokeWidth = 1.0,
+    // );
+    // canvas.drawLine(
+    //   Offset(homeX, homeY),
+    //   Offset(-w * 0.2, h * 0.6),
+    //   linePaint..strokeWidth = 1.0,
+    // );
+
+    //   // 8. 중앙 로고 스팟 (중앙에 은은한 원형 장식)
+    //   final logoSpotPaint = Paint()
+    //     ..color = lineColor.withOpacity(lineColor.opacity * 0.3)
+    //     ..style = PaintingStyle.stroke
+    //     ..strokeWidth = 0.5;
+    //   canvas.drawCircle(Offset(w * 0.5, h * 0.35), 100, logoSpotPaint);
+    //   canvas.drawCircle(Offset(w * 0.5, h * 0.35), 110, logoSpotPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

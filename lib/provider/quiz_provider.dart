@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:lockerroom/model/quiz_question_model.dart';
 import 'package:lockerroom/model/quiz_result_model.dart';
 import 'package:lockerroom/page/quiz/quiz_data.dart';
+import 'package:lockerroom/utils/quiz_season_utils.dart';
 
 class QuizProvider extends ChangeNotifier {
   List<QuizQuestionModel> _allQuestions = [];
@@ -15,6 +16,8 @@ class QuizProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _selectedCategory;
   DateTime? _quizStartTime;
+  DateTime? _questionStartTime;
+  int _speedBonus = 0;
   bool _showExplanation = false;
 
   // 점수 상세
@@ -72,7 +75,7 @@ class QuizProvider extends ChangeNotifier {
 
   // 최종 점수 (모든 보너스 합산)
   int get score {
-    return _baseScore + _difficultyBonus + _comboBonus;
+    return _baseScore + _difficultyBonus + _comboBonus + _speedBonus;
   }
 
   // ====== 퀴즈 시작 ======
@@ -145,6 +148,8 @@ class QuizProvider extends ChangeNotifier {
       _baseScore = 0;
       _difficultyBonus = 0;
       _comboBonus = 0;
+      _speedBonus = 0;
+      _questionStartTime = DateTime.now();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -218,6 +223,8 @@ class QuizProvider extends ChangeNotifier {
       _baseScore = 0;
       _difficultyBonus = 0;
       _comboBonus = 0;
+      _speedBonus = 0;
+      _questionStartTime = DateTime.now();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -258,6 +265,18 @@ class QuizProvider extends ChangeNotifier {
       } else if (_currentCombo == 10) {
         _comboBonus += 30;
       }
+
+      if (_questionStartTime != null) {
+        final elapsed = DateTime.now()
+            .difference(_questionStartTime!)
+            .inSeconds;
+
+        if (elapsed <= 5) {
+          _speedBonus += 10;
+        } else if (elapsed <= 10) {
+          _speedBonus += 5;
+        }
+      }
     } else {
       // 오답 시 콤보 리셋
       _currentCombo = 0;
@@ -274,6 +293,7 @@ class QuizProvider extends ChangeNotifier {
     if (_currentQuestionIndex < _currentQuestions.length - 1) {
       _currentQuestionIndex++;
       _showExplanation = false;
+      _questionStartTime = DateTime.now();
       notifyListeners();
     }
   }
@@ -343,11 +363,13 @@ class QuizProvider extends ChangeNotifier {
       baseScore: _baseScore,
       difficultyBonus: _difficultyBonus,
       comboBonus: _comboBonus,
+      speedBonus: _speedBonus,
       completedAt: DateTime.now(),
       timeTakenSeconds: timeTaken.inSeconds,
       questionIds: questionIds,
       answerResults: answerResults,
       teamName: currentTeam, // 현재 팀 저장
+      seasonId: QuizSeasonUtils.getCurrentSeasonId(),
     );
 
     // Firestore에 저장 (userId별 서브컬렉션 구조)
