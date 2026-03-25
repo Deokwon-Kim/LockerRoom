@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/model/ranking_team_model.dart';
 import 'package:lockerroom/model/ranking_user_model.dart';
+import 'package:lockerroom/utils/quiz_season_utils.dart';
 
 class QuizRankingProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -11,17 +12,33 @@ class QuizRankingProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   String _selectedCategory = 'all';
+  String _selectedSeason = QuizSeasonUtils.getCurrentSeasonId();
+  bool _isAllTimeMode = false;
 
   List<RankingUserModel> get rankings => _rankings;
   List<RankingTeamModel> get teamRankings => _teamRankings;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String get selectedCategory => _selectedCategory;
+  String get selectedSeason => _selectedSeason;
+  bool get isAllTimeMode => _isAllTimeMode;
+
+  // 모드 변경 (시즌 vs 명예의 전당)
+  void setAllTimeMode(bool allTime) {
+    _isAllTimeMode = allTime;
+    fetchRankings(true);
+  }
 
   // 카테고리 변경
   void setCategory(String category) {
     if (_selectedCategory == category) return;
     _selectedCategory = category;
+    fetchRankings(true);
+  }
+
+  // 시즌 변경
+  void setSeason(String seasonId) {
+    _selectedSeason = seasonId;
     fetchRankings(true);
   }
 
@@ -40,6 +57,11 @@ class QuizRankingProvider extends ChangeNotifier {
     try {
       // 1. 결과 데이터 가져오기
       Query query = _firestore.collectionGroup('results');
+
+      // 시즌 필터 추가 (명예의 전당 모드가 아닐 때만)
+      if (!_isAllTimeMode) {
+        query = query.where('seasonId', isEqualTo: _selectedSeason);
+      }
 
       // 카테고리 필터
       if (_selectedCategory != 'all') {
