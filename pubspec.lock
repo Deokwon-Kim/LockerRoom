@@ -553,6 +553,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  fl_location:
+    dependency: transitive
+    description:
+      name: fl_location
+      sha256: "8c8ef3e862dae66fd1d8dfcf53ed14da4d50d3da0e33eab2b5fa1dc697de9eb5"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.0"
+  fl_location_platform_interface:
+    dependency: transitive
+    description:
+      name: fl_location_platform_interface
+      sha256: bd730e65248dec7d4fb37d18ea36c6ffe54f8dda6f9d0308c4ddc0d24e8f8c3f
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.1.0"
+  fl_location_web:
+    dependency: transitive
+    description:
+      name: fl_location_web
+      sha256: "203777c6d52fe525d01cf53e571840d6d3585c8ce7d0072dcb4df6404e085146"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -701,6 +725,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.2"
+  geofencing_api:
+    dependency: "direct main"
+    description:
+      name: geofencing_api
+      sha256: "9f559767fb658028acafd2678892d2a6667570b42f3ee20db18cc0aaa143006a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   google_fonts:
     dependency: "direct main"
     description:

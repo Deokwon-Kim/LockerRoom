@@ -1325,12 +1325,16 @@ PODS:
     - FirebaseCoreExtension (~> 12.8.0)
     - GoogleUtilities/Environment (~> 8.1)
     - GTMSessionFetcher/Core (< 6.0, >= 3.4)
+  - fl_location (0.0.1):
+    - Flutter
   - Flutter (1.0.0)
   - flutter_local_notifications (0.0.1):
     - Flutter
   - gal (1.0.0):
     - Flutter
     - FlutterMacOS
+  - geofencing_api (0.0.1):
+    - Flutter
   - google_sign_in_ios (0.0.1):
     - AppAuth (>= 1.7.4)
     - Flutter
@@ -1562,9 +1566,11 @@ DEPENDENCIES:
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_messaging (from `.symlinks/plugins/firebase_messaging/ios`)
   - firebase_storage (from `.symlinks/plugins/firebase_storage/ios`)
+  - fl_location (from `.symlinks/plugins/fl_location/ios`)
   - Flutter (from `Flutter`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - gal (from `.symlinks/plugins/gal/darwin`)
+  - geofencing_api (from `.symlinks/plugins/geofencing_api/ios`)
   - google_sign_in_ios (from `.symlinks/plugins/google_sign_in_ios/darwin`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - kakao_flutter_sdk_common (from `.symlinks/plugins/kakao_flutter_sdk_common/ios`)
@@ -1632,12 +1638,16 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/firebase_messaging/ios"
   firebase_storage:
     :path: ".symlinks/plugins/firebase_storage/ios"
+  fl_location:
+    :path: ".symlinks/plugins/fl_location/ios"
   Flutter:
     :path: Flutter
   flutter_local_notifications:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
   gal:
     :path: ".symlinks/plugins/gal/darwin"
+  geofencing_api:
+    :path: ".symlinks/plugins/geofencing_api/ios"
   google_sign_in_ios:
     :path: ".symlinks/plugins/google_sign_in_ios/darwin"
   image_picker_ios:
@@ -1694,9 +1704,11 @@ SPEC CHECKSUMS:
   FirebaseMessaging: 7f42cfd10ec64181db4e01b305a613791c8e782c
   FirebaseSharedSwift: f57ed48f4542b2d7eb4738f4f23ba443f78b3780
   FirebaseStorage: 7c37558dc72731aa5f0a1a2401d8c6de10a513f5
+  fl_location: df295f3fd4f3c2357d7d8f23b01b0c23f4c84e4e
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_local_notifications: a5a732f069baa862e728d839dd2ebb904737effb
   gal: baecd024ebfd13c441269ca7404792a7152fde89
+  geofencing_api: 8b2cd1d9b33ae3fd3e3f50d07b7e41e1ed2118e4
   google_sign_in_ios: b48bb9af78576358a168361173155596c845f0b9
   GoogleAdsOnDeviceConversion: d68c69dd9581a0f5da02617b6f377e5be483970f
   GoogleAppMeasurement: 72c9a682fec6290327ea5e3c4b829b247fcb2c17
@@ -1726,6 +1738,6 @@ SPEC CHECKSUMS:
   video_player_avfoundation: 2cef49524dd1f16c5300b9cd6efd9611ce03639b
   video_thumbnail: b637e0ad5f588ca9945f6e2c927f73a69a661140
 
-PODFILE CHECKSUM: 53a6aebc29ccee84c41f92f409fc20cd4ca011f1
+PODFILE CHECKSUM: cd549fcbdaaac4164462122dc255880a4a59ec5a
 
 COCOAPODS: 1.16.2

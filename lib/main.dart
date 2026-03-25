@@ -59,6 +59,7 @@ import 'package:toastification/toastification.dart';
 import 'package:lockerroom/services/notification_service.dart';
 import 'package:lockerroom/services/navigation_service.dart';
 import 'package:lockerroom/services/deep_link_service.dart';
+import 'package:lockerroom/services/geofence_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'dart:io';
@@ -101,21 +102,41 @@ Future<void> main() async {
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // 플랫폼별 알림 권한 요청
+    // 플랫폼별 알림 및 위치 권한 요청
     if (Platform.isAndroid) {
       await Permission.notification.request();
+      // 위치 권한 요청 추가 (백그라운드 감지를 위해 Always 권한 필요)
+      var status = await Permission.location.request();
+      if (status.isGranted) {
+        await Permission.locationAlways.request();
+        // 지오펜싱 시작
+        await StadiumGeofenceManager().initGeofencing();
+      }
     } else if (Platform.isIOS) {
       await FirebaseMessaging.instance.requestPermission(
         alert: true,
         badge: true,
         sound: true,
       );
+      // iOS 위치 권한 요청 (순서 중요: WhenInUse -> Always)
+      try {
+        if (await Permission.location.request().isGranted) {
+          // 약간의 지연 후 '항상 허용' 요청 (보안 정책 대응)
+          await Future.delayed(const Duration(milliseconds: 500));
+          await Permission.locationAlways.request();
+          
+          // 권한 승인 후 지오펜싱 시작
+          await StadiumGeofenceManager().initGeofencing();
+        }
+      } catch (e) {
+        debugPrint('iOS Location Permission Error: $e');
+      }
 
       await FirebaseMessaging.instance
           .setForegroundNotificationPresentationOptions(
-            alert: false,
-            badge: false,
-            sound: false,
+            alert: true,
+            badge: true,
+            sound: true,
           );
     }
 

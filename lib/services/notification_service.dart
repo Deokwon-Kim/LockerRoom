@@ -4,6 +4,11 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
+  // 싱글톤 패턴 적용
+  static final NotificationService _instance = NotificationService._internal();
+  factory NotificationService() => _instance;
+  NotificationService._internal();
+
   final notificationsPlugin = FlutterLocalNotificationsPlugin();
 
   bool _isInitialized = false;
@@ -78,7 +83,11 @@ class NotificationService {
         importance: Importance.max,
         priority: Priority.high,
       ),
-      iOS: DarwinNotificationDetails(sound: 'playball.wav'),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
     );
   }
 
