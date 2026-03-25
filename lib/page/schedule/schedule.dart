@@ -439,7 +439,8 @@ class _SchedulePageState extends State<SchedulePage> {
                           final headerLine = '$timeStr  ${s.stadium}';
                           final isCancelled =
                               s.status == '우천취소' ||
-                              statusUpper.startsWith('CANCELLED');
+                              statusUpper.startsWith('CANCELLED') ||
+                              statusUpper == 'PPD';
                           final isInPlay =
                               statusUpper.contains('MS-T') ||
                               statusUpper.contains('SS-T') ||
@@ -558,7 +559,13 @@ class _SchedulePageState extends State<SchedulePage> {
                   Transform.translate(
                     offset: Offset(0, 1),
                     child: Text(
-                      s.status,
+                      s.status == 'SCHEDULED'
+                          ? '예정'
+                          : (s.status == 'LIVE'
+                                ? '진행중'
+                                : (s.status == 'FINAL'
+                                      ? '종료'
+                                      : (s.status == 'PPD' ? '취소' : s.status))),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -725,7 +732,9 @@ class _SchedulePageState extends State<SchedulePage> {
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Text(
-                      s.status,
+                      s.status == 'FINAL'
+                          ? '종료'
+                          : (s.status == 'SCHEDULED' ? '예정' : s.status),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: WHITE,
@@ -923,7 +932,7 @@ class _SchedulePageState extends State<SchedulePage> {
                       border: Border.all(color: RED_DANGER_BORDER_10, width: 1),
                     ),
                     child: Text(
-                      s.status,
+                      s.status == 'PPD' ? '취소' : s.status,
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: RED_DANGER_TEXT_50,

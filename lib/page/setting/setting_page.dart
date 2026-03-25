@@ -13,6 +13,7 @@ import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/services/navigation_service.dart';
 import 'package:lockerroom/services/kbo_migration_service.dart';
+import 'package:lockerroom/page/admin/admin_game_page.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -516,11 +517,35 @@ class SettingPage extends StatelessWidget {
                         //       ),
                         //       Icon(
                         //         Icons.sync,
-                        //         color: selectedTeam?.color ?? BUTTON,
-                        //       ),
-                        //     ],
-                        //   ),
                         // ),
+                        if (userProvider.isAdmin)
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const AdminGamePage(),
+                                ),
+                              );
+                            },
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '경기 데이터 실시간 관리 (Admin)',
+                                  style: TextStyle(
+                                    color: selectedTeam?.color ?? BUTTON,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.settings_remote,
+                                  color: selectedTeam?.color ?? BUTTON,
+                                ),
+                              ],
+                            ),
+                          ),
                         TextButton(
                           onPressed: () async {
                             // 로그아웃 전에 모든 실시간 구독 해제
