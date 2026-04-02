@@ -76,7 +76,7 @@ dependencies:
   kakao_flutter_sdk_share: ^1.9.7+3
   screenshot: ^3.0.0
   gal: ^2.3.0  # image_gallery_saver 대체 (AGP 8.x 호환)
-  audioplayers: ^6.5.1
+  audioplayers: ^6.6.0
   shared_preferences: ^2.5.3
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.1.4
@@ -112,6 +112,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    - assets/images/quiz/
     - assets/images/
     - assets/audio/
     - assets/images/logo/
