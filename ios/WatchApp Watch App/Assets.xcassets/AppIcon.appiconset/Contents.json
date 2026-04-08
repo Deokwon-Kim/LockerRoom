@@ -3,7 +3,8 @@
     {
       "idiom" : "universal",
       "platform" : "watchos",
-      "size" : "1024x1024"
+      "size" : "1024x1024",
+      "filename" : "1024.png"
     }
   ],
   "info" : {
