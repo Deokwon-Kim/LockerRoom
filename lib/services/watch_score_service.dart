@@ -48,8 +48,8 @@ class WatchScoreService {
 
             // 워치로 보낼 데이터 구성
             final scoreData = {
-              'homeScore': data['homeScore'] ?? 0,
-              'awayScore': data['awayScore'] ?? 0,
+              'homeScore': int.tryParse(data['homeScore']?.toString() ?? '0') ?? 0,
+              'awayScore': int.tryParse(data['awayScore']?.toString() ?? '0') ?? 0,
               'inning': data['inning'] ?? '_',
               'homeLogo': _getLogoName(data['homeTeam']),
               'awayLogo': _getLogoName(data['awayTeam']),

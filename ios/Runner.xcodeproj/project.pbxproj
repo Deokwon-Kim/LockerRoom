@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -145,12 +145,72 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		2D8B50702F85F09E0020F111 /* thebaseWatchApp Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "thebaseWatchApp Watch App"; sourceTree = "<group>"; };
-		2D8B507E2F85F09F0020F111 /* thebaseWatchApp Watch AppTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "thebaseWatchApp Watch AppTests"; sourceTree = "<group>"; };
-		2D8B50882F85F09F0020F111 /* thebaseWatchApp Watch AppUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "thebaseWatchApp Watch AppUITests"; sourceTree = "<group>"; };
-		2DD6C2B72F864EFC00FD842B /* WatchApp Watch App */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "WatchApp Watch App"; sourceTree = "<group>"; };
-		2DD6C2C52F864EFD00FD842B /* WatchApp Watch AppTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "WatchApp Watch AppTests"; sourceTree = "<group>"; };
-		2DD6C2CF2F864EFD00FD842B /* WatchApp Watch AppUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "WatchApp Watch AppUITests"; sourceTree = "<group>"; };
+		2D8B50702F85F09E0020F111 /* thebaseWatchApp Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "thebaseWatchApp Watch App";
+			sourceTree = "<group>";
+		};
+		2D8B507E2F85F09F0020F111 /* thebaseWatchApp Watch AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "thebaseWatchApp Watch AppTests";
+			sourceTree = "<group>";
+		};
+		2D8B50882F85F09F0020F111 /* thebaseWatchApp Watch AppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "thebaseWatchApp Watch AppUITests";
+			sourceTree = "<group>";
+		};
+		2DD6C2B72F864EFC00FD842B /* WatchApp Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "WatchApp Watch App";
+			sourceTree = "<group>";
+		};
+		2DD6C2C52F864EFD00FD842B /* WatchApp Watch AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "WatchApp Watch AppTests";
+			sourceTree = "<group>";
+		};
+		2DD6C2CF2F864EFD00FD842B /* WatchApp Watch AppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "WatchApp Watch AppUITests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -303,8 +363,6 @@
 				2DD6C2B72F864EFC00FD842B /* WatchApp Watch App */,
 			);
 			name = "WatchApp Watch App";
-			packageProductDependencies = (
-			);
 			productName = "WatchApp Watch App";
 			productReference = 2DD6C2B62F864EFC00FD842B /* WatchApp Watch App.app */;
 			productType = "com.apple.product-type.application";
@@ -326,8 +384,6 @@
 				2DD6C2C52F864EFD00FD842B /* WatchApp Watch AppTests */,
 			);
 			name = "WatchApp Watch AppTests";
-			packageProductDependencies = (
-			);
 			productName = "WatchApp Watch AppTests";
 			productReference = 2DD6C2C22F864EFD00FD842B /* WatchApp Watch AppTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -349,8 +405,6 @@
 				2DD6C2CF2F864EFD00FD842B /* WatchApp Watch AppUITests */,
 			);
 			name = "WatchApp Watch AppUITests";
-			packageProductDependencies = (
-			);
 			productName = "WatchApp Watch AppUITests";
 			productReference = 2DD6C2CC2F864EFD00FD842B /* WatchApp Watch AppUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -514,13 +568,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -588,13 +638,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
