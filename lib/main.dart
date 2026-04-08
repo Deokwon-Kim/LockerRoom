@@ -58,6 +58,7 @@ import 'package:lockerroom/provider/video_provider.dart';
 import 'package:lockerroom/repository/user_repository.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:lockerroom/provider/block_provider.dart';
+import 'package:lockerroom/services/watch_score_service.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toastification/toastification.dart';
@@ -102,6 +103,8 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
+    WatchScoreService().startWithLiveGame();
 
     // 플랫폼별 알림 권한 요청
     if (kIsWeb) {

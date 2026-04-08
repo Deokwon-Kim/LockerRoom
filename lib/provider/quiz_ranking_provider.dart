@@ -268,4 +268,13 @@ class QuizRankingProvider extends ChangeNotifier {
       return null;
     }
   }
+
+  // 내 팀 순위 찾기
+  RankingTeamModel? getMyTeamRanking(String teamName) {
+    try {
+      return _teamRankings.firstWhere((team) => team.teamName == teamName);
+    } catch (e) {
+      return null;
+    }
+  }
 }

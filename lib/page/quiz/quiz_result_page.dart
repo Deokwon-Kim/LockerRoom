@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:confetti/confetti.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
 import 'package:lockerroom/bottom_tab_bar/quiz_tab_bar.dart';
@@ -13,8 +14,10 @@ import 'package:lockerroom/provider/badge_provider.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
+import 'package:lockerroom/utils/quiz_season_utils.dart';
 import 'package:lockerroom/widgets/quiz_ranking_widget.dart';
 import 'package:lockerroom/widgets/team_battle_dialog.dart';
+import 'package:lockerroom/widgets/tier_up_overlay.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
@@ -43,6 +46,12 @@ class _QuizResultPageState extends State<QuizResultPage>
   bool _showFinalGrade = false;
   double _scoreScale = 1.0;
   bool _isImpactActive = false;
+
+  // 티어 관련 상태
+  String _oldTier = "";
+  String _newTier = "";
+  bool _showTierUpOverlay = false;
+  final bool _debugForceTierUp = false; // 티어 상승 디버깅 (필요 시 true로)
 
   @override
   void initState() {
@@ -87,6 +96,20 @@ class _QuizResultPageState extends State<QuizResultPage>
 
       // 점수 애니메이션 시작
       _startScoreAnimation();
+
+      // 티어 상승 여부 체크를 위한 데이터 준비
+      final rankProvider = context.read<QuizRankingProvider>();
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      if (currentUserId != null) {
+        final myRanking = rankProvider.getMyRanking(currentUserId);
+        if (myRanking != null) {
+          // QuizRankingProvider는 PlayPage에서 이미 최신화된 상태라고 가정
+          _oldTier = QuizSeasonUtils.getTier(
+            myRanking.score - widget.result.score,
+          );
+          _newTier = QuizSeasonUtils.getTier(myRanking.score);
+        }
+      }
     });
   }
 
@@ -288,7 +311,27 @@ class _QuizResultPageState extends State<QuizResultPage>
                               _buildPerformanceReport(),
                               SizedBox(height: 24),
                               QuizRankingWidget(
-                                gainedScore: widget.result.score,
+                                gainedScore: _showFinalGrade
+                                    ? widget.result.score
+                                    : null,
+                                onRankAnimationComplete: () {
+                                  // 랭킹 애니메이션 및 다이얼로그 종료 후 티어 상승 연출 노출
+                                  if (_debugForceTierUp ||
+                                      (_oldTier != _newTier &&
+                                          _newTier.isNotEmpty &&
+                                          _oldTier.isNotEmpty)) {
+                                    // 하위 -> 상위 이동일 때만 (또는 디버그 모드일 때)
+                                    setState(() {
+                                      // 디버그 모드에서 티어 정보가 비어있을 경우 예시 데이터 삽입
+                                      if (_debugForceTierUp &&
+                                          _newTier.isEmpty) {
+                                        _oldTier = "MINOR";
+                                        _newTier = "MAJOR";
+                                      }
+                                      _showTierUpOverlay = true;
+                                    });
+                                  }
+                                },
                               ),
                             ],
                           ),
@@ -384,6 +427,18 @@ class _QuizResultPageState extends State<QuizResultPage>
                 gravity: 0.1,
                 colors: [teamColor, Colors.blue, Colors.orange, Colors.white],
               ),
+            ),
+
+          // 5. 티어 상승 풀페이지 오버레이
+          if (_showTierUpOverlay)
+            TierUpOverlay(
+              oldTier: _oldTier,
+              newTier: _newTier,
+              onDismiss: () {
+                setState(() {
+                  _showTierUpOverlay = false;
+                });
+              },
             ),
         ],
       ),

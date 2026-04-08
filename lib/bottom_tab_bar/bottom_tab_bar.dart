@@ -11,6 +11,7 @@ import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/widgets/svg_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lockerroom/provider/schdule_Provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BottomTabBar extends StatefulWidget {
@@ -283,65 +284,229 @@ class _BottomTabBarState extends State<BottomTabBar> {
     return Scaffold(
       body: pages[_selectedIndex],
       bottomNavigationBar: Container(
-        padding: EdgeInsets.only(left: 0, right: 0, top: 0),
         decoration: BoxDecoration(
           color: WHITE,
           boxShadow: [
             BoxShadow(
-              color: GRAYSCALE_LABEL_100,
+              color: GRAYSCALE_LABEL_100.withOpacity(0.5),
               spreadRadius: 1,
-              blurRadius: 7,
-              offset: Offset(0, 2),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
             ),
           ],
         ),
-        child: Theme(
-          data: Theme.of(context).copyWith(
-            splashFactory: NoSplash.splashFactory,
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
-          ),
-          child: BottomNavigationBar(
-            currentIndex: _selectedIndex,
-            onTap: _onItemTapped,
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: teamProvider.selectedTeam?.color,
-            unselectedItemColor: GRAYSCALE_LABEL_500,
-            backgroundColor: WHITE,
-            elevation: 0,
-            selectedFontSize: 11,
-            unselectedFontSize: 11,
-            iconSize: 25,
-            items: [
-              BottomNavigationBarItem(
-                icon: _buildSvgTabIcon(0, AppIcons.home, AppIcons.homeFill),
-                label: '홈',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildScoreBanner(),
+            Theme(
+              data: Theme.of(context).copyWith(
+                splashFactory: NoSplash.splashFactory,
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
               ),
-              BottomNavigationBarItem(
-                icon: _buildTabIcon(
-                  1,
-                  Icons.sports_baseball_outlined,
-                  Icons.sports_baseball,
-                ),
-                label: '피드',
+              child: BottomNavigationBar(
+                currentIndex: _selectedIndex,
+                onTap: _onItemTapped,
+                type: BottomNavigationBarType.fixed,
+                selectedItemColor: teamProvider.selectedTeam?.color,
+                unselectedItemColor: GRAYSCALE_LABEL_500,
+                backgroundColor: WHITE,
+                elevation: 0,
+                selectedFontSize: 11,
+                unselectedFontSize: 11,
+                iconSize: 25,
+                items: [
+                  BottomNavigationBarItem(
+                    icon: _buildSvgTabIcon(0, AppIcons.home, AppIcons.homeFill),
+                    label: '홈',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: _buildTabIcon(
+                      1,
+                      Icons.sports_baseball_outlined,
+                      Icons.sports_baseball,
+                    ),
+                    label: '피드',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: _buildSvgTabIcon(2, AppIcons.add, AppIcons.add),
+                    label: '업로드',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: _buildTabIcon(3, Icons.group_outlined, Icons.group),
+                    label: '직관모임',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: _buildSvgTabIcon(
+                      4,
+                      AppIcons.person,
+                      AppIcons.personFill,
+                    ),
+                    label: '내정보',
+                  ),
+                ],
               ),
-              BottomNavigationBarItem(
-                icon: _buildSvgTabIcon(2, AppIcons.add, AppIcons.add),
-                label: '업로드',
-              ),
-
-              BottomNavigationBarItem(
-                icon: _buildTabIcon(3, Icons.group_outlined, Icons.group),
-                label: '직관모임',
-              ),
-              BottomNavigationBarItem(
-                icon: _buildSvgTabIcon(4, AppIcons.person, AppIcons.personFill),
-                label: '내정보',
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildScoreBanner() {
+    // 홈 탭(_selectedIndex == 0)일 때만 배너 노출
+    if (_selectedIndex != 0) return const SizedBox.shrink();
+
+    return Consumer2<TeamProvider, ScheduleProvider>(
+      builder: (context, teamProvider, scheduleProvider, child) {
+        final selectedTeam = teamProvider.selectedTeam;
+        if (selectedTeam == null || !scheduleProvider.loaded) {
+          return const SizedBox.shrink();
+        }
+
+        final teamName = selectedTeam.symplename;
+        final now = DateTime.now();
+
+        // 1. 관련 게임 필터링 (내 팀의 오늘 경기 / 진행 경기 / 가장 가까운 다음 경기)
+        final relatedGames = scheduleProvider.allSchedules.where((s) {
+          final isMyTeam = s.homeTeam == teamName || s.awayTeam == teamName;
+          if (!isMyTeam) return false;
+
+          // LIVE거나, 오늘 경기거나, 혹은 아직 치러지지 않은 미래의 경기들
+          final isToday =
+              s.dateTimeKst.year == now.year &&
+              s.dateTimeKst.month == now.month &&
+              s.dateTimeKst.day == now.day;
+          final isFuture = s.dateTimeKst.isAfter(now);
+
+          return isToday || isFuture || s.status == 'LIVE';
+        }).toList();
+
+        if (relatedGames.isEmpty) return const SizedBox.shrink();
+
+        // 가장 우선순위 높은 게임 선택 (LIVE -> 가장 가까운 미래)
+        relatedGames.sort((a, b) {
+          if (a.status == 'LIVE' && b.status != 'LIVE') return -1;
+          if (a.status != 'LIVE' && b.status == 'LIVE') return 1;
+          return a.dateTimeKst.compareTo(b.dateTimeKst);
+        });
+
+        final game = relatedGames.first;
+        final isLive = game.status == 'LIVE';
+        final isFinal = game.status == 'FINAL';
+
+        // 상태 텍스트
+        String statusText = '경기 전';
+        if (isLive)
+          statusText = game.inning ?? 'LIVE';
+        else if (isFinal)
+          statusText = '종료';
+        else if (game.status == 'PPD')
+          statusText = '우천취소';
+
+        // 팀 모델 찾기
+        final homeTeam = teamProvider.findTeamByName(game.homeTeam);
+        final awayTeam = teamProvider.findTeamByName(game.awayTeam);
+
+        return Padding(
+          padding: const EdgeInsets.only(left: 10.0, right: 10.0),
+          child: Container(
+            width: double.infinity,
+            height: 60,
+            decoration: BoxDecoration(
+              color: selectedTeam.color,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.keyboard_arrow_up_rounded,
+                  color: Colors.white60,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  game.stadium,
+                  style: const TextStyle(
+                    color: WHITE,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF2D55), Color(0xFF8E5AFF)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: const TextStyle(
+                      color: WHITE,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    if (awayTeam != null)
+                      Image.asset(awayTeam.logoPath, height: 24),
+                    const SizedBox(width: 12),
+                    if (isLive || isFinal)
+                      Text(
+                        '${game.awayScore}',
+                        style: const TextStyle(
+                          color: WHITE,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'kbo',
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'VS',
+                        style: TextStyle(
+                          color: WHITE.withOpacity(0.3),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                    if (isLive || isFinal)
+                      Text(
+                        '${game.homeScore}',
+                        style: const TextStyle(
+                          color: WHITE,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'kbo',
+                        ),
+                      ),
+                    const SizedBox(width: 12),
+                    if (homeTeam != null)
+                      Image.asset(homeTeam.logoPath, height: 24),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

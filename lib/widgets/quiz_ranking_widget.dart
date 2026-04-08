@@ -11,7 +11,8 @@ import 'package:provider/provider.dart';
 
 class QuizRankingWidget extends StatefulWidget {
   final int? gainedScore;
-  const QuizRankingWidget({super.key, this.gainedScore});
+  final VoidCallback? onRankAnimationComplete;
+  const QuizRankingWidget({super.key, this.gainedScore, this.onRankAnimationComplete});
 
   @override
   State<QuizRankingWidget> createState() => _QuizRankingWidgetState();
@@ -60,6 +61,15 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
       if (!mounted) return;
       _fetchAndPrepareData();
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant QuizRankingWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // gainedScore가 null에서 non-null로 바뀔 때 애니메이션 데이터 준비 및 시작
+    if (oldWidget.gainedScore == null && widget.gainedScore != null) {
+      _prepareAnimationData();
+    }
   }
 
   Future<void> _fetchAndPrepareData() async {
@@ -216,6 +226,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
   }
 
   void _startAnimation(int gainedScore) {
+    bool hasCelebration = false;
     // 1. 애니메이션 시작 전 현재(이전) 상태 캡처
     final myUserId = FirebaseAuth.instance.currentUser?.uid;
     final teamProvider = context.read<TeamProvider>();
@@ -269,10 +280,10 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
       }
     });
 
-    // 2. 애니메이션 후 랭커 정보 확인 및 다이얼로그 트리거
     if (oldMyUser != null) {
       final newUserItem = _userItems.firstWhere((item) => item.isMe);
       if (newUserItem.rank < oldUserRank) {
+        hasCelebration = true;
         _showCelebration(
           targetName: newUserItem.name,
           oldRank: oldUserRank,
@@ -285,6 +296,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
     if (oldMyTeam != null) {
       final newTeamItem = _teamItems.firstWhere((item) => item.isMe);
       if (newTeamItem.rank < oldTeamRank) {
+        hasCelebration = true;
         _showCelebration(
           targetName: newTeamItem.name,
           oldRank: oldTeamRank,
@@ -293,6 +305,13 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
           logoPath: newTeamItem.profileUrl,
         );
       }
+    }
+
+    // 축하 연출이 없으면 바로 완료 콜백 호출
+    if (!hasCelebration) {
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        widget.onRankAnimationComplete?.call();
+      });
     }
   }
 
@@ -304,9 +323,9 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
     String? logoPath,
   }) {
     // 애니메이션이 어느 정도 진행된 후 다이얼로그 노출
-    Future.delayed(const Duration(milliseconds: 1200), () {
+    Future.delayed(const Duration(milliseconds: 1200), () async {
       if (mounted) {
-        showDialog(
+        await showDialog(
           context: context,
           builder: (context) => RankOvertakeDialog(
             targetName: targetName,
@@ -316,6 +335,8 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
             logoPath: logoPath,
           ),
         );
+        // 다이얼로그가 닫힌 후 완료 콜백 호출
+        widget.onRankAnimationComplete?.call();
       }
     });
   }

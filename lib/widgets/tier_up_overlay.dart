@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:confetti/confetti.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:lockerroom/widgets/season_result_overlay.dart';
 
 class TierUpOverlay extends StatefulWidget {
   final String oldTier;
@@ -39,10 +41,13 @@ class _TierUpOverlayState extends State<TierUpOverlay>
 
   late ConfettiController _confettiController;
   final Random _random = Random();
+  late AudioPlayer _audioPlayer;
 
   @override
   void initState() {
     super.initState();
+    _audioPlayer = AudioPlayer();
+    _playRankupSound();
 
     _mainController = AnimationController(
       duration: const Duration(milliseconds: 3500),
@@ -207,8 +212,15 @@ class _TierUpOverlayState extends State<TierUpOverlay>
     _confettiController.play();
   }
 
+  void _playRankupSound() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    await _audioPlayer.play(AssetSource('audio/RankUp.mp3'));
+  }
+
   @override
   void dispose() {
+    _audioPlayer.stop();
+    _audioPlayer.dispose();
     _mainController.dispose();
     _impactController.dispose();
     _particleController.dispose();
@@ -217,33 +229,33 @@ class _TierUpOverlayState extends State<TierUpOverlay>
     super.dispose();
   }
 
-  String _getTrophyPath(String tier) {
+  String _getEmblemPath(String tier) {
     switch (tier) {
       case 'MVP':
-        return 'assets/images/quiz/quiz_trophy_mvp.png';
+        return 'assets/images/quiz/quiz_emblem_mvp.png';
       case 'ALL-STAR':
-        return 'assets/images/quiz/quiz_trophy_allstar.png';
+        return 'assets/images/quiz/quiz_emblem_allstar.png';
       case 'MAJOR':
-        return 'assets/images/quiz/quiz_trophy_major.png';
+        return 'assets/images/quiz/quiz_emblem_major.png';
       case 'MINOR':
-        return 'assets/images/quiz/quiz_trophy_minor.png';
+        return 'assets/images/quiz/quiz_emblem_minor.png';
       default:
-        return 'assets/images/quiz/quiz_trophy_prospect.png';
+        return 'assets/images/quiz/quiz_emblem_prospect.png';
     }
   }
 
   Color _getTierColor(String tier) {
     switch (tier) {
       case 'MVP':
-        return const Color(0xFFFFD700);
+        return const Color(0xFFB19CD9); // Diamond Purple
       case 'ALL-STAR':
-        return const Color(0xFF4A90E2);
+        return const Color(0xFFFF4D4D); // Platinum Red
       case 'MAJOR':
-        return const Color(0xFF2ECC71);
+        return const Color(0xFFFFD700); // Gold
       case 'MINOR':
-        return const Color(0xFFFFA500);
+        return const Color(0xFFC0C0C0); // Silver
       default:
-        return const Color(0xFF95A5A6);
+        return const Color(0xFFCD7F32); // Bronze
     }
   }
 
@@ -253,176 +265,200 @@ class _TierUpOverlayState extends State<TierUpOverlay>
 
     return Material(
       color: Colors.transparent,
-      child: AnimatedBuilder(
-        animation: _shakeAnimation,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(
-              _shakeAnimation.value * (_random.nextDouble() - 0.5),
-              _shakeAnimation.value,
-            ),
-            child: Stack(
-              children: [
-                Container(color: Colors.black.withOpacity(0.98)),
-
-                // Fog / Dust
-                ...List.generate(3, (index) => _buildFogLayer(index, newColor)),
-
-                // Particles
-                CustomPaint(
-                  size: MediaQuery.of(context).size,
-                  painter: SparklePainter(
-                    animation: _particleController,
-                    color: newColor,
-                  ),
-                ),
-
-                _buildImpactGlow(newColor),
-
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: ConfettiWidget(
-                    confettiController: _confettiController,
-                    blastDirectionality: BlastDirectionality.explosive,
-                    numberOfParticles: 35,
-                    colors: [newColor, Colors.white, Colors.amber],
-                  ),
-                ),
-
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      FadeTransition(
-                        opacity: _textOpacity,
-                        child: SlideTransition(
-                          position: _textSlide,
-                          child: EpicTitle(text: '승격', color: newColor),
-                        ),
-                      ),
-                      const SizedBox(height: 50),
-
-                      // Trophy Transformation Stack
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // OLD TROPHY (Fades out)
-                          ScaleTransition(
-                            scale: _oldTrophyScale,
-                            child: FadeTransition(
-                              opacity: _oldTrophyOpacity,
-                              child: Opacity(
-                                opacity: 0.6,
-                                child: Image.asset(
-                                  _getTrophyPath(widget.oldTier),
-                                  width: 220,
-                                  height: 220,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          // NEW TROPHY (Bursts in)
-                          ScaleTransition(
-                            scale: _newTrophyScale,
-                            child: FadeTransition(
-                              opacity: _newTrophyOpacity,
-                              child: Container(
-                                width: 280,
-                                height: 280,
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Container(
-                                      width: 220,
-                                      height: 220,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: newColor.withOpacity(0.2),
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                    ),
-                                    Image.asset(
-                                      _getTrophyPath(widget.newTier),
-                                      fit: BoxFit.contain,
-                                    ),
-                                    _buildShineSweep(),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onDismiss,
+        child: AnimatedBuilder(
+          animation: _shakeAnimation,
+          builder: (context, child) {
+            return Transform.translate(
+              offset: Offset(
+                _shakeAnimation.value * (_random.nextDouble() - 0.5),
+                _shakeAnimation.value,
+              ),
+              child: Stack(
+                children: [
+                  // 1. Unified Premium Deep Navy Gradient Background
+                  Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF030D1E),
+                          Color(0xFF0A1322),
+                          Color(0xFF050F22),
                         ],
                       ),
+                    ),
+                  ),
 
-                      const SizedBox(height: 40),
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: ResultBackgroundPainter(color: newColor),
+                    ),
+                  ),
 
-                      FadeTransition(
-                        opacity: _textOpacity,
-                        child: SlideTransition(
-                          position: _textSlide,
-                          child: Column(
-                            children: [
-                              Text(
-                                '${widget.oldTier} ➔ ${widget.newTier}',
-                                style: TextStyle(
-                                  fontFamily: 'kbo',
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: WHITE.withOpacity(0.95),
-                                  letterSpacing: 3,
+                  // Fog / Dust
+                  ...List.generate(
+                    3,
+                    (index) => _buildFogLayer(index, newColor),
+                  ),
+
+                  // Particles
+                  CustomPaint(
+                    size: MediaQuery.of(context).size,
+                    painter: SparklePainter(
+                      animation: _particleController,
+                      color: newColor,
+                    ),
+                  ),
+
+                  _buildImpactGlow(newColor),
+
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: ConfettiWidget(
+                      confettiController: _confettiController,
+                      blastDirectionality: BlastDirectionality.explosive,
+                      numberOfParticles: 35,
+                      colors: [newColor, Colors.white, Colors.amber],
+                    ),
+                  ),
+
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        FadeTransition(
+                          opacity: _textOpacity,
+                          child: SlideTransition(
+                            position: _textSlide,
+                            child: Text(
+                              '승격',
+                              style: TextStyle(
+                                fontSize: 50,
+                                color: WHITE,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Trophy Transformation Stack
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // OLD EMBLEM (Fades out)
+                            ScaleTransition(
+                              scale: _oldTrophyScale,
+                              child: FadeTransition(
+                                opacity: _oldTrophyOpacity,
+                                child: Opacity(
+                                  opacity: 0.6,
+                                  child: Image.asset(
+                                    _getEmblemPath(widget.oldTier),
+                                    width: 280,
+                                    height: 280,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 12),
+                            ),
+
+                            // NEW EMBLEM (Bursts in)
+                            ScaleTransition(
+                              scale: _newTrophyScale,
+                              child: FadeTransition(
+                                opacity: _newTrophyOpacity,
+                                child: Container(
+                                  width: 280,
+                                  height: 280,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      // Tier Aura Glow
+                                      Container(
+                                        width: 170,
+                                        height: 170,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: newColor.withOpacity(0.2),
+                                              blurRadius: 80,
+                                              spreadRadius: 20,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Image.asset(
+                                        _getEmblemPath(widget.newTier),
+                                        fit: BoxFit.contain,
+                                      ),
+                                      _buildShineSweep(),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        FadeTransition(
+                          opacity: _textOpacity,
+                          child: SlideTransition(
+                            position: _textSlide,
+                            child: Column(
+                              children: [
+                                Text(
+                                  widget.newTier,
+                                  style: TextStyle(
+                                    fontFamily: 'kbo',
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: _getTierColor(widget.newTier),
+                                    letterSpacing: 3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 50),
+
+                        // Touch to continue guide
+                        FadeTransition(
+                          opacity: _textOpacity,
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.touch_app,
+                                color: WHITE.withOpacity(0.3),
+                                size: 24,
+                              ),
+                              const SizedBox(height: 8),
                               Text(
-                                '새로운 전설이 시작되었습니다!',
+                                '터치하여 계속하세요',
                                 style: TextStyle(
                                   fontFamily: 'kbo',
-                                  fontSize: 16,
-                                  color: WHITE.withOpacity(0.4),
+                                  fontSize: 14,
+                                  color: WHITE.withOpacity(0.3),
+                                  letterSpacing: 1,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ),
-
-                      const SizedBox(height: 70),
-
-                      FadeTransition(
-                        opacity: _textOpacity,
-                        child: ElevatedButton(
-                          onPressed: widget.onDismiss,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 100,
-                              vertical: 20,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            '확인',
-                            style: TextStyle(
-                              fontFamily: 'kbo',
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -508,60 +544,60 @@ class _TierUpOverlayState extends State<TierUpOverlay>
   }
 }
 
-class EpicTitle extends StatelessWidget {
-  final String text;
-  final Color color;
-  const EpicTitle({super.key, required this.text, required this.color});
+// class EpicTitle extends StatelessWidget {
+//   final String text;
+//   final Color color;
+//   const EpicTitle({super.key, required this.text, required this.color});
 
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Text(
-          text,
-          style: TextStyle(
-            // fontFamily: 'kbo',
-            fontSize: 56,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 8,
-            color: color.withOpacity(0.15),
-          ),
-        ),
-        Text(
-          text,
-          style: TextStyle(
-            // fontFamily: 'kbo',
-            fontSize: 54,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 8,
-            foreground: Paint()
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = 10
-              ..color = color.withOpacity(0.4),
-          ),
-        ),
-        ShaderMask(
-          shaderCallback: (bounds) => LinearGradient(
-            colors: [Colors.white, color.withOpacity(0.8), Colors.white],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ).createShader(bounds),
-          child: Text(
-            text,
-            style: const TextStyle(
-              // fontFamily: 'kbo',
-              fontSize: 52,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: 8,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Stack(
+//       alignment: Alignment.center,
+//       children: [
+//         Text(
+//           text,
+//           style: TextStyle(
+//             fontFamily: 'kbo',
+//             fontSize: 56,
+//             fontWeight: FontWeight.w900,
+//             letterSpacing: 8,
+//             color: color.withOpacity(0.15),
+//           ),
+//         ),
+//         Text(
+//           text,
+//           style: TextStyle(
+//             fontFamily: 'kbo',
+//             fontSize: 54,
+//             fontWeight: FontWeight.w900,
+//             letterSpacing: 8,
+//             foreground: Paint()
+//               ..style = PaintingStyle.stroke
+//               ..strokeWidth = 10
+//               ..color = color.withOpacity(0.4),
+//           ),
+//         ),
+//         ShaderMask(
+//           shaderCallback: (bounds) => LinearGradient(
+//             colors: [Colors.white, color.withOpacity(0.8), Colors.white],
+//             begin: Alignment.topCenter,
+//             end: Alignment.bottomCenter,
+//           ).createShader(bounds),
+//           child: Text(
+//             text,
+//             style: const TextStyle(
+//               fontFamily: 'kbo',
+//               fontSize: 52,
+//               fontWeight: FontWeight.w900,
+//               color: Colors.white,
+//               letterSpacing: 8,
+//             ),
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+// }
 
 class SparklePainter extends CustomPainter {
   final Animation<double> animation;
