@@ -171,7 +171,6 @@ class _HomePageState extends State<HomePage> {
           ),
           body: Stack(
             children: [
-
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
@@ -191,17 +190,17 @@ class _HomePageState extends State<HomePage> {
               SingleChildScrollView(
                 child: Column(
                   children: [
-                    _buildMyStatusBar(selectedTeam),
+                    // _buildMyStatusBar(selectedTeam),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildMatchCard(context, selectedTeam),
-                          const SizedBox(height: 24),
+                          // _buildMatchCard(context, selectedTeam),
+                          // const SizedBox(height: 24),
                           _QuizRankingDashboard(selectedTeam: selectedTeam),
-                          const SizedBox(height: 24),
-                          _buildSectionHeader('나의 직관 기록 🏟'),
+                          const SizedBox(height: 12),
+                          // _buildSectionHeader('나의 직관 기록 🏟'),
                           const SizedBox(height: 12),
                           _buildIntutionRecord(),
                           const SizedBox(height: 24),
@@ -1406,6 +1405,7 @@ class _HomePageState extends State<HomePage> {
                 draws++;
             }
           }
+
           final int totalGames = items.length;
           final double winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
           final teamColor = tp.selectedTeam?.color ?? Colors.blueAccent;
@@ -1413,111 +1413,90 @@ class _HomePageState extends State<HomePage> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 4.0,
-                  vertical: 8.0,
-                ),
-                child: Row(
-                  children: [
-                    const Text(
-                      '나의 직관기록',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const IntutionTabBar(),
-                        ),
-                      ),
-                      child: Row(
-                        children: const [
-                          Text(
-                            '기록 더보기',
-                            style: TextStyle(
-                              color: GRAYSCALE_LABEL_500,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            size: 10,
-                            color: GRAYSCALE_LABEL_500,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+              _buildSectionHeader(
+                '나의 직관 기록',
+                onSeeAll: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const IntutionTabBar(),
+                  ),
                 ),
               ),
+              const SizedBox(height: 12),
               Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 30,
+                ),
                 decoration: BoxDecoration(
                   color: WHITE,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                    BoxShadow(
-                      color: teamColor.withOpacity(0.1),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
+                      color: teamColor.withOpacity(0.08),
+                      blurRadius: 40,
+                      offset: const Offset(0, 12),
                     ),
                   ],
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      _buildScoreItem(
-                        '총 경기',
-                        '${items.length}',
-                        Icons.stadium_outlined,
-                        GRAYSCALE_LABEL_600,
-                      ),
-                      _buildDivider(),
-                      _buildScoreItem(
-                        '승',
-                        '$wins',
-                        Icons.emoji_events_outlined,
-                        Colors.blueAccent,
-                      ),
-                      _buildDivider(),
-                      _buildScoreItem(
-                        '패',
-                        '$losses',
-                        Icons.sentiment_dissatisfied_rounded,
-                        Colors.redAccent,
-                      ),
-                      _buildDivider(),
-                      _buildScoreItem(
-                        '무',
-                        '$draws',
-                        Icons.remove_circle_outline_rounded,
-                        GRAYSCALE_LABEL_500,
-                      ),
-                      _buildDivider(),
-                      _buildScoreItem(
-                        '승률',
-                        '${winRate.toStringAsFixed(0)}%',
-                        Icons.percent_rounded,
-                        GRAYSCALE_LABEL_900,
-                      ),
-                    ],
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // 왼쪽: 총 경기 & 승리
+                    Column(
+                      children: [
+                        _buildMiniStat('총 경기', '$totalGames', teamColor),
+                        const SizedBox(height: 24),
+                        _buildMiniStat('승리', '$wins', Colors.blueAccent),
+                      ],
+                    ),
+                    // 중앙: 승률 게이지
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 110,
+                          height: 110,
+                          child: CircularProgressIndicator(
+                            value: winRate / 100,
+                            strokeWidth: 12,
+                            backgroundColor: teamColor.withOpacity(0.1),
+                            color: teamColor,
+                            strokeCap: StrokeCap.round,
+                          ),
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${winRate.toStringAsFixed(0)}%',
+                              style: GoogleFonts.outfit(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: GRAYSCALE_LABEL_900,
+                              ),
+                            ),
+                            const Text(
+                              '승률',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: GRAYSCALE_LABEL_500,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    // 오른쪽: 패배 & 무승부
+                    Column(
+                      children: [
+                        _buildMiniStat('패배', '$losses', Colors.redAccent),
+                        const SizedBox(height: 24),
+                        _buildMiniStat('무승부', '$draws', GRAYSCALE_LABEL_400),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1527,41 +1506,28 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildScoreItem(
-    String label,
-    String value,
-    IconData icon,
-    Color mainColor,
-  ) {
-    return Expanded(
-      child: Column(
-        children: [
-          Icon(icon, color: mainColor.withOpacity(0.8), size: 20),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: GRAYSCALE_LABEL_500,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
+  Widget _buildMiniStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: GRAYSCALE_LABEL_500,
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: GoogleFonts.robotoMono(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: mainColor,
-            ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: GoogleFonts.outfit(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: color,
           ),
-        ],
-      ),
+        ),
+      ],
     );
-  }
-
-  Widget _buildDivider() {
-    return Container(width: 1, height: 30, color: Colors.grey.withOpacity(0.1));
   }
 }
 
@@ -1674,11 +1640,12 @@ class _QuizRankingDashboardState extends State<_QuizRankingDashboard> {
                   children: [
                     // 상단 퀴즈 배너 영역
                     GestureDetector(
-                      onTap: () => Navigator.of(context, rootNavigator: true).push(
-                        MaterialPageRoute(
-                          builder: (context) => QuizTabBar(initialIndex: 0),
-                        ),
-                      ),
+                      onTap: () =>
+                          Navigator.of(context, rootNavigator: true).push(
+                            MaterialPageRoute(
+                              builder: (context) => QuizTabBar(initialIndex: 0),
+                            ),
+                          ),
                       child: Container(
                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                         child: Row(
@@ -1836,9 +1803,10 @@ class _QuizRankingDashboardState extends State<_QuizRankingDashboard> {
     bool isDark = false,
   }) {
     return GestureDetector(
-      onTap: () => Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(builder: (_) => QuizTabBar(initialIndex: 3)),
-      ),
+      onTap: () => Navigator.of(
+        context,
+        rootNavigator: true,
+      ).push(MaterialPageRoute(builder: (_) => QuizTabBar(initialIndex: 3))),
       child: Container(
         color: Colors.transparent,
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
