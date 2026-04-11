@@ -424,12 +424,6 @@ class _BottomTabBarState extends State<BottomTabBar> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                const Icon(
-                  Icons.keyboard_arrow_up_rounded,
-                  color: Colors.white60,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
                 Text(
                   game.stadium,
                   style: const TextStyle(
@@ -463,7 +457,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
                 Row(
                   children: [
                     if (awayTeam != null)
-                      Image.asset(awayTeam.logoPath, height: 24),
+                      Image.asset(awayTeam.logoPath, height: 30),
                     const SizedBox(width: 12),
                     if (isLive || isFinal)
                       Text(
@@ -499,7 +493,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
                       ),
                     const SizedBox(width: 12),
                     if (homeTeam != null)
-                      Image.asset(homeTeam.logoPath, height: 24),
+                      Image.asset(homeTeam.logoPath, height: 30),
                   ],
                 ),
               ],
