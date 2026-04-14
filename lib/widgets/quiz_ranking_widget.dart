@@ -7,6 +7,7 @@ import 'package:lockerroom/page/quiz/quiz_ranking_page.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/widgets/rank_overtake_dialog.dart';
+import 'package:lockerroom/utils/quiz_tier_utils.dart';
 import 'package:provider/provider.dart';
 
 class QuizRankingWidget extends StatefulWidget {
@@ -27,6 +28,7 @@ class _RankingItem {
   int rank;
   final bool isMe;
   final Color? color; // for team color or user icon color
+  final String? tier;
   final DateTime completedAt;
 
   _RankingItem({
@@ -38,6 +40,7 @@ class _RankingItem {
     required this.rank,
     required this.isMe,
     this.color,
+    this.tier,
     required this.completedAt,
   });
 }
@@ -108,6 +111,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
           rank: 0,
           rankChange: 0,
           completedAt: DateTime.now(),
+          tier: 'PROSPECT',
         ),
       );
 
@@ -124,6 +128,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
             rank: 0, // 나중에 계산
             isMe: isMe,
             color: Colors.blueAccent,
+            tier: u.tier,
             completedAt: u.completedAt,
           );
         }).toList();
@@ -491,13 +496,27 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
             ],
 
             Expanded(
-              child: Text(
-                item.name,
-                style: TextStyle(
-                  fontWeight: item.isMe ? FontWeight.bold : FontWeight.normal,
-                  color: item.isMe ? Colors.white : Colors.grey[700],
-                ),
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      item.name,
+                      style: TextStyle(
+                        fontWeight: item.isMe ? FontWeight.bold : FontWeight.normal,
+                        color: item.isMe ? Colors.white : Colors.grey[700],
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (!item.isTeam && item.tier != null) ...[
+                    const SizedBox(width: 6),
+                    Image.asset(
+                      QuizTierUtils.getTierEmblem(item.tier!),
+                      width: 20,
+                      height: 20,
+                    ),
+                  ],
+                ],
               ),
             ),
             TweenAnimationBuilder<int>(
@@ -570,6 +589,8 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
           children: [
             _buildHeader(),
             const SizedBox(height: 16),
+            _buildTierProgressBar(context, myRanking?.score ?? 0),
+            const SizedBox(height: 16),
             _buildRankingRow(
               icon: Icons.person,
               iconColor: Colors.blueAccent,
@@ -611,6 +632,94 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
           ),
         ),
         Icon(Icons.chevron_right, color: GRAYSCALE_LABEL_400, size: 20),
+      ],
+    );
+  }
+
+  Widget _buildTierProgressBar(BuildContext context, int score) {
+    final progressInfo = QuizTierUtils.getTierProgress(score);
+    final themeColor =
+        context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Image.asset(
+                  QuizTierUtils.getTierEmblem(progressInfo.currentTier),
+                  width: 18,
+                  height: 18,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  progressInfo.currentTier,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: QuizTierUtils.getTierColor(progressInfo.currentTier),
+                  ),
+                ),
+              ],
+            ),
+            if (progressInfo.remainingScore > 0)
+              Text(
+                '다음 등급까지 ${progressInfo.remainingScore}P',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: GRAYSCALE_LABEL_500,
+                  fontWeight: FontWeight.w500,
+                ),
+              )
+            else
+              const Text(
+                '최대 등급 달성! 🔥',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: GRAYSCALE_LABEL_500,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Stack(
+          children: [
+            Container(
+              width: double.infinity,
+              height: 6,
+              decoration: BoxDecoration(
+                color: GRAYSCALE_LABEL_100,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0, end: progressInfo.progress),
+              duration: const Duration(milliseconds: 1000),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) {
+                return FractionallySizedBox(
+                  widthFactor: value.clamp(0.01, 1.0),
+                  child: Container(
+                    height: 6,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          themeColor,
+                          themeColor.withOpacity(0.7),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ],
     );
   }

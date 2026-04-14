@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/quiz_trophy_model.dart';
 import 'package:lockerroom/page/quiz/cheer_song_category_page.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
@@ -33,8 +34,10 @@ class _QuizStartPageState extends State<QuizStartPage> {
 
       // 1. 방금 종료된 시즌의 데이터 먼저 로드 (챔피언 여부 판정용)
       final prevSeasonId = QuizSeasonUtils.getPreviousSeasonId();
-      rankProvider.setSeason(prevSeasonId); // 이전 시즌으로 설정하여 데이터 조회
-      await rankProvider.fetchRankings(true);
+      if (prevSeasonId != null) {
+        rankProvider.setSeason(prevSeasonId); // 이전 시즌으로 설정하여 데이터 조회
+        await rankProvider.fetchRankings(true);
+      }
 
       // 2. 오버레이 시퀀스 실행 (결과창 -> 시작창)
       await _checkAndShowSeasonSequence();
@@ -64,11 +67,8 @@ class _QuizStartPageState extends State<QuizStartPage> {
       "[SeasonOverlay] Result Check - Last: $lastResultShownSeason, Current: $currentSeasonId",
     );
 
-    // QA를 위해 디버그 모드에서는 조건이 맞지 않더라도 강제로 확인할 수 있는 로직을 고려
-    bool shouldShow = (lastResultShownSeason != currentSeasonId);
-
-    // [QA 전용] 만약 아무것도 안 뜬다면 아래 주석을 풀어서 강제로 확인해 보세요.
-    // shouldShow = true;
+    // 실제 서비스 로직: 지난 시즌 결과 노출 여부에 따라 결정
+    bool shouldShow = lastResultShownSeason != currentSeasonId;
 
     if (shouldShow && mounted) {
       debugPrint("[SeasonOverlay] Showing Result Overlay...");
@@ -88,7 +88,7 @@ class _QuizStartPageState extends State<QuizStartPage> {
       "[SeasonOverlay] Start Check - Last: $lastShownSeason, Current: $currentSeasonId",
     );
 
-    bool shouldShow = (lastShownSeason != currentSeasonId);
+    bool shouldShow = lastShownSeason != currentSeasonId;
 
     if (shouldShow && mounted) {
       debugPrint("[SeasonOverlay] Showing Start Overlay...");
@@ -104,12 +104,21 @@ class _QuizStartPageState extends State<QuizStartPage> {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final selectedTeamName = teamProvider.selectedTeam?.name;
     final prevSeasonId = QuizSeasonUtils.getPreviousSeasonId();
+
+    // 이전 시즌이 없으면 (예: 앱 완전 최초 시작 시) 다이얼로그 노출 건너뜀
+    if (prevSeasonId == null) return;
+
     final prevSeasonLabel = QuizSeasonUtils.getSeasonLabel(prevSeasonId);
 
     // 0. 지난 시즌 랭킹 데이터 필터링
     final myRanking = currentUserId != null
         ? rankProvider.getMyRanking(currentUserId)
         : null;
+
+    // [QA 보강] 랭킹 데이터에 사진이 없으면 현재 로그인 유저의 사진을 폴백으로 사용
+    final currentUserPhotoUrl = FirebaseAuth.instance.currentUser?.photoURL;
+    final fallbackAvatarUrl = myRanking?.profileUrl ?? currentUserPhotoUrl;
+
     final myTeamRanking = selectedTeamName != null
         ? rankProvider.getMyTeamRanking(selectedTeamName)
         : null;
@@ -139,6 +148,24 @@ class _QuizStartPageState extends State<QuizStartPage> {
 
     // 2. 개인 챔피언 오버레이 (1위일 때만)
     if (isIndividualChampion && mounted) {
+      // 트로피 자동 수집 (영구 저장) - Null Safety 적용
+      if (currentUserId != null) {
+        rankProvider.saveTrophy(
+          QuizTrophyModel(
+            id: '',
+            userId: currentUserId,
+            seasonId: prevSeasonId ?? 'test_season',
+            seasonLabel: prevSeasonLabel,
+            userName: myRanking?.name ?? '익명 팬',
+            teamName: selectedTeamName,
+            teamLogoUrl: teamProvider.selectedTeam?.logoPath,
+            score: myRanking?.score ?? 0,
+            type: TrophyType.individual,
+            earnedAt: DateTime.now(),
+          ),
+        );
+      }
+
       await showGeneralDialog<void>(
         context: context,
         barrierDismissible: false,
@@ -147,11 +174,12 @@ class _QuizStartPageState extends State<QuizStartPage> {
         useRootNavigator: true,
         pageBuilder: (context, animation, secondaryAnimation) {
           return ChampionOverlay(
-            winnerName: myRanking?.name ?? '익명 야구팬',
+            winnerName: myRanking?.name ?? '익명 팬',
             teamName: selectedTeamName,
             totalScore: myRanking?.score ?? 0,
             currentRank: '1위',
             seasonLabel: prevSeasonLabel,
+            avatarUrl: fallbackAvatarUrl,
             teamLogoUrl: teamProvider.selectedTeam?.logoPath,
             type: ChampionType.individual,
             onDismiss: () => Navigator.of(context, rootNavigator: true).pop(),
@@ -162,6 +190,22 @@ class _QuizStartPageState extends State<QuizStartPage> {
 
     // 3. 팀 챔피언 오버레이 (구단 1위일 때만)
     if (isTeamChampion && mounted) {
+      // 팀 트로피 자동 수집
+      rankProvider.saveTrophy(
+        QuizTrophyModel(
+          id: '',
+          userId: currentUserId!,
+          seasonId: prevSeasonId ?? 'test_season',
+          seasonLabel: prevSeasonLabel,
+          userName: selectedTeamName ?? '우리 팀',
+          teamName: selectedTeamName,
+          teamLogoUrl: teamProvider.selectedTeam?.logoPath,
+          score: myTeamRanking?.totalScore ?? 0,
+          type: TrophyType.team,
+          earnedAt: DateTime.now(),
+        ),
+      );
+
       await showGeneralDialog<void>(
         context: context,
         barrierDismissible: false,

@@ -12,6 +12,7 @@ import 'package:lockerroom/widgets/svg_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lockerroom/provider/schdule_Provider.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BottomTabBar extends StatefulWidget {
@@ -27,6 +28,8 @@ class _BottomTabBarState extends State<BottomTabBar> {
   late TeamProvider _teamProvider;
   late TabProvider _tabProvider;
   TeamModel? _previousSelectedTeam;
+
+  final List<String> _screenNames = ['홈_메인', '피드_목록', '피드_업로드', '모임_목록', '마이페이지'];
 
   @override
   void initState() {
@@ -44,6 +47,12 @@ class _BottomTabBarState extends State<BottomTabBar> {
       _tabProvider = context.read<TabProvider>();
       _tabProvider.addListener(_handleTabProviderChange);
       _selectedIndex = _tabProvider.selectedIndex;
+
+      // 초기 앱 진입 탭 추적
+      FirebaseAnalytics.instance.logScreenView(
+        screenName: _screenNames[_selectedIndex],
+        screenClass: 'BottomTabBar',
+      );
     });
   }
 
@@ -52,6 +61,11 @@ class _BottomTabBarState extends State<BottomTabBar> {
     final index = _tabProvider.selectedIndex;
     if (_selectedIndex != index) {
       setState(() => _selectedIndex = index);
+      // 프로바이더를 통한 탭 변경 시도 추적
+      FirebaseAnalytics.instance.logScreenView(
+        screenName: _screenNames[index],
+        screenClass: 'BottomTabBar',
+      );
     }
   }
 
@@ -63,6 +77,10 @@ class _BottomTabBarState extends State<BottomTabBar> {
         setState(() {
           _selectedIndex = 0; // 팀 변경 시 홈 탭으로 이동
         });
+        FirebaseAnalytics.instance.logScreenView(
+          screenName: '홈_메인',
+          screenClass: 'BottomTabBar',
+        );
       }
     }
   }
@@ -70,7 +88,6 @@ class _BottomTabBarState extends State<BottomTabBar> {
   // 팝업 표시 여부 확인 및 표시
   Future<void> _checkAndShowCheerSongPopup() async {
     final prefs = await SharedPreferences.getInstance();
-    // 키 변경: dontShowCheerSongPopup -> dontShowMainPopup
     final bool dontShowAgain = prefs.getBool('dontShowMainPopup') ?? false;
 
     if (!dontShowAgain) {
@@ -98,8 +115,8 @@ class _BottomTabBarState extends State<BottomTabBar> {
                   color: context.read<TeamProvider>().selectedTeam?.color,
                   size: 28,
                 ),
-                SizedBox(width: 8),
-                Text(
+                const SizedBox(width: 8),
+                const Text(
                   '공지사항',
                   style: TextStyle(
                     fontSize: 18,
@@ -114,16 +131,18 @@ class _BottomTabBarState extends State<BottomTabBar> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildGuideItem('', '더베이스 업데이트 안내 ⚾️'),
-                SizedBox(height: 12),
-                _buildGuideItem('', '1. 퀴즈 팀랭킹 및 뱃지 & 응원가 듣고 가사 맞추기 추가!'),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
+                _buildGuideItem(
+                  '',
+                  '1. 퀴즈 팀랭킹 및 뱃지 & 응원가 듣고 가사 맞추기 추가!',
+                ),
+                const SizedBox(height: 12),
                 _buildGuideItem('', '2. 직관 모임 개설 & 실시간 채팅 기능 오픈!'),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 _buildGuideItem('', '3. 2026 시즌 직관 승률 기록 관리 시작!'),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 _buildGuideItem('', '새로워진 더베이스를 지금 만나보세요.'),
-                SizedBox(height: 20),
-                // 다시 보지 않기 체크박스
+                const SizedBox(height: 20),
                 GestureDetector(
                   onTap: () {
                     setState(() {
@@ -137,10 +156,8 @@ class _BottomTabBarState extends State<BottomTabBar> {
                         height: 24,
                         child: Checkbox(
                           value: isChecked,
-                          activeColor: context
-                              .read<TeamProvider>()
-                              .selectedTeam
-                              ?.color,
+                          activeColor:
+                              context.read<TeamProvider>().selectedTeam?.color,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -151,8 +168,8 @@ class _BottomTabBarState extends State<BottomTabBar> {
                           },
                         ),
                       ),
-                      SizedBox(width: 8),
-                      Text(
+                      const SizedBox(width: 8),
+                      const Text(
                         '다시 보지 않기',
                         style: TextStyle(
                           color: GRAYSCALE_LABEL_600,
@@ -177,16 +194,14 @@ class _BottomTabBarState extends State<BottomTabBar> {
                     Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: context
-                        .read<TeamProvider>()
-                        .selectedTeam
-                        ?.color,
+                    backgroundColor:
+                        context.read<TeamProvider>().selectedTeam?.color,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    padding: EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: Text(
+                  child: const Text(
                     '확인',
                     style: TextStyle(
                       color: WHITE,
@@ -209,12 +224,12 @@ class _BottomTabBarState extends State<BottomTabBar> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(emoji, style: TextStyle(fontSize: 20)),
-        SizedBox(width: 12),
+        Text(emoji, style: const TextStyle(fontSize: 20)),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               height: 1.4,
               color: GRAYSCALE_LABEL_800,
@@ -228,7 +243,6 @@ class _BottomTabBarState extends State<BottomTabBar> {
 
   @override
   void dispose() {
-    // Remove listener if it was registered
     try {
       _teamProvider.removeListener(_handleTeamProviderChange);
     } catch (_) {}
@@ -243,6 +257,13 @@ class _BottomTabBarState extends State<BottomTabBar> {
     setState(() {
       _selectedIndex = index;
     });
+
+    // 애널리틱스 탭 추적 추가
+    FirebaseAnalytics.instance.logScreenView(
+      screenName: _screenNames[index],
+      screenClass: 'BottomTabBar',
+    );
+
     if (index == 4) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {

@@ -8,6 +8,7 @@ class RankingUserModel {
   final DateTime completedAt;
 
   final String? teamName;
+  final String tier;
 
   RankingUserModel({
     required this.rank,
@@ -18,6 +19,7 @@ class RankingUserModel {
     this.profileUrl,
     required this.completedAt,
     this.teamName,
+    required this.tier,
   });
 
   RankingUserModel copyWith({
@@ -29,6 +31,7 @@ class RankingUserModel {
     String? profileUrl,
     DateTime? completedAt,
     String? teamName,
+    String? tier,
   }) {
     return RankingUserModel(
       rank: rank ?? this.rank,
@@ -39,6 +42,7 @@ class RankingUserModel {
       profileUrl: profileUrl ?? this.profileUrl,
       completedAt: completedAt ?? this.completedAt,
       teamName: teamName ?? this.teamName,
+      tier: tier ?? this.tier,
     );
   }
 }

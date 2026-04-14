@@ -12,6 +12,7 @@ import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
+import 'package:lockerroom/page/myPage/quiz_trophy_page.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -198,7 +199,7 @@ class _MypageState extends State<Mypage> {
         actions: [
           IconButton(
             onPressed: () {
-              Navigator.pushNamed(context, 'setting');
+              Navigator.pushNamed(context, '환경설정');
             },
             icon: Icon(Icons.menu, color: selectedTeam?.color),
           ),
@@ -447,6 +448,7 @@ class _MypageState extends State<Mypage> {
                   tabs: [
                     Text('게시글', style: TextStyle(color: BLACK)),
                     Text('마켓', style: TextStyle(color: BLACK)),
+                    Text('트로피', style: TextStyle(color: BLACK)),
                   ],
                   tabBarProperties: TabBarProperties(
                     indicatorColor: selectedTeam?.color,
@@ -454,7 +456,11 @@ class _MypageState extends State<Mypage> {
                     indicatorWeight: 3.0,
                     unselectedLabelColor: GRAYSCALE_LABEL_500,
                   ),
-                  views: [MypostPage(), MyMarketPage()],
+                  views: [
+                    MypostPage(),
+                    MyMarketPage(),
+                    QuizTrophyPage(userId: widget.userId),
+                  ],
                   onChange: (index) => print(index),
                 ),
               ),

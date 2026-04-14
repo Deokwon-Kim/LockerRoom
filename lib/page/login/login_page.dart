@@ -175,7 +175,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, 'signUp');
+                          Navigator.pushNamed(context, '회원가입');
                         },
                         style: customTextButtonStyle(),
                         child: Text(
@@ -194,7 +194,7 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, 'findPassword');
+                          Navigator.pushNamed(context, '비밀번호찾기');
                         },
                         style: customTextButtonStyle(),
                         child: Text(

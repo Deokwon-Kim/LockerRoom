@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:lockerroom/utils/quiz_season_utils.dart';
 
 class SeasonResultOverlay extends StatefulWidget {
@@ -26,10 +27,14 @@ class _SeasonResultOverlayState extends State<SeasonResultOverlay>
   late Animation<double> _emblemScale;
   late Animation<double> _contentOpacity;
   late Animation<Offset> _contentSlide;
+  late AudioPlayer _audioPlayer;
 
   @override
   void initState() {
     super.initState();
+    _audioPlayer = AudioPlayer();
+    _playBackgroundSound();
+
     _mainController = AnimationController(
       duration: const Duration(milliseconds: 2500),
       vsync: this,
@@ -79,9 +84,18 @@ class _SeasonResultOverlayState extends State<SeasonResultOverlay>
     _mainController.forward();
   }
 
+  Future<void> _playBackgroundSound() async {
+    try {
+      await _audioPlayer.play(AssetSource('audio/sesonReport.mp3'));
+    } catch (e) {
+      debugPrint('Season report audio play failed: $e');
+    }
+  }
+
   @override
   void dispose() {
     _mainController.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 

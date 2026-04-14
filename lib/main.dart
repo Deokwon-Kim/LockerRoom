@@ -68,7 +68,7 @@ import 'package:lockerroom/services/deep_link_service.dart';
 import 'package:lockerroom/services/geofence_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
+// Duplicate import removed
 import 'package:flutter/services.dart';
 
 @pragma('vm:entry-point')
@@ -257,22 +257,22 @@ class _MyAppState extends State<MyApp> {
         supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
         home: const AuthWrapper(),
         routes: {
-          'signUp': (context) => const SignupPage(),
-          'signIn': (context) => const SocialLoginPage(),
-          'setting': (context) => const SettingPage(),
-          'changeNickname': (context) => const NicknameChangePage(),
-          'changeName': (context) => const NameChangePage(),
-          'findPassword': (context) => const FindPasswordPage(),
-          'notifications': (context) => const NotificationsPage(),
-          'customer': (context) => const CustormerCenterPage(),
-          'noticeList': (context) => const NoticeListPage(),
-          'terms': (context) => const TermsOfServicePage(),
-          'policy': (context) => const PrivacyPolicyPage(),
-          'changePassword': (context) => const ChangePasswordPage(),
-          'blockList': (context) => const BlockListPage(),
-          'likedPost': (context) => const LikedPostsPage(),
-          'quiz_ranking': (context) => const QuizRankingPage(),
-          'admin': (context) => const AdminGamePage(),
+          '회원가입': (context) => const SignupPage(),
+          '로그인': (context) => const SocialLoginPage(),
+          '환경설정': (context) => const SettingPage(),
+          '닉네임변경': (context) => const NicknameChangePage(),
+          '이름변경': (context) => const NameChangePage(),
+          '비밀번호찾기': (context) => const FindPasswordPage(),
+          '알림센터': (context) => const NotificationsPage(),
+          '고객센터': (context) => const CustormerCenterPage(),
+          '공지사항': (context) => const NoticeListPage(),
+          '이용약관': (context) => const TermsOfServicePage(),
+          '개인정보방침': (context) => const PrivacyPolicyPage(),
+          '비밀번호변경': (context) => const ChangePasswordPage(),
+          '차단목록': (context) => const BlockListPage(),
+          '좋아요글': (context) => const LikedPostsPage(),
+          '퀴즈랭킹': (context) => const QuizRankingPage(),
+          '어드민': (context) => const AdminGamePage(),
         },
       ),
     );
@@ -324,6 +324,9 @@ class AuthWrapper extends StatelessWidget {
               // FCM 토큰 업데이트 (로그인 시점)
               NotificationService().updateFcmToken();
 
+              // 애널리틱스 유저 ID 설정
+              FirebaseAnalytics.instance.setUserId(id: uid);
+
               // 뱃지 정보 로드
               final badgeProvider = Provider.of<BadgeProvider>(
                 context,
@@ -358,6 +361,9 @@ class AuthWrapper extends StatelessWidget {
 
               // FCM 토큰 업데이트 (로그인 시점)
               NotificationService().updateFcmToken();
+
+              // 애널리틱스 유저 ID 설정
+              FirebaseAnalytics.instance.setUserId(id: uid);
             }
           });
           final user = snapshot.data!;
@@ -448,7 +454,7 @@ class AuthWrapper extends StatelessWidget {
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
                         builder: (_) => const TeamSelectPage(),
-                        settings: const RouteSettings(name: 'team_select'),
+                        settings: const RouteSettings(name: '팀선택'),
                       ),
                     );
                   });

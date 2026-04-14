@@ -160,7 +160,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       child: IconButton(
                         onPressed: () =>
-                            Navigator.pushNamed(context, 'notifications'),
+                            Navigator.pushNamed(context, '알림센터'),
                         icon: const Icon(CupertinoIcons.bell, color: WHITE),
                       ),
                     );

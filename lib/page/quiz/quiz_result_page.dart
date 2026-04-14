@@ -102,13 +102,34 @@ class _QuizResultPageState extends State<QuizResultPage>
       final currentUserId = FirebaseAuth.instance.currentUser?.uid;
       if (currentUserId != null) {
         final myRanking = rankProvider.getMyRanking(currentUserId);
-        if (myRanking != null) {
-          // QuizRankingProvider는 PlayPage에서 이미 최신화된 상태라고 가정
-          _oldTier = QuizSeasonUtils.getTier(
-            myRanking.score - widget.result.score,
-          );
-          _newTier = QuizSeasonUtils.getTier(myRanking.score);
+        
+        // [PATCH] 0점 혹은 기록이 없는 유저(null)를 위한 기본값 처리
+        // 먹산곰님 제보: PROSPECT -> MINOR 승급시에만 안뜨는 문제 해결 (null 체크 우회)
+        int providerScore = myRanking?.score ?? 0;
+        int preQuizScore;
+        int postQuizScore;
+
+        // 1. 이미 Provider가 이번 퀴즈 결과를 반영했을 경우 (유추)
+        // 200점(MINOR) 경계값에 걸쳐있을 때 신뢰도를 높이기 위해
+        // Provider 점수가 0이 아닌데 현재 퀴즈 점수와 같다면, 이미 반영된 것으로 간주
+        if (providerScore > 0 && providerScore >= widget.result.score) {
+          preQuizScore = providerScore - widget.result.score;
+          postQuizScore = providerScore;
+        } else {
+          // 아직 반영 전이라면
+          preQuizScore = providerScore;
+          postQuizScore = providerScore + widget.result.score;
         }
+
+        // 0 미만 방지
+        if (preQuizScore < 0) preQuizScore = 0;
+
+        _oldTier = QuizSeasonUtils.getTier(preQuizScore);
+        _newTier = QuizSeasonUtils.getTier(postQuizScore);
+        
+        print('--- 티어 승급 체크 (개선됨) ---');
+        print('이전 점수: $preQuizScore, 현재 예상 점수: $postQuizScore');
+        print('이전 티어: $_oldTier, 현재 티어: $_newTier');
       }
     });
   }
@@ -316,18 +337,41 @@ class _QuizResultPageState extends State<QuizResultPage>
                                     : null,
                                 onRankAnimationComplete: () {
                                   // 랭킹 애니메이션 및 다이얼로그 종료 후 티어 상승 연출 노출
-                                  if (_debugForceTierUp ||
-                                      (_oldTier != _newTier &&
-                                          _newTier.isNotEmpty &&
-                                          _oldTier.isNotEmpty)) {
-                                    // 하위 -> 상위 이동일 때만 (또는 디버그 모드일 때)
+                                  if (_debugForceTierUp) {
                                     setState(() {
-                                      // 디버그 모드에서 티어 정보가 비어있을 경우 예시 데이터 삽입
-                                      if (_debugForceTierUp &&
-                                          _newTier.isEmpty) {
+                                      if (_newTier.isEmpty) {
                                         _oldTier = "MINOR";
                                         _newTier = "MAJOR";
                                       }
+                                      _showTierUpOverlay = true;
+                                    });
+                                    return;
+                                  }
+
+                                  // 최종 승급 여부 판단 (initState에서 계산된 값 또는 실시간 데이터 재검증)
+                                  final latestRankProvider = context.read<QuizRankingProvider>();
+                                  final uid = FirebaseAuth.instance.currentUser?.uid;
+                                  
+                                  bool isPromotion = false;
+                                  if (_oldTier != _newTier && _oldTier.isNotEmpty && _newTier.isNotEmpty) {
+                                    // 1. initState 시점에 이미 승급이 감지된 경우
+                                    isPromotion = true;
+                                  } else if (uid != null) {
+                                    // 2. 혹시나 timing 이슈로 initState에서 놓쳤을 경우 실시간 데이터로 재검증
+                                    final currentRanking = latestRankProvider.getMyRanking(uid);
+                                    if (currentRanking != null) {
+                                      final latestTier = QuizSeasonUtils.getTier(currentRanking.score);
+                                      // 위젯 뱃지가 MINOR라면 latestTier는 MINOR일 것.
+                                      // 만약 initState 시점의 _oldTier가 PROSPECT였다면 이 시점에서라도 승급 감지 가능.
+                                      if (_oldTier.isNotEmpty && latestTier != _oldTier) {
+                                        _newTier = latestTier;
+                                        isPromotion = true;
+                                      }
+                                    }
+                                  }
+
+                                  if (isPromotion) {
+                                    setState(() {
                                       _showTierUpOverlay = true;
                                     });
                                   }

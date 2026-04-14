@@ -57,7 +57,7 @@ class SettingPage extends StatelessWidget {
                     children: [
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, 'changeName');
+                          Navigator.pushNamed(context, '이름변경');
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -71,7 +71,7 @@ class SettingPage extends StatelessWidget {
                             ),
                             IconButton(
                               onPressed: () {
-                                Navigator.pushNamed(context, 'changeName');
+                                Navigator.pushNamed(context, '이름변경');
                               },
                               icon: Icon(
                                 Icons.arrow_forward_ios_rounded,
@@ -84,7 +84,7 @@ class SettingPage extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, 'changeNickname');
+                          Navigator.pushNamed(context, '닉네임변경');
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -98,7 +98,7 @@ class SettingPage extends StatelessWidget {
                             ),
                             IconButton(
                               onPressed: () {
-                                Navigator.pushNamed(context, 'changeNickname');
+                                Navigator.pushNamed(context, '닉네임변경');
                               },
                               icon: Icon(
                                 Icons.arrow_forward_ios_rounded,
@@ -111,7 +111,7 @@ class SettingPage extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, 'changePassword');
+                          Navigator.pushNamed(context, '비밀번호변경');
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -125,7 +125,7 @@ class SettingPage extends StatelessWidget {
                             ),
                             IconButton(
                               onPressed: () {
-                                Navigator.pushNamed(context, 'changePassword');
+                                Navigator.pushNamed(context, '비밀번호변경');
                               },
                               icon: Icon(
                                 Icons.arrow_forward_ios_rounded,
@@ -193,7 +193,7 @@ class SettingPage extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.pushNamed(context, 'likedPost');
+                          Navigator.pushNamed(context, '좋아요글');
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -207,7 +207,7 @@ class SettingPage extends StatelessWidget {
                             ),
                             IconButton(
                               onPressed: () {
-                                Navigator.pushNamed(context, 'likedPost');
+                                Navigator.pushNamed(context, '좋아요글');
                               },
                               icon: Icon(
                                 Icons.arrow_forward_ios_rounded,
@@ -303,7 +303,7 @@ class SettingPage extends StatelessWidget {
                       children: [
                         TextButton(
                           onPressed: () {
-                            Navigator.pushNamed(context, 'noticeList');
+                            Navigator.pushNamed(context, '공지사항');
                           },
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -317,7 +317,7 @@ class SettingPage extends StatelessWidget {
                               ),
                               IconButton(
                                 onPressed: () {
-                                  Navigator.pushNamed(context, 'noticeList');
+                                  Navigator.pushNamed(context, '공지사항');
                                 },
                                 icon: Icon(
                                   Icons.arrow_forward_ios_rounded,
@@ -368,7 +368,7 @@ class SettingPage extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () {
-                            Navigator.pushNamed(context, 'customer');
+                            Navigator.pushNamed(context, '고객센터');
                           },
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -382,7 +382,7 @@ class SettingPage extends StatelessWidget {
                               ),
                               IconButton(
                                 onPressed: () {
-                                  Navigator.pushNamed(context, 'customer');
+                                  Navigator.pushNamed(context, '고객센터');
                                 },
                                 icon: Icon(
                                   Icons.arrow_forward_ios_rounded,
@@ -395,7 +395,7 @@ class SettingPage extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () {
-                            Navigator.pushNamed(context, 'terms');
+                            Navigator.pushNamed(context, '이용약관');
                           },
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -409,7 +409,7 @@ class SettingPage extends StatelessWidget {
                               ),
                               IconButton(
                                 onPressed: () {
-                                  Navigator.pushNamed(context, 'terms');
+                                  Navigator.pushNamed(context, '이용약관');
                                 },
                                 icon: Icon(
                                   Icons.arrow_forward_ios_rounded,
@@ -422,7 +422,7 @@ class SettingPage extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () {
-                            Navigator.pushNamed(context, 'policy');
+                            Navigator.pushNamed(context, '개인정보방침');
                           },
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -436,7 +436,7 @@ class SettingPage extends StatelessWidget {
                               ),
                               IconButton(
                                 onPressed: () {
-                                  Navigator.pushNamed(context, 'policy');
+                                  Navigator.pushNamed(context, '개인정보방침');
                                 },
                                 icon: Icon(
                                   Icons.arrow_forward_ios_rounded,
@@ -449,7 +449,7 @@ class SettingPage extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () {
-                            Navigator.pushNamed(context, 'blockList');
+                            Navigator.pushNamed(context, '차단목록');
                           },
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -463,7 +463,7 @@ class SettingPage extends StatelessWidget {
                               ),
                               IconButton(
                                 onPressed: () {
-                                  Navigator.pushNamed(context, 'blockList');
+                                  Navigator.pushNamed(context, '차단목록');
                                 },
                                 icon: Icon(
                                   Icons.arrow_forward_ios_rounded,
@@ -582,7 +582,7 @@ class SettingPage extends StatelessWidget {
                             await userProvider.signOut();
                             // 전역 네비게이터로 로그인 화면으로 스택 초기화 이동
                             navigatorKey.currentState?.pushNamedAndRemoveUntil(
-                              'signIn',
+                              '로그인',
                               (route) => false,
                             );
                           },

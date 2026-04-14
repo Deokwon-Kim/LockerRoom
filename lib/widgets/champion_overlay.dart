@@ -170,11 +170,8 @@ class _ChampionOverlayState extends State<ChampionOverlay>
 
     _mainController.forward();
 
-    // 팀 우승 오버레이일 때만 응원가로 분위기를 띄웁니다.
-    // 개인 우승 시에는 챔피언 사운드만 재생됩니다.
-    if (widget.type == ChampionType.team) {
-      _playTeamCheerSong();
-    }
+    // [MOD] 저작권 이슈로 팀 응원가 재생 로직 제거
+    // 대신 공용 챔피언 사운드만 재생합니다.
 
     Future.delayed(const Duration(milliseconds: 1200), () {
       _confettiController.play();
@@ -183,45 +180,11 @@ class _ChampionOverlayState extends State<ChampionOverlay>
 
   Future<void> _playChampionSound() async {
     try {
-      // 팀 우승 오버레이에서는 바로 응원가로 시작하길 원하는 유저 피드백 반영
-      if (widget.type != ChampionType.team) {
-        await _audioPlayer.play(AssetSource('audio/champion.mp3'));
-      }
+      // 모든 우승 상황에서 안전한 공용 사운드 재생
+      await _audioPlayer.play(AssetSource('audio/champion.mp3'));
     } catch (e) {
       debugPrint('Audio play failed: $e');
     }
-  }
-
-  void _playTeamCheerSong() {
-    final teamSongPath = _getTeamSongPath(widget.teamName ?? widget.winnerName);
-    if (teamSongPath != null) {
-      try {
-        _audioPlayer.play(AssetSource(teamSongPath));
-      } catch (e) {
-        debugPrint('Team cheer song play failed: $e');
-      }
-    }
-  }
-
-  String? _getTeamSongPath(String name) {
-    final lowerName = name.toLowerCase();
-    if (lowerName.contains('lg')) return 'audio/lgTeamSong.m4a';
-    if (lowerName.contains('두산')) return 'audio/SeoulBears.m4a';
-    if (lowerName.contains('삼성')) return 'audio/SamSungEldorado.m4a';
-    if (lowerName.contains('롯데')) return 'audio/lotteTeamSong.m4a';
-    if (lowerName.contains('기아')) return 'audio/kiaTeamSong.m4a';
-    if (lowerName.contains('한화')) return 'audio/loveEagles.m4a';
-    if (lowerName.contains('ssg') ||
-        lowerName.contains('landers') ||
-        lowerName.contains('sk'))
-      return 'audio/landersTeamSong.m4a';
-    if (lowerName.contains('키움') ||
-        lowerName.contains('heroes') ||
-        lowerName.contains('넥센'))
-      return 'audio/heroesTeamSong.m4a';
-    if (lowerName.contains('nc')) return 'audio/ncTeamSong.m4a';
-    if (lowerName.contains('kt')) return 'audio/ktWinningLoud.m4a';
-    return null;
   }
 
   @override
@@ -657,9 +620,11 @@ class _ChampionOverlayState extends State<ChampionOverlay>
                   spreadRadius: 2,
                 ),
               ],
-              image: const DecorationImage(
+              image: DecorationImage(
                 image: AssetImage(
-                  'assets/images/quiz/quiz_trophy_champion.png',
+                  widget.type == ChampionType.team
+                      ? 'assets/images/quiz/quiz_trophy_teamChampion.png'
+                      : 'assets/images/quiz/quiz_trophy_champion.png',
                 ),
                 fit: BoxFit.cover,
               ),

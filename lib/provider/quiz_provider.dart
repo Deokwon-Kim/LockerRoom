@@ -5,6 +5,7 @@ import 'package:lockerroom/model/quiz_question_model.dart';
 import 'package:lockerroom/model/quiz_result_model.dart';
 import 'package:lockerroom/page/quiz/quiz_data.dart';
 import 'package:lockerroom/utils/quiz_season_utils.dart';
+import 'package:lockerroom/const/firestore_constants.dart';
 
 class QuizProvider extends ChangeNotifier {
   List<QuizQuestionModel> _allQuestions = [];
@@ -382,9 +383,9 @@ class QuizProvider extends ChangeNotifier {
             finalCategory; // Firestore에는 랭킹용 통합 카테고리로 저장
 
         await _firestore
-            .collection('quiz_results')
+            .collection(FirestoreConstants.quizResults)
             .doc(userId)
-            .collection('results')
+            .collection(FirestoreConstants.quizResultsSub)
             .add(firestoreData);
 
         // 2. 유저 총점 업데이트: 이제 Cloud Function(onQuizResultCreated)에서 트랜잭션으로 처리함
@@ -429,9 +430,9 @@ class QuizProvider extends ChangeNotifier {
 
     try {
       final snapshot = await _firestore
-          .collection('quiz_results')
+          .collection(FirestoreConstants.quizResults)
           .doc(userId)
-          .collection('results')
+          .collection(FirestoreConstants.quizResultsSub)
           .orderBy('completedAt', descending: true)
           .limit(limit)
           .get();
@@ -452,9 +453,9 @@ class QuizProvider extends ChangeNotifier {
 
     try {
       final snapshot = await _firestore
-          .collection('quiz_results')
+          .collection(FirestoreConstants.quizResults)
           .doc(userId)
-          .collection('results')
+          .collection(FirestoreConstants.quizResultsSub)
           .where('category', isEqualTo: category)
           .orderBy('score', descending: true)
           .limit(1)
@@ -475,9 +476,9 @@ class QuizProvider extends ChangeNotifier {
 
     try {
       final snapshot = await _firestore
-          .collection('quiz_results')
+          .collection(FirestoreConstants.quizResults)
           .doc(userId)
-          .collection('results')
+          .collection(FirestoreConstants.quizResultsSub)
           .where('category', isEqualTo: category)
           .get();
 
@@ -522,9 +523,9 @@ class QuizProvider extends ChangeNotifier {
 
     try {
       final snapshot = await _firestore
-          .collection('quiz_results')
+          .collection(FirestoreConstants.quizResults)
           .doc(user.uid)
-          .collection('results')
+          .collection(FirestoreConstants.quizResultsSub)
           .orderBy('completedAt', descending: true)
           .get();
 

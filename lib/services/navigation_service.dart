@@ -51,7 +51,7 @@ Future<void> navigateFromData(Map<String, dynamic> data) async {
 
   // 3. 퀴즈 랭킹 알림 처리
   if (type == 'quiz_ranking') {
-    navigatorKey.currentState?.pushNamed('quiz_ranking');
+    navigatorKey.currentState?.pushNamed('퀴즈랭킹');
     return;
   }
 
