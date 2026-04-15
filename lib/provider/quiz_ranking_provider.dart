@@ -167,7 +167,7 @@ class QuizRankingProvider extends ChangeNotifier {
 
         // Step 2: 시즌별 필터 적용 후 all-time 총점 합산
         // - 2026-04(4월 통합시즌) 이하: 전체 참가자 반영 (기존 방식)
-        // - 2026-04 초과(5월 이후 반기 시즌): 해당 시즌 Top 50만 반영
+        // - 2026-04 초과(5월 이후 반기 시즌): 해당 시즌 Top 3만 반영
         const String lastOpenSeason = '2026-04';
 
         for (final seasonEntry in seasonUserScores.entries) {
@@ -176,7 +176,7 @@ class QuizRankingProvider extends ChangeNotifier {
 
           final bool isRestrictedSeason =
               seasonId.compareTo(lastOpenSeason) > 0;
-          final int eligibleCount = isRestrictedSeason ? 50 : userScores.length;
+          final int eligibleCount = isRestrictedSeason ? 3 : userScores.length;
 
           // 이 시즌 내 점수 순 정렬
           final sortedUsers = userScores.entries.toList()
