@@ -234,7 +234,7 @@ class _MyBadgePageState extends State<MyBadgePage>
                   child: GridView.builder(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
-                      childAspectRatio: 0.70,
+                      childAspectRatio: 0.76, // 실사용을 위해 최적화된 세로 비율
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
                     ),
@@ -254,61 +254,140 @@ class _MyBadgePageState extends State<MyBadgePage>
     );
   }
 
-  Widget _buildBadgeItem(badge, teamColor) {
+  Widget _buildBadgeItem(BadgeModel badge, Color? teamColor) {
+    // 프리미엄 디자인 대상 체크 (시즌 MVP 및 Top 50)
+    final bool isElite = badge.id == 'season_mvp' || badge.id == 'top50_club';
+    final bool showPremium = isElite && !badge.isLocked; // 획득했을 때만 프리미엄 연출
+
+    final bool isMVP = badge.id == 'season_mvp';
+    final bool isTop50 = badge.id == 'top50_club';
+
+    // 디자인 테마 설정
+    Color glowColor = teamColor ?? Colors.amber;
+    List<Color> borderGradient = [Colors.transparent, Colors.transparent];
+    Color badgeBgColor = badge.isLocked ? Colors.grey[200]! : Colors.white;
+
+    if (showPremium) {
+      if (isMVP) {
+        glowColor = const Color(0xFFFFD700); // GOLD
+        borderGradient = [const Color(0xFFFFD700), const Color(0xFFFFA500)];
+      } else if (isTop50) {
+        glowColor = const Color(0xFFB19CD9); // SILVER/VIOLET
+        borderGradient = [const Color(0xFFB19CD9), const Color(0xFFE6E6FA)];
+      }
+    }
+
     return Container(
-      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: badge.isLocked ? Colors.grey[200] : Colors.white,
+        color: badgeBgColor,
         borderRadius: BorderRadius.circular(12),
-        border: badge.isLocked
-            ? null
-            : Border.all(color: teamColor ?? Colors.amber, width: 2),
+        border: showPremium
+            ? Border.all(color: borderGradient[0].withOpacity(0.6), width: 2)
+            : (badge.isLocked
+                  ? null
+                  : Border.all(color: glowColor.withOpacity(0.4), width: 1.5)),
         boxShadow: badge.isLocked
             ? []
             : [
                 BoxShadow(
-                  color: teamColor ?? Colors.amber.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
+                  color: glowColor.withOpacity(0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
       ),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: badge.isLocked ? Colors.grey[300] : Colors.amber[50],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Stack(
+          children: [
+            // 프리미엄 배경 효과 (획득 시에만)
+            if (showPremium)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        glowColor.withOpacity(0.1),
+                        Colors.white,
+                        Colors.white,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
+              child: Column(
+                children: [
+                  // 아이콘 영역
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: badge.isLocked
+                          ? Colors.grey[300]
+                          : glowColor.withOpacity(0.1),
+                      boxShadow: badge.isLocked
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: glowColor.withOpacity(0.2),
+                                blurRadius: 15,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                    ),
+                    child: Icon(
+                      badge.icon,
+                      size: 26,
+                      color: badge.isLocked ? Colors.grey : glowColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // 뱃지 이름
+                  Text(
+                    badge.name,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: showPremium
+                          ? glowColor
+                          : (badge.isLocked ? Colors.grey : Colors.black87),
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  // 설명 영역
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        badge.description,
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: showPremium
+                              ? glowColor.withOpacity(0.8)
+                              : Colors.grey[600],
+                          height: 1.1,
+                          fontWeight: showPremium
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Icon(
-              badge.icon,
-              size: 32,
-              color: badge.isLocked ? Colors.grey : teamColor ?? Colors.amber,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            badge.name,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: badge.isLocked ? Colors.grey : Colors.black87,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 4),
-          // 설명은 작게
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              badge.description,
-              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

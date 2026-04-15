@@ -183,6 +183,7 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   Future<String> fetchUserName(String userId) async {
+    if (userId.isEmpty) return '알 수 없음';
     if (_userNameCache.containsKey(userId)) {
       return _userNameCache[userId]!;
     }
@@ -332,7 +333,7 @@ class NotificationProvider extends ChangeNotifier {
     final isComment = n.type == 'comment';
     final commentLike = n.type == 'commentLike';
 
-    if (n.postId != null) {
+    if (n.postId != null && n.postId!.isNotEmpty) {
       if (isFeedLike || isComment) {
         try {
           final postDoc = await _firestore
@@ -370,7 +371,7 @@ class NotificationProvider extends ChangeNotifier {
           );
         }
       }
-    } else if (commentLike && n.commentId != null) {
+    } else if (commentLike && n.commentId != null && n.commentId!.isNotEmpty) {
       // 댓글 좋아요 -> 댓글 -> 게시물
       try {
         final commentDoc = await _firestore
@@ -380,7 +381,7 @@ class NotificationProvider extends ChangeNotifier {
 
         if (commentDoc.exists) {
           final commentPostId = commentDoc.data()?['postId'] as String?;
-          if (commentPostId != null) {
+          if (commentPostId != null && commentPostId.isNotEmpty) {
             final postDoc = await _firestore
                 .collection('posts')
                 .doc(commentPostId)
@@ -423,7 +424,7 @@ class NotificationProvider extends ChangeNotifier {
         n.type == 'meetup_joined') {
       // 모임 관련 알림 처리
       final meetupId = n.meetupId;
-      if (meetupId != null) {
+      if (meetupId != null && meetupId.isNotEmpty) {
         try {
           final meetupDoc = await _firestore
               .collection('meetups')

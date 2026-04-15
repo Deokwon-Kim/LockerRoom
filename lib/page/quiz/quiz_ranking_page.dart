@@ -555,7 +555,7 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
                 Text(
                   '${myTeam.totalScore} pts',
                   style: TextStyle(
-                    color: teamModel?.color ?? Colors.blueAccent,
+                    color: WHITE,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -567,6 +567,7 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
       ),
     );
   }
+
   // 내 순위 카드
   Widget _buildMyRankingCard(RankingUserModel myRanking) {
     return Container(
@@ -685,59 +686,58 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
                 color: QuizTierUtils.getTierColor(progressInfo.currentTier),
               ),
             ),
-            Text(
-              progressInfo.remainingScore > 0
-                  ? '다음 등급까지 ${progressInfo.remainingScore}P'
-                  : '최대 등급 달성! 🔥',
-              style: const TextStyle(
-                fontSize: 10,
-                color: Colors.white54,
-                fontWeight: FontWeight.w500,
+            if (progressInfo.currentTier != 'LEGEND')
+              Text(
+                progressInfo.remainingScore > 0
+                    ? '다음 등급까지 ${progressInfo.remainingScore}P'
+                    : '최대 등급 달성! 🔥',
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.white54,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
           ],
         ),
-        const SizedBox(height: 6),
-        Stack(
-          children: [
-            Container(
-              width: double.infinity,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(2),
+        if (progressInfo.currentTier != 'LEGEND') const SizedBox(height: 6),
+        if (progressInfo.currentTier != 'LEGEND')
+          Stack(
+            children: [
+              Container(
+                width: double.infinity,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            TweenAnimationBuilder<double>(
-              tween: Tween<double>(begin: 0, end: progressInfo.progress),
-              duration: const Duration(milliseconds: 1000),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, child) {
-                return FractionallySizedBox(
-                  widthFactor: value.clamp(0.01, 1.0),
-                  child: Container(
-                    height: 4,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          themeColor,
-                          themeColor.withOpacity(0.6),
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: progressInfo.progress),
+                duration: const Duration(milliseconds: 1000),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  return FractionallySizedBox(
+                    widthFactor: value.clamp(0.01, 1.0),
+                    child: Container(
+                      height: 4,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [themeColor, themeColor.withOpacity(0.6)],
+                        ),
+                        borderRadius: BorderRadius.circular(2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: themeColor.withOpacity(0.4),
+                            blurRadius: 4,
+                          ),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: themeColor.withOpacity(0.4),
-                          blurRadius: 4,
-                        ),
-                      ],
                     ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
+                  );
+                },
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -1602,16 +1602,255 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
             ),
           ),
           // 시즌 안내 간소화 버튼
-          IconButton(
-            onPressed: () {
-              // TODO: 시즌 안내 모달 연동
-            },
-            icon: Icon(
-              Icons.info_outline_rounded,
-              color: Colors.grey.shade400,
-              size: 20,
+          Tooltip(
+            message: '시즌 규칙 및 보상 안내 보기',
+            triggerMode: TooltipTriggerMode.tap,
+            child: IconButton(
+              onPressed: () => _showSeasonInfoDialog(context),
+              icon: Icon(
+                Icons.info_outline_rounded,
+                color: Colors.grey.shade400,
+                size: 20,
+              ),
+              visualDensity: VisualDensity.compact,
             ),
-            visualDensity: VisualDensity.compact,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 시즌 상세 안내 다이얼로그
+  // 시즌 및 티어 상세 안내 다이얼로그
+  void _showSeasonInfoDialog(BuildContext context) {
+    final teamColor =
+        context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return DefaultTabController(
+          length: 2,
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            backgroundColor: Colors.white,
+            contentPadding: EdgeInsets.zero,
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 헤더 및 탭바
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.stars_rounded, color: teamColor, size: 28),
+                        const SizedBox(width: 10),
+                        const Text(
+                          '퀴즈 가이드',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            fontFamily: 'kbo',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TabBar(
+                    labelColor: teamColor,
+                    unselectedLabelColor: GRAYSCALE_LABEL_400,
+                    indicatorColor: teamColor,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    dividerColor: Colors.grey.shade100,
+                    tabs: const [
+                      Tab(text: '시즌 안내'),
+                      Tab(text: '티어 등급'),
+                    ],
+                  ),
+                  // 탭 내용
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        child: SizedBox(
+                          height: 330, // 내용 높이 고정
+                          child: TabBarView(
+                            children: [
+                              // 1번 탭: 시즌 안내
+                              _buildSeasonTab(),
+                              // 2번 탭: 티어 안내
+                              _buildTierTab(),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  '확인',
+                  style: TextStyle(
+                    color: teamColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSeasonTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSeasonInfoRow(Icons.calendar_month, '시즌 기간', '전/후반기 운영 (15일 단위)'),
+        _buildSeasonInfoRow(Icons.info_outline, '4월 시즌 예외', '4월은 통합 시즌으로 운영'),
+        _buildSeasonInfoRow(
+          Icons.emoji_events,
+          '랭킹 산정',
+          '해당 반기(또는 시즌) 누적 포인트 합산',
+        ),
+        _buildSeasonInfoRow(Icons.military_tech, '특별 보상', '티어별 특별 전용 뱃지'),
+        _buildSeasonInfoRow(
+          Icons.restart_alt,
+          '시즌 초기화',
+          '매월 1일 및 16일 00:00 초기화 (4월 제외)',
+        ),
+        const Spacer(),
+        _buildTipBox(),
+      ],
+    );
+  }
+
+  Widget _buildTierTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTierRow('LEGEND', '10,000P ~', const Color(0xFFFFD700)),
+        _buildTierRow('MVP', '5,000P ~', const Color(0xFFB19CD9)),
+        _buildTierRow('ALL-STAR', '2,500P ~', const Color(0xFFFF4D4D)),
+        _buildTierRow('MAJOR', '1,200P ~', const Color(0xFFFFD700)),
+        _buildTierRow('MINOR', '400P ~', const Color(0xFFC0C0C0)),
+        _buildTierRow('PROSPECT', '0P ~', const Color(0xFFCD7F32)),
+        const Spacer(),
+        _buildTipBox(),
+      ],
+    );
+  }
+
+  Widget _buildTierRow(String title, String score, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        children: [
+          // 티어 엠블럼 이미지
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Image.asset(
+              QuizTierUtils.getTierEmblem(title),
+              width: 24,
+              height: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            score,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: GRAYSCALE_LABEL_700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTipBox() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.lightbulb_outline, size: 16, color: Colors.amber),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '정답을 빨리 맞힐수록 더 높은 포인트와 콤보 점수를 얻을 수 있습니다!',
+              style: TextStyle(
+                fontSize: 12,
+                color: GRAYSCALE_LABEL_600,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeasonInfoRow(IconData icon, String title, String desc) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: GRAYSCALE_LABEL_400),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: GRAYSCALE_LABEL_500,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                desc,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: GRAYSCALE_LABEL_800,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         ],
       ),

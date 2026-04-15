@@ -109,12 +109,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   DateTime.now()),
                             );
                       return FutureBuilder<
-                        DocumentSnapshot<Map<String, dynamic>>
+                        DocumentSnapshot<Map<String, dynamic>>?
                       >(
-                        future: FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(n.fromUserId)
-                            .get(),
+                        future: n.fromUserId.isEmpty
+                            ? Future.value(null)
+                            : FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(n.fromUserId)
+                                  .get(),
                         builder: (context, snap) {
                           final isFollow = n.type == 'follow';
                           final isFeedLike = n.type == 'feedLike';
@@ -145,7 +147,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           final tile = GestureDetector(
                             onTap: () async {
                               // 알림 타입에 따라 다른 페이지로 이동
-                              if (n.postId != null) {
+                              if (n.postId != null && n.postId!.isNotEmpty) {
                                 if (isFeedLike || isComment) {
                                   // 일반 피드 게시물로 이동
                                   try {
@@ -233,7 +235,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     );
                                   }
                                 }
-                              } else if (commentLike && n.commentId != null) {
+                              } else if (commentLike &&
+                                  n.commentId != null &&
+                                  n.commentId!.isNotEmpty) {
                                 // 댓글 좋아요의 경우 - 해당 댓글이 있는 게시물로 이동
                                 try {
                                   final commentDoc = await FirebaseFirestore
@@ -245,7 +249,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   if (commentDoc.exists) {
                                     final commentPostId =
                                         commentDoc.data()?['postId'] as String?;
-                                    if (commentPostId != null) {
+                                    if (commentPostId != null &&
+                                        commentPostId.isNotEmpty) {
                                       final postDoc = await FirebaseFirestore
                                           .instance
                                           .collection('posts')
@@ -284,7 +289,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     title: Text('오류가 발생했습니다'),
                                   );
                                 }
-                              } else if (n.meetupId != null) {
+                              } else if (n.meetupId != null &&
+                                  n.meetupId!.isNotEmpty) {
                                 // 모임 관련 알림 - 모임 상세 페이지로 이동
                                 try {
                                   final meetupDoc = await FirebaseFirestore

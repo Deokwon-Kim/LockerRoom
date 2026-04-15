@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 
 class QuizTierUtils {
   static String getTierName(int score) {
-    if (score >= 3000) return 'MVP';
-    if (score >= 1500) return 'ALL-STAR';
-    if (score >= 700) return 'MAJOR';
-    if (score >= 200) return 'MINOR';
+    if (score >= 10000) return 'LEGEND';
+    if (score >= 5000) return 'MVP';
+    if (score >= 2500) return 'ALL-STAR';
+    if (score >= 1200) return 'MAJOR';
+    if (score >= 400) return 'MINOR';
     return 'PROSPECT';
   }
 
   static String getTierEmblem(String tier) {
     switch (tier) {
+      case 'LEGEND':
+        return 'assets/images/quiz/quiz_emblem_legend.png';
       case 'MVP':
         return 'assets/images/quiz/quiz_emblem_mvp.png';
       case 'ALL-STAR':
@@ -26,6 +29,8 @@ class QuizTierUtils {
 
   static Color getTierColor(String tier) {
     switch (tier) {
+      case 'LEGEND':
+        return const Color.fromARGB(255, 149, 124, 59); // Radiant Gold
       case 'MVP':
         return const Color(0xFFB19CD9); // Diamond Purple
       case 'ALL-STAR':
@@ -40,45 +45,53 @@ class QuizTierUtils {
   }
 
   static TierProgress getTierProgress(int score) {
-    if (score >= 3000) {
+    if (score >= 10000) {
       return TierProgress(
-        currentTier: 'MVP',
-        nextTier: 'LEGEND', // MVP 이후의 목표(명예직)
-        nextTierScore: 5000,
+        currentTier: 'LEGEND',
+        nextTier: '',
+        nextTierScore: 10000,
         progress: 1.0,
         remainingScore: 0,
       );
-    } else if (score >= 1500) {
+    } else if (score >= 5000) {
+      return TierProgress(
+        currentTier: 'MVP',
+        nextTier: 'LEGEND',
+        nextTierScore: 10000,
+        progress: (score - 5000) / (10000 - 5000),
+        remainingScore: 10000 - score,
+      );
+    } else if (score >= 2500) {
       return TierProgress(
         currentTier: 'ALL-STAR',
         nextTier: 'MVP',
-        nextTierScore: 3000,
-        progress: (score - 1500) / (3000 - 1500),
-        remainingScore: 3000 - score,
+        nextTierScore: 5000,
+        progress: (score - 2500) / (5000 - 2500),
+        remainingScore: 5000 - score,
       );
-    } else if (score >= 700) {
+    } else if (score >= 1200) {
       return TierProgress(
         currentTier: 'MAJOR',
         nextTier: 'ALL-STAR',
-        nextTierScore: 1500,
-        progress: (score - 700) / (1500 - 700),
-        remainingScore: 1500 - score,
+        nextTierScore: 2500,
+        progress: (score - 1200) / (2500 - 1200),
+        remainingScore: 2500 - score,
       );
-    } else if (score >= 200) {
+    } else if (score >= 400) {
       return TierProgress(
         currentTier: 'MINOR',
         nextTier: 'MAJOR',
-        nextTierScore: 700,
-        progress: (score - 200) / (700 - 200),
-        remainingScore: 700 - score,
+        nextTierScore: 1200,
+        progress: (score - 400) / (1200 - 400),
+        remainingScore: 1200 - score,
       );
     } else {
       return TierProgress(
         currentTier: 'PROSPECT',
         nextTier: 'MINOR',
-        nextTierScore: 200,
-        progress: score / 200,
-        remainingScore: 200 - score,
+        nextTierScore: 400,
+        progress: score / 400,
+        remainingScore: 400 - score,
       );
     }
   }

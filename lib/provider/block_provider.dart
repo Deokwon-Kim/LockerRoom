@@ -23,6 +23,8 @@ class BlockProvider extends ChangeNotifier {
     _subscription?.cancel();
     _blockedBySubscription?.cancel();
 
+    if (currentUserId.isEmpty) return;
+
     // 내가 차단한 사용자 목록
     _subscription = _firestore
         .collection('users')
@@ -58,6 +60,7 @@ class BlockProvider extends ChangeNotifier {
     String currentUserId,
     String targetUserId,
   ) async {
+    if (currentUserId.isEmpty || targetUserId.isEmpty) return false;
     final doc = await _firestore
         .collection('users')
         .doc(targetUserId)
@@ -68,6 +71,9 @@ class BlockProvider extends ChangeNotifier {
   }
 
   Stream<bool> getBlockedByStream(String currentUserId, String targetUserId) {
+    if (currentUserId.isEmpty || targetUserId.isEmpty) {
+      return Stream.value(false);
+    }
     return _firestore
         .collection('users')
         .doc(targetUserId)
@@ -81,6 +87,7 @@ class BlockProvider extends ChangeNotifier {
     required String currentUserId,
     required String targetUserId,
   }) async {
+    if (currentUserId.isEmpty || targetUserId.isEmpty) return;
     if (currentUserId == targetUserId) return;
 
     // 먼저 팔로우를 해제 (내가 상대를 팔로우하고 있으면)
@@ -132,6 +139,7 @@ class BlockProvider extends ChangeNotifier {
     required String currentUserId,
     required String targetUserId,
   }) async {
+    if (currentUserId.isEmpty || targetUserId.isEmpty) return;
     await _firestore
         .collection('users')
         .doc(currentUserId)

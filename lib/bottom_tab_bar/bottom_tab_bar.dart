@@ -12,6 +12,7 @@ import 'package:lockerroom/widgets/svg_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lockerroom/provider/schdule_Provider.dart';
+import 'package:lockerroom/page/schedule/schedule.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,7 +30,13 @@ class _BottomTabBarState extends State<BottomTabBar> {
   late TabProvider _tabProvider;
   TeamModel? _previousSelectedTeam;
 
-  final List<String> _screenNames = ['홈_메인', '피드_목록', '피드_업로드', '모임_목록', '마이페이지'];
+  final List<String> _screenNames = [
+    '홈_메인',
+    '피드_목록',
+    '피드_업로드',
+    '모임_목록',
+    '마이페이지',
+  ];
 
   @override
   void initState() {
@@ -132,10 +139,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
               children: [
                 _buildGuideItem('', '더베이스 업데이트 안내 ⚾️'),
                 const SizedBox(height: 12),
-                _buildGuideItem(
-                  '',
-                  '1. 퀴즈 팀랭킹 및 뱃지 & 응원가 듣고 가사 맞추기 추가!',
-                ),
+                _buildGuideItem('', '1. 퀴즈 팀랭킹 및 뱃지 & 응원가 듣고 가사 맞추기 추가!'),
                 const SizedBox(height: 12),
                 _buildGuideItem('', '2. 직관 모임 개설 & 실시간 채팅 기능 오픈!'),
                 const SizedBox(height: 12),
@@ -156,8 +160,10 @@ class _BottomTabBarState extends State<BottomTabBar> {
                         height: 24,
                         child: Checkbox(
                           value: isChecked,
-                          activeColor:
-                              context.read<TeamProvider>().selectedTeam?.color,
+                          activeColor: context
+                              .read<TeamProvider>()
+                              .selectedTeam
+                              ?.color,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -194,8 +200,10 @@ class _BottomTabBarState extends State<BottomTabBar> {
                     Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        context.read<TeamProvider>().selectedTeam?.color,
+                    backgroundColor: context
+                        .read<TeamProvider>()
+                        .selectedTeam
+                        ?.color,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -430,94 +438,131 @@ class _BottomTabBarState extends State<BottomTabBar> {
         final homeTeam = teamProvider.findTeamByName(game.homeTeam);
         final awayTeam = teamProvider.findTeamByName(game.awayTeam);
 
-        return Padding(
-          padding: const EdgeInsets.only(left: 10.0, right: 10.0),
-          child: Container(
-            width: double.infinity,
-            height: 60,
-            decoration: BoxDecoration(
-              color: selectedTeam.color,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SchedulePage(teamModel: selectedTeam),
               ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Text(
-                  game.stadium,
-                  style: const TextStyle(
-                    color: WHITE,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(left: 10.0, right: 10.0),
+            child: Container(
+              width: double.infinity,
+              height: 60,
+              decoration: BoxDecoration(
+                color: selectedTeam.color,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
                 ),
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
                   ),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFF2D55), Color(0xFF8E5AFF)],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    statusText,
+                ],
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  const SizedBox(width: 8),
+                  Text(
+                    game.stadium,
                     style: const TextStyle(
                       color: WHITE,
-                      fontSize: 10,
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-                const Spacer(),
-                Row(
-                  children: [
-                    if (awayTeam != null)
-                      Image.asset(awayTeam.logoPath, height: 30),
-                    const SizedBox(width: 12),
-                    if (isLive || isFinal)
-                      Text(
-                        '${game.awayScore}',
-                        style: const TextStyle(
-                          color: WHITE,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'kbo',
-                        ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF2D55), Color(0xFF8E5AFF)],
                       ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        'VS',
-                        style: TextStyle(
-                          color: WHITE.withOpacity(0.3),
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          fontStyle: FontStyle.italic,
-                        ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      statusText,
+                      style: const TextStyle(
+                        color: WHITE,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    if (isLive || isFinal)
-                      Text(
-                        '${game.homeScore}',
-                        style: const TextStyle(
-                          color: WHITE,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'kbo',
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      if (awayTeam != null)
+                        Image.asset(awayTeam.logoPath, height: 28),
+                      const SizedBox(width: 8),
+                      if (isLive || isFinal)
+                        Text(
+                          '${game.awayScore}',
+                          style: const TextStyle(
+                            color: WHITE,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'kbo',
+                          ),
                         ),
-                      ),
-                    const SizedBox(width: 12),
-                    if (homeTeam != null)
-                      Image.asset(homeTeam.logoPath, height: 30),
-                  ],
-                ),
-              ],
+                      if (isLive)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            ':',
+                            style: TextStyle(
+                              color: WHITE.withOpacity(0.5),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      else if (isLive != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            'vs',
+                            style: TextStyle(
+                              color: WHITE.withOpacity(0.5),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      if (isLive || isFinal)
+                        Text(
+                          '${game.homeScore}',
+                          style: const TextStyle(
+                            color: WHITE,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'kbo',
+                          ),
+                        ),
+                      const SizedBox(width: 8),
+                      if (homeTeam != null)
+                        Image.asset(homeTeam.logoPath, height: 28),
+                    ],
+                  ),
+                  const SizedBox(width: 10),
+                  // 더보기 화살표
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: WHITE.withOpacity(0.5),
+                    size: 14,
+                  ),
+                ],
+              ),
             ),
           ),
         );

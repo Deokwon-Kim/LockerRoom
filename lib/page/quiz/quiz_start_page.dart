@@ -9,7 +9,9 @@ import 'package:lockerroom/page/quiz/quiz_play_page.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/utils/quiz_season_utils.dart';
+import 'package:lockerroom/utils/quiz_tier_utils.dart';
 import 'package:lockerroom/widgets/champion_overlay.dart';
+import 'package:lockerroom/provider/badge_provider.dart';
 import 'package:lockerroom/widgets/season_result_overlay.dart';
 import 'package:lockerroom/widgets/season_start_overlay.dart';
 import 'package:lockerroom/widgets/team_battle_dialog.dart';
@@ -127,8 +129,35 @@ class _QuizStartPageState extends State<QuizStartPage> {
     final bool isTeamChampion = (myTeamRanking?.rank == 1);
     final bool isChampion = isIndividualChampion || isTeamChampion;
 
+    // Top 50 여부 체크 (1위 포함)
+    final bool isTop50 = (myRanking != null && myRanking.rank <= 50);
+
+    // [New] 뱃지 획득 여부도 함께 체크 (Top 50 클럽 및 MVP 뱃지 동기화)
+    if (myRanking != null) {
+      context.read<BadgeProvider>().checkSeasonalBadges(myRanking.rank);
+    }
+
+    // 0.5. Top 50 클럽 트로피 자동 수집 (1위~50위 모두 해당)
+    if (isTop50 && currentUserId != null && mounted) {
+      rankProvider.saveTrophy(
+        QuizTrophyModel(
+          id: '',
+          userId: currentUserId,
+          seasonId: prevSeasonId,
+          seasonLabel: prevSeasonLabel,
+          userName: myRanking.name,
+          teamName: selectedTeamName,
+          teamLogoUrl: teamProvider.selectedTeam?.logoPath,
+          score: myRanking.score,
+          rank: myRanking.rank,
+          type: TrophyType.individual,
+          earnedAt: DateTime.now(),
+        ),
+      );
+    }
+
     // 1. 시즌 리포트 오버레이 (1위가 아닐 때만 노출)
-    if (!isChampion && mounted) {
+    if (!isChampion && mounted && myRanking != null) {
       await showGeneralDialog<void>(
         context: context,
         barrierDismissible: false,
@@ -138,8 +167,8 @@ class _QuizStartPageState extends State<QuizStartPage> {
         pageBuilder: (context, animation, secondaryAnimation) {
           return SeasonResultOverlay(
             seasonLabel: prevSeasonLabel,
-            totalScore: myRanking?.score ?? 0,
-            finalRank: '${myRanking?.rank ?? "-"}위',
+            totalScore: myRanking.score,
+            finalRank: '${myRanking.rank}위',
             onDismiss: () => Navigator.of(context, rootNavigator: true).pop(),
           );
         },
@@ -147,19 +176,19 @@ class _QuizStartPageState extends State<QuizStartPage> {
     }
 
     // 2. 개인 챔피언 오버레이 (1위일 때만)
-    if (isIndividualChampion && mounted) {
-      // 트로피 자동 수집 (영구 저장) - Null Safety 적용
+    if (isIndividualChampion && mounted && myRanking != null) {
+      // 트로피 자동 수집 (영구 저장)
       if (currentUserId != null) {
         rankProvider.saveTrophy(
           QuizTrophyModel(
             id: '',
             userId: currentUserId,
-            seasonId: prevSeasonId ?? 'test_season',
+            seasonId: prevSeasonId,
             seasonLabel: prevSeasonLabel,
-            userName: myRanking?.name ?? '익명 팬',
+            userName: myRanking.name,
             teamName: selectedTeamName,
             teamLogoUrl: teamProvider.selectedTeam?.logoPath,
-            score: myRanking?.score ?? 0,
+            score: myRanking.score,
             type: TrophyType.individual,
             earnedAt: DateTime.now(),
           ),
@@ -174,9 +203,9 @@ class _QuizStartPageState extends State<QuizStartPage> {
         useRootNavigator: true,
         pageBuilder: (context, animation, secondaryAnimation) {
           return ChampionOverlay(
-            winnerName: myRanking?.name ?? '익명 팬',
+            winnerName: myRanking.name,
             teamName: selectedTeamName,
-            totalScore: myRanking?.score ?? 0,
+            totalScore: myRanking.score,
             currentRank: '1위',
             seasonLabel: prevSeasonLabel,
             avatarUrl: fallbackAvatarUrl,
@@ -188,23 +217,24 @@ class _QuizStartPageState extends State<QuizStartPage> {
       );
     }
 
-    // 3. 팀 챔피언 오버레이 (구단 1위일 때만)
-    if (isTeamChampion && mounted) {
-      // 팀 트로피 자동 수집
-      rankProvider.saveTrophy(
-        QuizTrophyModel(
-          id: '',
-          userId: currentUserId!,
-          seasonId: prevSeasonId ?? 'test_season',
-          seasonLabel: prevSeasonLabel,
-          userName: selectedTeamName ?? '우리 팀',
-          teamName: selectedTeamName,
-          teamLogoUrl: teamProvider.selectedTeam?.logoPath,
-          score: myTeamRanking?.totalScore ?? 0,
-          type: TrophyType.team,
-          earnedAt: DateTime.now(),
-        ),
-      );
+    // 3. 팀 우승 오버레이 (구단 1위일 때만)
+    if (isTeamChampion && mounted && myTeamRanking != null) {
+      if (currentUserId != null) {
+        rankProvider.saveTrophy(
+          QuizTrophyModel(
+            id: '',
+            userId: currentUserId,
+            seasonId: prevSeasonId,
+            seasonLabel: prevSeasonLabel,
+            userName: myRanking?.name ?? '익명 팬',
+            teamName: selectedTeamName ?? '내 팀',
+            teamLogoUrl: teamProvider.selectedTeam?.logoPath,
+            score: myTeamRanking.totalScore,
+            type: TrophyType.team,
+            earnedAt: DateTime.now(),
+          ),
+        );
+      }
 
       await showGeneralDialog<void>(
         context: context,
@@ -214,9 +244,9 @@ class _QuizStartPageState extends State<QuizStartPage> {
         useRootNavigator: true,
         pageBuilder: (context, animation, secondaryAnimation) {
           return ChampionOverlay(
-            winnerName: selectedTeamName ?? '우리 팀',
+            winnerName: selectedTeamName ?? '내 팀',
             teamName: selectedTeamName,
-            totalScore: myTeamRanking?.totalScore ?? 0,
+            totalScore: myTeamRanking.totalScore,
             currentRank: '1위',
             seasonLabel: prevSeasonLabel,
             teamLogoUrl: teamProvider.selectedTeam?.logoPath,
@@ -301,7 +331,10 @@ class _QuizStartPageState extends State<QuizStartPage> {
               children: [
                 // 헤더 섹션
                 _buildHeader(context),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                // 내 티어 & 시즌 카드
+                _buildMyTierCard(context),
+                const SizedBox(height: 20),
 
                 // 카테고리 그리드
                 Expanded(
@@ -364,82 +397,220 @@ class _QuizStartPageState extends State<QuizStartPage> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    final seasonId = QuizSeasonUtils.getCurrentSeasonId();
-    final seasonLabel = QuizSeasonUtils.getSeasonLabel(seasonId);
+    final seasonLabel = QuizSeasonUtils.getSeasonLabel(
+      QuizSeasonUtils.getCurrentSeasonId(),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              '야구 없인 못 살아?',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'kbo',
-                height: 1.2,
+        const Text(
+          '야구 없인 못 살아?',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'kbo',
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          '그럼 풀어봐~',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'kbo',
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            // 시즌 진행 중 배지
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.orange.shade400, Colors.orange.shade600],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.orange.withOpacity(0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              '그럼 풀어봐~',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'kbo',
-                height: 1.2,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.stars, color: Colors.white, size: 14),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$seasonLabel 진행 중! 🔥',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'kbo',
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        const Text(
-          '오늘도 야구 덕력을 증명해보세요 ⚾',
-          style: TextStyle(
-            fontSize: 15,
-            color: GRAYSCALE_LABEL_600,
-            height: 1.4,
-          ),
-        ),
-        const SizedBox(height: 16),
-        // 시즌 진행 중 배지
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      ],
+    );
+  }
+
+  Widget _buildMyTierCard(BuildContext context) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final teamColor =
+        context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
+
+    return Consumer<QuizRankingProvider>(
+      builder: (context, qrp, child) {
+        final myRanking = currentUserId != null
+            ? qrp.getMyRanking(currentUserId)
+            : null;
+        final score = myRanking?.score ?? 0;
+        final tierName = QuizTierUtils.getTierName(score);
+        final tierColor = QuizTierUtils.getTierColor(tierName);
+        final emblemPath = QuizTierUtils.getTierEmblem(tierName);
+        final progress = QuizTierUtils.getTierProgress(score);
+
+        return Container(
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.orange.shade400, Colors.orange.shade600],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
+            color: const Color(0xFF1E293B),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: tierColor.withOpacity(0.4), width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.orange.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
+                color: tierColor.withOpacity(0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.stars, color: Colors.white, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                '$seasonLabel 진행 중! 🔥',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'kbo',
+              // 티어 엠블럼
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: tierColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Image.asset(emblemPath, width: 36, height: 36),
+              ),
+              const SizedBox(width: 14),
+              // 티어 정보
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          tierName,
+                          style: TextStyle(
+                            color: tierColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${score}P',
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // 다음 티어 진행률 바
+                    Stack(
+                      children: [
+                        Container(
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        TweenAnimationBuilder<double>(
+                          tween: Tween<double>(
+                            begin: 0,
+                            end: progress.progress,
+                          ),
+                          duration: const Duration(milliseconds: 1000),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, _) {
+                            return FractionallySizedBox(
+                              widthFactor: value.clamp(0.01, 1.0),
+                              child: Container(
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: tierColor,
+                                  borderRadius: BorderRadius.circular(2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: tierColor.withOpacity(0.5),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      progress.remainingScore > 0
+                          ? '${progress.nextTier}까지 ${progress.remainingScore}P'
+                          : '최고 등급 달성! 🔥',
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              // 랭킹 순위 (있을 경우)
+              if (myRanking != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${myRanking.rank}위',
+                      style: TextStyle(
+                        color: WHITE,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'kbo',
+                      ),
+                    ),
+                    const Text(
+                      '내 순위',
+                      style: TextStyle(color: Colors.white38, fontSize: 11),
+                    ),
+                  ],
+                ),
             ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 

@@ -11,6 +11,7 @@ class QuizTrophyModel {
   final String? teamName;
   final String? teamLogoUrl;
   final int score;
+  final int? rank; // 순위 정보 추가
   final TrophyType type;
   final DateTime earnedAt;
 
@@ -23,6 +24,7 @@ class QuizTrophyModel {
     this.teamName,
     this.teamLogoUrl,
     required this.score,
+    this.rank,
     required this.type,
     required this.earnedAt,
   });
@@ -38,6 +40,7 @@ class QuizTrophyModel {
       teamName: data['teamName'],
       teamLogoUrl: data['teamLogoUrl'],
       score: data['score'] ?? 0,
+      rank: data['rank'],
       type: data['type'] == 'team' ? TrophyType.team : TrophyType.individual,
       earnedAt: (data['earnedAt'] as Timestamp).toDate(),
     );
@@ -52,6 +55,7 @@ class QuizTrophyModel {
       'teamName': teamName,
       'teamLogoUrl': teamLogoUrl,
       'score': score,
+      'rank': rank,
       'type': type == TrophyType.team ? 'team' : 'individual',
       'earnedAt': Timestamp.fromDate(earnedAt),
     };

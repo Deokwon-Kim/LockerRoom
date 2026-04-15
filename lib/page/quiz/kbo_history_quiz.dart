@@ -2153,6 +2153,16 @@ final List<QuizQuestionModel> cheerSongQuestions = [
     difficulty: 'hard',
     explanation: '롯데자이언츠 김민성',
   ),
+  QuizQuestionModel(
+    quizId: 'cheer_164',
+    category: '응원가(인트로)',
+    audioPath: 'audio/Peraja.m4a',
+    question: '이 응원가의 주인공은?',
+    options: ['안재석', '전준우', '페라자', '김성욱'],
+    correctIndex: 2,
+    difficulty: 'hard',
+    explanation: '한화이글스 페라자',
+  ),
 ];
 
 // 랜덤 카테고리 문제 (모든 카테고리에서 섞은 문제들)

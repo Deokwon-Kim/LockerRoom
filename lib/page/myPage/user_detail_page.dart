@@ -60,10 +60,10 @@ class _UserDetailPageState extends State<UserDetailPage> {
     final teamColor = tp.selectedTeam?.color;
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-    if (currentUserId == null) {
+    if (currentUserId == null || widget.userId.isEmpty) {
       return Scaffold(
         appBar: AppBar(),
-        body: const Center(child: Text('로그인이 필요합니다')),
+        body: const Center(child: Text('로그인이 필요하거나 잘못된 사용자 정보입니다')),
       );
     }
 
@@ -118,11 +118,13 @@ class _UserDetailPageState extends State<UserDetailPage> {
           );
         }
 
-        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance
-              .collection('users')
-              .doc(widget.userId)
-              .snapshots(),
+        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
+          stream: widget.userId.isEmpty
+              ? Stream.value(null)
+              : FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(widget.userId)
+                  .snapshots(),
           builder: (context, snap) {
             if (!snap.hasData) {
               final color =
@@ -371,7 +373,8 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     ),
                   ),
                   SizedBox(height: 10),
-                  if (widget.userId != FirebaseAuth.instance.currentUser?.uid)
+                  if (widget.userId != FirebaseAuth.instance.currentUser?.uid &&
+                      widget.userId.isNotEmpty)
                     StreamBuilder<bool>(
                       stream: context.read<BlockProvider>().getBlockedByStream(
                         FirebaseAuth.instance.currentUser?.uid ?? '',

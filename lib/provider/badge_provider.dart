@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -120,6 +122,52 @@ class BadgeProvider extends ChangeNotifier {
       icon: Icons.share,
       isLocked: true,
     ),
+
+    // 5. 시즌 & 명예 (NEW)
+    BadgeModel(
+      id: 'season_mvp',
+      name: '전설의 시작',
+      description: '어느 한 시즌이라도\n 최종 1위 달성',
+      icon: Icons.emoji_events,
+      isLocked: true,
+    ),
+    BadgeModel(
+      id: 'top50_club',
+      name: '명예의 전당 입성',
+      description: '어느 한 시즌이라도\n 최종 50위 이내 달성',
+      icon: Icons.workspace_premium,
+      isLocked: true,
+    ),
+
+    // 6. 활동성 & 챌린지 (NEW)
+    BadgeModel(
+      id: 'speeding_locomotive',
+      name: '폭주 기관차',
+      description: '하루 만에 퀴즈\n 15세트 이상 참여',
+      icon: Icons.train,
+      isLocked: true,
+    ),
+    BadgeModel(
+      id: 'midnight_hero',
+      name: '심야의 덕후',
+      description: '자정 이후 새벽에\n 퀴즈 10회 참여',
+      icon: Icons.auto_awesome,
+      isLocked: true,
+    ),
+    BadgeModel(
+      id: 'streak_master_30',
+      name: '기록 브레이커',
+      description: '30일 연속 퀴즈 참여',
+      icon: Icons.workspace_premium_outlined,
+      isLocked: true,
+    ),
+    BadgeModel(
+      id: 'minor_skip',
+      name: '역전의 명수',
+      description: '한 세트 200점 이상 득점',
+      icon: Icons.trending_up,
+      isLocked: true,
+    ),
   ];
 
   List<BadgeModel> get badges => _badges;
@@ -230,6 +278,20 @@ class BadgeProvider extends ChangeNotifier {
     }
   }
 
+  // 시즌 성과에 따른 뱃지 체크 (1위 혹은 50위 이내)
+  Future<void> checkSeasonalBadges(int rank) async {
+    if (rank == 1) {
+      if (_isLocked('season_mvp')) {
+        await unlockBadge('season_mvp');
+      }
+    }
+    if (rank <= 50) {
+      if (_isLocked('top50_club')) {
+        await unlockBadge('top50_club');
+      }
+    }
+  }
+
   // 퀴즈 결과에 따른 뱃지 체크 로직
   Future<List<String>> checkQuizBadges(QuizResultModel result) async {
     List<String> newBadges = [];
@@ -308,6 +370,13 @@ class BadgeProvider extends ChangeNotifier {
             newBadges.add('출석왕');
           }
         }
+        // 30일 연속 달성 체크 (NEW)
+        if (newQuizStreak >= 30) {
+          if (_isLocked('streak_master_30')) {
+            await unlockBadge('streak_master_30');
+            newBadges.add('기록 브레이커');
+          }
+        }
       }
     } catch (e) {
       print('출석왕 체크 실패: $e');
@@ -366,6 +435,66 @@ class BadgeProvider extends ChangeNotifier {
       if (_isLocked('night_owl')) {
         await unlockBadge('night_owl');
         newBadges.add('야간 자율학습');
+      }
+
+      // 심야의 덕후 누적 체크 (NEW)
+      int midnightCount = userDoc.data()?['midnightQuizCount'] ?? 0;
+      int newMidnightCount = midnightCount + 1;
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+        {'midnightQuizCount': newMidnightCount},
+      );
+
+      if (newMidnightCount >= 10 && _isLocked('midnight_hero')) {
+        await unlockBadge('midnight_hero');
+        newBadges.add('심야의 덕후');
+      }
+    }
+
+    // [조건 10] 폭주 기관차: 하루 15세트 참여 체크 (NEW)
+    try {
+      final lastPlayDateTimestamp =
+          userDoc.data()?['lastPlayDate'] as Timestamp?;
+      int dailyPlayCount = userDoc.data()?['dailyPlayCount'] ?? 0;
+      final nowToday = DateTime(now.year, now.month, now.day);
+      DateTime? lastPlayDate;
+      if (lastPlayDateTimestamp != null) {
+        final d = lastPlayDateTimestamp.toDate();
+        lastPlayDate = DateTime(d.year, d.month, d.day);
+      }
+
+      int newDailyCount = 1;
+      if (lastPlayDate != null &&
+          nowToday.difference(lastPlayDate).inDays == 0) {
+        newDailyCount = dailyPlayCount + 1;
+      }
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({
+            'lastPlayDate': FieldValue.serverTimestamp(),
+            'dailyPlayCount': newDailyCount,
+          });
+
+      if (newDailyCount >= 15 && _isLocked('speeding_locomotive')) {
+        await unlockBadge('speeding_locomotive');
+        newBadges.add('폭주 기관차');
+      }
+    } catch (e) {
+      print('폭주 기관차 체크 실패: $e');
+    }
+
+    // [조건 11] 역전의 명수: 0점에서 한 번에 MINOR(200점) 이상 달성 (NEW)
+    // [주의] Race Condition 대응:
+    //   - Cloud Function이 아직 실행되지 않은 경우: currentTotalScore == 0
+    //   - Cloud Function이 이미 totalQuizScore를 업데이트한 경우:
+    //     currentTotalScore == result.score (이전 누적 점수 0 + 이번 점수)
+    final preQuizScore = currentTotalScore - result.score;
+    final wasZeroBeforeQuiz = currentTotalScore == 0 || preQuizScore <= 0;
+    if (wasZeroBeforeQuiz && result.score >= 200) {
+      if (_isLocked('minor_skip')) {
+        await unlockBadge('minor_skip');
+        newBadges.add('역전의 명수');
       }
     }
 

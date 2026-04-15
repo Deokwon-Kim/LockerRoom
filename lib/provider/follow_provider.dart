@@ -64,6 +64,7 @@ class FollowProvider extends ChangeNotifier {
   }
 
   Stream<int> getFollowersCountStream(String userId) {
+    if (userId.isEmpty) return Stream.value(0);
     return FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
@@ -72,6 +73,7 @@ class FollowProvider extends ChangeNotifier {
   }
 
   Stream<int> getFollowCountStream(String userId) {
+    if (userId.isEmpty) return Stream.value(0);
     return FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
@@ -101,6 +103,7 @@ class FollowProvider extends ChangeNotifier {
   }
 
   Stream<List<UserModel>> followersUsers(String userId) {
+    if (userId.isEmpty) return Stream.value([]);
     return FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
@@ -113,6 +116,7 @@ class FollowProvider extends ChangeNotifier {
   }
 
   Stream<List<UserModel>> followingUsers(String userId) {
+    if (userId.isEmpty) return Stream.value([]);
     return FirebaseFirestore.instance
         .collection('users')
         .doc(userId)

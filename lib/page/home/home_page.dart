@@ -159,8 +159,7 @@ class _HomePageState extends State<HomePage> {
                         style: const TextStyle(color: WHITE, fontSize: 12),
                       ),
                       child: IconButton(
-                        onPressed: () =>
-                            Navigator.pushNamed(context, '알림센터'),
+                        onPressed: () => Navigator.pushNamed(context, '알림센터'),
                         icon: const Icon(CupertinoIcons.bell, color: WHITE),
                       ),
                     );
@@ -598,20 +597,20 @@ class _HomePageState extends State<HomePage> {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontFamily: 'kbo',
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+          style: GoogleFonts.gothicA1(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
             color: GRAYSCALE_LABEL_900,
+            letterSpacing: -0.5,
           ),
         ),
         if (onSeeAll != null)
           IconButton(
             onPressed: onSeeAll,
             icon: const Icon(
-              Icons.arrow_forward_rounded,
+              Icons.arrow_forward_ios_outlined,
               color: GRAYSCALE_LABEL_500,
-              size: 20,
+              size: 18,
             ),
           ),
       ],
@@ -664,7 +663,7 @@ class _HomePageState extends State<HomePage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader('실시간 야구 커뮤니티 🏟'),
+            _buildSectionHeader('실시간 야구 커뮤니티'),
             const SizedBox(height: 12),
             if (posts.isEmpty)
               _buildEmptyCard('최근 게시물이 존재하지 않습니다')

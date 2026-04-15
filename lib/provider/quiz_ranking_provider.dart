@@ -60,7 +60,10 @@ class QuizRankingProvider extends ChangeNotifier {
     try {
       // 0. Firebase 설정에서 활성화된 시즌 ID 가져오기 (수동 제어용)
       if (_manualSeasonId == null) {
-        final configDoc = await _firestore.collection('settings').doc('quiz_settings').get();
+        final configDoc = await _firestore
+            .collection('settings')
+            .doc('quiz_settings')
+            .get();
         if (configDoc.exists) {
           _manualSeasonId = configDoc.data()?['activeSeasonId'] as String?;
           if (_manualSeasonId != null && _manualSeasonId!.isNotEmpty) {
@@ -69,7 +72,9 @@ class QuizRankingProvider extends ChangeNotifier {
         }
       }
 
-      Query query = _firestore.collectionGroup(FirestoreConstants.quizResultsSub);
+      Query query = _firestore.collectionGroup(
+        FirestoreConstants.quizResultsSub,
+      );
 
       if (!_isAllTimeMode) {
         query = query.where('seasonId', isEqualTo: _selectedSeason);
@@ -85,6 +90,11 @@ class QuizRankingProvider extends ChangeNotifier {
           .limit(10000);
 
       final snapshot = await query.get();
+
+      // ─── 유순위 제외 대상 (개발자, 테스트 계정 등) ─────────────────────────
+      const List<String> EXCLUDED_USER_IDS = [
+        // 이 자리에 본인의 UID를 넣으세요.
+      ];
 
       final Map<String, Map<String, dynamic>> userTotalScores = {};
       final Map<String, int> teamTotalScores = {
@@ -102,40 +112,124 @@ class QuizRankingProvider extends ChangeNotifier {
 
       final DateTime teamSeasonStartDate = DateTime(2026, 2, 6, 17, 0, 0);
 
-      for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final userId = data['userId'] as String;
-        final score = data['score'] as int;
-        final completedAt = data['completedAt'] as Timestamp;
-        String userNickName = data['userNickName'] as String? ?? '';
-        if (userNickName.isEmpty) userNickName = '익명';
-        final teamName = data['teamName'] as String?;
+      // ─── Hall of Fame 모드: 4월 이후 시즌은 Top 50만 집계 ─────────────────
+      if (_isAllTimeMode) {
+        // Step 1: 시즌별로 (userId → 점수) 집계
+        final Map<String, Map<String, int>> seasonUserScores = {};
 
-        if (!userTotalScores.containsKey(userId)) {
-          userTotalScores[userId] = {
-            'totalScore': score,
-            'completedAt': completedAt,
-            'userNickName': userNickName,
-            'teamName': teamName,
-          };
-        } else {
-          userTotalScores[userId]!['totalScore'] =
-              (userTotalScores[userId]!['totalScore'] as int) + score;
-          final currentCompletedAt =
-              userTotalScores[userId]!['completedAt'] as Timestamp;
-          if (completedAt.compareTo(currentCompletedAt) > 0) {
-            userTotalScores[userId]!['completedAt'] = completedAt;
+        for (var doc in snapshot.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          final userId = data['userId'] as String;
+
+          // 제외 대상 유저 스킵
+          if (EXCLUDED_USER_IDS.contains(userId)) continue;
+
+          final score = data['score'] as int;
+          final completedAt = data['completedAt'] as Timestamp;
+          final seasonId = data['seasonId'] as String? ?? 'legacy';
+          String userNickName = data['userNickName'] as String? ?? '';
+          if (userNickName.isEmpty) userNickName = '익명';
+          final teamName = data['teamName'] as String?;
+
+          // 유저 메타데이터 초기화 (닉네임, 팀명, 최근 플레이 시각)
+          if (!userTotalScores.containsKey(userId)) {
+            userTotalScores[userId] = {
+              'totalScore': 0,
+              'completedAt': completedAt,
+              'userNickName': userNickName,
+              'teamName': teamName,
+            };
+          } else {
+            final currentAt =
+                userTotalScores[userId]!['completedAt'] as Timestamp;
+            if (completedAt.compareTo(currentAt) > 0) {
+              userTotalScores[userId]!['completedAt'] = completedAt;
+            }
+          }
+
+          // 시즌별 점수 누적
+          seasonUserScores.putIfAbsent(seasonId, () => {});
+          seasonUserScores[seasonId]![userId] =
+              (seasonUserScores[seasonId]![userId] ?? 0) + score;
+
+          // 팀 점수는 기존 방식 그대로 집계
+          if (completedAt.toDate().isAfter(teamSeasonStartDate)) {
+            if (teamName != null && teamName.isNotEmpty) {
+              teamTotalScores[teamName] =
+                  (teamTotalScores[teamName] ?? 0) + score;
+            } else {
+              userTotalScores[userId]!['legacyTeamScore'] =
+                  (userTotalScores[userId]!['legacyTeamScore'] as int? ?? 0) +
+                  score;
+            }
           }
         }
 
-        if (completedAt.toDate().isAfter(teamSeasonStartDate)) {
-          if (teamName != null && teamName.isNotEmpty) {
-            teamTotalScores[teamName] =
-                (teamTotalScores[teamName] ?? 0) + score;
+        // Step 2: 시즌별 필터 적용 후 all-time 총점 합산
+        // - 2026-04(4월 통합시즌) 이하: 전체 참가자 반영 (기존 방식)
+        // - 2026-04 초과(5월 이후 반기 시즌): 해당 시즌 Top 50만 반영
+        const String lastOpenSeason = '2026-04';
+
+        for (final seasonEntry in seasonUserScores.entries) {
+          final seasonId = seasonEntry.key;
+          final userScores = seasonEntry.value;
+
+          final bool isRestrictedSeason =
+              seasonId.compareTo(lastOpenSeason) > 0;
+          final int eligibleCount = isRestrictedSeason ? 50 : userScores.length;
+
+          // 이 시즌 내 점수 순 정렬
+          final sortedUsers = userScores.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
+
+          // 자격 있는 유저의 점수만 all-time 합산
+          for (int i = 0; i < sortedUsers.length && i < eligibleCount; i++) {
+            final userId = sortedUsers[i].key;
+            final score = sortedUsers[i].value;
+            if (userTotalScores.containsKey(userId)) {
+              userTotalScores[userId]!['totalScore'] =
+                  (userTotalScores[userId]!['totalScore'] as int) + score;
+            }
+          }
+        }
+
+        // ─── 시즌 모드: 기존 로직 그대로 ────────────────────────────────────────
+      } else {
+        for (var doc in snapshot.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          final userId = data['userId'] as String;
+          final score = data['score'] as int;
+          final completedAt = data['completedAt'] as Timestamp;
+          String userNickName = data['userNickName'] as String? ?? '';
+          if (userNickName.isEmpty) userNickName = '익명';
+          final teamName = data['teamName'] as String?;
+
+          if (!userTotalScores.containsKey(userId)) {
+            userTotalScores[userId] = {
+              'totalScore': score,
+              'completedAt': completedAt,
+              'userNickName': userNickName,
+              'teamName': teamName,
+            };
           } else {
-            userTotalScores[userId]!['legacyTeamScore'] =
-                (userTotalScores[userId]!['legacyTeamScore'] as int? ?? 0) +
-                score;
+            userTotalScores[userId]!['totalScore'] =
+                (userTotalScores[userId]!['totalScore'] as int) + score;
+            final currentCompletedAt =
+                userTotalScores[userId]!['completedAt'] as Timestamp;
+            if (completedAt.compareTo(currentCompletedAt) > 0) {
+              userTotalScores[userId]!['completedAt'] = completedAt;
+            }
+          }
+
+          if (completedAt.toDate().isAfter(teamSeasonStartDate)) {
+            if (teamName != null && teamName.isNotEmpty) {
+              teamTotalScores[teamName] =
+                  (teamTotalScores[teamName] ?? 0) + score;
+            } else {
+              userTotalScores[userId]!['legacyTeamScore'] =
+                  (userTotalScores[userId]!['legacyTeamScore'] as int? ?? 0) +
+                  score;
+            }
           }
         }
       }
@@ -161,9 +255,13 @@ class QuizRankingProvider extends ChangeNotifier {
 
         if (i < 300) {
           try {
-            final userDoc = await _firestore.collection('users').doc(userId).get();
+            final userDoc = await _firestore
+                .collection('users')
+                .doc(userId)
+                .get();
             final userData = userDoc.data();
-            String latestNick = userData?['userNickName'] ?? scoreData['userNickName'] ?? '익명';
+            String latestNick =
+                userData?['userNickName'] ?? scoreData['userNickName'] ?? '익명';
             if (latestNick.isEmpty) latestNick = '익명';
 
             final latestTeam = userData?['team'] as String?;
@@ -215,31 +313,39 @@ class QuizRankingProvider extends ChangeNotifier {
 
         final int legacyScore = scoreData['legacyTeamScore'] as int? ?? 0;
         if (legacyScore > 0 && teamName != null && teamName.isNotEmpty) {
-          teamTotalScores[teamName] = (teamTotalScores[teamName] ?? 0) + legacyScore;
+          teamTotalScores[teamName] =
+              (teamTotalScores[teamName] ?? 0) + legacyScore;
         }
       }
 
       _rankings = tempRankings.asMap().entries.map((entry) {
         final index = entry.key;
         final user = entry.value;
-        int scoreDiff = index > 0 ? user.score - tempRankings[index - 1].score : 0;
+        int scoreDiff = index > 0
+            ? user.score - tempRankings[index - 1].score
+            : 0;
         return user.copyWith(rankChange: scoreDiff);
       }).toList();
 
-      final List<RankingTeamModel> tempTeamRankings = teamTotalScores.entries
-          .map((e) => RankingTeamModel(
-                rank: 0,
-                teamName: e.key,
-                totalScore: e.value,
-                rankChange: 0,
-              ))
-          .toList()
-        ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
+      final List<RankingTeamModel> tempTeamRankings =
+          teamTotalScores.entries
+              .map(
+                (e) => RankingTeamModel(
+                  rank: 0,
+                  teamName: e.key,
+                  totalScore: e.value,
+                  rankChange: 0,
+                ),
+              )
+              .toList()
+            ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
 
       _teamRankings = tempTeamRankings.asMap().entries.map((entry) {
         final index = entry.key;
         final team = entry.value;
-        int scoreDiff = index > 0 ? team.totalScore - tempTeamRankings[index - 1].totalScore : 0;
+        int scoreDiff = index > 0
+            ? team.totalScore - tempTeamRankings[index - 1].totalScore
+            : 0;
         return team.copyWith(rank: index + 1, rankChange: scoreDiff);
       }).toList();
 
@@ -284,7 +390,9 @@ class QuizRankingProvider extends ChangeNotifier {
           .orderBy('earnedAt', descending: true)
           .get();
 
-      _trophies = snapshot.docs.map((doc) => QuizTrophyModel.fromFirestore(doc)).toList();
+      _trophies = snapshot.docs
+          .map((doc) => QuizTrophyModel.fromFirestore(doc))
+          .toList();
     } catch (e) {
       debugPrint('Error fetching trophies: $e');
     } finally {
@@ -299,12 +407,17 @@ class QuizRankingProvider extends ChangeNotifier {
           .collection(FirestoreConstants.trophies)
           .where('userId', isEqualTo: trophy.userId)
           .where('seasonId', isEqualTo: trophy.seasonId)
-          .where('type', isEqualTo: trophy.type == TrophyType.team ? 'team' : 'individual')
+          .where(
+            'type',
+            isEqualTo: trophy.type == TrophyType.team ? 'team' : 'individual',
+          )
           .limit(1)
           .get();
 
       if (existing.docs.isEmpty) {
-        await _firestore.collection(FirestoreConstants.trophies).add(trophy.toFirestore());
+        await _firestore
+            .collection(FirestoreConstants.trophies)
+            .add(trophy.toFirestore());
         _trophies.insert(0, trophy);
         notifyListeners();
       }

@@ -4,6 +4,7 @@ class UserRepository {
   final _firestore = FirebaseFirestore.instance;
 
   Future<void> followUser(String currentUserId, String targetUserId) async {
+    if (currentUserId.isEmpty || targetUserId.isEmpty) return;
     final batch = _firestore.batch();
 
     final currentUserRef = _firestore
@@ -41,6 +42,7 @@ class UserRepository {
   }
 
   Future<void> unfollowUser(String currentUserId, String targetUserId) async {
+    if (currentUserId.isEmpty || targetUserId.isEmpty) return;
     final batch = _firestore.batch();
 
     final currentUserRef = _firestore
@@ -69,6 +71,7 @@ class UserRepository {
   }
 
   Future<bool> isFollowing(String currentUserId, String targetUserId) async {
+    if (currentUserId.isEmpty || targetUserId.isEmpty) return false;
     final doc = await _firestore
         .collection('users')
         .doc(currentUserId)

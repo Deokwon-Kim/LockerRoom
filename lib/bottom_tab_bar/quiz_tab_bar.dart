@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/quiz/my_badge_page.dart';
+import 'package:lockerroom/page/quiz/quiz_loby_page.dart';
 import 'package:lockerroom/page/quiz/quiz_ranking_page.dart';
 import 'package:lockerroom/page/quiz/quiz_record_page.dart';
 import 'package:lockerroom/page/quiz/quiz_start_page.dart';
@@ -54,7 +55,7 @@ class _QuizTabBarState extends State<QuizTabBar> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      QuizStartPage(),
+      QuizLobyPage(),
       QuizRecordPage(),
       MyBadgePage(),
       QuizRankingPage(),

@@ -408,9 +408,9 @@ class QuizProvider extends ChangeNotifier {
           // 이번 문제 ID들 뒤에 추가
           currentIds.addAll(questionIds);
 
-          // 너무 많으면 오래된 것부터 삭제 (최대 150개 추적)
-          if (currentIds.length > 150) {
-            currentIds = currentIds.sublist(currentIds.length - 150);
+          // 너무 많으면 오래된 것부터 삭제 (최대 180개 추적)
+          if (currentIds.length > 180) {
+            currentIds = currentIds.sublist(currentIds.length - 180);
           }
 
           transaction.set(docRef, {'ids': currentIds});

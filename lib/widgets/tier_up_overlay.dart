@@ -231,6 +231,8 @@ class _TierUpOverlayState extends State<TierUpOverlay>
 
   String _getEmblemPath(String tier) {
     switch (tier) {
+      case 'LEGEND':
+        return 'assets/images/quiz/quiz_emblem_legend.png';
       case 'MVP':
         return 'assets/images/quiz/quiz_emblem_mvp.png';
       case 'ALL-STAR':
@@ -246,6 +248,8 @@ class _TierUpOverlayState extends State<TierUpOverlay>
 
   Color _getTierColor(String tier) {
     switch (tier) {
+      case 'LEGEND':
+        return const Color(0xFFFFD700); // Radiant Gold
       case 'MVP':
         return const Color(0xFFB19CD9); // Diamond Purple
       case 'ALL-STAR':
@@ -337,9 +341,18 @@ class _TierUpOverlayState extends State<TierUpOverlay>
                             child: Text(
                               '승격',
                               style: TextStyle(
-                                fontSize: 50,
+                                fontSize: widget.newTier == 'LEGEND' ? 60 : 50,
                                 color: WHITE,
                                 fontWeight: FontWeight.bold,
+                                shadows: widget.newTier == 'LEGEND'
+                                    ? [
+                                        BoxShadow(
+                                          color: Colors.amber.withOpacity(0.8),
+                                          blurRadius: 30,
+                                          spreadRadius: 10,
+                                        ),
+                                      ]
+                                    : null,
                               ),
                             ),
                           ),
@@ -363,29 +376,32 @@ class _TierUpOverlayState extends State<TierUpOverlay>
                                 ),
                               ),
                             ),
-
                             // NEW EMBLEM (Bursts in)
                             ScaleTransition(
                               scale: _newTrophyScale,
                               child: FadeTransition(
                                 opacity: _newTrophyOpacity,
                                 child: Container(
-                                  width: 280,
-                                  height: 280,
+                                  width: 320,
+                                  height: 320,
                                   child: Stack(
                                     alignment: Alignment.center,
                                     children: [
                                       // Tier Aura Glow
                                       Container(
-                                        width: 170,
-                                        height: 170,
+                                        width: 220,
+                                        height: 220,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           boxShadow: [
                                             BoxShadow(
-                                              color: newColor.withOpacity(0.2),
-                                              blurRadius: 80,
-                                              spreadRadius: 20,
+                                              color:
+                                                  (widget.newTier == 'LEGEND'
+                                                          ? Colors.amber
+                                                          : newColor)
+                                                      .withOpacity(0.4),
+                                              blurRadius: 100,
+                                              spreadRadius: 30,
                                             ),
                                           ],
                                         ),
@@ -402,9 +418,7 @@ class _TierUpOverlayState extends State<TierUpOverlay>
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 20),
-
                         FadeTransition(
                           opacity: _textOpacity,
                           child: SlideTransition(
@@ -415,17 +429,27 @@ class _TierUpOverlayState extends State<TierUpOverlay>
                                   widget.newTier,
                                   style: TextStyle(
                                     fontFamily: 'kbo',
-                                    fontSize: 28,
+                                    fontSize: widget.newTier == 'LEGEND'
+                                        ? 42
+                                        : 28,
                                     fontWeight: FontWeight.bold,
                                     color: _getTierColor(widget.newTier),
-                                    letterSpacing: 3,
+                                    letterSpacing: 5,
+                                    shadows: widget.newTier == 'LEGEND'
+                                        ? [
+                                            const Shadow(
+                                              color: Colors.black,
+                                              blurRadius: 10,
+                                              offset: Offset(2, 2),
+                                            ),
+                                          ]
+                                        : null,
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 50),
 
                         // Touch to continue guide
