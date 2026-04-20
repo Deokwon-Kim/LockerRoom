@@ -132,9 +132,9 @@ class BadgeProvider extends ChangeNotifier {
       isLocked: true,
     ),
     BadgeModel(
-      id: 'top50_club',
+      id: 'top3_club',
       name: '명예의 전당 입성',
-      description: '어느 한 시즌이라도\n 최종 50위 이내 달성',
+      description: '어느 한 시즌이라도\n 최종 3위 이내 달성',
       icon: Icons.workspace_premium,
       isLocked: true,
     ),
@@ -278,16 +278,16 @@ class BadgeProvider extends ChangeNotifier {
     }
   }
 
-  // 시즌 성과에 따른 뱃지 체크 (1위 혹은 50위 이내)
+  // 시즌 성과에 따른 뱃지 체크 (1위 혹은 3위 이내)
   Future<void> checkSeasonalBadges(int rank) async {
     if (rank == 1) {
       if (_isLocked('season_mvp')) {
         await unlockBadge('season_mvp');
       }
     }
-    if (rank <= 50) {
-      if (_isLocked('top50_club')) {
-        await unlockBadge('top50_club');
+    if (rank <= 3) {
+      if (_isLocked('top3_club')) {
+        await unlockBadge('top3_club');
       }
     }
   }

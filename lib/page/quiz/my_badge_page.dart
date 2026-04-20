@@ -255,12 +255,12 @@ class _MyBadgePageState extends State<MyBadgePage>
   }
 
   Widget _buildBadgeItem(BadgeModel badge, Color? teamColor) {
-    // 프리미엄 디자인 대상 체크 (시즌 MVP 및 Top 50)
-    final bool isElite = badge.id == 'season_mvp' || badge.id == 'top50_club';
+    // 프리미엄 디자인 대상 체크 (시즌 MVP 및 Top 3)
+    final bool isElite = badge.id == 'season_mvp' || badge.id == 'top3_club';
     final bool showPremium = isElite && !badge.isLocked; // 획득했을 때만 프리미엄 연출
 
     final bool isMVP = badge.id == 'season_mvp';
-    final bool isTop50 = badge.id == 'top50_club';
+    final bool isTop3 = badge.id == 'top3_club';
 
     // 디자인 테마 설정
     Color glowColor = teamColor ?? Colors.amber;
@@ -271,7 +271,7 @@ class _MyBadgePageState extends State<MyBadgePage>
       if (isMVP) {
         glowColor = const Color(0xFFFFD700); // GOLD
         borderGradient = [const Color(0xFFFFD700), const Color(0xFFFFA500)];
-      } else if (isTop50) {
+      } else if (isTop3) {
         glowColor = const Color(0xFFB19CD9); // SILVER/VIOLET
         borderGradient = [const Color(0xFFB19CD9), const Color(0xFFE6E6FA)];
       }

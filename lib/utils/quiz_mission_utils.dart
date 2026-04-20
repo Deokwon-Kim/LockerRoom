@@ -52,23 +52,33 @@ class QuizMissionUtils {
     else if (userTotalScore >= 1200) difficultyLevel = 2; // MAJOR
     else if (userTotalScore >= 400) difficultyLevel = 1; // MINOR
 
-    // 고정된 시드로 난수 생성하여 매일 똑같은 조합이 나오도록 함 (옵션)
-    // 여기서는 매일 고정 3개의 미션을 스케일링해서 제공하는 방식으로 구현
+    // 당일 미션 목표치가 실시간으로 갱신되어 완료 후 진행도가 꼬이는 현상 방지를 위해 하루 동안 고정
+    final targetPlayKey = '${userId}_target_play_$dateKey';
+    final targetCorrectKey = '${userId}_target_correct_$dateKey';
+    final targetScoreKey = '${userId}_target_score_$dateKey';
     
-    // 미션 1: 플레이 횟수
-    int targetPlay = 1 + (difficultyLevel / 2).floor(); // 1~3회
-    int currentPlay = todayHistory.length;
-    int rewardPlay = 30 + (difficultyLevel * 10);
+    int targetPlay = prefs.getInt(targetPlayKey) ?? (1 + (difficultyLevel / 2).floor());
+    int rewardPlay = prefs.getInt('${targetPlayKey}_reward') ?? (30 + (difficultyLevel * 10));
     
-    // 미션 2: 정답 개수
-    int targetCorrect = 5 + (difficultyLevel * 5); // 5개 ~ 30개
-    int currentCorrect = todayHistory.fold(0, (sum, item) => sum + item.correctAnswers);
-    int rewardCorrect = 40 + (difficultyLevel * 15);
+    int targetCorrect = prefs.getInt(targetCorrectKey) ?? (5 + (difficultyLevel * 5));
+    int rewardCorrect = prefs.getInt('${targetCorrectKey}_reward') ?? (40 + (difficultyLevel * 15));
 
-    // 미션 3: 누적 점수
-    int targetScore = 150 + (difficultyLevel * 200); // 150점 ~ 1150점
+    int targetScore = prefs.getInt(targetScoreKey) ?? (150 + (difficultyLevel * 200));
+    int rewardScore = prefs.getInt('${targetScoreKey}_reward') ?? (50 + (difficultyLevel * 20));
+
+    // 처음 생성된 날이면 로컬 저장소에 당일 목표치 캐싱 (이후 승격해도 당일은 목표 고정)
+    if (!prefs.containsKey(targetPlayKey)) {
+      prefs.setInt(targetPlayKey, targetPlay);
+      prefs.setInt('${targetPlayKey}_reward', rewardPlay);
+      prefs.setInt(targetCorrectKey, targetCorrect);
+      prefs.setInt('${targetCorrectKey}_reward', rewardCorrect);
+      prefs.setInt(targetScoreKey, targetScore);
+      prefs.setInt('${targetScoreKey}_reward', rewardScore);
+    }
+
+    int currentPlay = todayHistory.length;
+    int currentCorrect = todayHistory.fold(0, (sum, item) => sum + item.correctAnswers);
     int currentScore = todayHistory.fold(0, (sum, item) => sum + item.score);
-    int rewardScore = 50 + (difficultyLevel * 20);
 
     return [
       QuizMission(
@@ -99,5 +109,24 @@ class QuizMissionUtils {
         isClaimed: prefs.getBool('${userId}_mission_${dateKey}_score_claimed') ?? false,
       ),
     ];
+  }
+
+  // 개발/테스트용: 오늘 수령한 미션 상태 및 목표치 초기화
+  static Future<void> resetDailyMissions(String userId, SharedPreferences prefs) async {
+    final now = DateTime.now();
+    final dateKey = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    
+    // 수령 상태 초기화
+    await prefs.remove('${userId}_mission_${dateKey}_play_claimed');
+    await prefs.remove('${userId}_mission_${dateKey}_correct_claimed');
+    await prefs.remove('${userId}_mission_${dateKey}_score_claimed');
+    
+    // 캐시된 당일 목표치 초기화 (난이도 재계산 용도)
+    await prefs.remove('${userId}_target_play_$dateKey');
+    await prefs.remove('${userId}_target_play_${dateKey}_reward');
+    await prefs.remove('${userId}_target_correct_$dateKey');
+    await prefs.remove('${userId}_target_correct_${dateKey}_reward');
+    await prefs.remove('${userId}_target_score_$dateKey');
+    await prefs.remove('${userId}_target_score_${dateKey}_reward');
   }
 }

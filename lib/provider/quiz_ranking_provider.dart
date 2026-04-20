@@ -13,17 +13,24 @@ class QuizRankingProvider extends ChangeNotifier {
   List<RankingUserModel> _rankings = [];
   List<RankingTeamModel> _teamRankings = [];
   List<QuizTrophyModel> _trophies = [];
+  Map<String, List<RankingUserModel>> _hallOfFameBySeasons = {};
   bool _isLoading = false;
+  bool _isHallOfFameLoading = false;
   String? _errorMessage;
   String _selectedCategory = 'all';
   String _selectedSeason = QuizSeasonUtils.getCurrentSeasonId();
   String? _manualSeasonId; // Firebase에서 제어하는 시즌 ID
   bool _isAllTimeMode = false;
 
+  // 시즌제 도입 기준 시즌 (이 이하는 전체 표시, 이 초과는 Top 3만 표시)
+  static const String _lastOpenSeason = '2026-04';
+
   List<RankingUserModel> get rankings => _rankings;
   List<RankingTeamModel> get teamRankings => _teamRankings;
   List<QuizTrophyModel> get trophies => _trophies;
+  Map<String, List<RankingUserModel>> get hallOfFameBySeasons => _hallOfFameBySeasons;
   bool get isLoading => _isLoading;
+  bool get isHallOfFameLoading => _isHallOfFameLoading;
   String? get errorMessage => _errorMessage;
   String get selectedCategory => _selectedCategory;
   String get selectedSeason => _selectedSeason;
@@ -373,6 +380,150 @@ class QuizRankingProvider extends ChangeNotifier {
       return _teamRankings.firstWhere((team) => team.teamName == teamName);
     } catch (e) {
       return null;
+    }
+  }
+
+  // --- Hall of Fame (시즌별) ---
+
+  /// 명예의 전당: 시즌별로 그룹화된 랭킹 반환.
+  /// - 2026-04 초과 시즌: Top 3만 표시 (뱃지 획득 대상)
+  /// - 2026-04 이하 시즌: 전체 참가자 표시
+  Future<void> fetchHallOfFameBySeasons([bool force = false]) async {
+    if (_isHallOfFameLoading) return;
+    if (_hallOfFameBySeasons.isNotEmpty && !force) return;
+
+    _isHallOfFameLoading = true;
+    notifyListeners();
+
+    try {
+      const List<String> excludedUserIds = [];
+
+      final snapshot = await _firestore
+          .collectionGroup(FirestoreConstants.quizResultsSub)
+          .orderBy('score', descending: true)
+          .orderBy('completedAt', descending: true)
+          .limit(10000)
+          .get();
+
+      // Step 1: 시즌별 유저 점수 집계
+      // Map<seasonId, Map<userId, {totalScore, completedAt, userNickName, teamName}>>
+      final Map<String, Map<String, Map<String, dynamic>>> seasonData = {};
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final userId = data['userId'] as String;
+        if (excludedUserIds.contains(userId)) continue;
+
+        final score = data['score'] as int;
+        final completedAt = data['completedAt'] as Timestamp;
+        final seasonId = data['seasonId'] as String? ?? 'legacy';
+        String userNickName = data['userNickName'] as String? ?? '';
+        if (userNickName.isEmpty) userNickName = '익명';
+        final teamName = data['teamName'] as String?;
+
+        seasonData.putIfAbsent(seasonId, () => {});
+
+        if (!seasonData[seasonId]!.containsKey(userId)) {
+          seasonData[seasonId]![userId] = {
+            'totalScore': score,
+            'completedAt': completedAt,
+            'userNickName': userNickName,
+            'teamName': teamName,
+          };
+        } else {
+          seasonData[seasonId]![userId]!['totalScore'] =
+              (seasonData[seasonId]![userId]!['totalScore'] as int) + score;
+          final currentAt =
+              seasonData[seasonId]![userId]!['completedAt'] as Timestamp;
+          if (completedAt.compareTo(currentAt) > 0) {
+            seasonData[seasonId]![userId]!['completedAt'] = completedAt;
+          }
+        }
+      }
+
+      // Step 2: 시즌별로 정렬 및 표시 인원 제한 후 RankingUserModel 빌드
+      final Map<String, List<RankingUserModel>> result = {};
+
+      for (final seasonEntry in seasonData.entries) {
+        final seasonId = seasonEntry.key;
+        final userScores = seasonEntry.value;
+
+        // 점수 내림차순 정렬
+        final sorted = userScores.entries.toList()
+          ..sort(
+            (a, b) => (b.value['totalScore'] as int)
+                .compareTo(a.value['totalScore'] as int),
+          );
+
+        // 2026-04 초과 시즌 → Top 3, 이하 시즌 → 전체
+        final bool isRestricted = seasonId.compareTo(_lastOpenSeason) > 0;
+        final int limit = isRestricted ? 3 : sorted.length;
+
+        final List<RankingUserModel> seasonRankings = [];
+
+        for (int i = 0; i < sorted.length && i < limit; i++) {
+          final userId = sorted[i].key;
+          final scoreData = sorted[i].value;
+          String? teamName = scoreData['teamName'];
+
+          try {
+            final userDoc =
+                await _firestore.collection('users').doc(userId).get();
+            final userData = userDoc.data();
+            String latestNick =
+                userData?['userNickName'] ?? scoreData['userNickName'] ?? '익명';
+            if (latestNick.isEmpty) latestNick = '익명';
+            final latestTeam = userData?['team'] as String?;
+            if (latestTeam != null) teamName = latestTeam;
+
+            seasonRankings.add(
+              RankingUserModel(
+                rank: i + 1,
+                userId: userId,
+                name: latestNick,
+                score: scoreData['totalScore'],
+                rankChange: 0,
+                profileUrl: userData?['profileImage'],
+                completedAt:
+                    (scoreData['completedAt'] as Timestamp).toDate(),
+                teamName: teamName,
+                tier: QuizTierUtils.getTierName(
+                  scoreData['totalScore'] as int,
+                ),
+              ),
+            );
+          } catch (_) {
+            seasonRankings.add(
+              RankingUserModel(
+                rank: i + 1,
+                userId: userId,
+                name: scoreData['userNickName'] ?? '익명',
+                score: scoreData['totalScore'],
+                rankChange: 0,
+                profileUrl: null,
+                completedAt:
+                    (scoreData['completedAt'] as Timestamp).toDate(),
+                teamName: teamName,
+                tier: QuizTierUtils.getTierName(
+                  scoreData['totalScore'] as int,
+                ),
+              ),
+            );
+          }
+        }
+
+        result[seasonId] = seasonRankings;
+      }
+
+      // 최신 시즌이 먼저 오도록 내림차순 정렬
+      _hallOfFameBySeasons = Map.fromEntries(
+        result.entries.toList()..sort((a, b) => b.key.compareTo(a.key)),
+      );
+    } catch (e) {
+      debugPrint('명예의 전당 로드 실패: $e');
+    } finally {
+      _isHallOfFameLoading = false;
+      notifyListeners();
     }
   }
 

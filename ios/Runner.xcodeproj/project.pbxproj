@@ -20,9 +20,15 @@
 		B0BAAF704A050CAE28B9F63E /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C01826370850C220586DE3B6 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		2DCCB3BA2F8F85E500C8E5F4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
+			remoteInfo = Runner;
+		};
 /* End PBXContainerItemProxy section */
-
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		0562E12F4D802D2EECD50100 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
@@ -186,7 +192,6 @@
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
-				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				9E2D4324DD34AA9A16F72196 /* [CP] Embed Pods Frameworks */,
 				110585D9019688D0837B5798 /* [CP] Copy Pods Resources */,
@@ -275,9 +280,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -345,9 +354,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -399,30 +412,10 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		2DE69B732F8646B500A03E41 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			targetProxy = 2DE69B722F8646B500A03E41 /* PBXContainerItemProxy */;
-		};
-		2DE69B782F8646D700A03E41 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			targetProxy = 2DE69B772F8646D700A03E41 /* PBXContainerItemProxy */;
-		};
-		2DE69B7A2F8646DE00A03E41 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			targetProxy = 2DE69B792F8646DE00A03E41 /* PBXContainerItemProxy */;
-		};
-		2DE69B7C2F86471B00A03E41 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			targetProxy = 2DE69B7B2F86471B00A03E41 /* PBXContainerItemProxy */;
-		};
-		2DE69B7E2F86472000A03E41 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			targetProxy = 2DE69B7D2F86472000A03E41 /* PBXContainerItemProxy */;
-		};
 		331C8086294A63A400263BE5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
-			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
+			targetProxy = 2DCCB3BA2F8F85E500C8E5F4 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 

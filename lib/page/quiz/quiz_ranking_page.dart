@@ -884,8 +884,59 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
               ],
             ),
             const SizedBox(height: 12),
-
             // 완벽하게 정렬된 3D 아이소메트릭 블록
+            CustomPaint(
+              size: Size(double.infinity, height + 40),
+              painter: _Iso3DBlockPainter(
+                baseColor: colors[0],
+                sideColor: colors[1],
+                height: height,
+                rank: rank,
+              ),
+              child: SizedBox(
+                height: height + 40,
+                width: double.infinity,
+                child: Stack(
+                  children: [
+                    Center(
+                      child: SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 15),
+                            Icon(
+                              rank == 1
+                                  ? Icons.emoji_events
+                                  : Icons.military_tech,
+                              color: Colors.white.withOpacity(0.9),
+                              size: isMain ? 32 : 24,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '$rank',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: isMain ? 34 : 24,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'kbo',
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    offset: const Offset(1, 1),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         );
       },
@@ -1207,8 +1258,59 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
               ],
             ),
             const SizedBox(height: 12),
-
             // 3D 아이소메트릭 블록
+            CustomPaint(
+              size: Size(double.infinity, height + 40),
+              painter: _Iso3DBlockPainter(
+                baseColor: colors[0],
+                sideColor: colors[1],
+                height: height,
+                rank: rank,
+              ),
+              child: SizedBox(
+                height: height + 40,
+                width: double.infinity,
+                child: Stack(
+                  children: [
+                    Center(
+                      child: SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 15),
+                            Icon(
+                              rank == 1
+                                  ? Icons.emoji_events
+                                  : Icons.military_tech,
+                              color: Colors.white.withOpacity(0.9),
+                              size: isMain ? 32 : 24,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '$rank',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: isMain ? 34 : 24,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'kbo',
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    offset: const Offset(1, 1),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         );
       },
@@ -1975,4 +2077,105 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
     final diff = lastDay.difference(now).inDays;
     return diff > 0 ? '시즌 종료까지 D-$diff' : '시즌 종료 임박!';
   }
+}
+
+class _Iso3DBlockPainter extends CustomPainter {
+  final Color baseColor;
+  final Color sideColor;
+  final double height;
+  final int rank;
+
+  _Iso3DBlockPainter({
+    required this.baseColor,
+    required this.sideColor,
+    required this.height,
+    required this.rank,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const double skew = 12.0;
+    const double radius = 12.0;
+    final double w = size.width;
+    final double h = height;
+
+    final paint = Paint()..style = PaintingStyle.fill;
+
+    // ── blockPath: 정면(topPath 연장) + 오른쪽 측면도 full-height ──
+    final blockPath = Path()
+      ..moveTo(radius + skew, 0)
+      ..lineTo(w - radius, 0)
+      // 오른쪽 뒤 모서리 커브 → 뒤쪽 엣지(w) 진입
+      ..quadraticBezierTo(w, 0, w, skew * 0.4)
+      // ★ 뒤쪽 엣지(w)를 h만큼 그대로 내려감 (측면 뒤 엣지)
+      ..lineTo(w, h + skew * 1.6)
+      // 오른쪽 아래: 뒤에서 정면 하단으로 꺾임
+      ..quadraticBezierTo(w, h + skew * 2, w - skew - radius, h + skew * 2)
+      // 바닥 직선
+      ..lineTo(radius, h + skew * 2)
+      // 왼쪽 아래 모서리
+      ..quadraticBezierTo(0, h + skew * 2, 0, h + skew * 2 - radius)
+      // 왼쪽 수직 연장
+      ..lineTo(0, skew * 2)
+      // 왼쪽 위 모서리 (캡)
+      ..quadraticBezierTo(0, skew * 2, skew * 0.5, skew)
+      ..lineTo(skew, 0)
+      ..quadraticBezierTo(skew, 0, radius + skew, 0)
+      ..close();
+
+    // 1. 전체 블록 기본색 (정면색)
+    canvas.drawPath(blockPath, paint..color = baseColor);
+
+    // 2. 윗면 캡 오버레이 (밝게) - blockPath 와 동일한 상단 경로
+    final capPath = Path()
+      ..moveTo(radius + skew, 0)
+      ..lineTo(w - radius, 0)
+      ..quadraticBezierTo(w, 0, w, skew * 0.4) // blockPath 와 동일한 커브
+      ..lineTo(w, skew * 2)
+      ..lineTo(0, skew * 2)
+      ..quadraticBezierTo(0, skew * 2, skew * 0.5, skew)
+      ..lineTo(skew, 0)
+      ..quadraticBezierTo(skew, 0, radius + skew, 0)
+      ..close();
+
+    canvas.save();
+    canvas.clipPath(blockPath);
+    canvas.drawPath(
+      capPath,
+      paint..color = Color.lerp(baseColor, Colors.white, 0.38)!,
+    );
+    canvas.restore();
+
+    // 3. 오른쪽 측면 오버레이 (sideColor) - 뒤쪽 엣지(x=w) 전체 높이
+    final sideFacePath = Path()
+      ..moveTo(w - skew, skew * 2) // 정면 top-right
+      ..quadraticBezierTo(w, 0, w, skew * 0.4) // 뒤쪽 top-right
+      ..lineTo(w, h + skew * 1.6) // 뒤쪽 bottom-right
+      ..quadraticBezierTo(w, h + skew * 2, w - skew - radius, h + skew * 2)
+      ..lineTo(w - skew, h + skew * 2) // 정면 bottom-right
+      ..close();
+
+    canvas.save();
+    canvas.clipPath(blockPath);
+    canvas.drawPath(sideFacePath, paint..color = sideColor);
+    canvas.restore();
+
+    // 3. 대각선 광택
+    canvas.save();
+    canvas.clipPath(blockPath);
+    canvas.drawPath(
+      Path()
+        ..moveTo(0, h * 0.45 + skew * 2)
+        ..lineTo(w - skew, skew * 2)
+        ..lineTo(w - skew, h * 0.25 + skew * 2)
+        ..lineTo(0, h * 0.65 + skew * 2)
+        ..close(),
+      Paint()..color = Colors.white.withOpacity(0.12),
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _Iso3DBlockPainter oldDelegate) =>
+      oldDelegate.height != height || oldDelegate.baseColor != baseColor;
 }

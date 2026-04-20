@@ -79,49 +79,56 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA), // 밝은 연회색 배경
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // 배경: 우측 상단 은은한 팀 로고 워터마크
-            if (teamLogo != null)
-              Positioned(
-                top: -30,
-                right: -30,
-                child: Opacity(
-                  opacity: 0.12,
-                  child: Image.asset(teamLogo, width: 200),
+      body: Stack(
+        children: [
+          // 기존 콘텐츠는 SafeArea 안에 유지
+          SafeArea(
+            child: Stack(
+              children: [
+                // 배경: 우측 상단 은은한 팀 로고 워터마크
+                if (teamLogo != null)
+                  Positioned(
+                    top: -30,
+                    right: -30,
+                    child: Opacity(
+                      opacity: 0.12,
+                      child: Image.asset(teamLogo, width: 200),
+                    ),
+                  ),
+
+                SingleChildScrollView(
+                  padding: const EdgeInsets.only(bottom: 120), // 하단 버튼 여백
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 10),
+                      // 1️⃣ 상단 프로필 섹션 (뒤로가기 포함)
+                      _buildTopHeader(),
+                      const SizedBox(height: 25),
+
+                      // 2️⃣ 시즌 정보 카드
+                      _buildSeasonCard(),
+                      const SizedBox(height: 16),
+
+                      // 3️⃣ 메인 티어 카드 (다크 게임 카드 컨셉)
+                      _buildHeroTierCard(),
+                      const SizedBox(height: 25),
+
+                      // 4️⃣ 오늘의 미션 섹션
+                      _buildMissionSection(),
+                      const SizedBox(height: 16),
+                      _buildFixedPlayButton(),
+                    ],
+                  ),
                 ),
-              ),
-
-            SingleChildScrollView(
-              padding: const EdgeInsets.only(bottom: 120), // 하단 버튼 여백
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-                  // 1️⃣ 상단 프로필 섹션 (뒤로가기 포함)
-                  _buildTopHeader(),
-                  const SizedBox(height: 25),
-
-                  // 2️⃣ 시즌 정보 카드
-                  _buildSeasonCard(),
-                  const SizedBox(height: 16),
-
-                  // 3️⃣ 메인 티어 카드 (다크 게임 카드 컨셉)
-                  _buildHeroTierCard(),
-                  const SizedBox(height: 25),
-
-                  // 4️⃣ 오늘의 미션 섹션
-                  _buildMissionSection(),
-                  const SizedBox(height: 16),
-                  _buildFixedPlayButton(),
-                ],
-              ),
+              ],
             ),
+          ),
 
-            // 5. 티어 상승 오버레이 (미션 보상 등으로 승급 시)
-            if (_showTierUpOverlay)
-              TierUpOverlay(
+          // 5. 티어 상승 오버레이 — SafeArea 바깥에서 풀스크린으로 표시
+          if (_showTierUpOverlay)
+            Positioned.fill(
+              child: TierUpOverlay(
                 oldTier: _oldTier,
                 newTier: _newTier,
                 onDismiss: () {
@@ -130,8 +137,8 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                   });
                 },
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -496,12 +503,32 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                   fontFamily: 'kbo',
                 ),
               ),
-              Text(
-                '매일 자정 초기화',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                  fontWeight: FontWeight.w500,
+              GestureDetector(
+                onLongPress: () async {
+                  if (_prefs != null && currentUser != null) {
+                    await QuizMissionUtils.resetDailyMissions(
+                      currentUser.uid,
+                      _prefs!,
+                    );
+                    setState(() {});
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('테스트용: 오늘 미션 수령 상태가 초기화되었습니다.'),
+                          backgroundColor: Colors.blueGrey,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: Text(
+                  '매일 자정 초기화',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],

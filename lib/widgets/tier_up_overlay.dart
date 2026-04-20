@@ -42,6 +42,8 @@ class _TierUpOverlayState extends State<TierUpOverlay>
   late ConfettiController _confettiController;
   final Random _random = Random();
   late AudioPlayer _audioPlayer;
+  bool _canDismiss = false; // 터치 가능 여부 플래그
+
 
   @override
   void initState() {
@@ -201,19 +203,29 @@ class _TierUpOverlayState extends State<TierUpOverlay>
 
   void _startFinalSequence() async {
     await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+    
+    // 메인 애니메이션 실행 (3500ms)
     _mainController.forward();
 
-    // Impact Timing (Matches new trophy peak)
-    // 0.42 * 3500ms = ~1470ms from start. We already delayed 300ms.
-    // So 1470ms - 300ms = ~1170ms into controller movement.
-    // Peek of scale is around 0.6 of controller.
+    // 임팩트 타이밍 (트로피가 커졌을 때 진동 및 폭죽)
     await Future.delayed(const Duration(milliseconds: 1800));
+    if (!mounted) return;
     _impactController.forward();
     _confettiController.play();
+
+    // 전체 애니메이션이 거의 끝날 때까지 대기
+    await Future.delayed(const Duration(milliseconds: 1600));
+    if (!mounted) return;
+    
+    setState(() {
+      _canDismiss = true;
+    });
   }
 
   void _playRankupSound() async {
     await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
     await _audioPlayer.play(AssetSource('audio/RankUp.mp3'));
   }
 
@@ -271,7 +283,11 @@ class _TierUpOverlayState extends State<TierUpOverlay>
       color: Colors.transparent,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: widget.onDismiss,
+        onTap: () {
+          if (_canDismiss) {
+            widget.onDismiss();
+          }
+        },
         child: AnimatedBuilder(
           animation: _shakeAnimation,
           builder: (context, child) {
@@ -453,28 +469,29 @@ class _TierUpOverlayState extends State<TierUpOverlay>
                         const SizedBox(height: 50),
 
                         // Touch to continue guide
-                        FadeTransition(
-                          opacity: _textOpacity,
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.touch_app,
-                                color: WHITE.withOpacity(0.3),
-                                size: 24,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '터치하여 계속하세요',
-                                style: TextStyle(
-                                  fontFamily: 'kbo',
-                                  fontSize: 14,
+                        if (_canDismiss)
+                          FadeTransition(
+                            opacity: _textOpacity,
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.touch_app,
                                   color: WHITE.withOpacity(0.3),
-                                  letterSpacing: 1,
+                                  size: 24,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 8),
+                                Text(
+                                  '터치하여 계속하세요',
+                                  style: TextStyle(
+                                    fontFamily: 'kbo',
+                                    fontSize: 14,
+                                    color: WHITE.withOpacity(0.3),
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
