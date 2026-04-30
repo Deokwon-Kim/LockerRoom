@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/page/quiz/quiz_detail_page.dart';
 import 'package:lockerroom/provider/quiz_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -23,22 +24,27 @@ class _QuizRecordPageState extends State<QuizRecordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: isDarkMode ? const Color(0xFF0F172A) : BACKGROUND_COLOR,
       appBar: AppBar(
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: isDarkMode ? const Color(0xFF0F172A) : BACKGROUND_COLOR,
         elevation: 0,
         scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, size: 20, color: isDarkMode ? Colors.white : Colors.black87),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
           '나의 기록',
           style: TextStyle(
             fontFamily: 'kbo',
             fontWeight: FontWeight.bold,
             fontSize: 18,
+            color: isDarkMode ? Colors.white : Colors.black87,
           ),
         ),
         centerTitle: true,
-        automaticallyImplyLeading: false,
       ),
       body: Consumer<QuizProvider>(
         builder: (context, quizProvider, child) {
@@ -53,20 +59,20 @@ class _QuizRecordPageState extends State<QuizRecordPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.history, size: 80, color: GRAYSCALE_LABEL_300),
-                  SizedBox(height: 16),
+                  Icon(Icons.history, size: 80, color: isDarkMode ? Colors.white12 : GRAYSCALE_LABEL_300),
+                  const SizedBox(height: 16),
                   Text(
                     '아직 푼 퀴즈가 없습니다',
                     style: TextStyle(
                       fontSize: 16,
-                      color: GRAYSCALE_LABEL_600,
+                      color: isDarkMode ? Colors.white38 : GRAYSCALE_LABEL_600,
                       fontFamily: 'kbo',
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    '퀴즈글 풀고 기록을 남겨보세요!',
-                    style: TextStyle(fontSize: 14, color: GRAYSCALE_LABEL_500),
+                    '퀴즈를 풀고 기록을 남겨보세요!',
+                    style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white24 : GRAYSCALE_LABEL_500),
                   ),
                 ],
               ),
@@ -79,7 +85,7 @@ class _QuizRecordPageState extends State<QuizRecordPage> {
             separatorBuilder: (context, index) => SizedBox(height: 12),
             itemBuilder: (context, index) {
               final result = quizProvider.myHistory[index];
-              return _buildHistoryCard(result);
+              return _buildHistoryCard(context, result);
             },
           );
         },
@@ -87,7 +93,8 @@ class _QuizRecordPageState extends State<QuizRecordPage> {
     );
   }
 
-  Widget _buildHistoryCard(result) {
+  Widget _buildHistoryCard(BuildContext context, result) {
+    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
     // 날짜 포맷팅(예: 2025.12.03 15:30)
     String formattedDate = '';
     if (result.completedAt != null) {
@@ -103,81 +110,91 @@ class _QuizRecordPageState extends State<QuizRecordPage> {
         ? Colors.orange
         : RED_DANGER_TEXT_50;
 
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: WHITE,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => QuizDetailPage(result: result),
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // 점수 뱃지
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: scoreColor.withOpacity(0.1),
-              shape: BoxShape.circle,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF1E293B) : WHITE,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: isDarkMode ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            alignment: Alignment.center,
-            child: Text(
-              '${result.score}',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: scoreColor,
-                fontFamily: 'kbo',
+          ],
+        ),
+        child: Row(
+          children: [
+            // 점수 뱃지
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: scoreColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '${result.score}',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: scoreColor,
+                  fontFamily: 'kbo',
+                ),
               ),
             ),
-          ),
-          SizedBox(width: 16),
-          // 상세정보
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 16),
+            // 상세정보
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    result.category,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    formattedDate,
+                    style: const TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+                  ),
+                ],
+              ),
+            ),
+            // 정답 개수 표시
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  result.category,
+                  '${result.correctAnswers}/${result.totalQuestions}',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: isDarkMode ? Colors.white : Colors.black87,
                   ),
                 ),
-                SizedBox(height: 4),
-                Text(
-                  formattedDate,
+                const Text(
+                  '정답',
                   style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
                 ),
               ],
             ),
-          ),
-          // 정답 개수 표시
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${result.correctAnswers}/${result.totalQuestions}',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              Text(
-                '정답',
-                style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
