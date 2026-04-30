@@ -48,15 +48,22 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
       if (!mounted) return;
       final rankProvider = context.read<QuizRankingProvider>();
 
+      // 0. 로컬 캐시 즉시 로드 (깜빡임 방지)
+      rankProvider.loadMyOverallFromLocal();
+
       // 1. 기본 데이터 로드
       context.read<QuizProvider>().fetchMyHistory();
       context.read<UserProvider>().loadNickname();
 
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        context.read<ProfileProvider>().subscribeMyProfileImage(uid);
+      }
+
       // 2. 오버레이 시퀀스를 위해 지난 시즌 랭킹 데이터 먼저 로드
       final prevSeasonId = QuizSeasonUtils.getPreviousSeasonId();
       if (prevSeasonId != null) {
-        rankProvider.setSeason(prevSeasonId);
-        await rankProvider.fetchRankings(true);
+        await rankProvider.setSeason(prevSeasonId);
       }
 
       // 3. 오버레이 시퀀스 실행 (결과 -> 챔피언 -> 시작)
@@ -66,8 +73,7 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
 
       // 4. 다시 현재 시즌 데이터를 로드하여 로비 정보 갱신
       if (mounted) {
-        rankProvider.setSeason(QuizSeasonUtils.getCurrentSeasonId());
-        await rankProvider.fetchRankings(true);
+        await rankProvider.setSeason(QuizSeasonUtils.getCurrentSeasonId());
       }
     });
   }
@@ -76,9 +82,13 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
   Widget build(BuildContext context) {
     final teamProvider = context.watch<TeamProvider>();
     final teamLogo = teamProvider.selectedTeam?.logoPath;
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // 밝은 연회색 배경
+      backgroundColor: isDarkMode
+          ? const Color(0xFF0F172A)
+          : const Color(0xFFF8F9FA),
       body: Stack(
         children: [
           // 기존 콘텐츠는 SafeArea 안에 유지
@@ -97,7 +107,6 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                   ),
 
                 SingleChildScrollView(
-                  padding: const EdgeInsets.only(bottom: 120), // 하단 버튼 여백
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -147,18 +156,19 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
   Widget _buildTopHeader() {
     return Consumer<UserProvider>(
       builder: (context, up, child) {
-        final user = FirebaseAuth.instance.currentUser;
         final profileProvider = Provider.of<ProfileProvider>(context);
         final teamProvider = context.read<TeamProvider>();
+        final isDarkMode =
+            MediaQuery.of(context).platformBrightness == Brightness.dark;
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Row(
             children: [
               // 뒤로가기 버튼
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.arrow_back_ios_new,
-                  color: Colors.black87,
+                  color: isDarkMode ? WHITE : Colors.black87,
                   size: 20,
                 ),
                 onPressed: () => Navigator.pushAndRemoveUntil(
@@ -189,10 +199,10 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                 children: [
                   Text(
                     up.nickname ?? '야구팬',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: isDarkMode ? WHITE : Colors.black,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -200,7 +210,9 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                     teamProvider.selectedTeam?.name ?? 'dd',
                     style: TextStyle(
                       fontSize: 11,
-                      color: teamProvider.selectedTeam?.color,
+                      color: isDarkMode
+                          ? WHITE
+                          : teamProvider.selectedTeam?.color,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -215,6 +227,8 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
 
   // 2️⃣ 시즌 정보 카드
   Widget _buildSeasonCard() {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     final currentSeasonId = QuizSeasonUtils.getCurrentSeasonId();
     final seasonLabel = QuizSeasonUtils.getSeasonLabel(currentSeasonId);
 
@@ -248,11 +262,14 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDarkMode ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(20),
+
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: isDarkMode
+                      ? Colors.black.withOpacity(0.2)
+                      : Colors.black.withOpacity(0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -266,17 +283,19 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                   children: [
                     Text(
                       '$seasonLabel 진행 중 🔥',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDarkMode ? Colors.white : Colors.black,
                       ),
                     ),
                     Text(
                       '시즌 종료까지',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade500,
+                        color: isDarkMode
+                            ? Colors.white.withOpacity(0.4)
+                            : Colors.grey.shade500,
                       ),
                     ),
                   ],
@@ -289,16 +308,18 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                       '현재 $totalParticipants명이 도전 중 ⚾',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade600,
+                        color: isDarkMode
+                            ? Colors.white.withOpacity(0.6)
+                            : Colors.grey.shade600,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       remainingText,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: isDarkMode ? Colors.white : Colors.black,
                         fontFamily: 'kbo',
                       ),
                     ),
@@ -317,12 +338,17 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     return Consumer<QuizRankingProvider>(
       builder: (context, qrp, child) {
-        final myRanking = currentUserId != null
-            ? qrp.getMyRanking(currentUserId)
-            : null;
-        final score = myRanking?.score ?? 0;
-        final rank = myRanking?.rank ?? 0;
-        final tierName = QuizTierUtils.getTierName(score);
+        // [수정] 카테고리 필터와 상관없이 항상 '종합' 데이터 사용
+        final score = currentUserId != null
+            ? qrp.getOverallScore(currentUserId)
+            : 0;
+        final rank = currentUserId != null
+            ? qrp.getOverallRank(currentUserId)
+            : 0;
+        final tierName = currentUserId != null
+            ? qrp.getOverallTier(currentUserId)
+            : 'PROSPECT';
+
         final tierColor = QuizTierUtils.getTierColor(tierName);
         final emblemPath = QuizTierUtils.getTierEmblem(tierName);
         final progress = QuizTierUtils.getTierProgress(score);
@@ -365,7 +391,7 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '${rank}위',
+                          rank > 0 ? '${rank}위' : '-',
                           style: const TextStyle(
                             fontSize: 34,
                             fontWeight: FontWeight.w900,
@@ -374,7 +400,7 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                           ),
                         ),
                         Text(
-                          '내 순위',
+                          '내 종합 순위',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.white.withOpacity(0.4),
@@ -447,10 +473,12 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                 const SizedBox(height: 14),
                 // 4️⃣ 하단 목표 텍스트
                 Text(
-                  '${progress.nextTier}까지 ${progress.remainingScore}P',
+                  progress.remainingScore > 0
+                      ? '${progress.nextTier}까지 ${progress.remainingScore}P'
+                      : '최고 등급 달성! 🔥',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.3),
+                    fontSize: 13,
+                    color: Colors.white.withOpacity(0.6),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -464,6 +492,8 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
 
   // 4️⃣ 오늘의 미션 섹션
   Widget _buildMissionSection() {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     final quizProvider = context.watch<QuizProvider>();
     final rankProvider = context.watch<QuizRankingProvider>();
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -475,8 +505,8 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
       );
     }
 
-    final myRank = rankProvider.getMyRanking(currentUser.uid);
-    final userScore = myRank?.score ?? 0;
+    // [수정] 미션 기준 점수도 종합 점수를 사용
+    final userScore = rankProvider.getOverallScore(currentUser.uid);
 
     // 동적 시드 및 티어 기반 미션 생성
     final missions = QuizMissionUtils.getDailyMissions(
@@ -494,18 +524,18 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 '오늘의 미션',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
-                  color: Colors.black,
+                  color: isDarkMode ? Colors.white : Colors.black,
                   fontFamily: 'kbo',
                 ),
               ),
               GestureDetector(
                 onLongPress: () async {
-                  if (_prefs != null && currentUser != null) {
+                  if (_prefs != null) {
                     await QuizMissionUtils.resetDailyMissions(
                       currentUser.uid,
                       _prefs!,
@@ -526,7 +556,9 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                   '매일 자정 초기화',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade500,
+                    color: isDarkMode
+                        ? Colors.white.withOpacity(0.4)
+                        : Colors.grey.shade500,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -552,15 +584,24 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
         : mission.currentValue;
     final statusText = '($progressVal/${mission.targetValue})';
 
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: mission.isClaimed ? Colors.grey.shade50 : Colors.white,
+        color: mission.isClaimed
+            ? (isDarkMode
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.grey.shade50)
+            : (isDarkMode ? const Color(0xFF1B2436) : Colors.white),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: mission.isCompleted && !mission.isClaimed
               ? Colors.green.shade400
-              : Colors.grey.shade200,
+              : (isDarkMode
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.grey.shade200),
           width: mission.isCompleted && !mission.isClaimed ? 1.5 : 1.0,
         ),
       ),
@@ -570,7 +611,9 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
             mission.isCompleted
                 ? Icons.check_circle
                 : Icons.radio_button_unchecked,
-            color: mission.isCompleted ? Colors.green : Colors.grey.shade300,
+            color: mission.isCompleted
+                ? Colors.green
+                : (isDarkMode ? Colors.white24 : Colors.grey.shade300),
             size: 24,
           ),
           const SizedBox(width: 12),
@@ -584,8 +627,8 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: mission.isClaimed
-                        ? Colors.grey.shade500
-                        : Colors.black87,
+                        ? (isDarkMode ? Colors.white24 : Colors.grey.shade500)
+                        : (isDarkMode ? Colors.white : Colors.black87),
                     decoration: mission.isClaimed
                         ? TextDecoration.lineThrough
                         : null,
@@ -600,7 +643,9 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                         fontSize: 12,
                         color: mission.isCompleted
                             ? Colors.green
-                            : Colors.grey.shade500,
+                            : (isDarkMode
+                                  ? Colors.white54
+                                  : Colors.grey.shade500),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -611,7 +656,9 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
+                        color: isDarkMode
+                            ? Colors.orange.withOpacity(0.1)
+                            : Colors.orange.shade50,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -619,7 +666,9 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: Colors.orange.shade800,
+                          color: isDarkMode
+                              ? Colors.orange.shade300
+                              : Colors.orange.shade800,
                         ),
                       ),
                     ),
@@ -732,13 +781,18 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
           // 점수 부여 후 랭킹 강제 업데이트 반영
           await context.read<QuizRankingProvider>().fetchRankings(true);
 
-          // 승급 여부 체크
+          // 승급 여부 체크 (SharedPreferences 기반 - 중복 방지)
           if (mounted) {
             final myNewRank = rankProvider.getMyRanking(user.uid);
             final scoreAfter = myNewRank?.score ?? 0;
             final tierAfter = QuizSeasonUtils.getTier(scoreAfter);
 
-            if (tierBefore != tierAfter) {
+            final lastShownTier =
+                _prefs?.getString('last_shown_tier_${user.uid}') ?? '';
+
+            if (lastShownTier != tierAfter && tierBefore != tierAfter) {
+              // 새로운 승격일 때만 오버레이 표시
+              await _prefs?.setString('last_shown_tier_${user.uid}', tierAfter);
               setState(() {
                 _oldTier = tierBefore;
                 _newTier = tierAfter;
@@ -759,13 +813,21 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
 
   // 5️⃣ 하단 고정 플레이 버튼
   Widget _buildFixedPlayButton() {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.white.withOpacity(0), Colors.white],
+          colors: isDarkMode
+              ? [
+                  const Color(0xFF0F172A).withOpacity(0),
+                  const Color(0xFF0F172A),
+                ]
+              : [Colors.white.withOpacity(0), Colors.white],
           stops: const [0, 0.4],
         ),
       ),
@@ -775,21 +837,23 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
           width: double.infinity,
           height: 60,
           decoration: BoxDecoration(
-            color: const Color(0xFF0F172A), // 다크 네이비
+            color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: isDarkMode
+                    ? Colors.black.withOpacity(0.3)
+                    : Colors.black.withOpacity(0.2),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),
             ],
           ),
           alignment: Alignment.center,
-          child: const Text(
+          child: Text(
             '퀴즈 도전하기 ⚾',
             style: TextStyle(
-              color: Colors.white,
+              color: isDarkMode ? Colors.black : Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
               fontFamily: 'kbo',
@@ -972,6 +1036,9 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
     debugPrint(
       "[SeasonOverlay] Start Check - Last: $lastShownSeason, Current: $currentSeasonId",
     );
+
+    // 4월은 테스트 시즌이므로 시작 오버레이를 표시하지 않음
+    if (currentSeasonId == '2026_04') return;
 
     bool shouldShow = lastShownSeason != currentSeasonId;
 

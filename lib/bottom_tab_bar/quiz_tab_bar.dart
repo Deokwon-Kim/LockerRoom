@@ -5,7 +5,6 @@ import 'package:lockerroom/page/quiz/my_badge_page.dart';
 import 'package:lockerroom/page/quiz/quiz_loby_page.dart';
 import 'package:lockerroom/page/quiz/quiz_ranking_page.dart';
 import 'package:lockerroom/page/quiz/quiz_record_page.dart';
-import 'package:lockerroom/page/quiz/quiz_start_page.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/widgets/svg_icon.dart';
 import 'package:provider/provider.dart';
@@ -60,6 +59,8 @@ class _QuizTabBarState extends State<QuizTabBar> {
       MyBadgePage(),
       QuizRankingPage(),
     ];
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     return Scaffold(
       body: Stack(
@@ -83,7 +84,7 @@ class _QuizTabBarState extends State<QuizTabBar> {
               child: Container(
                 height: 70,
                 decoration: BoxDecoration(
-                  color: WHITE,
+                  color: isDarkMode ? const Color(0xFF1E293B) : WHITE,
                   borderRadius: BorderRadius.circular(50),
                   boxShadow: [
                     BoxShadow(

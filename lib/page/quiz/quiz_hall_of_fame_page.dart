@@ -16,8 +16,8 @@ class QuizHallOfFamePage extends StatefulWidget {
 
 class _QuizHallOfFamePageState extends State<QuizHallOfFamePage>
     with SingleTickerProviderStateMixin {
-  // 2026-04 이하: 프리시즌 (전체), 초과: 정규시즌 (Top 3)
-  static const String _lastOpenSeason = '2026-04';
+  // 2026_04 이하: 프리시즌 (전체), 초과: 정규시즌 (Top 3)
+  static const String _lastOpenSeason = '2026_04';
   late TabController _tabController;
 
   @override
@@ -51,7 +51,7 @@ class _QuizHallOfFamePageState extends State<QuizHallOfFamePage>
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFF0B1A38),
+        backgroundColor: const Color(0xFF0F172A),
         appBar: AppBar(
           title: const Text(
             '명예의 전당',
@@ -61,7 +61,7 @@ class _QuizHallOfFamePageState extends State<QuizHallOfFamePage>
               fontSize: 18,
             ),
           ),
-          backgroundColor: const Color(0xFF0B1A38),
+          backgroundColor: const Color(0xFF0F172A),
           foregroundColor: Colors.white,
           elevation: 0,
           actions: [
@@ -188,17 +188,34 @@ class _QuizHallOfFamePageState extends State<QuizHallOfFamePage>
               );
             }
 
-            // 프리시즌: 2026-04 이하 (legacy 포함)
+            // 진행 중인 현재 시즌 가져오기 (종료되기 전에는 보여주지 않음)
+            final currentSeason = QuizSeasonUtils.getCurrentSeasonId();
+
+            // 프리시즌: 2026_04 이하 (legacy 포함, 3월, 4월 테스트 데이터 제외)
             final preSeasons =
                 qrp.hallOfFameBySeasons.entries
-                    .where((e) => !_isRestricted(e.key))
+                    .where(
+                      (e) =>
+                          !_isRestricted(e.key) &&
+                          e.key != '2026_03' &&
+                          e.key != '2026_04' &&
+                          e.key != '2026-04' &&
+                          e.key != currentSeason,
+                    )
                     .toList()
                   ..sort((a, b) => b.key.compareTo(a.key));
 
-            // 정규시즌: 2026-04 초과
+            // 정규시즌: 2026_04 초과 (현재 진행중인 시즌 및 3,4월 테스트 제외)
             final regularSeasons =
                 qrp.hallOfFameBySeasons.entries
-                    .where((e) => _isRestricted(e.key))
+                    .where(
+                      (e) =>
+                          _isRestricted(e.key) &&
+                          e.key != '2026_03' &&
+                          e.key != '2026_04' &&
+                          e.key != '2026-04' &&
+                          e.key != currentSeason,
+                    )
                     .toList()
                   ..sort((a, b) => b.key.compareTo(a.key));
 

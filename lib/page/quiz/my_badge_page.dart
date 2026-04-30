@@ -80,6 +80,8 @@ class _MyBadgePageState extends State<MyBadgePage>
   }
 
   void _showStampAnimation(BadgeModel badge) async {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     // 애니메이션 시작
     _stampController.forward(from: 0.0);
     showDialog(
@@ -97,11 +99,11 @@ class _MyBadgePageState extends State<MyBadgePage>
                 child: Container(
                   padding: EdgeInsets.all(40),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isDarkMode ? const Color(0xFF1E293B) : Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black26,
+                        color: isDarkMode ? Colors.black54 : Colors.black26,
                         blurRadius: 20,
                         offset: Offset(0, 10),
                       ),
@@ -118,13 +120,17 @@ class _MyBadgePageState extends State<MyBadgePage>
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           fontFamily: 'kbo',
+                          color: isDarkMode ? Colors.white : Colors.black,
                         ),
                         textAlign: TextAlign.center,
                       ),
                       SizedBox(height: 10),
                       Text(
                         badge.description,
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDarkMode ? Colors.white70 : Colors.grey[600],
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -151,16 +157,21 @@ class _MyBadgePageState extends State<MyBadgePage>
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: isDarkMode ? const Color(0xFF0F172A) : Colors.grey[100],
       appBar: AppBar(
         title: Text(
           '뱃지 보관함',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: isDarkMode
+            ? const Color(0xFF0F172A)
+            : BACKGROUND_COLOR,
         scrolledUnderElevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: isDarkMode ? Colors.white : Colors.black,
       ),
       body: Consumer2<BadgeProvider, TeamProvider>(
         builder: (context, badgeProvider, teamProvider, child) {
@@ -173,11 +184,13 @@ class _MyBadgePageState extends State<MyBadgePage>
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isDarkMode ? const Color(0xFF1E293B) : Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: isDarkMode
+                            ? Colors.black.withOpacity(0.2)
+                            : Colors.black.withOpacity(0.05),
                         blurRadius: 10,
                       ),
                     ],
@@ -193,7 +206,14 @@ class _MyBadgePageState extends State<MyBadgePage>
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('수집 진행률', style: TextStyle(color: Colors.grey)),
+                          Text(
+                            '수집 진행률',
+                            style: TextStyle(
+                              color: isDarkMode
+                                  ? Colors.grey[400]
+                                  : Colors.grey,
+                            ),
+                          ),
                           SizedBox(height: 4),
 
                           RichText(
@@ -204,7 +224,9 @@ class _MyBadgePageState extends State<MyBadgePage>
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.black,
+                                    color: isDarkMode
+                                        ? Colors.white
+                                        : Colors.black,
                                   ),
                                 ),
                                 TextSpan(
@@ -225,7 +247,11 @@ class _MyBadgePageState extends State<MyBadgePage>
                 SizedBox(height: 24),
                 Text(
                   '벳지 목록',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : Colors.black,
+                  ),
                 ),
                 SizedBox(height: 12),
 
@@ -242,7 +268,7 @@ class _MyBadgePageState extends State<MyBadgePage>
                     itemBuilder: (context, index) {
                       final badge = badgeProvider.badges[index];
                       final teamColor = teamProvider.selectedTeam?.color;
-                      return _buildBadgeItem(badge, teamColor);
+                      return _buildBadgeItem(context, badge, teamColor);
                     },
                   ),
                 ),
@@ -254,7 +280,13 @@ class _MyBadgePageState extends State<MyBadgePage>
     );
   }
 
-  Widget _buildBadgeItem(BadgeModel badge, Color? teamColor) {
+  Widget _buildBadgeItem(
+    BuildContext context,
+    BadgeModel badge,
+    Color? teamColor,
+  ) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     // 프리미엄 디자인 대상 체크 (시즌 MVP 및 Top 3)
     final bool isElite = badge.id == 'season_mvp' || badge.id == 'top3_club';
     final bool showPremium = isElite && !badge.isLocked; // 획득했을 때만 프리미엄 연출
@@ -265,7 +297,9 @@ class _MyBadgePageState extends State<MyBadgePage>
     // 디자인 테마 설정
     Color glowColor = teamColor ?? Colors.amber;
     List<Color> borderGradient = [Colors.transparent, Colors.transparent];
-    Color badgeBgColor = badge.isLocked ? Colors.grey[200]! : Colors.white;
+    Color badgeBgColor = badge.isLocked
+        ? (isDarkMode ? const Color(0xFF1B2436) : Colors.grey[200]!)
+        : (isDarkMode ? const Color(0xFF1E293B) : Colors.white);
 
     if (showPremium) {
       if (isMVP) {
@@ -310,8 +344,8 @@ class _MyBadgePageState extends State<MyBadgePage>
                       end: Alignment.bottomRight,
                       colors: [
                         glowColor.withOpacity(0.1),
-                        Colors.white,
-                        Colors.white,
+                        isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+                        isDarkMode ? const Color(0xFF1E293B) : Colors.white,
                       ],
                     ),
                   ),
@@ -328,7 +362,9 @@ class _MyBadgePageState extends State<MyBadgePage>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: badge.isLocked
-                          ? Colors.grey[300]
+                          ? (isDarkMode
+                                ? Colors.white.withOpacity(0.05)
+                                : Colors.grey[300])
                           : glowColor.withOpacity(0.1),
                       boxShadow: badge.isLocked
                           ? null
@@ -343,7 +379,9 @@ class _MyBadgePageState extends State<MyBadgePage>
                     child: Icon(
                       badge.icon,
                       size: 26,
-                      color: badge.isLocked ? Colors.grey : glowColor,
+                      color: badge.isLocked
+                          ? (isDarkMode ? Colors.white24 : Colors.grey)
+                          : glowColor,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -355,7 +393,9 @@ class _MyBadgePageState extends State<MyBadgePage>
                       fontWeight: FontWeight.bold,
                       color: showPremium
                           ? glowColor
-                          : (badge.isLocked ? Colors.grey : Colors.black87),
+                          : (badge.isLocked
+                                ? (isDarkMode ? Colors.white38 : Colors.grey)
+                                : (isDarkMode ? Colors.white : Colors.black87)),
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 1,
@@ -371,7 +411,9 @@ class _MyBadgePageState extends State<MyBadgePage>
                           fontSize: 9,
                           color: showPremium
                               ? glowColor.withOpacity(0.8)
-                              : Colors.grey[600],
+                              : (isDarkMode
+                                    ? Colors.white60
+                                    : Colors.grey[600]),
                           height: 1.1,
                           fontWeight: showPremium
                               ? FontWeight.w600
