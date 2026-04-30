@@ -447,7 +447,7 @@ class _MypageState extends State<Mypage> {
                 child: ContainedTabBarView(
                   tabs: [
                     Text('게시글', style: TextStyle(color: BLACK)),
-                    Text('마켓', style: TextStyle(color: BLACK)),
+                    // Text('마켓', style: TextStyle(color: BLACK)),
                     Text('트로피', style: TextStyle(color: BLACK)),
                   ],
                   tabBarProperties: TabBarProperties(
@@ -458,7 +458,7 @@ class _MypageState extends State<Mypage> {
                   ),
                   views: [
                     MypostPage(),
-                    MyMarketPage(),
+                    // MyMarketPage(),
                     QuizTrophyPage(userId: widget.userId),
                   ],
                   onChange: (index) => print(index),
