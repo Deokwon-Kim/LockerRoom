@@ -98,6 +98,8 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
 
   // 응원가 퀴즈 설명 팝업
   void _showCheerSongGuidePopup() {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     bool isChecked = false;
 
     showDialog(
@@ -109,7 +111,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            backgroundColor: WHITE,
+            backgroundColor: isDarkMode ? const Color(0xFF1E293B) : WHITE,
             title: Row(
               children: [
                 Icon(
@@ -118,12 +120,13 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                   size: 28,
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   '응원가 퀴즈 안내',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'kbo',
+                    color: isDarkMode ? WHITE : BLACK,
                   ),
                 ),
               ],
@@ -247,6 +250,8 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
 
   // 가사 퀴즈 설명 팝업
   void _showLyricsQuizGuidePopup() {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     bool isChecked = false;
 
     showDialog(
@@ -258,7 +263,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            backgroundColor: WHITE,
+            backgroundColor: isDarkMode ? const Color(0xFF1E293B) : WHITE,
             title: Row(
               children: [
                 Icon(
@@ -267,12 +272,13 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                   size: 28,
                 ),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   '가사 퀴즈 안내',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'kbo',
+                    color: isDarkMode ? WHITE : BLACK,
                   ),
                 ),
               ],
@@ -375,18 +381,20 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
 
   // 가이드 아이템 빌더
   Widget _buildGuideItem(String emoji, String text) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(emoji, style: TextStyle(fontSize: 20)),
-        SizedBox(width: 12),
+        Text(emoji, style: const TextStyle(fontSize: 20)),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
               fontSize: 14,
               height: 1.4,
-              color: GRAYSCALE_LABEL_800,
+              color: isDarkMode ? Colors.white70 : GRAYSCALE_LABEL_800,
             ),
           ),
         ),
@@ -423,13 +431,17 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     final teamProvider = context.read<TeamProvider>();
     final selectedTeamColor = teamProvider.selectedTeam?.color;
     return Consumer<QuizProvider>(
       builder: (context, quizProvider, child) {
         if (quizProvider.isLoading) {
           return Scaffold(
-            backgroundColor: BACKGROUND_COLOR,
+            backgroundColor: isDarkMode
+                ? const Color(0xFF0F172A)
+                : BACKGROUND_COLOR,
             body: Center(child: CircularProgressIndicator(color: BUTTON)),
           );
         }
@@ -437,20 +449,39 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
         final question = quizProvider.currentQuestion;
         if (question == null) {
           return Scaffold(
-            backgroundColor: BACKGROUND_COLOR,
-            body: Center(child: Text('문제를 불러올 수 없습니다.')),
+            backgroundColor: isDarkMode
+                ? const Color(0xFF0F172A)
+                : BACKGROUND_COLOR,
+            body: const Center(child: Text('문제를 불러올 수 없습니다.')),
           );
         }
 
         return Scaffold(
-          backgroundColor: BACKGROUND_COLOR,
+          backgroundColor: isDarkMode
+              ? const Color(0xFF0F172A)
+              : BACKGROUND_COLOR,
           appBar: AppBar(
-            backgroundColor: BACKGROUND_COLOR,
+            backgroundColor: isDarkMode
+                ? const Color(0xFF0F172A)
+                : BACKGROUND_COLOR,
             elevation: 0,
             scrolledUnderElevation: 0,
             title: Text(
               widget.category,
-              style: TextStyle(fontFamily: 'kbo', fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontFamily: 'kbo',
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? WHITE : BLACK,
+              ),
+            ),
+            leading: IconButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              icon: Icon(
+                Icons.arrow_back_ios,
+                color: isDarkMode ? WHITE : BLACK,
+              ),
             ),
             actions: [
               Padding(
@@ -462,6 +493,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'kbo',
+                      color: isDarkMode ? WHITE : BLACK,
                     ),
                   ),
                 ),
@@ -559,8 +591,8 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                                   color:
                                       (isLyricType &&
                                           quizProvider.showExplanation)
-                                      ? Colors.blue.shade800
-                                      : BLACK,
+                                      ? (isDarkMode ? WHITE : BLACK)
+                                      : (isDarkMode ? WHITE : BLACK),
                                 ),
                               ),
                             );
@@ -677,14 +709,16 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
 
               // 하단 버튼
               Container(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: WHITE,
+                  color: isDarkMode ? const Color(0xFF0F172A) : WHITE,
                   boxShadow: [
                     BoxShadow(
-                      color: GRAYSCALE_LABEL_200,
+                      color: isDarkMode
+                          ? Colors.black.withOpacity(0.3)
+                          : GRAYSCALE_LABEL_200,
                       blurRadius: 4,
-                      offset: Offset(0, -2),
+                      offset: const Offset(0, -2),
                     ),
                   ],
                 ),
@@ -707,15 +741,21 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                             width: double.infinity,
                             height: 58,
                             decoration: BoxDecoration(
-                              color: WHITE,
+                              color: isDarkMode
+                                  ? const Color(0xFF1E293B)
+                                  : WHITE,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: GRAYSCALE_LABEL_300),
+                              border: Border.all(
+                                color: isDarkMode
+                                    ? Colors.white10
+                                    : GRAYSCALE_LABEL_300,
+                              ),
                             ),
                             child: Text(
                               '이전',
                               style: TextStyle(
                                 fontFamily: 'kbo',
-                                color: Colors.black,
+                                color: isDarkMode ? Colors.white : Colors.black,
                               ),
                             ),
                           ),
@@ -776,6 +816,8 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
     int index,
     String option,
   ) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     final isSelected = quizProvider.currentAnswer == index;
     final isCorrect = quizProvider.currentQuestion!.correctIndex == index;
     final showResult = quizProvider.showExplanation;
@@ -825,13 +867,15 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                       ? RED_DANGER_TEXT_50
                       : isSelected
                       ? BLUE_SECONDARY_600
-                      : GRAYSCALE_LABEL_300,
+                      : (isDarkMode
+                            ? GRAYSCALE_LABEL_500
+                            : GRAYSCALE_LABEL_300),
                 ),
                 child: Center(
                   child: Text(
                     String.fromCharCode(65 + index),
                     style: TextStyle(
-                      color: WHITE,
+                      color: isDarkMode ? BLACK : WHITE,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'kbo',
                     ),
@@ -930,12 +974,16 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
 
   // 오디오 플레이어 UI
   Widget _buildAudioPlayer(String audioPath) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: isDarkMode ? const Color(0xFF1E293B) : WHITE,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GRAYSCALE_LABEL_300),
+        border: Border.all(
+          color: isDarkMode ? Colors.white10 : GRAYSCALE_LABEL_300,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -961,6 +1009,7 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'kbo',
+                  color: isDarkMode ? Colors.white : Colors.black,
                 ),
               ),
             ],

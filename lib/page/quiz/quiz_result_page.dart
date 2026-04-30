@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
 import 'package:lockerroom/bottom_tab_bar/quiz_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/provider/tab_provider.dart';
 import 'package:lockerroom/model/quiz_result_model.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
 import 'package:lockerroom/main.dart';
@@ -22,6 +23,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:toastification/toastification.dart';
 
 class QuizResultPage extends StatefulWidget {
@@ -101,8 +103,8 @@ class _QuizResultPageState extends State<QuizResultPage>
       final rankProvider = context.read<QuizRankingProvider>();
       final currentUserId = FirebaseAuth.instance.currentUser?.uid;
       if (currentUserId != null) {
-        final myRanking = rankProvider.getMyRanking(currentUserId);
-        
+        final myRanking = rankProvider.getMyOverallRanking(currentUserId);
+
         // [PATCH] 0점 혹은 기록이 없는 유저(null)를 위한 기본값 처리
         // 먹산곰님 제보: PROSPECT -> MINOR 승급시에만 안뜨는 문제 해결 (null 체크 우회)
         int providerScore = myRanking?.score ?? 0;
@@ -126,7 +128,7 @@ class _QuizResultPageState extends State<QuizResultPage>
 
         _oldTier = QuizSeasonUtils.getTier(preQuizScore);
         _newTier = QuizSeasonUtils.getTier(postQuizScore);
-        
+
         print('--- 티어 승급 체크 (개선됨) ---');
         print('이전 점수: $preQuizScore, 현재 예상 점수: $postQuizScore');
         print('이전 티어: $_oldTier, 현재 티어: $_newTier');
@@ -248,11 +250,13 @@ class _QuizResultPageState extends State<QuizResultPage>
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     final team = context.watch<TeamProvider>().selectedTeam;
     final teamColor = team?.color ?? BLUE_SECONDARY_600;
 
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: isDarkMode ? const Color(0xFF0F172A) : BACKGROUND_COLOR,
       body: Stack(
         children: [
           // 1. 다이나믹 팀 그라데이션 배경
@@ -264,9 +268,9 @@ class _QuizResultPageState extends State<QuizResultPage>
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  teamColor.withOpacity(0.15),
-                  BACKGROUND_COLOR,
-                  BACKGROUND_COLOR,
+                  teamColor.withOpacity(isDarkMode ? 0.3 : 0.15),
+                  isDarkMode ? const Color(0xFF0F172A) : BACKGROUND_COLOR,
+                  isDarkMode ? const Color(0xFF0F172A) : BACKGROUND_COLOR,
                 ],
                 stops: [0.0, 0.4, 1.0],
               ),
@@ -286,7 +290,10 @@ class _QuizResultPageState extends State<QuizResultPage>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.close, color: GRAYSCALE_LABEL_700),
+                      icon: Icon(
+                        Icons.close,
+                        color: isDarkMode ? WHITE : GRAYSCALE_LABEL_700,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                     Text(
@@ -295,10 +302,10 @@ class _QuizResultPageState extends State<QuizResultPage>
                         fontFamily: 'kbo',
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: GRAYSCALE_LABEL_900,
+                        color: isDarkMode ? WHITE : GRAYSCALE_LABEL_900,
                       ),
                     ),
-                    SizedBox(width: 48), // 밸런스용
+                    const SizedBox(width: 48), // 밸런스용
                   ],
                 ),
 
@@ -335,7 +342,7 @@ class _QuizResultPageState extends State<QuizResultPage>
                                 gainedScore: _showFinalGrade
                                     ? widget.result.score
                                     : null,
-                                onRankAnimationComplete: () {
+                                onRankAnimationComplete: () async {
                                   // 랭킹 애니메이션 및 다이얼로그 종료 후 티어 상승 연출 노출
                                   if (_debugForceTierUp) {
                                     setState(() {
@@ -348,32 +355,54 @@ class _QuizResultPageState extends State<QuizResultPage>
                                     return;
                                   }
 
-                                  // 최종 승급 여부 판단 (initState에서 계산된 값 또는 실시간 데이터 재검증)
-                                  final latestRankProvider = context.read<QuizRankingProvider>();
-                                  final uid = FirebaseAuth.instance.currentUser?.uid;
-                                  
-                                  bool isPromotion = false;
-                                  if (_oldTier != _newTier && _oldTier.isNotEmpty && _newTier.isNotEmpty) {
-                                    // 1. initState 시점에 이미 승급이 감지된 경우
-                                    isPromotion = true;
-                                  } else if (uid != null) {
-                                    // 2. 혹시나 timing 이슈로 initState에서 놓쳤을 경우 실시간 데이터로 재검증
-                                    final currentRanking = latestRankProvider.getMyRanking(uid);
-                                    if (currentRanking != null) {
-                                      final latestTier = QuizSeasonUtils.getTier(currentRanking.score);
-                                      // 위젯 뱃지가 MINOR라면 latestTier는 MINOR일 것.
-                                      // 만약 initState 시점의 _oldTier가 PROSPECT였다면 이 시점에서라도 승급 감지 가능.
-                                      if (_oldTier.isNotEmpty && latestTier != _oldTier) {
-                                        _newTier = latestTier;
-                                        isPromotion = true;
+                                  // 최종 승급 여부 판단
+                                  // onRankAnimationComplete 시점엔 QuizRankingWidget이
+                                  // 이미 최신 랭킹을 받아왔으므로 Provider 데이터가 가장 정확함
+                                  final latestRankProvider = context
+                                      .read<QuizRankingProvider>();
+                                  final uid =
+                                      FirebaseAuth.instance.currentUser?.uid;
+
+                                  if (uid != null) {
+                                    // 1. Provider 최신 점수로 현재 티어 계산 (가장 신뢰도 높음)
+                                    final latestRanking = latestRankProvider
+                                        .getMyOverallRanking(uid);
+                                    final actualCurrentTier =
+                                        latestRanking != null
+                                        ? QuizSeasonUtils.getTier(
+                                            latestRanking.score,
+                                          )
+                                        : _newTier;
+
+                                    // 2. initState에서 계산한 이전 티어와 비교
+                                    final tierChanged =
+                                        _oldTier.isNotEmpty &&
+                                        actualCurrentTier.isNotEmpty &&
+                                        _oldTier != actualCurrentTier;
+
+                                    if (tierChanged) {
+                                      // 3. SharedPreferences로 중복 노출만 방지
+                                      final prefs =
+                                          await SharedPreferences.getInstance();
+                                      final lastShownTier =
+                                          prefs.getString(
+                                            'last_shown_tier_$uid',
+                                          ) ??
+                                          '';
+
+                                      if (lastShownTier != actualCurrentTier) {
+                                        await prefs.setString(
+                                          'last_shown_tier_$uid',
+                                          actualCurrentTier,
+                                        );
+                                        if (mounted) {
+                                          setState(() {
+                                            _newTier = actualCurrentTier;
+                                            _showTierUpOverlay = true;
+                                          });
+                                        }
                                       }
                                     }
-                                  }
-
-                                  if (isPromotion) {
-                                    setState(() {
-                                      _showTierUpOverlay = true;
-                                    });
                                   }
                                 },
                               ),
@@ -631,17 +660,19 @@ class _QuizResultPageState extends State<QuizResultPage>
   // }
 
   Widget _buildPerformanceReport() {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(24),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: isDarkMode ? const Color(0xFF1E293B) : WHITE,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.05),
             blurRadius: 15,
-            offset: Offset(0, 5),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -650,15 +681,18 @@ class _QuizResultPageState extends State<QuizResultPage>
         children: [
           Row(
             children: [
-              Icon(Icons.analytics_outlined, color: GRAYSCALE_LABEL_900),
-              SizedBox(width: 8),
+              Icon(
+                Icons.analytics_outlined,
+                color: isDarkMode ? WHITE : GRAYSCALE_LABEL_900,
+              ),
+              const SizedBox(width: 8),
               Text(
                 '퍼포먼스 리포트',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'kbo',
-                  color: GRAYSCALE_LABEL_900,
+                  color: isDarkMode ? WHITE : GRAYSCALE_LABEL_900,
                 ),
               ),
             ],
@@ -695,28 +729,31 @@ class _QuizResultPageState extends State<QuizResultPage>
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: GRAYSCALE_LABEL_600,
+                  color: isDarkMode ? GRAYSCALE_LABEL_400 : GRAYSCALE_LABEL_600,
                 ),
               ),
               // 600번 라인 부근의 Tooltip 부분을 아래와 같이 보강합니다.
               Tooltip(
                 triggerMode: TooltipTriggerMode.tap,
-                showDuration: Duration(seconds: 4), // 4초 동안 보여줌
+                showDuration: const Duration(seconds: 4), // 4초 동안 보여줌
                 waitDuration: Duration.zero,
-                padding: EdgeInsets.all(12),
-                margin: EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.symmetric(horizontal: 24),
                 richMessage: TextSpan(
                   text: '점수 산정 기준 안내\n',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                   children: [
-                    TextSpan(
+                    const TextSpan(
                       text: '\n[일반 점수]\n',
                       style: TextStyle(
                         color: Colors.orangeAccent,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    TextSpan(
+                    const TextSpan(
                       text:
                           '• 기본 점수: 정답당 10점\n• 난이도: 어려움(+10) / 중간(+5)\n• 콤보: 3/5/10연속 정답 시 추가 보너스\n',
                       style: TextStyle(
@@ -724,14 +761,14 @@ class _QuizResultPageState extends State<QuizResultPage>
                         height: 1.5,
                       ),
                     ),
-                    TextSpan(
+                    const TextSpan(
                       text: '\n[⚡️ 스피드 보너스]\n',
                       style: TextStyle(
                         color: Colors.greenAccent,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    TextSpan(
+                    const TextSpan(
                       text: '문제가 화면에 나타난 순간부터 정답을 클릭할 때까지의 시간을 측정합니다.\n',
                       style: TextStyle(
                         fontWeight: FontWeight.normal,
@@ -739,7 +776,7 @@ class _QuizResultPageState extends State<QuizResultPage>
                         color: Colors.white70,
                       ),
                     ),
-                    TextSpan(
+                    const TextSpan(
                       text:
                           '• 5초 이내 정답: +10점 (초광속!)\n• 10초 이내 정답: +5점 (나이스 스피드!)\n',
                       style: TextStyle(
@@ -747,14 +784,14 @@ class _QuizResultPageState extends State<QuizResultPage>
                         height: 1.5,
                       ),
                     ),
-                    TextSpan(
+                    const TextSpan(
                       text: '\n[🏅 등급 기준 (정답률)]\n',
                       style: TextStyle(
                         color: Colors.lightBlueAccent,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    TextSpan(
+                    const TextSpan(
                       text:
                           '• S: 100%  • A: 90%↑  • B: 80%↑\n• C: 70%↑  • D: 70% 미만',
                       style: TextStyle(
@@ -769,7 +806,9 @@ class _QuizResultPageState extends State<QuizResultPage>
                   padding: const EdgeInsets.all(8.0),
                   child: Icon(
                     Icons.info_outline,
-                    color: GRAYSCALE_LABEL_600,
+                    color: isDarkMode
+                        ? GRAYSCALE_LABEL_400
+                        : GRAYSCALE_LABEL_600,
                     size: 20,
                   ),
                 ),
@@ -804,9 +843,9 @@ class _QuizResultPageState extends State<QuizResultPage>
 
           SizedBox(height: 16),
           Container(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: GRAYSCALE_LABEL_100,
+              color: isDarkMode ? Colors.white10 : GRAYSCALE_LABEL_100,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -817,7 +856,9 @@ class _QuizResultPageState extends State<QuizResultPage>
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
-                    color: GRAYSCALE_LABEL_600,
+                    color: isDarkMode
+                        ? GRAYSCALE_LABEL_400
+                        : GRAYSCALE_LABEL_600,
                   ),
                 ),
                 Text(
@@ -825,7 +866,7 @@ class _QuizResultPageState extends State<QuizResultPage>
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
-                    color: GRAYSCALE_LABEL_900,
+                    color: isDarkMode ? WHITE : GRAYSCALE_LABEL_900,
                   ),
                 ),
               ],
@@ -842,30 +883,35 @@ class _QuizResultPageState extends State<QuizResultPage>
     IconData icon,
     Color color,
   ) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Expanded(
       child: Container(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
+          color: color.withOpacity(isDarkMode ? 0.15 : 0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.1)),
+          border: Border.all(color: color.withOpacity(isDarkMode ? 0.3 : 0.1)),
         ),
         child: Column(
           children: [
             Icon(icon, color: color, size: 24),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_600),
+              style: TextStyle(
+                fontSize: 12,
+                color: isDarkMode ? GRAYSCALE_LABEL_400 : GRAYSCALE_LABEL_600,
+              ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               value,
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'kbo',
-                color: GRAYSCALE_LABEL_900,
+                color: isDarkMode ? WHITE : GRAYSCALE_LABEL_900,
               ),
             ),
           ],
@@ -875,6 +921,8 @@ class _QuizResultPageState extends State<QuizResultPage>
   }
 
   Widget _buildScoreBreakdownRow(String label, String value, Color color) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -882,7 +930,10 @@ class _QuizResultPageState extends State<QuizResultPage>
         children: [
           Text(
             label,
-            style: TextStyle(fontSize: 14, color: GRAYSCALE_LABEL_700),
+            style: TextStyle(
+              fontSize: 14,
+              color: isDarkMode ? GRAYSCALE_LABEL_300 : GRAYSCALE_LABEL_700,
+            ),
           ),
           Text(
             value,
@@ -898,37 +949,42 @@ class _QuizResultPageState extends State<QuizResultPage>
   }
 
   Widget _buildActionButtons(Color teamColor) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Column(
       children: [
         GestureDetector(
           onTap: _showShareBottomSheet,
           child: Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(vertical: 18),
+            padding: const EdgeInsets.symmetric(vertical: 18),
             decoration: BoxDecoration(
-              color: WHITE,
+              color: isDarkMode ? const Color(0xFF1E293B) : WHITE,
               borderRadius: BorderRadius.circular(18),
               border: Border.all(color: teamColor.withOpacity(0.3)),
               boxShadow: [
                 BoxShadow(
-                  color: teamColor.withOpacity(0.05),
+                  color: teamColor.withOpacity(isDarkMode ? 0.2 : 0.05),
                   blurRadius: 10,
-                  offset: Offset(0, 4),
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.share_outlined, color: teamColor),
-                SizedBox(width: 8),
+                Icon(
+                  Icons.share_outlined,
+                  color: isDarkMode ? WHITE : teamColor,
+                ),
+                const SizedBox(width: 8),
                 Text(
                   '결과 공유하기',
                   style: TextStyle(
                     fontFamily: 'kbo',
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: teamColor,
+                    color: isDarkMode ? WHITE : teamColor,
                   ),
                 ),
               ],
@@ -988,19 +1044,21 @@ class _QuizResultPageState extends State<QuizResultPage>
   }
 
   Widget _buildSecondaryButton(String text, VoidCallback onTap) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 56,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: GRAYSCALE_LABEL_100,
+          color: isDarkMode ? Colors.white10 : GRAYSCALE_LABEL_100,
           borderRadius: BorderRadius.circular(18),
         ),
         child: Text(
           text,
           style: TextStyle(
-            color: GRAYSCALE_LABEL_800,
+            color: isDarkMode ? WHITE : GRAYSCALE_LABEL_800,
             fontSize: 16,
             fontWeight: FontWeight.bold,
             fontFamily: 'kbo',
@@ -1057,15 +1115,17 @@ class _QuizResultPageState extends State<QuizResultPage>
   }
 
   void _showShareBottomSheet() {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: WHITE,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          color: isDarkMode ? const Color(0xFF1E293B) : WHITE,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        padding: EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1073,17 +1133,18 @@ class _QuizResultPageState extends State<QuizResultPage>
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: GRAYSCALE_LABEL_300,
+                color: isDarkMode ? Colors.white24 : GRAYSCALE_LABEL_300,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Text(
               '공유하기',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'kbo',
+                color: isDarkMode ? WHITE : BLACK,
               ),
             ),
             SizedBox(height: 24),
@@ -1117,12 +1178,15 @@ class _QuizResultPageState extends State<QuizResultPage>
                 _shareToOtherApps();
               },
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
                 '취소',
-                style: TextStyle(fontSize: 16, color: GRAYSCALE_LABEL_600),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isDarkMode ? GRAYSCALE_LABEL_400 : GRAYSCALE_LABEL_600,
+                ),
               ),
             ),
           ],
@@ -1200,6 +1264,10 @@ class _QuizResultPageState extends State<QuizResultPage>
         name: 'quiz_share',
         parameters: {'type': 'feed', 'grade': widget.result.grade},
       );
+
+      // 글로벌 Tab 상태도 2번(피드 업로드)으로 동기화시켜서
+      // BottomTabBar 내부에서 홈으로 덮어씌워지지 않게 함
+      context.read<TabProvider>().setSelectedIndex(2);
 
       // AuthWrapper를 통해 이동하여 사용자 정보 로드 및 초기화 보장
       Navigator.pushAndRemoveUntil(
@@ -1325,22 +1393,24 @@ class ShareOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withOpacity(isDarkMode ? 0.2 : 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: iconColor, size: 24),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1351,17 +1421,26 @@ class ShareOption extends StatelessWidget {
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'kbo',
+                      color: isDarkMode ? WHITE : BLACK,
                     ),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 13, color: GRAYSCALE_LABEL_600),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDarkMode
+                          ? GRAYSCALE_LABEL_400
+                          : GRAYSCALE_LABEL_600,
+                    ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: GRAYSCALE_LABEL_400),
+            Icon(
+              Icons.chevron_right,
+              color: isDarkMode ? GRAYSCALE_LABEL_600 : GRAYSCALE_LABEL_400,
+            ),
           ],
         ),
       ),

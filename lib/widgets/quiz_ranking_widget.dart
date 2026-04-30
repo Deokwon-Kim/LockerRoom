@@ -13,7 +13,11 @@ import 'package:provider/provider.dart';
 class QuizRankingWidget extends StatefulWidget {
   final int? gainedScore;
   final VoidCallback? onRankAnimationComplete;
-  const QuizRankingWidget({super.key, this.gainedScore, this.onRankAnimationComplete});
+  const QuizRankingWidget({
+    super.key,
+    this.gainedScore,
+    this.onRankAnimationComplete,
+  });
 
   @override
   State<QuizRankingWidget> createState() => _QuizRankingWidgetState();
@@ -96,10 +100,9 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
     }
 
     final gainedScore = widget.gainedScore!;
-
     // 1. User Items 준비
     if (currentUserId != null) {
-      final allUsers = provider.rankings; // 이미 score desc 정렬된 상태(현재)
+      final allUsers = provider.overallRankings; // 종합 순위 사용
 
       // 내 현재 데이터 찾기
       final myUser = allUsers.firstWhere(
@@ -167,7 +170,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
 
     // 2. Team Items 준비
     if (myTeam != null) {
-      final allTeams = provider.teamRankings;
+      final allTeams = provider.overallTeamRankings; // 종합 팀 순위 사용
 
       final myTeamData = allTeams.firstWhere(
         (t) => t.teamName == myTeam.name || t.teamName == myTeam.symplename,
@@ -285,31 +288,35 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
       }
     });
 
-    if (oldMyUser != null) {
-      final newUserItem = _userItems.firstWhere((item) => item.isMe);
-      if (newUserItem.rank < oldUserRank) {
-        hasCelebration = true;
-        _showCelebration(
-          targetName: newUserItem.name,
-          oldRank: oldUserRank,
-          newRank: newUserItem.rank,
-          isTeam: false,
-        );
-      }
+    if (oldMyUser != null && _userItems.isNotEmpty) {
+      try {
+        final newUserItem = _userItems.firstWhere((item) => item.isMe);
+        if (newUserItem.rank < oldUserRank) {
+          hasCelebration = true;
+          _showCelebration(
+            targetName: newUserItem.name,
+            oldRank: oldUserRank,
+            newRank: newUserItem.rank,
+            isTeam: false,
+          );
+        }
+      } catch (_) {}
     }
 
-    if (oldMyTeam != null) {
-      final newTeamItem = _teamItems.firstWhere((item) => item.isMe);
-      if (newTeamItem.rank < oldTeamRank) {
-        hasCelebration = true;
-        _showCelebration(
-          targetName: newTeamItem.name,
-          oldRank: oldTeamRank,
-          newRank: newTeamItem.rank,
-          isTeam: true,
-          logoPath: newTeamItem.profileUrl,
-        );
-      }
+    if (oldMyTeam != null && _teamItems.isNotEmpty) {
+      try {
+        final newTeamItem = _teamItems.firstWhere((item) => item.isMe);
+        if (newTeamItem.rank < oldTeamRank) {
+          hasCelebration = true;
+          _showCelebration(
+            targetName: newTeamItem.name,
+            oldRank: oldTeamRank,
+            newRank: newTeamItem.rank,
+            isTeam: true,
+            logoPath: newTeamItem.profileUrl,
+          );
+        }
+      } catch (_) {}
     }
 
     // 축하 연출이 없으면 바로 완료 콜백 호출
@@ -348,6 +355,8 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Consumer<QuizRankingProvider>(
       builder: (context, provider, child) {
         if (widget.gainedScore == null ||
@@ -365,11 +374,11 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: WHITE,
+              color: isDarkMode ? const Color(0xFF1E293B) : WHITE,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -398,7 +407,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
                   child: Divider(
                     height: 1,
                     thickness: 1,
-                    color: Color(0xFFEEEEEE),
+                    color: Colors.white10,
                   ),
                 ),
 
@@ -438,6 +447,8 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
   Widget _buildAnimatedItem(_RankingItem item, List<_RankingItem> list) {
     final index = list.indexOf(item);
     final teamProvider = context.read<TeamProvider>();
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     // 현재 표시 랭크 계산 (보여지는 리스트의 최상위 + 현재 인덱스)
     // _userTopRank / _teamTopRank 는 이 윈도우의 시작 등수 (예: 4위부터면 4)
@@ -456,14 +467,14 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
         margin: const EdgeInsets.only(bottom: 4),
         decoration: BoxDecoration(
           color: item.isMe
-              ? teamProvider.selectedTeam?.color
+              ? (teamProvider.selectedTeam?.color ?? BLUE_SECONDARY_600)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: item.isMe
               ? Border.all(
                   color:
                       teamProvider.selectedTeam?.color.withOpacity(0.5) ??
-                      Colors.blueAccent.withOpacity(0.3),
+                      BLUE_SECONDARY_600.withOpacity(0.3),
                 )
               : null,
         ),
@@ -502,8 +513,14 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
                     child: Text(
                       item.name,
                       style: TextStyle(
-                        fontWeight: item.isMe ? FontWeight.bold : FontWeight.normal,
-                        color: item.isMe ? Colors.white : Colors.grey[700],
+                        fontWeight: item.isMe
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: item.isMe
+                            ? Colors.white
+                            : (isDarkMode
+                                  ? GRAYSCALE_LABEL_400
+                                  : GRAYSCALE_LABEL_700),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -534,7 +551,11 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
                   '$value점',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: item.isMe ? Colors.white : Colors.grey,
+                    color: item.isMe
+                        ? Colors.white
+                        : (isDarkMode
+                              ? GRAYSCALE_LABEL_400
+                              : GRAYSCALE_LABEL_500),
                     fontSize: 13,
                   ),
                 );
@@ -552,13 +573,21 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
     final teamColor = myTeam?.color ?? BUTTON;
 
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final myRanking = currentUserId != null
-        ? provider.getMyRanking(currentUserId)
-        : null;
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
+
+    // [수정] 카테고리 필터와 상관없이 항상 '종합' 데이터 사용
+    final myOverallRank = currentUserId != null
+        ? provider.getOverallRank(currentUserId)
+        : 0;
+    final myOverallScore = currentUserId != null
+        ? provider.getOverallScore(currentUserId)
+        : 0;
+
     RankingTeamModel? myTeamRanking;
     if (myTeam != null) {
       try {
-        myTeamRanking = provider.teamRankings.firstWhere(
+        myTeamRanking = provider.overallTeamRankings.firstWhere(
           (t) => t.teamName == myTeam.name || t.teamName == myTeam.symplename,
         );
       } catch (_) {}
@@ -574,11 +603,11 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: WHITE,
+          color: isDarkMode ? const Color(0xFF1E293B) : WHITE,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -589,19 +618,19 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
           children: [
             _buildHeader(),
             const SizedBox(height: 16),
-            _buildTierProgressBar(context, myRanking?.score ?? 0),
+            _buildTierProgressBar(context, myOverallScore),
             const SizedBox(height: 16),
             _buildRankingRow(
               icon: Icons.person,
               iconColor: Colors.blueAccent,
-              label: '개인 순위',
-              rank: myRanking?.rank,
-              score: myRanking?.score,
+              label: '개인 종합 순위',
+              rank: myOverallRank > 0 ? myOverallRank : null,
+              score: myOverallScore,
               emptyText: '기록 없음',
             ),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
-              child: Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+              child: Divider(height: 1, thickness: 1, color: Colors.white10),
             ),
             _buildRankingRow(
               icon: Icons.groups,
@@ -619,6 +648,8 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
   }
 
   Widget _buildHeader() {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -628,10 +659,14 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
             fontSize: 16,
             fontWeight: FontWeight.bold,
             fontFamily: 'kbo',
-            color: GRAYSCALE_LABEL_800,
+            color: isDarkMode ? WHITE : GRAYSCALE_LABEL_800,
           ),
         ),
-        Icon(Icons.chevron_right, color: GRAYSCALE_LABEL_400, size: 20),
+        Icon(
+          Icons.chevron_right,
+          color: isDarkMode ? GRAYSCALE_LABEL_500 : GRAYSCALE_LABEL_400,
+          size: 20,
+        ),
       ],
     );
   }
@@ -640,6 +675,8 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
     final progressInfo = QuizTierUtils.getTierProgress(score);
     final themeColor =
         context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -692,7 +729,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
               width: double.infinity,
               height: 6,
               decoration: BoxDecoration(
-                color: GRAYSCALE_LABEL_100,
+                color: isDarkMode ? Colors.white10 : GRAYSCALE_LABEL_100,
                 borderRadius: BorderRadius.circular(3),
               ),
             ),
@@ -707,10 +744,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
                     height: 6,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          themeColor,
-                          themeColor.withOpacity(0.7),
-                        ],
+                        colors: [themeColor, themeColor.withOpacity(0.7)],
                       ),
                       borderRadius: BorderRadius.circular(3),
                     ),
@@ -733,6 +767,8 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
     required String emptyText,
     String? logoPath,
   }) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Row(
       children: [
         logoPath != null
@@ -756,9 +792,9 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: GRAYSCALE_LABEL_600,
+                  color: isDarkMode ? GRAYSCALE_LABEL_400 : GRAYSCALE_LABEL_600,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -771,18 +807,18 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
             children: [
               Text(
                 '$rank위',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'kbo',
-                  color: GRAYSCALE_LABEL_900,
+                  color: isDarkMode ? WHITE : GRAYSCALE_LABEL_900,
                 ),
               ),
               Text(
                 '${score ?? 0}점',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: GRAYSCALE_LABEL_500,
+                  color: isDarkMode ? GRAYSCALE_LABEL_400 : GRAYSCALE_LABEL_500,
                 ),
               ),
             ],
