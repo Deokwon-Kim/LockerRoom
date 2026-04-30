@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
@@ -24,6 +25,13 @@ class SettingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
     final selectedTeam = Provider.of<TeamProvider>(context).selectedTeam;
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final isEmailUser =
+        currentUser?.providerData.any(
+          (provider) => provider.providerId == 'password',
+        ) ??
+        false;
 
     return Scaffold(
       backgroundColor: WHITE,
@@ -109,33 +117,34 @@ class SettingPage extends StatelessWidget {
                           ],
                         ),
                       ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '비밀번호변경');
-                        },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '비밀번호 변경',
-                              style: TextStyle(
-                                color: GRAYSCALE_LABEL_950,
-                                fontSize: 16,
+                      if (isEmailUser)
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pushNamed(context, '비밀번호변경');
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '비밀번호 변경',
+                                style: TextStyle(
+                                  color: GRAYSCALE_LABEL_950,
+                                  fontSize: 16,
+                                ),
                               ),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context, '비밀번호변경');
-                              },
-                              icon: Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                color: GRAYSCALE_LABEL_950,
-                                size: 16,
+                              IconButton(
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '비밀번호변경');
+                                },
+                                icon: Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  color: GRAYSCALE_LABEL_950,
+                                  size: 16,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
                       TextButton(
                         onPressed: () async {
                           final changed = await Navigator.push(
@@ -278,7 +287,7 @@ class SettingPage extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '1.3.5',
+                        '1.4.0',
                         style: TextStyle(
                           color: GRAYSCALE_LABEL_950,
                           fontSize: 16,
