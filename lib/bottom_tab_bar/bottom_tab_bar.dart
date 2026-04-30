@@ -139,11 +139,9 @@ class _BottomTabBarState extends State<BottomTabBar> {
               children: [
                 _buildGuideItem('', '더베이스 업데이트 안내 ⚾️'),
                 const SizedBox(height: 12),
-                _buildGuideItem('', '1. 퀴즈 팀랭킹 및 뱃지 & 응원가 듣고 가사 맞추기 추가!'),
+                _buildGuideItem('', '1. 퀴즈 시즌제 시작! 레전드 티어에 도전하세요'),
                 const SizedBox(height: 12),
-                _buildGuideItem('', '2. 직관 모임 개설 & 실시간 채팅 기능 오픈!'),
-                const SizedBox(height: 12),
-                _buildGuideItem('', '3. 2026 시즌 직관 승률 기록 관리 시작!'),
+                _buildGuideItem('', '2. 홈 화면 리뉴얼!'),
                 const SizedBox(height: 12),
                 _buildGuideItem('', '새로워진 더베이스를 지금 만나보세요.'),
                 const SizedBox(height: 20),
