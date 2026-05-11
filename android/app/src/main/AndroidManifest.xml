@@ -15,9 +15,9 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /> <!-- 백그라운드 감지 필수 --> 
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" /> <!-- 재부팅 시 자동 재시작 -->
+   
+  
 
     <application
         android:label="더베이스"
@@ -84,6 +84,10 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="daily_channel_id" />
+        <service
+            android:name="com.pravera.flutter_foreground_task.services.ForegroundService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
