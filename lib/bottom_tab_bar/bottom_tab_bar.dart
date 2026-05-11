@@ -8,6 +8,7 @@ import 'package:lockerroom/page/feed/feed_upload_page.dart';
 import 'package:lockerroom/provider/tab_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/model/team_model.dart';
+import 'package:lockerroom/utils/version_check.dart';
 import 'package:lockerroom/widgets/svg_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -60,6 +61,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
         screenName: _screenNames[_selectedIndex],
         screenClass: 'BottomTabBar',
       );
+      VersionCheck.checkVersion(context);
     });
   }
 
@@ -139,9 +141,9 @@ class _BottomTabBarState extends State<BottomTabBar> {
               children: [
                 _buildGuideItem('', '더베이스 업데이트 안내 ⚾️'),
                 const SizedBox(height: 12),
-                _buildGuideItem('', '1. 퀴즈 시즌제 시작! 레전드 티어에 도전하세요'),
+                _buildGuideItem('', '1.퀴즈 시즌제 시작! 레전드 티어에 도전하세요'),
                 const SizedBox(height: 12),
-                _buildGuideItem('', '2. 홈 화면 리뉴얼!'),
+                _buildGuideItem('', '2.홈 화면 리뉴얼!'),
                 const SizedBox(height: 12),
                 _buildGuideItem('', '새로워진 더베이스를 지금 만나보세요.'),
                 const SizedBox(height: 20),

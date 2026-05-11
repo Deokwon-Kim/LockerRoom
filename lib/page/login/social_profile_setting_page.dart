@@ -27,6 +27,35 @@ class _SocialProfileSettingPageState extends State<SocialProfileSettingPage> {
   String _nameErrorMessage = '';
   // 현재 포커스된 필드 추적
   String _currentFocusField = '';
+  bool _isAppleLogin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginProvider();
+  }
+
+  void _checkLoginProvider() {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      // 애플 로그인 여부 확인
+      setState(() {
+        _isAppleLogin = user.providerData.any(
+          (element) => element.providerId == 'apple.com',
+        );
+
+        if (_isAppleLogin && user.displayName != null && user.displayName!.isNotEmpty) {
+          // 서양식 "덕원 김" → 한국식 "김덕원" 변환
+          final parts = user.displayName!.trim().split(' ');
+          final koreanName = parts.length >= 2
+              ? parts.reversed.join('')
+              : user.displayName!.replaceAll(' ', '');
+          _nameController.text = koreanName;
+        }
+      });
+    }
+  }
 
   // 닉네임 유효성 검사
   void _validateNickname() {
@@ -138,7 +167,8 @@ class _SocialProfileSettingPageState extends State<SocialProfileSettingPage> {
 
     setState(() {
       _allFieldsFilled =
-          isNicknameValid && _nameController.text.isNotEmpty && _isNameValid;
+          isNicknameValid &&
+          (_isAppleLogin || (_nameController.text.isNotEmpty && _isNameValid));
     });
   }
 
@@ -188,8 +218,10 @@ class _SocialProfileSettingPageState extends State<SocialProfileSettingPage> {
               isValid: _isNicknameValid,
             ),
             const SizedBox(height: 20.0),
-            _buildTextField('이름', _nameController, isValid: _isNameValid),
-            const SizedBox(height: 20.0),
+            if (!_isAppleLogin) ...[
+              _buildTextField('이름', _nameController, isValid: _isNameValid),
+              const SizedBox(height: 20.0),
+            ],
             Center(
               child: Text(
                 centerMessage,
@@ -218,9 +250,13 @@ class _SocialProfileSettingPageState extends State<SocialProfileSettingPage> {
                                 final userDoc = FirebaseFirestore.instance
                                     .collection('users')
                                     .doc(currentUser.uid);
+                                final nameToSave = _isAppleLogin
+                                    ? (currentUser.displayName ?? '')
+                                    : _nameController.text;
+
                                 await userDoc.set({
                                   'userNickName': _nickNameController.text,
-                                  'name': _nameController.text,
+                                  'name': nameToSave,
                                   'isProfileCompleted': true,
                                 }, SetOptions(merge: true));
                                 if (!mounted) return;

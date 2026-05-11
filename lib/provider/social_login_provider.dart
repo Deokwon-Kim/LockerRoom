@@ -350,6 +350,9 @@ class SocialLoginProvider extends ChangeNotifier {
   Future<void> signWithApple() async {
     try {
       final appleProvider = AppleAuthProvider();
+      // 이름 정보를 요청하기 위해 스코프 추가
+      appleProvider.addScope('name');
+      appleProvider.addScope('email');
 
       final userCredential = await FirebaseAuth.instance.signInWithProvider(
         appleProvider,
@@ -358,22 +361,55 @@ class SocialLoginProvider extends ChangeNotifier {
       _currentUser = userCredential.user;
 
       if (_currentUser != null) {
+        // 애플로부터 받은 이름 정보가 있다면 프로필 업데이트
+        String fullName = '';
+        final profile = userCredential.additionalUserInfo?.profile;
+        debugPrint('Apple Profile Data: $profile');
+        if (profile != null && profile['name'] != null) {
+          // Apple은 firstName=이름(덕원), lastName=성(김) 형태로 전달
+          final String firstName = (profile['name']['firstName'] ?? '').toString().trim();
+          final String lastName = (profile['name']['lastName'] ?? '').toString().trim();
+          // 한국식 순서: 성(lastName) + 이름(firstName)
+          fullName = '$lastName$firstName'.replaceAll(' ', '');
+        }
+
+        // profile에서 이름을 못 받았다면 displayName에서 추출 (서양식 → 한국식 변환)
+        if (fullName.isEmpty && _currentUser!.displayName != null && _currentUser!.displayName!.isNotEmpty) {
+          fullName = _toKoreanNameOrder(_currentUser!.displayName!);
+        }
+
+        if (fullName.isNotEmpty) {
+          await _currentUser!.updateDisplayName(fullName);
+        }
+
         final userDoc = _firestore.collection('users').doc(_currentUser!.uid);
         final docSnapshot = await userDoc.get();
 
         if (!docSnapshot.exists) {
-          // 최초 로그인 시에만 저장
           await userDoc.set({
             'uid': _currentUser!.uid,
             'email': _currentUser!.email ?? '',
+            'name': fullName,
             'createdAt': FieldValue.serverTimestamp(),
           });
+        } else if (fullName.isNotEmpty) {
+          await userDoc.update({'name': fullName});
         }
       }
     } catch (e) {
       debugPrint('애플 로그인 오류: $e');
       rethrow;
     }
+  }
+
+  // 서양식 이름(GivenName FamilyName = "덕원 김")을 한국식(FamilyNameGivenName = "김덕원")으로 변환
+  String _toKoreanNameOrder(String displayName) {
+    final parts = displayName.trim().split(' ');
+    if (parts.length >= 2) {
+      // "덕원 김" -> ["덕원", "김"] -> 뒤집어서 "김덕원"
+      return parts.reversed.join('');
+    }
+    return displayName.replaceAll(' ', '');
   }
 
   // 애플 계정 탈퇴

@@ -35,10 +35,10 @@ class QuizSeasonUtils {
       return null;
     }
 
-    // 2026년 5월 전반기인 경우 -> 이전 시즌은 2026년 4월 전체 시즌
+    // 2026년 5월 전반기인 경우 -> 이전 시즌은 2026년 4월 전체 시즌이지만 배포 정책상 표시하지 않음
     if (now.year == 2026 && now.month == 5 && now.day <= 15) {
-      if (now.day <= seasonBufferDays) return '2026_04';
-      return '2026_04';
+      // 5월 1일 정식 릴리즈이므로 4월 테스트 시즌 결과는 노출하지 않음
+      return null;
     }
 
     // 일반적인 15일 주기 로직 (5월 이후)

@@ -112,12 +112,23 @@ class QuizProvider extends ChangeNotifier {
       }
 
       // 직전에 푼 문제 제외히고 후보 추리기
-      final candidates = _allQuestions
+      var candidates = _allQuestions
           .where((q) => !lastPlayedIds.contains(q.quizId))
           .toList();
 
+      // 응원가 카테고리의 경우 최신(리스트 뒷부분) 문제 우선순위 부여
+      if (category.contains('응원가')) {
+        // 원래 리스트에서 뒤에 있을수록 최선이므로, 역순으로 정렬해서 최신 30문제를 후보군으로 선정
+        candidates = candidates.reversed.toList();
+        if (candidates.length > 30) {
+          candidates = candidates.take(30).toList();
+        }
+      }
+
       // 문제 섞기
-      candidates.shuffle();
+      if (!category.contains('응원가')) {
+        candidates.shuffle();
+      }
 
       // 문제 선책 (후보가 부족하면 제외했던 것 중에서 보충)
       if (candidates.length >= questionCount) {
@@ -133,7 +144,7 @@ class QuizProvider extends ChangeNotifier {
 
         // 부족한 만큼 채우기
         final needed = questionCount - candidates.length;
-        _currentQuestions.addAll(excluded.take(needed));
+        _currentQuestions.addAll(excluded.take(needed).toList());
       }
 
       // 상태 초기화
@@ -439,6 +450,7 @@ class QuizProvider extends ChangeNotifier {
 
       return snapshot.docs
           .map((doc) => QuizResultModel.fromJson(doc.data()))
+          .where((result) => result.category != '일일미션 보상')
           .toList();
     } catch (e) {
       debugPrint('퀴즈 기록 조회 실패: $e');
@@ -529,9 +541,12 @@ class QuizProvider extends ChangeNotifier {
           .orderBy('completedAt', descending: true)
           .get();
 
-      _myHistory = snapshot.docs.map((doc) {
-        return QuizResultModel.fromJson(doc.data());
-      }).toList();
+      _myHistory = snapshot.docs
+          .map((doc) {
+            return QuizResultModel.fromJson(doc.data());
+          })
+          .where((result) => result.category != '일일미션 보상')
+          .toList();
     } catch (e) {
       print('퀴즈 기록 가져오기 실패: $e');
     } finally {

@@ -1,5 +1,67 @@
+import 'dart:async';
+import 'dart:isolate';
+import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:geofencing_api/geofencing_api.dart';
 import 'notification_service.dart';
+
+@pragma('vm:entry-point')
+void startForegroundGeofenceTask() {
+  FlutterForegroundTask.setTaskHandler(GeofenceTaskHandler());
+}
+
+class GeofenceTaskHandler extends TaskHandler {
+  @override
+  Future<void> onStart(DateTime timestamp, SendPort? sendPort) async {
+    try {
+      WidgetsFlutterBinding.ensureInitialized();
+      final geofencing = Geofencing.instance;
+      
+      // 1. 리스너 등록
+      geofencing.addGeofenceStatusChangedListener((region, status, location) async {
+        if (status == GeofenceStatus.enter) {
+          final stadium = StadiumGeofenceManager.kboStadiums.firstWhere((s) => s['id'] == region.id);
+          StadiumGeofenceManager.triggerStadiumNotification(stadium['name']);
+          debugPrint('Stadium Geofence Entered (Background): ${stadium['name']}');
+        }
+      });
+
+      // 2. 구역(Region) 설정 - 500m 반경
+      final regions = StadiumGeofenceManager.kboStadiums.map((stadium) {
+        return GeofenceRegion.circular(
+          id: stadium['id'],
+          center: LatLng(stadium['lat'], stadium['lng']),
+          radius: 500.0,
+        );
+      }).toSet();
+
+      // 3. 서비스 설정 및 시작
+      geofencing.setup(
+        interval: 10000, 
+        printsDebugLog: true,
+      );
+
+      if (!geofencing.isRunningService) {
+        // geofencing_api 2.0.0 start returns Future<void> or bool?
+        // Flutter analyze says it returns bool.
+        geofencing.start(regions: regions);
+        debugPrint('✅ Background Geofencing Started');
+      }
+    } catch (e) {
+      debugPrint('❌ Foreground Geofence Start Error: $e');
+    }
+  }
+
+  @override
+  Future<void> onRepeatEvent(DateTime timestamp, SendPort? sendPort) async {
+    // foreground task 유지용
+  }
+
+  @override
+  Future<void> onDestroy(DateTime timestamp, SendPort? sendPort) async {
+    await Geofencing.instance.stop(keepsRegions: false);
+  }
+}
 
 /// 야구장 직관 탐지 및 알림을 담당하는 서비스
 class StadiumGeofenceManager {
@@ -27,52 +89,56 @@ class StadiumGeofenceManager {
     {'id': 'changwon', 'name': '창원 NC 파크', 'lat': 35.2221, 'lng': 128.5811},
   ];
 
-  /// 지오펜싱 초기화 및 시작
+  /// 지오펜싱 포그라운드 초기화 및 시작
   Future<void> initGeofencing() async {
     try {
-      final geofencing = Geofencing.instance;
-
-      // 1. 리스너 등록 (진입/이탈 감지)
-      geofencing.addGeofenceStatusChangedListener((
-        region,
-        status,
-        location,
-      ) async {
-        if (status == GeofenceStatus.enter) {
-          final stadium = kboStadiums.firstWhere((s) => s['id'] == region.id);
-          _triggerStadiumNotification(stadium['name']);
-          print('🏟️ Stadium Geofence Entered: ${stadium['name']}');
-        }
-      });
-
-      // 2. 구역(Region) 설정 - 500m 반경
-      final regions = kboStadiums.map((stadium) {
-        return GeofenceRegion.circular(
-          id: stadium['id'],
-          center: LatLng(stadium['lat'], stadium['lng']),
-          radius: 500.0,
-        );
-      }).toSet();
-
-      // 3. 서비스 설정 및 시작
-      geofencing.setup(
-        interval: 10000, // 10초 주기 (배터리 효율 고려)
-        printsDebugLog: true,
+      FlutterForegroundTask.init(
+        androidNotificationOptions: AndroidNotificationOptions(
+          channelId: 'geofencing_service',
+          channelName: '위치 확인 및 직관 감지',
+          channelDescription: '경기장 도착 여부를 확인합니다.',
+          channelImportance: NotificationChannelImportance.LOW,
+          priority: NotificationPriority.LOW,
+          iconData: const NotificationIconData(
+            resType: ResourceType.mipmap,
+            resPrefix: ResourcePrefix.ic,
+            name: 'launcher',
+          ),
+        ),
+        iosNotificationOptions: const IOSNotificationOptions(
+          showNotification: false,
+          playSound: false,
+        ),
+        foregroundTaskOptions: const ForegroundTaskOptions(
+          interval: 5000,
+          isOnceEvent: false,
+          autoRunOnBoot: true,
+          allowWakeLock: true,
+          allowWifiLock: true,
+        ),
       );
 
-      if (!geofencing.isRunningService) {
-        await geofencing.start(regions: regions);
-        print(
-          '✅ Stadium Geofence Manager Started with ${regions.length} stadiums.',
+      final isRunning = await FlutterForegroundTask.isRunningService;
+      if (!isRunning) {
+        final bool result = await FlutterForegroundTask.startService(
+          notificationTitle: 'LockerRoom: 경기장 도착을 기다리고 있습니다⚾️',
+          notificationText: '직관 기록을 위해 위치를 확인 중입니다.',
+          callback: startForegroundGeofenceTask,
         );
+
+        if (result) {
+          debugPrint('✅ Foreground Task Started.');
+        } else {
+          debugPrint('❌ Foreground Task Start Failed.');
+        }
       }
     } catch (e) {
-      print('❌ Geofencing Init Error: $e');
+      debugPrint('❌ Geofencing Init Error: $e');
     }
   }
 
-  /// 직관 기록 유도 알림 발송
-  static void _triggerStadiumNotification(String stadiumName) {
+  /// 직관 기록 유도 알림 발송 (TaskHandler 내에서도 접근할 수 있게 static)
+  static void triggerStadiumNotification(String stadiumName) {
     NotificationService().showForegroundNotification(
       id: 999,
       title: '⚾ 경기장에 도착하셨나요?',

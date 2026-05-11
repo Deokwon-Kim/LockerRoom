@@ -6,6 +6,8 @@ import 'package:lockerroom/model/quiz_trophy_model.dart';
 import 'package:lockerroom/utils/quiz_season_utils.dart';
 import 'package:lockerroom/const/firestore_constants.dart';
 import 'package:lockerroom/utils/quiz_tier_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class QuizRankingProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -21,20 +23,68 @@ class QuizRankingProvider extends ChangeNotifier {
   String _selectedSeason = QuizSeasonUtils.getCurrentSeasonId();
   String? _manualSeasonId; // Firebase에서 제어하는 시즌 ID
   bool _isAllTimeMode = false;
+  
+  // 종합(Overall) 랭킹 별도 저장
+  List<RankingUserModel> _overallRankings = [];
+  List<RankingTeamModel> _overallTeamRankings = [];
 
   // 시즌제 도입 기준 시즌 (이 이하는 전체 표시, 이 초과는 Top 3만 표시)
-  static const String _lastOpenSeason = '2026-04';
+  static const String _lastOpenSeason = '2026_04';
 
   List<RankingUserModel> get rankings => _rankings;
   List<RankingTeamModel> get teamRankings => _teamRankings;
   List<QuizTrophyModel> get trophies => _trophies;
-  Map<String, List<RankingUserModel>> get hallOfFameBySeasons => _hallOfFameBySeasons;
+  Map<String, List<RankingUserModel>> get hallOfFameBySeasons =>
+      _hallOfFameBySeasons;
   bool get isLoading => _isLoading;
   bool get isHallOfFameLoading => _isHallOfFameLoading;
   String? get errorMessage => _errorMessage;
   String get selectedCategory => _selectedCategory;
   String get selectedSeason => _selectedSeason;
   bool get isAllTimeMode => _isAllTimeMode;
+
+  // 항상 종합 순위를 반환하는 게터 (결과 화면 등에서 사용)
+  List<RankingUserModel> get overallRankings => _selectedCategory == 'all' ? _rankings : _overallRankings;
+  List<RankingTeamModel> get overallTeamRankings => _selectedCategory == 'all' ? _teamRankings : _overallTeamRankings;
+
+  // userId -> 종합 티어 캐시 (카테고리 필터와 무관하게 항상 종합 점수 기반 티어 유지)
+  final Map<String, String> _overallTierCache = {};
+  String getOverallTier(String userId) =>
+      _overallTierCache[userId] ?? 'PROSPECT';
+
+  // userId -> 종합 점수 캐시 (티어 진행바에 사용)
+  final Map<String, int> _overallScoreCache = {};
+  int getOverallScore(String userId) => _overallScoreCache[userId] ?? 0;
+
+  // userId -> 종합 순위 캐시
+  final Map<String, int> _overallRankCache = {};
+  int getOverallRank(String userId) => _overallRankCache[userId] ?? 0;
+
+  // 로컬에 내 정보만 별도로 긴급 저장 (깜빡임 방지용)
+  Future<void> _saveMyOverallToLocal(String userId, int score, String tier, int rank) async {
+    final prefs = await SharedPreferences.getInstance();
+    // 유저별 고유 키 사용 (멀티 계정 대응)
+    await prefs.setInt('overall_quiz_score_$userId', score);
+    await prefs.setString('overall_quiz_tier_$userId', tier);
+    await prefs.setInt('overall_quiz_rank_$userId', rank);
+  }
+
+  // 로컬에서 내 정보 미리 불러오기 (초기 로딩 시 호출 가능)
+  Future<void> loadMyOverallFromLocal() async {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUid != null) {
+      final prefs = await SharedPreferences.getInstance();
+      // 유저별 고유 키로 로드
+      final savedScore = prefs.getInt('overall_quiz_score_$currentUid') ?? 0;
+      final savedTier = prefs.getString('overall_quiz_tier_$currentUid') ?? 'PROSPECT';
+      final savedRank = prefs.getInt('overall_quiz_rank_$currentUid') ?? 0;
+      
+      _overallScoreCache[currentUid] = savedScore;
+      _overallTierCache[currentUid] = savedTier;
+      _overallRankCache[currentUid] = savedRank;
+      notifyListeners();
+    }
+  }
 
   // 모드 변경 (시즌 vs 명예의 전당)
   void setAllTimeMode(bool allTime) {
@@ -50,9 +100,18 @@ class QuizRankingProvider extends ChangeNotifier {
   }
 
   // 시즌 변경
-  void setSeason(String seasonId) {
+  Future<void> setSeason(String seasonId) async {
+    if (_selectedSeason == seasonId) return; // 동일 시즌이면 로직 스킵 (깜빡임 방지 핵심)
+
     _selectedSeason = seasonId;
-    fetchRankings(true);
+    _overallTierCache.clear();
+    _overallScoreCache.clear();
+    _overallRankCache.clear(); // 시즌 변경 시 순위 캐시 초기화
+
+    // 내 정보만이라도 즉시 로컬에서 복구 (깜빡임 방지)
+    loadMyOverallFromLocal();
+
+    return await fetchRankings(true);
   }
 
   // 순위 데이터 가져오기 (force: true일 때만 강제 새로고침)
@@ -97,6 +156,90 @@ class QuizRankingProvider extends ChangeNotifier {
           .limit(10000);
 
       final snapshot = await query.get();
+
+      // ─── 종합 티어 캐시 갱신: 카테고리 필터와 무관하게 전체 점수 기반으로 계산 ────
+      if (force || _selectedCategory != 'all' || _overallTierCache.isEmpty) {
+        // 'all' 카테고리가 아니거나 캐시가 비어있으면 전체 데이터를 가져옴
+        final allQuery = _firestore
+            .collectionGroup(FirestoreConstants.quizResultsSub)
+            .where('seasonId', isEqualTo: _selectedSeason)
+            .orderBy('score', descending: true)
+            .orderBy('completedAt', descending: true)
+            .limit(1000); // 종합 순위용으로 1000명 정도면 충분
+        
+        final allSnapshot = await allQuery.get();
+        final Map<String, Map<String, dynamic>> allUserStats = {};
+        final Map<String, int> allTeamScores = {
+          '두산베어스': 0, '삼성라이온즈': 0, '롯데자이언츠': 0, '기아타이거즈': 0, 'LG트윈스': 0,
+          'SSG랜더스': 0, '한화이글스': 0, '키움히어로즈': 0, 'NC다이노스': 0, 'KT위즈': 0,
+        };
+
+        for (var doc in allSnapshot.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          final uid = data['userId'] as String? ?? '';
+          if (uid.isEmpty) continue;
+
+          final score = (data['score'] ?? 0) as int;
+          final team = data['teamName'] as String?;
+          final nick = data['userNickName'] as String? ?? '익명';
+          final at = data['completedAt'] as Timestamp? ?? Timestamp.now();
+
+          if (!allUserStats.containsKey(uid)) {
+            allUserStats[uid] = {
+              'totalScore': 0,
+              'completedAt': at,
+              'userNickName': nick,
+              'teamName': team,
+            };
+          }
+          allUserStats[uid]!['totalScore'] = (allUserStats[uid]!['totalScore'] as int) + score;
+          
+          if (team != null && allTeamScores.containsKey(team)) {
+            allTeamScores[team] = (allTeamScores[team] ?? 0) + score;
+          }
+        }
+
+        final sortedAllUsers = allUserStats.entries.toList()
+          ..sort((a, b) => (b.value['totalScore'] as int).compareTo(a.value['totalScore'] as int));
+
+        _overallRankings = sortedAllUsers.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final val = entry.value;
+          final score = val.value['totalScore'] as int;
+          return RankingUserModel(
+            rank: idx + 1,
+            userId: val.key,
+            name: val.value['userNickName'] as String,
+            score: score,
+            rankChange: 0,
+            completedAt: (val.value['completedAt'] as Timestamp).toDate(),
+            teamName: val.value['teamName'] as String?,
+            tier: QuizTierUtils.getTierName(score),
+          );
+        }).toList();
+
+        _overallTeamRankings = allTeamScores.entries.map((e) => RankingTeamModel(
+          rank: 0,
+          teamName: e.key,
+          totalScore: e.value,
+          rankChange: 0,
+        )).toList()..sort((a, b) => b.totalScore.compareTo(a.totalScore));
+        
+        for(int i=0; i<_overallTeamRankings.length; i++) {
+          _overallTeamRankings[i] = _overallTeamRankings[i].copyWith(rank: i+1);
+        }
+
+        // 캐시 업데이트
+        final currentUid = FirebaseAuth.instance.currentUser?.uid;
+        for (var user in _overallRankings) {
+          _overallTierCache[user.userId] = user.tier!;
+          _overallScoreCache[user.userId] = user.score;
+          _overallRankCache[user.userId] = user.rank;
+          if (user.userId == currentUid) {
+            _saveMyOverallToLocal(user.userId, user.score, user.tier!, user.rank);
+          }
+        }
+      }
 
       // ─── 유순위 제외 대상 (개발자, 테스트 계정 등) ─────────────────────────
       const List<String> EXCLUDED_USER_IDS = [
@@ -173,9 +316,9 @@ class QuizRankingProvider extends ChangeNotifier {
         }
 
         // Step 2: 시즌별 필터 적용 후 all-time 총점 합산
-        // - 2026-04(4월 통합시즌) 이하: 전체 참가자 반영 (기존 방식)
-        // - 2026-04 초과(5월 이후 반기 시즌): 해당 시즌 Top 3만 반영
-        const String lastOpenSeason = '2026-04';
+        // - 2026_04(4월 통합시즌) 이하: 전체 참가자 반영 (기존 방식)
+        // - 2026_04 초과(5월 이후 반기 시즌): 해당 시즌 Top 3만 반영
+        const String lastOpenSeason = '2026_04';
 
         for (final seasonEntry in seasonUserScores.entries) {
           final seasonId = seasonEntry.key;
@@ -251,6 +394,26 @@ class QuizRankingProvider extends ChangeNotifier {
             a.value['completedAt'] as Timestamp,
           );
         });
+
+      if (_selectedCategory == 'all') {
+        // all 카테고리 조회 결과를 종합 티어/점수/순위 캐시에도 저장
+        final currentUid = FirebaseAuth.instance.currentUser?.uid;
+        for (int i = 0; i < sortedEntries.length; i++) {
+          final entry = sortedEntries[i];
+          final total = entry.value['totalScore'] as int;
+          final tier = QuizTierUtils.getTierName(total);
+          final rank = i + 1;
+
+          _overallTierCache[entry.key] = tier;
+          _overallScoreCache[entry.key] = total;
+          _overallRankCache[entry.key] = rank;
+
+          // 내 정보면 로컬 저장소에 긴급 캐싱
+          if (entry.key == currentUid) {
+            _saveMyOverallToLocal(entry.key, total, tier, rank);
+          }
+        }
+      }
 
       final List<RankingUserModel> tempRankings = [];
 
@@ -334,6 +497,10 @@ class QuizRankingProvider extends ChangeNotifier {
         return user.copyWith(rankChange: scoreDiff);
       }).toList();
 
+      if (_selectedCategory == 'all') {
+        _overallRankings = List.from(_rankings);
+      }
+
       final List<RankingTeamModel> tempTeamRankings =
           teamTotalScores.entries
               .map(
@@ -356,6 +523,10 @@ class QuizRankingProvider extends ChangeNotifier {
         return team.copyWith(rank: index + 1, rankChange: scoreDiff);
       }).toList();
 
+      if (_selectedCategory == 'all') {
+        _overallTeamRankings = List.from(_teamRankings);
+      }
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -374,7 +545,25 @@ class QuizRankingProvider extends ChangeNotifier {
     }
   }
 
-  // 내 팀 순위 찾기
+  // 내 종합 순위 찾기
+  RankingUserModel? getMyOverallRanking(String currentUserId) {
+    try {
+      return overallRankings.firstWhere((user) => user.userId == currentUserId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 내 팀 종합 순위 찾기
+  RankingTeamModel? getMyOverallTeamRanking(String teamName) {
+    try {
+      return overallTeamRankings.firstWhere((team) => team.teamName == teamName);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 내 팀 순위 찾기 (카테고리/시즌 필터 적용 버전)
   RankingTeamModel? getMyTeamRanking(String teamName) {
     try {
       return _teamRankings.firstWhere((team) => team.teamName == teamName);
@@ -451,8 +640,9 @@ class QuizRankingProvider extends ChangeNotifier {
         // 점수 내림차순 정렬
         final sorted = userScores.entries.toList()
           ..sort(
-            (a, b) => (b.value['totalScore'] as int)
-                .compareTo(a.value['totalScore'] as int),
+            (a, b) => (b.value['totalScore'] as int).compareTo(
+              a.value['totalScore'] as int,
+            ),
           );
 
         // 2026-04 초과 시즌 → Top 3, 이하 시즌 → 전체
@@ -467,8 +657,10 @@ class QuizRankingProvider extends ChangeNotifier {
           String? teamName = scoreData['teamName'];
 
           try {
-            final userDoc =
-                await _firestore.collection('users').doc(userId).get();
+            final userDoc = await _firestore
+                .collection('users')
+                .doc(userId)
+                .get();
             final userData = userDoc.data();
             String latestNick =
                 userData?['userNickName'] ?? scoreData['userNickName'] ?? '익명';
@@ -484,12 +676,9 @@ class QuizRankingProvider extends ChangeNotifier {
                 score: scoreData['totalScore'],
                 rankChange: 0,
                 profileUrl: userData?['profileImage'],
-                completedAt:
-                    (scoreData['completedAt'] as Timestamp).toDate(),
+                completedAt: (scoreData['completedAt'] as Timestamp).toDate(),
                 teamName: teamName,
-                tier: QuizTierUtils.getTierName(
-                  scoreData['totalScore'] as int,
-                ),
+                tier: QuizTierUtils.getTierName(scoreData['totalScore'] as int),
               ),
             );
           } catch (_) {
@@ -501,12 +690,9 @@ class QuizRankingProvider extends ChangeNotifier {
                 score: scoreData['totalScore'],
                 rankChange: 0,
                 profileUrl: null,
-                completedAt:
-                    (scoreData['completedAt'] as Timestamp).toDate(),
+                completedAt: (scoreData['completedAt'] as Timestamp).toDate(),
                 teamName: teamName,
-                tier: QuizTierUtils.getTierName(
-                  scoreData['totalScore'] as int,
-                ),
+                tier: QuizTierUtils.getTierName(scoreData['totalScore'] as int),
               ),
             );
           }

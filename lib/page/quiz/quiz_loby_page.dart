@@ -336,6 +336,10 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
   // 3️⃣ 메인 티어 카드 (다크 게임 카드 컨셉)
   Widget _buildHeroTierCard() {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final teamProvider = context.read<TeamProvider>();
+    final teamColor = teamProvider.selectedTeam?.color;
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     return Consumer<QuizRankingProvider>(
       builder: (context, qrp, child) {
         // [수정] 카테고리 필터와 상관없이 항상 '종합' 데이터 사용
@@ -359,7 +363,9 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B), // 시안 느낌의 다크 배경
+              color: isDarkMode
+                  ? const Color(0xFF1E293B)
+                  : teamColor, // 시안 느낌의 다크 배경
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
@@ -815,6 +821,8 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
   Widget _buildFixedPlayButton() {
     final isDarkMode =
         MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final teamProvider = context.read<TeamProvider>();
+    final teamColor = teamProvider.selectedTeam?.color;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
@@ -837,7 +845,7 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
           width: double.infinity,
           height: 60,
           decoration: BoxDecoration(
-            color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+            color: isDarkMode ? Colors.white : teamColor,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(

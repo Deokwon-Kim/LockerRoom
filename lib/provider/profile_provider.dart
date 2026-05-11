@@ -118,6 +118,7 @@ class ProfileProvider extends ChangeNotifier {
         .listen(
           (doc) {
             _myProfileImage = doc.data()?['profileImage'] as String?;
+            _imageUrl = _myProfileImage; // imageUrl도 함께 갱신 (로비 등 UI 호환용)
             notifyListeners();
           },
           onError: (e) {

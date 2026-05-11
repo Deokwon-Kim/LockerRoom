@@ -2052,8 +2052,17 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
 
   String _getRemainingDaysText() {
     final now = DateTime.now();
-    final lastDay = DateTime(now.year, now.month + 1, 0);
-    final diff = lastDay.difference(now).inDays;
+    // 전반기: 1일~15일 → 15일에 종료
+    // 후반기: 16일~말일 → 말일에 종료
+    final DateTime seasonEnd;
+    if (now.day <= 15) {
+      seasonEnd = DateTime(now.year, now.month, 15);
+    } else {
+      seasonEnd = DateTime(now.year, now.month + 1, 0); // 해당 월의 마지막 날
+    }
+    final diff = seasonEnd
+        .difference(DateTime(now.year, now.month, now.day))
+        .inDays;
     return diff > 0 ? '시즌 종료까지 D-$diff' : '시즌 종료 임박!';
   }
 }
