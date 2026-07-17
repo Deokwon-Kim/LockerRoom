@@ -6,6 +6,7 @@ import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class IntutionRecordUploadPage extends StatefulWidget {
   const IntutionRecordUploadPage({super.key});
@@ -211,29 +212,42 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                         ? null
                         : () async {
                             if (!_formKey.currentState!.validate()) return;
-                            final ok = await intutionProvider.save(context);
-                            if (!mounted) return;
 
+                            // save() 전에 미리 값 캡처 (save 후 provider 상태 초기화됨)
+                            final capturedStatus =
+                                intutionProvider.todayGame?.status ?? 'unknown';
+                            final capturedStadium =
+                                intutionProvider.todayGame?.stadium ??
+                                'unknown';
+                            final capturedTeam =
+                                intutionProvider.selectedTeamSympleForRecord ??
+                                intutionProvider.myTeamSymple ??
+                                'unknown';
+                            final userNickName =
+                                FirebaseAuth
+                                    .instance
+                                    .currentUser
+                                    ?.displayName ??
+                                'unknown';
+
+                            final ok = await intutionProvider.save(context);
+
+                            // Analytics는 mounted 체크 전에 실행 (save 후 위젯이 unmount될 수 있음)
                             if (ok) {
-                              // Firebase Analytics 이벤트 기록
-                              FirebaseAnalytics.instance.logEvent(
+                              await FirebaseAnalytics.instance.logEvent(
                                 name: 'intuition_record_created',
                                 parameters: {
-                                  'status':
-                                      intutionProvider.todayGame?.status ??
-                                      'unknown',
-                                  'stadium':
-                                      intutionProvider.todayGame?.stadium ??
-                                      'unknown',
-                                  'team':
-                                      intutionProvider
-                                          .selectedTeamSympleForRecord ??
-                                      'unknown',
+                                  'userNickName': userNickName,
+                                  'status': capturedStatus,
+                                  'stadium': capturedStadium,
+                                  'team': capturedTeam,
                                 },
                               );
                             }
 
+                            if (!mounted) return;
                             Navigator.pop(context);
+
                             toastification.show(
                               context: context,
                               type: ToastificationType.success,

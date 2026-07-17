@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:lockerroom/const/color.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -13,7 +14,7 @@ class VersionCheck {
 
     // 2. Firestore에서 최신/필수 버전 정보 가져오기
     var doc = await FirebaseFirestore.instance
-        .collection('app_config')
+        .collection('version')
         .doc('settings')
         .get();
     if (!doc.exists) return;
@@ -52,6 +53,7 @@ class VersionCheck {
       barrierDismissible: !isForce, // 강제 업데이트시 바깥 클릭으로 못 닫게
       builder: (context) => WillPopScope(
         child: AlertDialog(
+          backgroundColor: WHITE,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),

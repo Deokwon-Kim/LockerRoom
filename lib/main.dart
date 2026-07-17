@@ -11,6 +11,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide User;
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
+import 'package:lockerroom/bottom_tab_bar/quiz_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
 import 'package:lockerroom/page/legal/privacy_policy_page.dart';
@@ -20,6 +21,7 @@ import 'package:lockerroom/page/login/social_login_page.dart';
 import 'package:lockerroom/page/login/social_profile_setting_page.dart';
 import 'package:lockerroom/page/my_post/likedPosts_page.dart';
 import 'package:lockerroom/page/notice/notice_list_page.dart';
+import 'package:lockerroom/page/quiz/quiz_start_page.dart';
 import 'package:lockerroom/page/setting/change_password_page.dart';
 import 'package:lockerroom/page/setting/custormer_center_page.dart';
 import 'package:lockerroom/page/setting/find_password_page.dart';
@@ -252,11 +254,40 @@ class _MyAppState extends State<MyApp> {
           GlobalCupertinoLocalizations.delegate,
         ],
         navigatorObservers: [
-          FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+          FirebaseAnalyticsObserver(
+            analytics: FirebaseAnalytics.instance,
+            nameExtractor: (RouteSettings settings) {
+              final String? name = settings.name;
+              if (name == null) return null;
+              
+              // 영어 라우트명을 한글로 매핑하여 Analytics에 보고
+              const routeNames = {
+                'signup': '회원가입',
+                'login': '로그인',
+                'settings': '환경설정',
+                'nickname_change': '닉네임변경',
+                'name_change': '이름변경',
+                'find_password': '비밀번호찾기',
+                'notifications': '알림센터',
+                'customer_center': '고객센터',
+                'notice': '공지사항',
+                'terms': '이용약관',
+                'privacy': '개인정보방침',
+                'change_password': '비밀번호변경',
+                'block_list': '차단목록',
+                'liked_posts': '좋아요글',
+                'quiz_ranking': '퀴즈랭킹',
+                'quiz_lobby': '퀴즈로비',
+                'admin': '어드민',
+              };
+              return routeNames[name] ?? name;
+            },
+          ),
         ],
         supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
         home: const AuthWrapper(),
         routes: {
+          // 한국어 라우트 (기존 코드 호환성 및 한글 호출용)
           '회원가입': (context) => const SignupPage(),
           '로그인': (context) => const SocialLoginPage(),
           '환경설정': (context) => const SettingPage(),
@@ -272,7 +303,27 @@ class _MyAppState extends State<MyApp> {
           '차단목록': (context) => const BlockListPage(),
           '좋아요글': (context) => const LikedPostsPage(),
           '퀴즈랭킹': (context) => const QuizRankingPage(),
+          '퀴즈로비': (context) => const QuizTabBar(),
           '어드민': (context) => const AdminGamePage(),
+
+          // 영어 라우트 (FCM 푸시 및 시스템 내부용 - NFC/NFD 자모음 분리 차단)
+          'signup': (context) => const SignupPage(),
+          'login': (context) => const SocialLoginPage(),
+          'settings': (context) => const SettingPage(),
+          'nickname_change': (context) => const NicknameChangePage(),
+          'name_change': (context) => const NameChangePage(),
+          'find_password': (context) => const FindPasswordPage(),
+          'notifications': (context) => const NotificationsPage(),
+          'customer_center': (context) => const CustormerCenterPage(),
+          'notice': (context) => const NoticeListPage(),
+          'terms': (context) => const TermsOfServicePage(),
+          'privacy': (context) => const PrivacyPolicyPage(),
+          'change_password': (context) => const ChangePasswordPage(),
+          'block_list': (context) => const BlockListPage(),
+          'liked_posts': (context) => const LikedPostsPage(),
+          'quiz_ranking': (context) => const QuizRankingPage(),
+          'quiz_lobby': (context) => const QuizTabBar(),
+          'admin': (context) => const AdminGamePage(),
         },
       ),
     );
