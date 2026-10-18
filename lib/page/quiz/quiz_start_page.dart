@@ -33,32 +33,40 @@ class _QuizStartPageState extends State<QuizStartPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final rankProvider = context.read<QuizRankingProvider>();
+      final currentSeasonId = QuizSeasonUtils.getCurrentSeasonId();
 
-      // 1. 방금 종료된 시즌의 데이터 먼저 로드 (챔피언 여부 판정용)
+      await rankProvider.loadMyOverallFromLocal(currentSeasonId);
+
+      final prefs = await SharedPreferences.getInstance();
+      final lastResultShownSeason = prefs.getString('last_result_shown_season');
       final prevSeasonId = QuizSeasonUtils.getPreviousSeasonId();
-      if (prevSeasonId != null) {
-        rankProvider.setSeason(prevSeasonId); // 이전 시즌으로 설정하여 데이터 조회
-        await rankProvider.fetchRankings(true);
+      final bool needShowResultOverlay =
+          prevSeasonId != null && lastResultShownSeason != currentSeasonId;
+
+      // 1. 방금 종료된 시즌의 결과 오버레이가 필요한 경우에만 이전 시즌 데이터 로드
+      if (needShowResultOverlay) {
+        await rankProvider.setSeason(prevSeasonId);
+        if (mounted) {
+          await _checkAndShowSeasonResultOverlay();
+        }
       }
 
-      // 2. 오버레이 시퀀스 실행 (결과창 -> 시작창)
-      await _checkAndShowSeasonSequence();
-
-      // 3. 다시 현재 시즌 데이터를 로드하여 홈 화면 정보 갱신
+      // 2. 현재 시즌 데이터 로드
       if (mounted) {
-        rankProvider.setSeason(QuizSeasonUtils.getCurrentSeasonId());
-        await rankProvider.fetchRankings(true);
+        if (rankProvider.selectedSeason != currentSeasonId) {
+          await rankProvider.setSeason(currentSeasonId);
+        } else {
+          await rankProvider.fetchRankings(true);
+        }
+      }
+
+      // 3. 새 시즌 시작 오버레이 실행
+      if (mounted) {
+        await _checkAndShowSeasonStartOverlay();
       }
     });
   }
 
-  Future<void> _checkAndShowSeasonSequence() async {
-    // 1. 시즌 종료 결과 오버레이 (Season Result / Champion)
-    await _checkAndShowSeasonResultOverlay();
-
-    // 2. 새 시즌 시작 오버레이 (Season Start)
-    await _checkAndShowSeasonStartOverlay();
-  }
 
   Future<void> _checkAndShowSeasonResultOverlay() async {
     final prefs = await SharedPreferences.getInstance();

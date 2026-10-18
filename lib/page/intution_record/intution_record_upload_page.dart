@@ -208,7 +208,9 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                 Padding(
                   padding: const EdgeInsets.only(right: 20.0),
                   child: GestureDetector(
-                    onTap: intutionProvider.saving
+                    onTap:
+                        (intutionProvider.saving ||
+                            intutionProvider.isImagePicking)
                         ? null
                         : () async {
                             if (!_formKey.currentState!.validate()) return;
@@ -257,501 +259,675 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                             );
                           },
 
-                    child: intutionProvider.saving
-                        ? CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: BUTTON,
-                          )
-                        : Text(
-                            '저장',
-                            style: TextStyle(
-                              color: teamProvider.selectedTeam?.color,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                    child: Text(
+                      '저장',
+                      style: TextStyle(
+                        color:
+                            (intutionProvider.saving ||
+                                intutionProvider.isImagePicking)
+                            ? GRAYSCALE_LABEL_400
+                            : teamProvider.selectedTeam?.color,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-            body: GestureDetector(
-              onTap: () => FocusScope.of(context).unfocus(),
-              behavior: HitTestBehavior.translucent,
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  top: 20.0,
-                  left: 16.0,
-                  right: 16.0,
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: ListView(
-                    children: [
-                      Text(
-                        '경기날짜',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Container(
-                        padding: EdgeInsets.all(10),
-                        alignment: Alignment.centerLeft,
-                        width: double.infinity,
-                        height: 58,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: GRAYSCALE_LABEL_300),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              selectedDate != null
-                                  ? '${selectedDate!.year}년 ${selectedDate!.month}월 ${selectedDate!.day}일'
-                                  : '날짜 선택',
-                              style: TextStyle(fontWeight: FontWeight.w500),
+            body: Stack(
+              children: [
+                GestureDetector(
+                  onTap: () => FocusScope.of(context).unfocus(),
+                  behavior: HitTestBehavior.translucent,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      top: 20.0,
+                      left: 16.0,
+                      right: 16.0,
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: ListView(
+                        children: [
+                          Text(
+                            '경기날짜',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
                             ),
-                            IconButton(
-                              onPressed: () => _selectedDate(intutionProvider),
-                              icon: Icon(Icons.date_range_outlined),
+                          ),
+                          SizedBox(height: 10),
+                          Container(
+                            padding: EdgeInsets.all(10),
+                            alignment: Alignment.centerLeft,
+                            width: double.infinity,
+                            height: 58,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: GRAYSCALE_LABEL_300),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      if (hasTeamSelector)
-                        _buildTeamSelector(context, intutionProvider),
-                      if (hasTeamSelector) SizedBox(height: 20),
-                      if (hasMultipleGamesForSelectedTeam)
-                        _buildGameSlotSelector(
-                          context,
-                          intutionProvider,
-                          gamesForSelectedTeam,
-                        ),
-                      if (hasMultipleGamesForSelectedTeam) SizedBox(height: 20),
-                      Text(
-                        '경기정보',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 30,
-                          vertical: 15,
-                        ),
-                        decoration: BoxDecoration(
-                          color: BACKGROUND_COLOR,
-                          border: Border.all(color: GRAYSCALE_LABEL_300),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-
-                        child: Column(
-                          children: [
-                            Row(
+                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  children: [
-                                    Text(
-                                      '응원 팀',
-                                      style: TextStyle(
-                                        color: GRAYSCALE_LABEL_500,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(height: 10),
-                                    Image.asset(
-                                      myTeamModel?.calenderLogo ??
-                                          'assets/images/applogo/app_logo.png',
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.contain,
-                                    ),
-                                    SizedBox(height: 10),
-                                    Text(
-                                      myTeamSymple,
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
+                                Text(
+                                  selectedDate != null
+                                      ? '${selectedDate!.year}년 ${selectedDate!.month}월 ${selectedDate!.day}일'
+                                      : '날짜 선택',
+                                  style: TextStyle(fontWeight: FontWeight.w500),
                                 ),
-
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 30.0),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        'VS',
-                                        style: TextStyle(
-                                          fontSize: 50,
-                                          color: GRAYSCALE_LABEL_500,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      SizedBox(height: 10),
-                                      Text(
-                                        g.stadium,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      // 취소된 경기 표시
-                                      if (_isCancelledGame(g)) ...[
-                                        SizedBox(height: 8),
-                                        Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: RED_DANGER_SURFACE_5,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            border: Border.all(
-                                              color: RED_DANGER_BORDER_10,
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            '경기취소',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: RED_DANGER_TEXT_50,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                                Column(
-                                  children: [
-                                    Text(
-                                      '상대 팀',
-                                      style: TextStyle(
-                                        color: GRAYSCALE_LABEL_500,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(height: 10),
-                                    Image.asset(
-                                      oppenentTeamModel?.calenderLogo ??
-                                          'assets/images/applogo/app_logo.png',
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.contain,
-                                    ),
-                                    SizedBox(height: 10),
-                                    Text(
-                                      opponentSymple,
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
+                                IconButton(
+                                  onPressed: () =>
+                                      _selectedDate(intutionProvider),
+                                  icon: Icon(Icons.date_range_outlined),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                          ),
+                          SizedBox(height: 20),
+                          if (hasTeamSelector)
+                            _buildTeamSelector(context, intutionProvider),
+                          if (hasTeamSelector) SizedBox(height: 20),
+                          if (hasMultipleGamesForSelectedTeam)
+                            _buildGameSlotSelector(
+                              context,
+                              intutionProvider,
+                              gamesForSelectedTeam,
+                            ),
+                          if (hasMultipleGamesForSelectedTeam)
+                            SizedBox(height: 20),
+                          Text(
+                            '경기정보',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 30,
+                              vertical: 15,
+                            ),
+                            decoration: BoxDecoration(
+                              color: BACKGROUND_COLOR,
+                              border: Border.all(color: GRAYSCALE_LABEL_300),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      children: [
+                                        Text(
+                                          '응원 팀',
+                                          style: TextStyle(
+                                            color: GRAYSCALE_LABEL_500,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(height: 10),
+                                        Image.asset(
+                                          myTeamModel?.calenderLogo ??
+                                              'assets/images/applogo/app_logo.png',
+                                          width: 80,
+                                          height: 80,
+                                          fit: BoxFit.contain,
+                                        ),
+                                        SizedBox(height: 10),
+                                        Text(
+                                          myTeamSymple,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 30.0),
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            'VS',
+                                            style: TextStyle(
+                                              fontSize: 50,
+                                              color: GRAYSCALE_LABEL_500,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          SizedBox(height: 10),
+                                          Text(
+                                            g.stadium,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          // 취소된 경기 표시
+                                          if (_isCancelledGame(g)) ...[
+                                            SizedBox(height: 8),
+                                            Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 6,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: RED_DANGER_SURFACE_5,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: RED_DANGER_BORDER_10,
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                '경기취소',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: RED_DANGER_TEXT_50,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    Column(
+                                      children: [
+                                        Text(
+                                          '상대 팀',
+                                          style: TextStyle(
+                                            color: GRAYSCALE_LABEL_500,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        SizedBox(height: 10),
+                                        Image.asset(
+                                          oppenentTeamModel?.calenderLogo ??
+                                              'assets/images/applogo/app_logo.png',
+                                          width: 80,
+                                          height: 80,
+                                          fit: BoxFit.contain,
+                                        ),
+                                        SizedBox(height: 10),
+                                        Text(
+                                          opponentSymple,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          intutionProvider.isImagePicking
+                              ? Container(
+                                  width: double.infinity,
+                                  height: 200,
+                                  decoration: BoxDecoration(
+                                    color: BACKGROUND_COLOR,
+                                    border: Border.all(
+                                      color: GRAYSCALE_LABEL_300,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 32,
+                                          height: 32,
+                                          child: CircularProgressIndicator(
+                                            color:
+                                                teamProvider
+                                                    .selectedTeam
+                                                    ?.color ??
+                                                BUTTON,
+                                            strokeWidth: 3,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        const Text(
+                                          '사진 업로드 중',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: GRAYSCALE_LABEL_700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : intutionProvider.image.isNotEmpty
+                              ? Container(
+                                  width: double.infinity,
+                                  height: 450,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: GRAYSCALE_LABEL_300,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      PageView.builder(
+                                        controller: _pageController,
+                                        onPageChanged: (index) {
+                                          setState(() {
+                                            _currentImageIndex = index;
+                                          });
+                                        },
+                                        itemCount:
+                                            intutionProvider.image.length,
+                                        itemBuilder: (context, index) {
+                                          return ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            child: Image.file(
+                                              intutionProvider.image[index],
+                                              fit: BoxFit.cover,
+                                              frameBuilder:
+                                                  (
+                                                    context,
+                                                    child,
+                                                    frame,
+                                                    wasSynchronouslyLoaded,
+                                                  ) {
+                                                    if (wasSynchronouslyLoaded ||
+                                                        frame != null) {
+                                                      return child;
+                                                    }
+                                                    return Center(
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          SizedBox(
+                                                            width: 32,
+                                                            height: 32,
+                                                            child: CircularProgressIndicator(
+                                                              color:
+                                                                  teamProvider
+                                                                      .selectedTeam
+                                                                      ?.color ??
+                                                                  BUTTON,
+                                                              strokeWidth: 3,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 12,
+                                                          ),
+                                                          const Text(
+                                                            '사진 업로드 중',
+                                                            style: TextStyle(
+                                                              fontSize: 14,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color:
+                                                                  GRAYSCALE_LABEL_700,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  },
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      // 이미지 개수 인디케이터
+                                      if (intutionProvider.image.length > 1)
+                                        Positioned(
+                                          bottom: 16,
+                                          right: 16,
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 6,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withOpacity(
+                                                0.6,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            child: Text(
+                                              '${_currentImageIndex + 1}/${intutionProvider.image.length}',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      // 이미지 삭제 버튼
+                                      Positioned(
+                                        top: 16,
+                                        right: 16,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              intutionProvider.removeImageAt(
+                                                _currentImageIndex,
+                                              );
+                                              // 삭제 후 인덱스 조정
+                                              if (_currentImageIndex >=
+                                                      intutionProvider
+                                                          .image
+                                                          .length &&
+                                                  intutionProvider
+                                                      .image
+                                                      .isNotEmpty) {
+                                                _currentImageIndex =
+                                                    intutionProvider
+                                                        .image
+                                                        .length -
+                                                    1;
+                                              } else if (intutionProvider
+                                                  .image
+                                                  .isEmpty) {
+                                                _currentImageIndex = 0;
+                                              }
+                                            });
+                                          },
+                                          child: Container(
+                                            padding: EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withOpacity(
+                                                0.7,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(30),
+                                            ),
+                                            child: Icon(
+                                              Icons.close,
+                                              color: Colors.white,
+                                              size: 22,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : GestureDetector(
+                                  onTap: () {
+                                    intutionProvider.pickImage();
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.only(left: 10),
+                                    width: double.infinity,
+                                    height: 50,
+                                    alignment: Alignment.centerLeft,
+                                    decoration: BoxDecoration(
+                                      color: BACKGROUND_COLOR,
+                                      border: Border.all(
+                                        color: GRAYSCALE_LABEL_300,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '+ 이미지 추가하기(최대 3장)',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                          SizedBox(height: 20),
+                          Text(
+                            '스코어',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  cursorColor: BUTTON,
+                                  controller:
+                                      intutionProvider.myScoreController,
+                                  keyboardType: TextInputType.number,
+
+                                  decoration: InputDecoration(
+                                    focusColor: BUTTON,
+                                    labelText: '내 팀 스코어',
+                                    labelStyle: TextStyle(
+                                      color: GRAYSCALE_LABEL_500,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: GRAYSCALE_LABEL_300,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: GRAYSCALE_LABEL_300,
+                                      ),
+                                    ),
+                                  ),
+
+                                  validator: intutionProvider.validateScore,
+                                ),
+                              ),
+                              SizedBox(width: 15),
+                              Expanded(
+                                child: TextFormField(
+                                  cursorColor: BUTTON,
+                                  controller:
+                                      intutionProvider.oppScoreContreller,
+                                  keyboardType: TextInputType.number,
+                                  decoration: InputDecoration(
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: GRAYSCALE_LABEL_300,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: GRAYSCALE_LABEL_300,
+                                      ),
+                                    ),
+                                    labelText: '상대 스코어',
+                                    labelStyle: TextStyle(
+                                      color: GRAYSCALE_LABEL_500,
+                                    ),
+                                  ),
+                                  validator: intutionProvider.validateScore,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 20),
+                          Text(
+                            '메모(선택)',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: GRAYSCALE_LABEL_300),
+                            ),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minHeight: 100, // 최소 높이 지정 가능
+                              ),
+                              child: TextField(
+                                controller: intutionProvider.memoController,
+                                cursorColor: BUTTON,
+                                maxLines: null,
+                                minLines: 1,
+                                textAlignVertical:
+                                    TextAlignVertical.top, // 위쪽 정렬
+                                decoration: const InputDecoration(
+                                  hintStyle: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey,
+                                  ),
+                                  border: InputBorder.none,
+                                  isDense: true, // 패딩 최소화
+                                  contentPadding:
+                                      EdgeInsets.zero, // 내부 여백 완전히 제거
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          // intutionProvider.selectedImage != null
+                          //     ? Container(
+                          //         width: double.infinity,
+                          //         height: 450,
+                          //         decoration: BoxDecoration(
+                          //           border: Border.all(color: GRAYSCALE_LABEL_300),
+                          //           borderRadius: BorderRadius.circular(12),
+                          //         ),
+                          //         child: ClipRRect(
+                          //           borderRadius: BorderRadius.circular(12),
+                          //           child: Image.file(
+                          //             intutionProvider.selectedImage!,
+                          //             fit: BoxFit.cover,
+                          //           ),
+                          //         ),
+                          //       )
+                          //     : GestureDetector(
+                          //         onTap: () {
+                          //           intutionProvider.pickImage();
+                          //         },
+                          //         child: Container(
+                          //           padding: EdgeInsets.only(left: 10),
+                          //           width: double.infinity,
+                          //           height: 50,
+                          //           alignment: Alignment.centerLeft,
+                          //           decoration: BoxDecoration(
+                          //             color: BACKGROUND_COLOR,
+                          //             border: Border.all(
+                          //               color: GRAYSCALE_LABEL_300,
+                          //             ),
+                          //             borderRadius: BorderRadius.circular(12),
+                          //           ),
+                          //           child: Text(
+                          //             '+ 이미지 추가하기',
+                          //             style: TextStyle(
+                          //               fontSize: 15,
+                          //               fontWeight: FontWeight.bold,
+                          //             ),
+                          //           ),
+                          //         ),
+                          //       ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (intutionProvider.saving)
+                  Container(
+                    color: Colors.black.withOpacity(0.4),
+                    child: Center(
+                      child: Container(
+                        width: 220,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 24,
+                        ),
+                        decoration: BoxDecoration(
+                          color: WHITE,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 64,
+                                  height: 64,
+                                  child: CircularProgressIndicator(
+                                    value: intutionProvider.saveProgress > 0
+                                        ? intutionProvider.saveProgress / 100
+                                        : null,
+                                    strokeWidth: 5,
+                                    color:
+                                        teamProvider.selectedTeam?.color ??
+                                        BUTTON,
+                                    backgroundColor: GRAYSCALE_LABEL_200,
+                                  ),
+                                ),
+                                Text(
+                                  '${intutionProvider.saveProgress}%',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: GRAYSCALE_LABEL_900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              intutionProvider.saveStatusText.isNotEmpty
+                                  ? intutionProvider.saveStatusText
+                                  : '직관 기록 저장 중...',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: GRAYSCALE_LABEL_950,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      SizedBox(height: 20),
-                      intutionProvider.image.isNotEmpty
-                          ? Container(
-                              width: double.infinity,
-                              height: 450,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: GRAYSCALE_LABEL_300),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Stack(
-                                children: [
-                                  PageView.builder(
-                                    controller: _pageController,
-                                    onPageChanged: (index) {
-                                      setState(() {
-                                        _currentImageIndex = index;
-                                      });
-                                    },
-                                    itemCount: intutionProvider.image.length,
-                                    itemBuilder: (context, index) {
-                                      return ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Image.file(
-                                          intutionProvider.image[index],
-                                          fit: BoxFit.cover,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  // 이미지 개수 인디케이터
-                                  if (intutionProvider.image.length > 1)
-                                    Positioned(
-                                      bottom: 16,
-                                      right: 16,
-                                      child: Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.6),
-                                          borderRadius: BorderRadius.circular(
-                                            20,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          '${_currentImageIndex + 1}/${intutionProvider.image.length}',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  // 이미지 삭제 버튼
-                                  Positioned(
-                                    top: 16,
-                                    right: 16,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          intutionProvider.removeImageAt(
-                                            _currentImageIndex,
-                                          );
-                                          // 삭제 후 인덱스 조정
-                                          if (_currentImageIndex >=
-                                                  intutionProvider
-                                                      .image
-                                                      .length &&
-                                              intutionProvider
-                                                  .image
-                                                  .isNotEmpty) {
-                                            _currentImageIndex =
-                                                intutionProvider.image.length -
-                                                1;
-                                          } else if (intutionProvider
-                                              .image
-                                              .isEmpty) {
-                                            _currentImageIndex = 0;
-                                          }
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.7),
-                                          borderRadius: BorderRadius.circular(
-                                            30,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.close,
-                                          color: Colors.white,
-                                          size: 22,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : GestureDetector(
-                              onTap: () {
-                                intutionProvider.pickImage();
-                              },
-                              child: Container(
-                                padding: EdgeInsets.only(left: 10),
-                                width: double.infinity,
-                                height: 50,
-                                alignment: Alignment.centerLeft,
-                                decoration: BoxDecoration(
-                                  color: BACKGROUND_COLOR,
-                                  border: Border.all(
-                                    color: GRAYSCALE_LABEL_300,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '+ 이미지 추가하기(최대 3장)',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                      SizedBox(height: 20),
-                      Text(
-                        '스코어',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              cursorColor: BUTTON,
-                              controller: intutionProvider.myScoreController,
-                              keyboardType: TextInputType.number,
-
-                              decoration: InputDecoration(
-                                focusColor: BUTTON,
-                                labelText: '내 팀 스코어',
-                                labelStyle: TextStyle(
-                                  color: GRAYSCALE_LABEL_500,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: GRAYSCALE_LABEL_300,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: GRAYSCALE_LABEL_300,
-                                  ),
-                                ),
-                              ),
-
-                              validator: intutionProvider.validateScore,
-                            ),
-                          ),
-                          SizedBox(width: 15),
-                          Expanded(
-                            child: TextFormField(
-                              cursorColor: BUTTON,
-                              controller: intutionProvider.oppScoreContreller,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: GRAYSCALE_LABEL_300,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: GRAYSCALE_LABEL_300,
-                                  ),
-                                ),
-                                labelText: '상대 스코어',
-                                labelStyle: TextStyle(
-                                  color: GRAYSCALE_LABEL_500,
-                                ),
-                              ),
-                              validator: intutionProvider.validateScore,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      Text(
-                        '메모(선택)',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: GRAYSCALE_LABEL_300),
-                        ),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            minHeight: 100, // 최소 높이 지정 가능
-                          ),
-                          child: TextField(
-                            controller: intutionProvider.memoController,
-                            cursorColor: BUTTON,
-                            maxLines: null,
-                            minLines: 1,
-                            textAlignVertical: TextAlignVertical.top, // 위쪽 정렬
-                            decoration: const InputDecoration(
-                              hintStyle: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey,
-                              ),
-                              border: InputBorder.none,
-                              isDense: true, // 패딩 최소화
-                              contentPadding: EdgeInsets.zero, // 내부 여백 완전히 제거
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      // intutionProvider.selectedImage != null
-                      //     ? Container(
-                      //         width: double.infinity,
-                      //         height: 450,
-                      //         decoration: BoxDecoration(
-                      //           border: Border.all(color: GRAYSCALE_LABEL_300),
-                      //           borderRadius: BorderRadius.circular(12),
-                      //         ),
-                      //         child: ClipRRect(
-                      //           borderRadius: BorderRadius.circular(12),
-                      //           child: Image.file(
-                      //             intutionProvider.selectedImage!,
-                      //             fit: BoxFit.cover,
-                      //           ),
-                      //         ),
-                      //       )
-                      //     : GestureDetector(
-                      //         onTap: () {
-                      //           intutionProvider.pickImage();
-                      //         },
-                      //         child: Container(
-                      //           padding: EdgeInsets.only(left: 10),
-                      //           width: double.infinity,
-                      //           height: 50,
-                      //           alignment: Alignment.centerLeft,
-                      //           decoration: BoxDecoration(
-                      //             color: BACKGROUND_COLOR,
-                      //             border: Border.all(
-                      //               color: GRAYSCALE_LABEL_300,
-                      //             ),
-                      //             borderRadius: BorderRadius.circular(12),
-                      //           ),
-                      //           child: Text(
-                      //             '+ 이미지 추가하기',
-                      //             style: TextStyle(
-                      //               fontSize: 15,
-                      //               fontWeight: FontWeight.bold,
-                      //             ),
-                      //           ),
-                      //         ),
-                      //       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+              ],
             ),
           );
         },

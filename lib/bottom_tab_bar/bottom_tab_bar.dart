@@ -313,68 +313,78 @@ class _BottomTabBarState extends State<BottomTabBar> {
     return Scaffold(
       body: pages[_selectedIndex],
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: WHITE,
-          boxShadow: [
-            BoxShadow(
-              color: GRAYSCALE_LABEL_100.withOpacity(0.5),
-              spreadRadius: 1,
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
+        color: Colors.transparent,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildScoreBanner(),
-            Theme(
-              data: Theme.of(context).copyWith(
-                splashFactory: NoSplash.splashFactory,
-                splashColor: Colors.transparent,
-                highlightColor: Colors.transparent,
-              ),
-              child: BottomNavigationBar(
-                currentIndex: _selectedIndex,
-                onTap: _onItemTapped,
-                type: BottomNavigationBarType.fixed,
-                selectedItemColor: teamProvider.selectedTeam?.color,
-                unselectedItemColor: GRAYSCALE_LABEL_500,
+            // _buildScoreBanner(),
+            CustomPaint(
+              painter: ConvexTabBarPainter(
                 backgroundColor: WHITE,
-                elevation: 0,
-                selectedFontSize: 11,
-                unselectedFontSize: 11,
-                iconSize: 25,
-                items: [
-                  BottomNavigationBarItem(
-                    icon: _buildSvgTabIcon(0, AppIcons.home, AppIcons.homeFill),
-                    label: '홈',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _buildTabIcon(
-                      1,
-                      Icons.sports_baseball_outlined,
-                      Icons.sports_baseball,
+                shadowColor: GRAYSCALE_LABEL_100.withValues(alpha: 0.5),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  splashFactory: NoSplash.splashFactory,
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                ),
+                child: BottomNavigationBar(
+                  currentIndex: _selectedIndex,
+                  onTap: _onItemTapped,
+                  type: BottomNavigationBarType.fixed,
+                  selectedItemColor: teamProvider.selectedTeam?.color,
+                  unselectedItemColor: GRAYSCALE_LABEL_500,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  selectedFontSize: 11,
+                  unselectedFontSize: 11,
+                  iconSize: 25,
+                  items: [
+                    BottomNavigationBarItem(
+                      icon: _buildSvgTabIcon(
+                        0,
+                        AppIcons.home,
+                        AppIcons.homeFill,
+                      ),
+                      label: '홈',
                     ),
-                    label: '피드',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _buildSvgTabIcon(2, AppIcons.add, AppIcons.add),
-                    label: '업로드',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _buildTabIcon(3, Icons.group_outlined, Icons.group),
-                    label: '직관모임',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: _buildSvgTabIcon(
-                      4,
-                      AppIcons.person,
-                      AppIcons.personFill,
+                    BottomNavigationBarItem(
+                      icon: _buildTabIcon(
+                        1,
+                        Icons.sports_baseball_outlined,
+                        Icons.sports_baseball,
+                      ),
+                      label: '피드',
                     ),
-                    label: '내정보',
-                  ),
-                ],
+                    BottomNavigationBarItem(
+                      icon: Transform.translate(
+                        offset: const Offset(0, -6),
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 2, bottom: 2),
+                          child: Icon(
+                            Icons.add_circle,
+                            size: 40,
+                            color: teamProvider.selectedTeam?.color,
+                          ),
+                        ),
+                      ),
+                      label: '업로드',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: _buildTabIcon(3, Icons.group_outlined, Icons.group),
+                      label: '직관모임',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: _buildSvgTabIcon(
+                        4,
+                        AppIcons.person,
+                        AppIcons.personFill,
+                      ),
+                      label: '내정보',
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -383,192 +393,192 @@ class _BottomTabBarState extends State<BottomTabBar> {
     );
   }
 
-  Widget _buildScoreBanner() {
-    // 홈 탭(_selectedIndex == 0)일 때만 배너 노출
-    if (_selectedIndex != 0) return const SizedBox.shrink();
+  // Widget _buildScoreBanner() {
+  //   // 홈 탭(_selectedIndex == 0)일 때만 배너 노출
+  //   if (_selectedIndex != 0) return const SizedBox.shrink();
 
-    return Consumer2<TeamProvider, ScheduleProvider>(
-      builder: (context, teamProvider, scheduleProvider, child) {
-        final selectedTeam = teamProvider.selectedTeam;
-        if (selectedTeam == null || !scheduleProvider.loaded) {
-          return const SizedBox.shrink();
-        }
+  //   return Consumer2<TeamProvider, ScheduleProvider>(
+  //     builder: (context, teamProvider, scheduleProvider, child) {
+  //       final selectedTeam = teamProvider.selectedTeam;
+  //       if (selectedTeam == null || !scheduleProvider.loaded) {
+  //         return const SizedBox.shrink();
+  //       }
 
-        final teamName = selectedTeam.symplename;
-        final now = DateTime.now();
+  //       final teamName = selectedTeam.symplename;
+  //       final now = DateTime.now();
 
-        // 1. 관련 게임 필터링 (내 팀의 오늘 경기 / 진행 경기 / 가장 가까운 다음 경기)
-        final relatedGames = scheduleProvider.allSchedules.where((s) {
-          final isMyTeam = s.homeTeam == teamName || s.awayTeam == teamName;
-          if (!isMyTeam) return false;
+  //       // 1. 관련 게임 필터링 (내 팀의 오늘 경기 / 진행 경기 / 가장 가까운 다음 경기)
+  //       final relatedGames = scheduleProvider.allSchedules.where((s) {
+  //         final isMyTeam = s.homeTeam == teamName || s.awayTeam == teamName;
+  //         if (!isMyTeam) return false;
 
-          // LIVE거나, 오늘 경기거나, 혹은 아직 치러지지 않은 미래의 경기들
-          final isToday =
-              s.dateTimeKst.year == now.year &&
-              s.dateTimeKst.month == now.month &&
-              s.dateTimeKst.day == now.day;
-          final isFuture = s.dateTimeKst.isAfter(now);
+  //         // LIVE거나, 오늘 경기거나, 혹은 아직 치러지지 않은 미래의 경기들
+  //         final isToday =
+  //             s.dateTimeKst.year == now.year &&
+  //             s.dateTimeKst.month == now.month &&
+  //             s.dateTimeKst.day == now.day;
+  //         final isFuture = s.dateTimeKst.isAfter(now);
 
-          return isToday || isFuture || s.status == 'LIVE';
-        }).toList();
+  //         return isToday || isFuture || s.status == 'LIVE';
+  //       }).toList();
 
-        if (relatedGames.isEmpty) return const SizedBox.shrink();
+  //       if (relatedGames.isEmpty) return const SizedBox.shrink();
 
-        // 가장 우선순위 높은 게임 선택 (LIVE -> 가장 가까운 미래)
-        relatedGames.sort((a, b) {
-          if (a.status == 'LIVE' && b.status != 'LIVE') return -1;
-          if (a.status != 'LIVE' && b.status == 'LIVE') return 1;
-          return a.dateTimeKst.compareTo(b.dateTimeKst);
-        });
+  //       // 가장 우선순위 높은 게임 선택 (LIVE -> 가장 가까운 미래)
+  //       relatedGames.sort((a, b) {
+  //         if (a.status == 'LIVE' && b.status != 'LIVE') return -1;
+  //         if (a.status != 'LIVE' && b.status == 'LIVE') return 1;
+  //         return a.dateTimeKst.compareTo(b.dateTimeKst);
+  //       });
 
-        final game = relatedGames.first;
-        final isLive = game.status == 'LIVE';
-        final isFinal = game.status == 'FINAL';
+  //       final game = relatedGames.first;
+  //       final isLive = game.status == 'LIVE';
+  //       final isFinal = game.status == 'FINAL';
 
-        // 상태 텍스트
-        String statusText = '경기 전';
-        if (isLive)
-          statusText = game.inning ?? 'LIVE';
-        else if (isFinal)
-          statusText = '종료';
-        else if (game.status == 'PPD')
-          statusText = '우천취소';
+  //       // 상태 텍스트
+  //       String statusText = '경기 전';
+  //       if (isLive)
+  //         statusText = game.inning ?? 'LIVE';
+  //       else if (isFinal)
+  //         statusText = '종료';
+  //       else if (game.status == 'PPD')
+  //         statusText = '우천취소';
 
-        // 팀 모델 찾기
-        final homeTeam = teamProvider.findTeamByName(game.homeTeam);
-        final awayTeam = teamProvider.findTeamByName(game.awayTeam);
+  //       // 팀 모델 찾기
+  //       final homeTeam = teamProvider.findTeamByName(game.homeTeam);
+  //       final awayTeam = teamProvider.findTeamByName(game.awayTeam);
 
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SchedulePage(teamModel: selectedTeam),
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.only(left: 10.0, right: 10.0),
-            child: Container(
-              width: double.infinity,
-              height: 60,
-              decoration: BoxDecoration(
-                color: selectedTeam.color,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  const SizedBox(width: 8),
-                  Text(
-                    game.stadium,
-                    style: const TextStyle(
-                      color: WHITE,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF2D55), Color(0xFF8E5AFF)],
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      statusText,
-                      style: const TextStyle(
-                        color: WHITE,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  Row(
-                    children: [
-                      if (awayTeam != null)
-                        Image.asset(awayTeam.logoPath, height: 28),
-                      const SizedBox(width: 8),
-                      if (isLive || isFinal)
-                        Text(
-                          '${game.awayScore}',
-                          style: const TextStyle(
-                            color: WHITE,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'kbo',
-                          ),
-                        ),
-                      if (isLive)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            ':',
-                            style: TextStyle(
-                              color: WHITE.withOpacity(0.5),
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        )
-                      else if (isLive != null)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Text(
-                            'vs',
-                            style: TextStyle(
-                              color: WHITE.withOpacity(0.5),
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      if (isLive || isFinal)
-                        Text(
-                          '${game.homeScore}',
-                          style: const TextStyle(
-                            color: WHITE,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'kbo',
-                          ),
-                        ),
-                      const SizedBox(width: 8),
-                      if (homeTeam != null)
-                        Image.asset(homeTeam.logoPath, height: 28),
-                    ],
-                  ),
-                  const SizedBox(width: 10),
-                  // 더보기 화살표
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    color: WHITE.withOpacity(0.5),
-                    size: 14,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
+  //       return GestureDetector(
+  //         onTap: () {
+  //           Navigator.push(
+  //             context,
+  //             MaterialPageRoute(
+  //               builder: (context) => SchedulePage(teamModel: selectedTeam),
+  //             ),
+  //           );
+  //         },
+  //         child: Padding(
+  //           padding: const EdgeInsets.only(left: 10.0, right: 10.0),
+  //           child: Container(
+  //             width: double.infinity,
+  //             height: 60,
+  //             decoration: BoxDecoration(
+  //               color: selectedTeam.color,
+  //               borderRadius: const BorderRadius.only(
+  //                 topLeft: Radius.circular(20),
+  //                 topRight: Radius.circular(20),
+  //               ),
+  //               boxShadow: [
+  //                 BoxShadow(
+  //                   color: Colors.black.withOpacity(0.1),
+  //                   blurRadius: 10,
+  //                   offset: const Offset(0, -2),
+  //                 ),
+  //               ],
+  //             ),
+  //             padding: const EdgeInsets.symmetric(horizontal: 16),
+  //             child: Row(
+  //               children: [
+  //                 const SizedBox(width: 8),
+  //                 Text(
+  //                   game.stadium,
+  //                   style: const TextStyle(
+  //                     color: WHITE,
+  //                     fontSize: 13,
+  //                     fontWeight: FontWeight.bold,
+  //                   ),
+  //                 ),
+  //                 const SizedBox(width: 8),
+  //                 Container(
+  //                   padding: const EdgeInsets.symmetric(
+  //                     horizontal: 8,
+  //                     vertical: 3,
+  //                   ),
+  //                   decoration: BoxDecoration(
+  //                     gradient: const LinearGradient(
+  //                       colors: [Color(0xFFFF2D55), Color(0xFF8E5AFF)],
+  //                     ),
+  //                     borderRadius: BorderRadius.circular(10),
+  //                   ),
+  //                   child: Text(
+  //                     statusText,
+  //                     style: const TextStyle(
+  //                       color: WHITE,
+  //                       fontSize: 9,
+  //                       fontWeight: FontWeight.bold,
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const Spacer(),
+  //                 Row(
+  //                   children: [
+  //                     if (awayTeam != null)
+  //                       Image.asset(awayTeam.logoPath, height: 28),
+  //                     const SizedBox(width: 8),
+  //                     if (isLive || isFinal)
+  //                       Text(
+  //                         '${game.awayScore}',
+  //                         style: const TextStyle(
+  //                           color: WHITE,
+  //                           fontSize: 18,
+  //                           fontWeight: FontWeight.bold,
+  //                           fontFamily: 'kbo',
+  //                         ),
+  //                       ),
+  //                     if (isLive)
+  //                       Padding(
+  //                         padding: const EdgeInsets.symmetric(horizontal: 8),
+  //                         child: Text(
+  //                           ':',
+  //                           style: TextStyle(
+  //                             color: WHITE.withOpacity(0.5),
+  //                             fontSize: 16,
+  //                             fontWeight: FontWeight.bold,
+  //                           ),
+  //                         ),
+  //                       )
+  //                     else if (isLive != null)
+  //                       Padding(
+  //                         padding: const EdgeInsets.symmetric(horizontal: 8),
+  //                         child: Text(
+  //                           'vs',
+  //                           style: TextStyle(
+  //                             color: WHITE.withOpacity(0.5),
+  //                             fontSize: 16,
+  //                             fontWeight: FontWeight.bold,
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     if (isLive || isFinal)
+  //                       Text(
+  //                         '${game.homeScore}',
+  //                         style: const TextStyle(
+  //                           color: WHITE,
+  //                           fontSize: 18,
+  //                           fontWeight: FontWeight.bold,
+  //                           fontFamily: 'kbo',
+  //                         ),
+  //                       ),
+  //                     const SizedBox(width: 8),
+  //                     if (homeTeam != null)
+  //                       Image.asset(homeTeam.logoPath, height: 28),
+  //                   ],
+  //                 ),
+  //                 const SizedBox(width: 10),
+  //                 // 더보기 화살표
+  //                 Icon(
+  //                   Icons.arrow_forward_ios_rounded,
+  //                   color: WHITE.withOpacity(0.5),
+  //                   size: 14,
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
   Widget _buildTabIcon(
     int index,
@@ -607,4 +617,69 @@ class _BottomTabBarState extends State<BottomTabBar> {
       ),
     );
   }
+}
+
+class ConvexTabBarPainter extends CustomPainter {
+  final Color backgroundColor;
+  final Color shadowColor;
+
+  ConvexTabBarPainter({
+    required this.backgroundColor,
+    required this.shadowColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final cx = w / 2;
+    const bumpWidth = 76.0;
+    const bumpHeight = 13.0;
+    final left = cx - bumpWidth / 2;
+    final right = cx + bumpWidth / 2;
+
+    final path = Path();
+    path.moveTo(0, 0);
+    path.lineTo(left, 0);
+    path.cubicTo(
+      left + bumpWidth * 0.25,
+      0,
+      cx - bumpWidth * 0.22,
+      -bumpHeight,
+      cx,
+      -bumpHeight,
+    );
+    path.cubicTo(
+      cx + bumpWidth * 0.22,
+      -bumpHeight,
+      right - bumpWidth * 0.25,
+      0,
+      right,
+      0,
+    );
+    path.lineTo(w, 0);
+    path.lineTo(w, h);
+    path.lineTo(0, h);
+    path.close();
+
+    // 상단 그림자
+    final shadowPaint = Paint()
+      ..color = shadowColor
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    canvas.save();
+    canvas.translate(0, -2);
+    canvas.drawPath(path, shadowPaint);
+    canvas.restore();
+
+    // 본체 배경
+    final fillPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(path, fillPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant ConvexTabBarPainter oldDelegate) =>
+      oldDelegate.backgroundColor != backgroundColor ||
+      oldDelegate.shadowColor != shadowColor;
 }

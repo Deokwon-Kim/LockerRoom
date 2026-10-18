@@ -154,7 +154,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
           Consumer2<IntutionRecordProvider, TeamProvider>(
             builder: (context, irp, tp, child) {
               return TextButton(
-                onPressed: irp.isLoding
+                onPressed: (irp.isLoding || irp.saving || irp.isImagePicking)
                     ? null
                     : () async {
                         // 점수 검증
@@ -214,12 +214,14 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                           );
                         }
                       },
-                child: irp.isLoding
+                child: (irp.isLoding && !irp.saving)
                     ? CircularProgressIndicator(color: tp.selectedTeam?.color)
                     : Text(
                         '저장',
                         style: TextStyle(
-                          color: tp.selectedTeam?.color,
+                          color: (irp.saving || irp.isImagePicking)
+                              ? GRAYSCALE_LABEL_400
+                              : tp.selectedTeam?.color,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -228,490 +230,570 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
           ),
         ],
       ),
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        behavior: HitTestBehavior.translucent,
-        child: FutureBuilder<AttendanceModel?>(
-          future: _loadAttendance(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            }
+      body: Stack(
+        children: [
+          GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            behavior: HitTestBehavior.translucent,
+            child: FutureBuilder<AttendanceModel?>(
+              future: _loadAttendance(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
 
-            if (!snapshot.hasData || snapshot.data == null) {
-              return Center(child: Text('기록을 찾을 수 없습니다.'));
-            }
+                if (!snapshot.hasData || snapshot.data == null) {
+                  return Center(child: Text('기록을 찾을 수 없습니다.'));
+                }
 
-            final attendance = snapshot.data!;
-            // 데이터를 불러온 후 컨트롤러 값 업데이트
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _updateControllers(attendance);
-            });
+                final attendance = snapshot.data!;
+                // 데이터를 불러온 후 컨트롤러 값 업데이트
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _updateControllers(attendance);
+                });
 
-            return Consumer<TeamProvider>(
-              builder: (context, teamProvider, child) {
-                final myTeamLogo = _logoForTeam(
-                  teamProvider,
-                  attendance.myTeam,
-                );
-                final oppTeamLogo = attendance.oppTeam != null
-                    ? _logoForTeam(teamProvider, attendance.oppTeam!)
-                    : 'assets/images/applogo/app_logo.png';
+                return Consumer<TeamProvider>(
+                  builder: (context, teamProvider, child) {
+                    final myTeamLogo = _logoForTeam(
+                      teamProvider,
+                      attendance.myTeam,
+                    );
+                    final oppTeamLogo = attendance.oppTeam != null
+                        ? _logoForTeam(teamProvider, attendance.oppTeam!)
+                        : 'assets/images/applogo/app_logo.png';
 
-                return SingleChildScrollView(
-                  padding: EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '경기날짜',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        _formatDate(attendance.date),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      Text(
-                        '경기정보',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 30,
-                          vertical: 15,
-                        ),
-                        decoration: BoxDecoration(
-                          color: BACKGROUND_COLOR,
-                          border: Border.all(color: GRAYSCALE_LABEL_300),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    return SingleChildScrollView(
+                      padding: EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '경기날짜',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            _formatDate(attendance.date),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          Text(
+                            '경기정보',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 30,
+                              vertical: 15,
+                            ),
+                            decoration: BoxDecoration(
+                              color: BACKGROUND_COLOR,
+                              border: Border.all(color: GRAYSCALE_LABEL_300),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
                               children: [
-                                Column(
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      '응원 팀',
-                                      style: TextStyle(
-                                        color: GRAYSCALE_LABEL_500,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(height: 10),
-                                    Image.asset(
-                                      myTeamLogo,
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.contain,
-                                    ),
-                                    SizedBox(height: 10),
-                                    Text(
-                                      attendance.myTeam,
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 30.0),
-                                  child: FutureBuilder<ScheduleModel?>(
-                                    future: _findScheduleByGameId(
-                                      widget.gameId,
-                                    ),
-                                    builder: (context, snapshot) {
-                                      final schedule = snapshot.data;
-                                      return Column(
-                                        children: [
-                                          Text(
-                                            'VS',
-                                            style: TextStyle(
-                                              fontSize: 40,
-                                              color: GRAYSCALE_LABEL_500,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                    Column(
+                                      children: [
+                                        Text(
+                                          '응원 팀',
+                                          style: TextStyle(
+                                            color: GRAYSCALE_LABEL_500,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
                                           ),
-                                          SizedBox(height: 10),
-                                          Row(
-                                            mainAxisSize: MainAxisSize.min,
+                                        ),
+                                        SizedBox(height: 10),
+                                        Image.asset(
+                                          myTeamLogo,
+                                          width: 80,
+                                          height: 80,
+                                          fit: BoxFit.contain,
+                                        ),
+                                        SizedBox(height: 10),
+                                        Text(
+                                          attendance.myTeam,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 30.0),
+                                      child: FutureBuilder<ScheduleModel?>(
+                                        future: _findScheduleByGameId(
+                                          widget.gameId,
+                                        ),
+                                        builder: (context, snapshot) {
+                                          final schedule = snapshot.data;
+                                          return Column(
                                             children: [
                                               Text(
-                                                attendance.stadium,
+                                                'VS',
                                                 style: TextStyle(
-                                                  fontSize: 14,
+                                                  fontSize: 40,
+                                                  color: GRAYSCALE_LABEL_500,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
-                                              // DH1, DH2 표시
-                                              if (schedule?.doubleHeaderNo !=
-                                                      null &&
-                                                  schedule!
-                                                      .doubleHeaderNo!
-                                                      .isNotEmpty) ...[
-                                                SizedBox(width: 8),
+                                              SizedBox(height: 10),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    attendance.stadium,
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  // DH1, DH2 표시
+                                                  if (schedule?.doubleHeaderNo !=
+                                                          null &&
+                                                      schedule!
+                                                          .doubleHeaderNo!
+                                                          .isNotEmpty) ...[
+                                                    SizedBox(width: 8),
+                                                    Container(
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                            horizontal: 8,
+                                                            vertical: 3,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: BUTTON
+                                                            .withOpacity(0.1),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              6,
+                                                            ),
+                                                        border: Border.all(
+                                                          color: BUTTON
+                                                              .withOpacity(0.3),
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        '${schedule.doubleHeaderNo}',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: BUTTON,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                              // 경기취소 표시
+                                              if (_isCancelledGame(
+                                                schedule,
+                                              )) ...[
+                                                SizedBox(height: 8),
                                                 Container(
                                                   padding: EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 3,
+                                                    horizontal: 12,
+                                                    vertical: 6,
                                                   ),
                                                   decoration: BoxDecoration(
-                                                    color: BUTTON.withOpacity(
-                                                      0.1,
-                                                    ),
+                                                    color: RED_DANGER_SURFACE_5,
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                          6,
+                                                          8,
                                                         ),
                                                     border: Border.all(
-                                                      color: BUTTON.withOpacity(
-                                                        0.3,
-                                                      ),
+                                                      color:
+                                                          RED_DANGER_BORDER_10,
+                                                      width: 1,
                                                     ),
                                                   ),
                                                   child: Text(
-                                                    '${schedule.doubleHeaderNo}',
+                                                    '경기취소',
                                                     style: TextStyle(
                                                       fontSize: 12,
                                                       fontWeight:
                                                           FontWeight.w600,
-                                                      color: BUTTON,
+                                                      color: RED_DANGER_TEXT_50,
                                                     ),
                                                   ),
                                                 ),
                                               ],
                                             ],
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    Column(
+                                      children: [
+                                        Text(
+                                          '상대 팀',
+                                          style: TextStyle(
+                                            color: GRAYSCALE_LABEL_500,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
                                           ),
-                                          // 경기취소 표시
-                                          if (_isCancelledGame(schedule)) ...[
-                                            SizedBox(height: 8),
-                                            Container(
-                                              padding: EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 6,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: RED_DANGER_SURFACE_5,
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                border: Border.all(
-                                                  color: RED_DANGER_BORDER_10,
-                                                  width: 1,
-                                                ),
-                                              ),
-                                              child: Text(
-                                                '경기취소',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: RED_DANGER_TEXT_50,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                ),
-                                Column(
-                                  children: [
-                                    Text(
-                                      '상대 팀',
-                                      style: TextStyle(
-                                        color: GRAYSCALE_LABEL_500,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(height: 10),
-                                    Image.asset(
-                                      oppTeamLogo,
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.contain,
-                                    ),
-                                    SizedBox(height: 10),
-                                    Text(
-                                      attendance.oppTeam ?? '',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                        ),
+                                        SizedBox(height: 10),
+                                        Image.asset(
+                                          oppTeamLogo,
+                                          width: 80,
+                                          height: 80,
+                                          fit: BoxFit.contain,
+                                        ),
+                                        SizedBox(height: 10),
+                                        Text(
+                                          attendance.oppTeam ?? '',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      Text(
-                        '스코어',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              cursorColor: BUTTON,
-                              controller: _myTeamScore,
-                              keyboardType: TextInputType.number,
+                          ),
+                          SizedBox(height: 20),
+                          Text(
+                            '스코어',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  cursorColor: BUTTON,
+                                  controller: _myTeamScore,
+                                  keyboardType: TextInputType.number,
 
-                              decoration: InputDecoration(
-                                focusColor: BUTTON,
-                                labelText: '내 팀 스코어',
-                                labelStyle: TextStyle(
-                                  color: GRAYSCALE_LABEL_500,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: GRAYSCALE_LABEL_300,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: GRAYSCALE_LABEL_300,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 15),
-                          Expanded(
-                            child: TextFormField(
-                              cursorColor: BUTTON,
-                              controller: _oppTeamScore,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: GRAYSCALE_LABEL_300,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: GRAYSCALE_LABEL_300,
-                                  ),
-                                ),
-                                labelText: '상대 스코어',
-                                labelStyle: TextStyle(
-                                  color: GRAYSCALE_LABEL_500,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      Text(
-                        '메모',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: GRAYSCALE_LABEL_300),
-                        ),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            minHeight: 100, // 최소 높이 지정 가능
-                          ),
-                          child: TextField(
-                            controller: _memoController,
-                            cursorColor: BUTTON,
-                            keyboardType: TextInputType.multiline,
-                            enabled: true,
-                            maxLines: null,
-                            minLines: 1,
-                            textAlignVertical: TextAlignVertical.top, // 위쪽 정렬
-                            decoration: const InputDecoration(
-                              hintStyle: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey,
-                              ),
-                              border: InputBorder.none,
-                              isDense: true, // 패딩 최소화
-                              contentPadding: EdgeInsets.zero, // 내부 여백 완전히 제거
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      Consumer<IntutionRecordProvider>(
-                        builder: (context, intutionProvider, child) {
-                          // 새로 선택한 이미지들이 뜨기전까지 로딩중 표시
-                          if (intutionProvider.isImagePicking) {
-                            return SizedBox(
-                              height: 100,
-                              child: Center(
-                                child: CircularProgressIndicator(color: BUTTON),
-                              ),
-                            );
-                          }
-                          // 2. 새로 선택한 이미지가 있으면 우선 표시 (기존 이미지는 숨김)
-                          if (intutionProvider.image.isNotEmpty) {
-                            return Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: SizedBox(
-                                    height: 450,
-                                    child: PageView.builder(
-                                      controller: _newImagesPageController,
-                                      onPageChanged: (index) {
-                                        _currentImageIndex.value = index;
-                                      },
-                                      itemCount: intutionProvider.image.length,
-                                      itemBuilder: (context, imgIndex) {
-                                        return Image.file(
-                                          intutionProvider.image[imgIndex],
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          height: 450,
-                                        );
-                                      },
+                                  decoration: InputDecoration(
+                                    focusColor: BUTTON,
+                                    labelText: '내 팀 스코어',
+                                    labelStyle: TextStyle(
+                                      color: GRAYSCALE_LABEL_500,
                                     ),
-                                  ),
-                                ),
-                                // 이미지 개수 인디케이터
-                                if (intutionProvider.image.length > 1)
-                                  Positioned(
-                                    bottom: 16,
-                                    right: 16,
-                                    child: ValueListenableBuilder<int>(
-                                      valueListenable: _currentImageIndex,
-                                      builder: (context, currentIndex, child) {
-                                        return Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withOpacity(
-                                              0.6,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            '${currentIndex + 1}/${intutionProvider.image.length}',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                // 현재 이미지 삭제 버튼
-                                Positioned(
-                                  top: 16,
-                                  right: 16,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      final currentIdx =
-                                          _currentImageIndex.value;
-                                      intutionProvider.removeImageAt(
-                                        currentIdx,
-                                      );
-                                      // 삭제 후 인덱스 조정
-                                      if (currentIdx >=
-                                              intutionProvider.image.length &&
-                                          intutionProvider.image.isNotEmpty) {
-                                        _currentImageIndex.value =
-                                            intutionProvider.image.length - 1;
-                                      } else if (intutionProvider
-                                          .image
-                                          .isEmpty) {
-                                        _currentImageIndex.value = 0;
-                                      }
-                                    },
-                                    child: Container(
-                                      padding: EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.7),
-                                        borderRadius: BorderRadius.circular(30),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: GRAYSCALE_LABEL_300,
                                       ),
-                                      child: Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 22,
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: GRAYSCALE_LABEL_300,
                                       ),
                                     ),
                                   ),
                                 ),
-                              ],
-                            );
-                          }
-                          // 3. 새로 선택한 이미지가 없을 때만 기존 이미지 표시
-                          if (attendance.imageUrls.isNotEmpty) {
-                            return Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: SizedBox(
-                                    height: 450,
-                                    child: PageView.builder(
-                                      controller: _existingImagesPageController,
-                                      onPageChanged: (index) {
-                                        _currentImageIndex.value = index;
-                                      },
-                                      itemCount: attendance.imageUrls.length,
-                                      itemBuilder: (context, imgIndex) {
-                                        return CachedNetworkImage(
-                                          imageUrl:
-                                              attendance.imageUrls[imgIndex],
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                          height: 450,
-                                          placeholder: (context, url) =>
-                                              Container(
-                                                color: Colors.grey[300],
-                                                child: Center(
-                                                  child:
-                                                      CircularProgressIndicator(),
+                              ),
+                              SizedBox(width: 15),
+                              Expanded(
+                                child: TextFormField(
+                                  cursorColor: BUTTON,
+                                  controller: _oppTeamScore,
+                                  keyboardType: TextInputType.number,
+                                  decoration: InputDecoration(
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: GRAYSCALE_LABEL_300,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: GRAYSCALE_LABEL_300,
+                                      ),
+                                    ),
+                                    labelText: '상대 스코어',
+                                    labelStyle: TextStyle(
+                                      color: GRAYSCALE_LABEL_500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 20),
+                          Text(
+                            '메모',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: GRAYSCALE_LABEL_300),
+                            ),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minHeight: 100, // 최소 높이 지정 가능
+                              ),
+                              child: TextField(
+                                controller: _memoController,
+                                cursorColor: BUTTON,
+                                keyboardType: TextInputType.multiline,
+                                enabled: true,
+                                maxLines: null,
+                                minLines: 1,
+                                textAlignVertical:
+                                    TextAlignVertical.top, // 위쪽 정렬
+                                decoration: const InputDecoration(
+                                  hintStyle: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey,
+                                  ),
+                                  border: InputBorder.none,
+                                  isDense: true, // 패딩 최소화
+                                  contentPadding:
+                                      EdgeInsets.zero, // 내부 여백 완전히 제거
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          Consumer<IntutionRecordProvider>(
+                            builder: (context, intutionProvider, child) {
+                              // 새로 선택한 이미지들이 뜨기전까지 로딩중 표시
+                              if (intutionProvider.isImagePicking) {
+                                return SizedBox(
+                                  height: 120,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        CircularProgressIndicator(
+                                          color: BUTTON,
+                                        ),
+                                        const SizedBox(height: 12),
+                                        const Text(
+                                          '사진 업로드 중',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: GRAYSCALE_LABEL_700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }
+                              // 2. 새로 선택한 이미지가 있으면 우선 표시 (기존 이미지는 숨김)
+                              if (intutionProvider.image.isNotEmpty) {
+                                return Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: SizedBox(
+                                        height: 450,
+                                        child: PageView.builder(
+                                          controller: _newImagesPageController,
+                                          onPageChanged: (index) {
+                                            _currentImageIndex.value = index;
+                                          },
+                                          itemCount:
+                                              intutionProvider.image.length,
+                                          itemBuilder: (context, imgIndex) {
+                                            return Image.file(
+                                              intutionProvider.image[imgIndex],
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                              height: 450,
+                                              frameBuilder:
+                                                  (
+                                                    context,
+                                                    child,
+                                                    frame,
+                                                    wasSynchronouslyLoaded,
+                                                  ) {
+                                                    if (wasSynchronouslyLoaded ||
+                                                        frame != null) {
+                                                      return child;
+                                                    }
+                                                    return Center(
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          CircularProgressIndicator(
+                                                            color: BUTTON,
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 12,
+                                                          ),
+                                                          const Text(
+                                                            '사진 업로드 중',
+                                                            style: TextStyle(
+                                                              fontSize: 14,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color:
+                                                                  GRAYSCALE_LABEL_700,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                    // 이미지 개수 인디케이터
+                                    if (intutionProvider.image.length > 1)
+                                      Positioned(
+                                        bottom: 16,
+                                        right: 16,
+                                        child: ValueListenableBuilder<int>(
+                                          valueListenable: _currentImageIndex,
+                                          builder: (context, currentIndex, child) {
+                                            return Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 6,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withOpacity(
+                                                  0.6,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              child: Text(
+                                                '${currentIndex + 1}/${intutionProvider.image.length}',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
                                               ),
-                                          errorWidget:
-                                              (context, error, stackTrace) =>
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    // 현재 이미지 삭제 버튼
+                                    Positioned(
+                                      top: 16,
+                                      right: 16,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          final currentIdx =
+                                              _currentImageIndex.value;
+                                          intutionProvider.removeImageAt(
+                                            currentIdx,
+                                          );
+                                          // 삭제 후 인덱스 조정
+                                          if (currentIdx >=
+                                                  intutionProvider
+                                                      .image
+                                                      .length &&
+                                              intutionProvider
+                                                  .image
+                                                  .isNotEmpty) {
+                                            _currentImageIndex.value =
+                                                intutionProvider.image.length -
+                                                1;
+                                          } else if (intutionProvider
+                                              .image
+                                              .isEmpty) {
+                                            _currentImageIndex.value = 0;
+                                          }
+                                        },
+                                        child: Container(
+                                          padding: EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(
+                                              0.7,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              30,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.close,
+                                            color: Colors.white,
+                                            size: 22,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }
+                              // 3. 새로 선택한 이미지가 없을 때만 기존 이미지 표시
+                              if (attendance.imageUrls.isNotEmpty) {
+                                return Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: SizedBox(
+                                        height: 450,
+                                        child: PageView.builder(
+                                          controller:
+                                              _existingImagesPageController,
+                                          onPageChanged: (index) {
+                                            _currentImageIndex.value = index;
+                                          },
+                                          itemCount:
+                                              attendance.imageUrls.length,
+                                          itemBuilder: (context, imgIndex) {
+                                            return CachedNetworkImage(
+                                              imageUrl: attendance
+                                                  .imageUrls[imgIndex],
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                              height: 450,
+                                              placeholder: (context, url) =>
                                                   Container(
+                                                    color: Colors.grey[300],
+                                                    child: Center(
+                                                      child:
+                                                          CircularProgressIndicator(),
+                                                    ),
+                                                  ),
+                                              errorWidget:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => Container(
                                                     color: Colors.grey[300],
                                                     child: Center(
                                                       child: Text(
@@ -719,102 +801,179 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                                                       ),
                                                     ),
                                                   ),
-                                        );
-                                      },
+                                            );
+                                          },
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                // 이미지 개수 인디케이터
-                                if (attendance.imageUrls.length > 1)
-                                  Positioned(
-                                    bottom: 16,
-                                    right: 16,
-                                    child: ValueListenableBuilder<int>(
-                                      valueListenable: _currentImageIndex,
-                                      builder: (context, currentIndex, child) {
-                                        return Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
-                                          ),
+                                    // 이미지 개수 인디케이터
+                                    if (attendance.imageUrls.length > 1)
+                                      Positioned(
+                                        bottom: 16,
+                                        right: 16,
+                                        child: ValueListenableBuilder<int>(
+                                          valueListenable: _currentImageIndex,
+                                          builder: (context, currentIndex, child) {
+                                            return Container(
+                                              padding: EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 6,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withOpacity(
+                                                  0.6,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              child: Text(
+                                                '${currentIndex + 1}/${attendance.imageUrls.length}',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    // 이미지 변경 버튼 (기존 이미지를 새 이미지로 교체)
+                                    Positioned(
+                                      top: 16,
+                                      right: 16,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          intutionProvider.pickImage();
+                                        },
+                                        child: Container(
+                                          padding: EdgeInsets.all(8),
                                           decoration: BoxDecoration(
                                             color: Colors.black.withOpacity(
-                                              0.6,
+                                              0.7,
                                             ),
                                             borderRadius: BorderRadius.circular(
-                                              20,
+                                              30,
                                             ),
                                           ),
-                                          child: Text(
-                                            '${currentIndex + 1}/${attendance.imageUrls.length}',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                          child: Icon(
+                                            Icons.edit,
+                                            color: Colors.white,
+                                            size: 20,
                                           ),
-                                        );
-                                      },
+                                        ),
+                                      ),
                                     ),
+                                  ],
+                                );
+                              }
+                              // 둘 다 없으면 추가 버튼 표시
+                              return GestureDetector(
+                                onTap: () {
+                                  intutionProvider.pickImage();
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.only(left: 10),
+                                  width: double.infinity,
+                                  height: 50,
+                                  alignment: Alignment.centerLeft,
+                                  decoration: BoxDecoration(
+                                    color: BACKGROUND_COLOR,
+                                    border: Border.all(
+                                      color: GRAYSCALE_LABEL_300,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                // 이미지 변경 버튼 (기존 이미지를 새 이미지로 교체)
-                                Positioned(
-                                  top: 16,
-                                  right: 16,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      intutionProvider.pickImage();
-                                    },
-                                    child: Container(
-                                      padding: EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.7),
-                                        borderRadius: BorderRadius.circular(30),
-                                      ),
-                                      child: Icon(
-                                        Icons.edit,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
+                                  child: Text(
+                                    '+ 이미지 추가하기',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
-                              ],
-                            );
-                          }
-                          // 둘 다 없으면 추가 버튼 표시
-                          return GestureDetector(
-                            onTap: () {
-                              intutionProvider.pickImage();
+                              );
                             },
-                            child: Container(
-                              padding: EdgeInsets.only(left: 10),
-                              width: double.infinity,
-                              height: 50,
-                              alignment: Alignment.centerLeft,
-                              decoration: BoxDecoration(
-                                color: BACKGROUND_COLOR,
-                                border: Border.all(color: GRAYSCALE_LABEL_300),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '+ 이미지 추가하기',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
-            );
-          },
-        ),
+            ),
+          ),
+          Consumer2<IntutionRecordProvider, TeamProvider>(
+            builder: (context, irp, tp, child) {
+              if (!irp.saving) return const SizedBox.shrink();
+              return Container(
+                color: Colors.black.withOpacity(0.4),
+                child: Center(
+                  child: Container(
+                    width: 220,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 24,
+                    ),
+                    decoration: BoxDecoration(
+                      color: WHITE,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              width: 64,
+                              height: 64,
+                              child: CircularProgressIndicator(
+                                value: irp.saveProgress > 0
+                                    ? irp.saveProgress / 100
+                                    : null,
+                                strokeWidth: 5,
+                                color: tp.selectedTeam?.color ?? BUTTON,
+                                backgroundColor: GRAYSCALE_LABEL_200,
+                              ),
+                            ),
+                            Text(
+                              '${irp.saveProgress}%',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: GRAYSCALE_LABEL_900,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          irp.saveStatusText.isNotEmpty
+                              ? irp.saveStatusText
+                              : '직관기록 저장 중...',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: GRAYSCALE_LABEL_950,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

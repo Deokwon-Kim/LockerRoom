@@ -139,7 +139,6 @@ class _AnalysisPageState extends State<AnalysisPage> {
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
         backgroundColor: BACKGROUND_COLOR,
-        automaticallyImplyLeading: false,
         scrolledUnderElevation: 0,
         title: Row(
           children: [

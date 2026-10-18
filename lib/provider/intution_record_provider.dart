@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -28,6 +29,11 @@ class IntutionRecordProvider extends ChangeNotifier {
   String? _selectedGameIdForRecord;
   List<ScheduleModel>? _availableGamesForDate;
   List<File> _images = [];
+  int _saveProgress = 0;
+  String _saveStatusText = '';
+
+  int get saveProgress => _saveProgress;
+  String get saveStatusText => _saveStatusText;
 
   List<File> get image => _images;
   bool get isLoding => _isLoading;
@@ -450,6 +456,8 @@ class IntutionRecordProvider extends ChangeNotifier {
     final g = _todayGame!;
 
     _saving = true;
+    _saveProgress = 0;
+    _saveStatusText = '직관기록 저장 중...';
     notifyListeners();
 
     try {
@@ -457,21 +465,41 @@ class IntutionRecordProvider extends ChangeNotifier {
       List<String> imageUrls = [];
       if (_images.isNotEmpty) {
         for (int i = 0; i < _images.length; i++) {
+          StreamSubscription<TaskSnapshot>? subscription;
           try {
             final fileName =
-                '${DateTime.now().millisecondsSinceEpoch}_$i\_${_images[i].path.split('/').last}';
+                '${DateTime.now().millisecondsSinceEpoch}_${i}_${_images[i].path.split('/').last}';
             final ref = FirebaseStorage.instance.ref().child(
               'intution_records/${user.uid}/$fileName',
             );
 
-            await ref.putFile(_images[i]);
-            final url = await ref.getDownloadURL();
+            final task = ref.putFile(_images[i]);
+
+            // 실시간 바이트 전송률 리스너
+            subscription = task.snapshotEvents.listen((snapshot) {
+              if (snapshot.totalBytes > 0) {
+                final fileProgress =
+                    snapshot.bytesTransferred / snapshot.totalBytes;
+                final overallProgress =
+                    ((i + fileProgress) / _images.length * 85).toInt();
+                _saveProgress = overallProgress.clamp(0, 85);
+                notifyListeners();
+              }
+            });
+
+            final snapshot = await task;
+            await subscription.cancel();
+            final url = await snapshot.ref.getDownloadURL();
             imageUrls.add(url);
           } catch (e) {
+            await subscription?.cancel();
             print('직관 이미지 업로드 실패 (index $i): $e');
           }
         }
       }
+
+      _saveProgress = _images.isNotEmpty ? 90 : 50;
+      notifyListeners();
 
       // 모델 생성 및 저장
       final teamToUse = _selectedTeamSympleForRecord ?? _myTeamSymple!;
@@ -506,6 +534,10 @@ class IntutionRecordProvider extends ChangeNotifier {
           .doc(g.gameId)
           .set(attendance.toMap(), SetOptions(merge: true));
 
+      _saveProgress = 100;
+      _saveStatusText = '저장 완료!';
+      notifyListeners();
+
       // 저장 완료 후 초기화
       myScoreController.clear();
       oppScoreContreller.clear();
@@ -519,6 +551,8 @@ class IntutionRecordProvider extends ChangeNotifier {
       return false;
     } finally {
       _saving = false;
+      _saveProgress = 0;
+      _saveStatusText = '';
       notifyListeners();
     }
   }
@@ -599,14 +633,15 @@ class IntutionRecordProvider extends ChangeNotifier {
     List<File>? newImages,
     List<String>? oldImageUrls,
   }) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
+    _saving = true;
+    _saveProgress = 0;
+    _saveStatusText = '직관기록 저장 중...';
+    _isLoading = true;
+    notifyListeners();
 
+    try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        _isLoading = false;
-        notifyListeners();
         return false;
       }
 
@@ -621,6 +656,45 @@ class IntutionRecordProvider extends ChangeNotifier {
         }
       }
 
+      // 새 이미지들이 있으면 업로드
+      List<String> imageUrls = [];
+      if (newImages != null && newImages.isNotEmpty) {
+        for (int i = 0; i < newImages.length; i++) {
+          StreamSubscription<TaskSnapshot>? subscription;
+          try {
+            final fileName =
+                '${DateTime.now().millisecondsSinceEpoch}_${i}_${newImages[i].path.split('/').last}';
+            final ref = FirebaseStorage.instance.ref().child(
+              'intution_records/${user.uid}/$fileName',
+            );
+
+            final task = ref.putFile(newImages[i]);
+
+            subscription = task.snapshotEvents.listen((snapshot) {
+              if (snapshot.totalBytes > 0) {
+                final fileProgress =
+                    snapshot.bytesTransferred / snapshot.totalBytes;
+                final overallProgress =
+                    ((i + fileProgress) / newImages.length * 85).toInt();
+                _saveProgress = overallProgress.clamp(0, 85);
+                notifyListeners();
+              }
+            });
+
+            final snapshot = await task;
+            await subscription.cancel();
+            final url = await snapshot.ref.getDownloadURL();
+            imageUrls.add(url);
+          } catch (e) {
+            await subscription?.cancel();
+            print('직관 이미지 업로드 실패 (index $i): $e');
+          }
+        }
+      }
+
+      _saveProgress = (newImages != null && newImages.isNotEmpty) ? 90 : 50;
+      notifyListeners();
+
       // 업데이트할 데이터 준비
       final updateData = <String, dynamic>{
         'myScore': newMyscore,
@@ -634,27 +708,8 @@ class IntutionRecordProvider extends ChangeNotifier {
         print('메모 업데이트 시도: $trimmedMemo');
       }
 
-      // 새 이미지들이 있으면 업로드
-      if (newImages != null && newImages.isNotEmpty) {
-        List<String> imageUrls = [];
-        for (int i = 0; i < newImages.length; i++) {
-          try {
-            final fileName =
-                '${DateTime.now().millisecondsSinceEpoch}_${i}_${newImages[i].path.split('/').last}';
-            final ref = FirebaseStorage.instance.ref().child(
-              'intution_records/${user.uid}/$fileName',
-            );
-
-            await ref.putFile(newImages[i]);
-            final url = await ref.getDownloadURL();
-            imageUrls.add(url);
-          } catch (e) {
-            print('직관 이미지 업로드 실패 (index $i): $e');
-          }
-        }
-        if (imageUrls.isNotEmpty) {
-          updateData['imageUrls'] = imageUrls;
-        }
+      if (imageUrls.isNotEmpty) {
+        updateData['imageUrls'] = imageUrls;
       }
 
       await FirebaseFirestore.instance
@@ -664,18 +719,24 @@ class IntutionRecordProvider extends ChangeNotifier {
           .doc(gameId)
           .update(updateData);
 
+      _saveProgress = 100;
+      _saveStatusText = '저장 완료!';
+      notifyListeners();
+
       // 업데이트 성공 후 이미지 리스트 초기화
       _images = [];
-      _isLoading = false;
       _shouldDeleteImage = false;
-      notifyListeners();
       return true;
     } catch (e) {
       print('직관기록 업데이트 실패: $e');
-      _isLoading = false;
       _shouldDeleteImage = false;
-      notifyListeners();
       return false;
+    } finally {
+      _saving = false;
+      _saveProgress = 0;
+      _saveStatusText = '';
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

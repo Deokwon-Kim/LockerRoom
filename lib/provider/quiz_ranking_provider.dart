@@ -60,28 +60,63 @@ class QuizRankingProvider extends ChangeNotifier {
   final Map<String, int> _overallRankCache = {};
   int getOverallRank(String userId) => _overallRankCache[userId] ?? 0;
 
-  // 로컬에 내 정보만 별도로 긴급 저장 (깜빡임 방지용)
-  Future<void> _saveMyOverallToLocal(String userId, int score, String tier, int rank) async {
+  // 로컬에 내 정보만 별도로 긴급 저장 (깜빡임 방지용, 시즌별 고유 키)
+  Future<void> _saveMyOverallToLocal(
+    String userId,
+    int score,
+    String tier,
+    int rank, [
+    String? seasonId,
+  ]) async {
     final prefs = await SharedPreferences.getInstance();
-    // 유저별 고유 키 사용 (멀티 계정 대응)
-    await prefs.setInt('overall_quiz_score_$userId', score);
-    await prefs.setString('overall_quiz_tier_$userId', tier);
-    await prefs.setInt('overall_quiz_rank_$userId', rank);
+    final targetSeason = seasonId ?? _selectedSeason;
+
+    // 유저별 + 시즌별 고유 키 사용 (멀티 계정 및 시즌 분리 대응)
+    await prefs.setInt('overall_quiz_score_${targetSeason}_$userId', score);
+    await prefs.setString('overall_quiz_tier_${targetSeason}_$userId', tier);
+    await prefs.setInt('overall_quiz_rank_${targetSeason}_$userId', rank);
+    await prefs.setString('overall_quiz_season_$userId', targetSeason);
+
+    // 구버전 시즌 없는 단일 키가 남아있다면 제거
+    if (prefs.containsKey('overall_quiz_score_$userId')) {
+      await prefs.remove('overall_quiz_score_$userId');
+      await prefs.remove('overall_quiz_tier_$userId');
+      await prefs.remove('overall_quiz_rank_$userId');
+    }
   }
 
   // 로컬에서 내 정보 미리 불러오기 (초기 로딩 시 호출 가능)
-  Future<void> loadMyOverallFromLocal() async {
+  Future<void> loadMyOverallFromLocal([String? seasonId]) async {
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
     if (currentUid != null) {
       final prefs = await SharedPreferences.getInstance();
-      // 유저별 고유 키로 로드
-      final savedScore = prefs.getInt('overall_quiz_score_$currentUid') ?? 0;
-      final savedTier = prefs.getString('overall_quiz_tier_$currentUid') ?? 'PROSPECT';
-      final savedRank = prefs.getInt('overall_quiz_rank_$currentUid') ?? 0;
-      
-      _overallScoreCache[currentUid] = savedScore;
-      _overallTierCache[currentUid] = savedTier;
-      _overallRankCache[currentUid] = savedRank;
+      final targetSeason = seasonId ?? _selectedSeason;
+
+      // 구버전 시즌 없는 단일 키가 남아있다면 제거
+      if (prefs.containsKey('overall_quiz_score_$currentUid')) {
+        await prefs.remove('overall_quiz_score_$currentUid');
+        await prefs.remove('overall_quiz_tier_$currentUid');
+        await prefs.remove('overall_quiz_rank_$currentUid');
+      }
+
+      // 시즌별 고유 키로 로드
+      final savedScore =
+          prefs.getInt('overall_quiz_score_${targetSeason}_$currentUid');
+      final savedTier =
+          prefs.getString('overall_quiz_tier_${targetSeason}_$currentUid');
+      final savedRank =
+          prefs.getInt('overall_quiz_rank_${targetSeason}_$currentUid');
+
+      if (savedScore != null || savedTier != null) {
+        _overallScoreCache[currentUid] = savedScore ?? 0;
+        _overallTierCache[currentUid] = savedTier ?? 'PROSPECT';
+        _overallRankCache[currentUid] = savedRank ?? 0;
+      } else {
+        // 새 시즌이 시작되었거나 해당 시즌에 푼 기록이 없는 경우 -> 티어/점수 초기화
+        _overallScoreCache[currentUid] = 0;
+        _overallTierCache[currentUid] = 'PROSPECT';
+        _overallRankCache[currentUid] = 0;
+      }
       notifyListeners();
     }
   }
@@ -108,8 +143,8 @@ class QuizRankingProvider extends ChangeNotifier {
     _overallScoreCache.clear();
     _overallRankCache.clear(); // 시즌 변경 시 순위 캐시 초기화
 
-    // 내 정보만이라도 즉시 로컬에서 복구 (깜빡임 방지)
-    loadMyOverallFromLocal();
+    // 내 정보만이라도 즉시 로컬에서 복구 (해당 시즌 기록 없으면 PROSPECT / 0P로 초기화)
+    await loadMyOverallFromLocal(seasonId);
 
     return await fetchRankings(true);
   }
@@ -133,7 +168,10 @@ class QuizRankingProvider extends ChangeNotifier {
         if (configDoc.exists) {
           _manualSeasonId = configDoc.data()?['activeSeasonId'] as String?;
           if (_manualSeasonId != null && _manualSeasonId!.isNotEmpty) {
-            _selectedSeason = _manualSeasonId!;
+            if (_selectedSeason != _manualSeasonId!) {
+              _selectedSeason = _manualSeasonId!;
+              await loadMyOverallFromLocal(_selectedSeason);
+            }
           }
         }
       }
@@ -231,13 +269,29 @@ class QuizRankingProvider extends ChangeNotifier {
 
         // 캐시 업데이트
         final currentUid = FirebaseAuth.instance.currentUser?.uid;
+        bool foundCurrentUid = false;
         for (var user in _overallRankings) {
-          _overallTierCache[user.userId] = user.tier!;
+          _overallTierCache[user.userId] = user.tier;
           _overallScoreCache[user.userId] = user.score;
           _overallRankCache[user.userId] = user.rank;
           if (user.userId == currentUid) {
-            _saveMyOverallToLocal(user.userId, user.score, user.tier!, user.rank);
+            foundCurrentUid = true;
+            _saveMyOverallToLocal(
+              user.userId,
+              user.score,
+              user.tier,
+              user.rank,
+              _selectedSeason,
+            );
           }
+        }
+
+        // 새 시즌이라 이번 시즌 랭킹에 현재 유저가 없는 경우 -> 티어/점수/순위 초기화
+        if (currentUid != null && !foundCurrentUid) {
+          _overallTierCache[currentUid] = 'PROSPECT';
+          _overallScoreCache[currentUid] = 0;
+          _overallRankCache[currentUid] = 0;
+          _saveMyOverallToLocal(currentUid, 0, 'PROSPECT', 0, _selectedSeason);
         }
       }
 
@@ -398,6 +452,7 @@ class QuizRankingProvider extends ChangeNotifier {
       if (_selectedCategory == 'all') {
         // all 카테고리 조회 결과를 종합 티어/점수/순위 캐시에도 저장
         final currentUid = FirebaseAuth.instance.currentUser?.uid;
+        bool foundCurrentUidInAll = false;
         for (int i = 0; i < sortedEntries.length; i++) {
           final entry = sortedEntries[i];
           final total = entry.value['totalScore'] as int;
@@ -410,8 +465,23 @@ class QuizRankingProvider extends ChangeNotifier {
 
           // 내 정보면 로컬 저장소에 긴급 캐싱
           if (entry.key == currentUid) {
-            _saveMyOverallToLocal(entry.key, total, tier, rank);
+            foundCurrentUidInAll = true;
+            _saveMyOverallToLocal(
+              entry.key,
+              total,
+              tier,
+              rank,
+              _selectedSeason,
+            );
           }
+        }
+
+        // 새 시즌이라 이번 시즌 랭킹에 현재 유저가 없는 경우 초기화
+        if (currentUid != null && !foundCurrentUidInAll) {
+          _overallTierCache[currentUid] = 'PROSPECT';
+          _overallScoreCache[currentUid] = 0;
+          _overallRankCache[currentUid] = 0;
+          _saveMyOverallToLocal(currentUid, 0, 'PROSPECT', 0, _selectedSeason);
         }
       }
 

@@ -14,6 +14,8 @@ import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
 import 'package:lockerroom/bottom_tab_bar/quiz_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/firebase_options.dart';
+import 'package:lockerroom/model/team_model.dart';
+import 'package:lockerroom/page/home/home_page2.dart';
 import 'package:lockerroom/page/legal/privacy_policy_page.dart';
 import 'package:lockerroom/page/legal/terms_of_service_page.dart';
 import 'package:lockerroom/page/login/signup_page.dart';
@@ -57,6 +59,7 @@ import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/provider/video_provider.dart';
+import 'package:lockerroom/provider/weather_provider.dart';
 import 'package:lockerroom/repository/user_repository.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:lockerroom/provider/block_provider.dart';
@@ -203,6 +206,7 @@ Future<void> main() async {
           ChangeNotifierProvider(create: (_) => ScheduleProvider()..load()),
           ChangeNotifierProvider(create: (context) => TabProvider()),
           ChangeNotifierProvider(create: (context) => ChatProvider()),
+          ChangeNotifierProvider(create: (context) => WeatherProvider()),
         ],
         child: const MyApp(),
       ),
@@ -259,7 +263,7 @@ class _MyAppState extends State<MyApp> {
             nameExtractor: (RouteSettings settings) {
               final String? name = settings.name;
               if (name == null) return null;
-              
+
               // 영어 라우트명을 한글로 매핑하여 Analytics에 보고
               const routeNames = {
                 'signup': '회원가입',
@@ -496,6 +500,7 @@ class AuthWrapper extends StatelessWidget {
                     // print('팀 선택 중 에러: $e');
                   }
                 });
+
                 return BottomTabBar(initialIndex: initialIndex);
               } else {
                 final route = ModalRoute.of(context);

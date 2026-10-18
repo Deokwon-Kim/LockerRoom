@@ -13,11 +13,13 @@ class KboMigrationService {
       // 1. CSV에서 모든 일정 로드
       final allSchedules = await _scheduleService.loadSchedules();
 
-      // 2. 2026 시즌 데이터만 필터링
+      // 2. 2026 시즌 9월 8일 이후 데이터만 필터링 (기존 경기 결과 보존용)
+      final targetDate = DateTime(2026, 9, 8);
       final schedules2026 = allSchedules
-          .where((s) => s.season == 2026)
+          .where((s) => s.season == 2026 && 
+              (s.dateTimeKst.isAfter(targetDate) || s.dateTimeKst.isAtSameMomentAs(targetDate)))
           .toList();
-      debugPrint('Filtered ${schedules2026.length} games for 2026 season.');
+      debugPrint('Filtered ${schedules2026.length} games for 2026 season (from 2026-09-08).');
 
       if (schedules2026.isEmpty) {
         debugPrint('No games found for 2026 season.');

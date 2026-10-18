@@ -62,6 +62,145 @@ class _AdminGamePageState extends State<AdminGamePage> {
         ),
         centerTitle: true,
         iconTheme: const IconThemeData(color: BLACK),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              try {
+                final snapshot = await FirebaseFirestore.instance
+                    .collection('games')
+                    .get();
+                final batch = FirebaseFirestore.instance.batch();
+                int count = 0;
+                for (var doc in snapshot.docs) {
+                  final data = doc.data();
+                  if (data['dateTimeKst'] != null) {
+                    final dt = (data['dateTimeKst'] as Timestamp)
+                        .toDate()
+                        .toLocal();
+                    final stadium = data['stadium'] ?? '';
+
+                    // 2026년 8월 29일부터 9월 6일까지인지 확인
+                    bool isTargetDate = false;
+                    if (dt.year == 2026) {
+                      if (dt.month == 8 && dt.day >= 29) isTargetDate = true;
+                      if (dt.month == 9 && dt.day <= 6) isTargetDate = true;
+                    }
+
+                    if (isTargetDate) {
+                      final isWeekend = dt.weekday == 6 || dt.weekday == 7;
+                      if (isWeekend) {
+                        int targetHour = 18;
+                        int targetMinute = 0;
+
+                        // 고척은 일요일만 14:00, 나머지는 18:00
+                        if (stadium.contains('고척') && dt.weekday == 7) {
+                          targetHour = 14;
+                          targetMinute = 0;
+                        }
+
+                        final newDt = DateTime(
+                          dt.year,
+                          dt.month,
+                          dt.day,
+                          targetHour,
+                          targetMinute,
+                          0,
+                        );
+                        batch.update(doc.reference, {
+                          'dateTimeKst': Timestamp.fromDate(newDt),
+                        });
+                        count++;
+                      }
+                    }
+                  }
+                }
+
+                // 1. 8월 28일 잠실 취소된 경기 상태를 PPD로 변경
+                final oldGameRef = FirebaseFirestore.instance
+                    .collection('games')
+                    .doc('2026-00696');
+                batch.update(oldGameRef, {'status': 'PPD'});
+
+                // 2. 9월 10일 재편성 경기 추가
+                final newGameRef = FirebaseFirestore.instance
+                    .collection('games')
+                    .doc('2026-00846');
+                batch.set(newGameRef, {
+                  'season': 2026,
+                  'dateTimeKst': Timestamp.fromDate(
+                    DateTime(2026, 9, 10, 18, 30),
+                  ),
+                  'weekday': '목',
+                  'homeTeam': '두산',
+                  'awayTeam': '키움',
+                  'stadium': '잠실야구장',
+                  'status': '예정',
+                  'inning': null,
+                  'broadcast': null,
+                  'doubleHeaderNo': null,
+                  'note': null,
+                  'gameType': 'KBO리그',
+                  'homeScore': 0,
+                  'awayScore': 0,
+                }, SetOptions(merge: true));
+
+                // 3. 9월 11일 기아 vs SSG 광주 경기 추가
+                final newGameRef2 = FirebaseFirestore.instance
+                    .collection('games')
+                    .doc('2026-00847');
+                batch.set(newGameRef2, {
+                  'season': 2026,
+                  'dateTimeKst': Timestamp.fromDate(
+                    DateTime(2026, 9, 11, 18, 30),
+                  ),
+                  'weekday': '금',
+                  'homeTeam': '기아',
+                  'awayTeam': 'SSG',
+                  'stadium': '광주기아챔피언스필드',
+                  'status': '예정',
+                  'inning': null,
+                  'broadcast': null,
+                  'doubleHeaderNo': null,
+                  'note': null,
+                  'gameType': 'KBO리그',
+                  'homeScore': 0,
+                  'awayScore': 0,
+                }, SetOptions(merge: true));
+
+                await batch.commit();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('주말 경기 시간 변경, 9/10 두산-키움 및 9/11 기아-SSG 경기 추가 완료!'),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('에러 발생: $e')));
+                }
+              }
+            },
+            icon: const Icon(Icons.build, color: Colors.red),
+            tooltip: '주말 경기 시간 변경 및 9/10, 9/11 경기 추가',
+          ),
+          IconButton(
+            onPressed: () => _showAddGameDialog(context),
+            icon: const Icon(Icons.add_circle, color: BUTTON),
+            tooltip: '새 경기 일정 직접 추가 (결승전 등)',
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: BUTTON,
+        onPressed: () => _showAddGameDialog(context),
+        icon: const Icon(Icons.add, color: WHITE),
+        label: const Text(
+          '새 경기 일정 추가',
+          style: TextStyle(color: WHITE, fontWeight: FontWeight.bold),
+        ),
       ),
       body: Column(
         children: [
@@ -73,12 +212,340 @@ class _AdminGamePageState extends State<AdminGamePage> {
                     padding: const EdgeInsets.all(16),
                     itemCount: games.length,
                     itemBuilder: (context, index) {
-                      return _buildGameCard(games[index]);
+                      final game = games[index];
+                      return _buildGameCard(game);
                     },
                   ),
           ),
         ],
       ),
+    );
+  }
+
+  void _showAddGameDialog(BuildContext context) {
+    DateTime gameDate = _selectedDate;
+    TimeOfDay gameTime = const TimeOfDay(hour: 18, minute: 30);
+    String homeTeam = '대한민국';
+    String awayTeam = '일본';
+    String stadium = '나고야';
+    String gameType = '아시안게임';
+    String status = '예정';
+
+    final homeController = TextEditingController(text: homeTeam);
+    final awayController = TextEditingController(text: awayTeam);
+    final stadiumController = TextEditingController(text: stadium);
+    final gameTypeController = TextEditingController(text: gameType);
+
+    final List<String> teamOptions = [
+      '대한민국',
+      '일본',
+      '대만',
+      '태국',
+      '홍콩',
+      '중국',
+      '체코',
+      '호주',
+      '도미니카',
+      '쿠바',
+      '두산',
+      '삼성',
+      '롯데',
+      '기아',
+      'LG',
+      'SSG',
+      '한화',
+      '키움',
+      'NC',
+      'KT',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: BACKGROUND_COLOR,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          '새 경기 일정 직접 추가',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // 날짜 & 시간 선택
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: gameDate,
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2030),
+                              );
+                              if (picked != null) {
+                                setModalState(() {
+                                  gameDate = picked;
+                                });
+                              }
+                            },
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                labelText: '경기 날짜',
+                                border: OutlineInputBorder(),
+                              ),
+                              child: Text(
+                                DateFormat('yyyy-MM-dd (E)', 'ko_KR').format(gameDate),
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: gameTime,
+                              );
+                              if (picked != null) {
+                                setModalState(() {
+                                  gameTime = picked;
+                                });
+                              }
+                            },
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                labelText: '경기 시간',
+                                border: OutlineInputBorder(),
+                              ),
+                              child: Text(
+                                '${gameTime.hour.toString().padLeft(2, '0')}:${gameTime.minute.toString().padLeft(2, '0')}',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // 홈팀 선택
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: homeController,
+                            decoration: const InputDecoration(
+                              labelText: '홈팀',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.arrow_drop_down_circle),
+                          onSelected: (val) {
+                            setModalState(() {
+                              homeController.text = val;
+                            });
+                          },
+                          itemBuilder: (context) => teamOptions
+                              .map((t) => PopupMenuItem(value: t, child: Text(t)))
+                              .toList(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // 원정팀 선택
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: awayController,
+                            decoration: const InputDecoration(
+                              labelText: '원정팀',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.arrow_drop_down_circle),
+                          onSelected: (val) {
+                            setModalState(() {
+                              awayController.text = val;
+                            });
+                          },
+                          itemBuilder: (context) => teamOptions
+                              .map((t) => PopupMenuItem(value: t, child: Text(t)))
+                              .toList(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // 구장 & 대회명
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: stadiumController,
+                            decoration: const InputDecoration(
+                              labelText: '구장 (예: 나고야, 잠실)',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: gameTypeController,
+                            decoration: const InputDecoration(
+                              labelText: '대회/리그 (예: 아시안게임)',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    // 저장 버튼
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: BUTTON,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () async {
+                          final hTeam = homeController.text.trim();
+                          final aTeam = awayController.text.trim();
+                          final st = stadiumController.text.trim();
+                          final gt = gameTypeController.text.trim();
+
+                          if (hTeam.isEmpty || aTeam.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('홈팀과 원정팀을 입력해 주세요.')),
+                            );
+                            return;
+                          }
+
+                          final dt = DateTime(
+                            gameDate.year,
+                            gameDate.month,
+                            gameDate.day,
+                            gameTime.hour,
+                            gameTime.minute,
+                          );
+
+                          final weekdayList = ['월', '화', '수', '목', '금', '토', '일'];
+                          final weekdayStr = weekdayList[dt.weekday - 1];
+
+                          final scheduleProvider = context.read<ScheduleProvider>();
+                          int maxIdNum = 851;
+                          for (var s in scheduleProvider.allSchedules) {
+                            final parts = s.gameId.split('-');
+                            if (parts.length == 2) {
+                              final numVal = int.tryParse(parts[1]);
+                              if (numVal != null && numVal > maxIdNum) {
+                                maxIdNum = numVal;
+                              }
+                            }
+                          }
+                          final newIdNum = (maxIdNum + 1).toString().padLeft(5, '0');
+                          final newGameId = '${dt.year}-$newIdNum';
+
+                          try {
+                            await FirebaseFirestore.instance
+                                .collection('games')
+                                .doc(newGameId)
+                                .set({
+                              'season': dt.year,
+                              'dateTimeKst': Timestamp.fromDate(dt),
+                              'weekday': weekdayStr,
+                              'homeTeam': hTeam,
+                              'awayTeam': aTeam,
+                              'stadium': st,
+                              'status': status,
+                              'inning': null,
+                              'broadcast': null,
+                              'doubleHeaderNo': null,
+                              'note': null,
+                              'gameType': gt,
+                              'homeScore': 0,
+                              'awayScore': 0,
+                            }, SetOptions(merge: true));
+
+                            if (mounted) {
+                              setState(() {
+                                _selectedDate = dt;
+                              });
+                            }
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    '새 경기($hTeam vs $aTeam)가 Firestore에 추가되었습니다!\n앱 업데이트 없이 모든 유저에게 즉시 반영됩니다.',
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('추가 실패: $e')),
+                              );
+                            }
+                          }
+                        },
+                        child: const Text(
+                          'Firestore에 새 경기 추가 (앱 전체 즉시 연동)',
+                          style: TextStyle(
+                            color: WHITE,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

@@ -47,11 +47,13 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
       _prefs = await SharedPreferences.getInstance();
       if (!mounted) return;
       final rankProvider = context.read<QuizRankingProvider>();
+      final currentSeasonId = QuizSeasonUtils.getCurrentSeasonId();
 
-      // 0. 로컬 캐시 즉시 로드 (깜빡임 방지)
-      rankProvider.loadMyOverallFromLocal();
+      // 0. 현재 시즌 로컬 캐시 즉시 로드 (새 시즌이면 PROSPECT / 0P / -)
+      await rankProvider.loadMyOverallFromLocal(currentSeasonId);
 
       // 1. 기본 데이터 로드
+      if (!mounted) return;
       context.read<QuizProvider>().fetchMyHistory();
       context.read<UserProvider>().loadNickname();
 
@@ -60,20 +62,33 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
         context.read<ProfileProvider>().subscribeMyProfileImage(uid);
       }
 
-      // 2. 오버레이 시퀀스를 위해 지난 시즌 랭킹 데이터 먼저 로드
+      // 2. 지난 시즌 결과 오버레이 확인 (필요한 경우에만 지난 시즌 랭킹 로드)
+      final lastResultShownSeason =
+          _prefs?.getString('last_result_shown_season');
       final prevSeasonId = QuizSeasonUtils.getPreviousSeasonId();
-      if (prevSeasonId != null) {
+      final bool needShowResultOverlay =
+          prevSeasonId != null && lastResultShownSeason != currentSeasonId;
+
+      if (needShowResultOverlay) {
+        // 지난 시즌 결과 오버레이 표시를 위해 지난 시즌 랭킹 로드
         await rankProvider.setSeason(prevSeasonId);
+        if (mounted) {
+          await _checkAndShowSeasonResultOverlay();
+        }
       }
 
-      // 3. 오버레이 시퀀스 실행 (결과 -> 챔피언 -> 시작)
+      // 3. 현재 시즌으로 복귀/설정 및 랭킹 데이터 최신화
       if (mounted) {
-        await _checkAndShowSeasonSequence();
+        if (rankProvider.selectedSeason != currentSeasonId) {
+          await rankProvider.setSeason(currentSeasonId);
+        } else {
+          await rankProvider.fetchRankings(true);
+        }
       }
 
-      // 4. 다시 현재 시즌 데이터를 로드하여 로비 정보 갱신
+      // 4. 새 시즌 시작 오버레이 실행 (현재 시즌 기준)
       if (mounted) {
-        await rankProvider.setSeason(QuizSeasonUtils.getCurrentSeasonId());
+        await _checkAndShowSeasonStartOverlay();
       }
     });
   }
@@ -1007,14 +1022,6 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
   }
 
   // --- 시즌 오버레이 로직 ---
-
-  Future<void> _checkAndShowSeasonSequence() async {
-    // 1. 시즌 종료 결과 오버레이 (Season Result / Champion)
-    await _checkAndShowSeasonResultOverlay();
-
-    // 2. 새 시즌 시작 오버레이 (Season Start)
-    await _checkAndShowSeasonStartOverlay();
-  }
 
   Future<void> _checkAndShowSeasonResultOverlay() async {
     final prefs = await SharedPreferences.getInstance();

@@ -65,7 +65,6 @@ class IntutionRecordListPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: BACKGROUND_COLOR,
         appBar: AppBar(
-          automaticallyImplyLeading: false,
           backgroundColor: BACKGROUND_COLOR,
           title: Text(
             '나의 직관기록',

@@ -124,6 +124,8 @@ flutter:
     - assets/images/korean_logo/
     - assets/images/symbol/
     - assets/images/applogo/
+    - assets/images/stadium/
+    - assets/images/kbo_header/
     - assets/3d/
     - assets/schedules/
     - lib/api_key/youtube_key.env

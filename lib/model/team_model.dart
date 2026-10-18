@@ -6,6 +6,7 @@ class TeamModel {
   final String stadium;
   final String? stadium3d;
   final String logoPath;
+  final String headers;
   final String calenderLogo;
   final String symbolPath;
   final Color color;
@@ -18,6 +19,7 @@ class TeamModel {
     required this.symplename,
     required this.stadium,
     required this.logoPath,
+    required this.headers,
     required this.calenderLogo,
     required this.symbolPath,
     required this.color,
