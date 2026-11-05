@@ -188,11 +188,14 @@ class _SeasonStartOverlayState extends State<SeasonStartOverlay>
                 ),
               ),
 
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
                   // 3. Top Title: "새 시즌이 시작되었습니다."
                   FadeTransition(
                     opacity: _titleOpacity,
@@ -389,10 +392,12 @@ class _SeasonStartOverlayState extends State<SeasonStartOverlay>
                             letterSpacing: 1,
                           ),
                         ),
-                      ],
-                    ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ],

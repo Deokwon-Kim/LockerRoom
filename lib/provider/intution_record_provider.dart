@@ -199,9 +199,9 @@ class IntutionRecordProvider extends ChangeNotifier {
     // 초기에는 선택한 팀을 null로 설정하여 응원팀이 기본으로 표시되도록
     _selectedTeamSympleForRecord = null;
 
-    // 오늘 날짜의 모든 경기 가져오기
+    // 오늘 날짜의 모든 경기 가져오기 (context 전달해서 캐시 사용)
     final todayDate = DateTime.now();
-    await loadGamesByDate(todayDate);
+    await loadGamesByDate(todayDate, context: context);
 
     _isLoading = false;
     notifyListeners();
@@ -538,6 +538,9 @@ class IntutionRecordProvider extends ChangeNotifier {
       _saveStatusText = '저장 완료!';
       notifyListeners();
 
+      // 100% 잠깐 보여주고 사라지게
+      await Future.delayed(const Duration(milliseconds: 800));
+
       // 저장 완료 후 초기화
       myScoreController.clear();
       oppScoreContreller.clear();
@@ -722,6 +725,9 @@ class IntutionRecordProvider extends ChangeNotifier {
       _saveProgress = 100;
       _saveStatusText = '저장 완료!';
       notifyListeners();
+
+      // 100% 잠깐 보여주고 사라지게
+      await Future.delayed(const Duration(milliseconds: 800));
 
       // 업데이트 성공 후 이미지 리스트 초기화
       _images = [];

@@ -94,163 +94,174 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: Colors.white,
       resizeToAvoidBottomInset: true, // 키보드 올라올 때 자동 조정
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height,
-            ),
-            child: IntrinsicHeight(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Image.asset('assets/images/applogo/app_logo.png'),
-                  TextFormField(
-                    controller: _emailController,
-                    cursorColor: BUTTON,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: '이메일',
-                      labelStyle: TextStyle(color: Colors.grey),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  TextFormField(
-                    controller: _passwordController,
-                    cursorColor: BUTTON,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: '비밀번호',
-                      labelStyle: TextStyle(color: Colors.grey),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  GestureDetector(
-                    onTap: _isButtonEnabled ? _signIn : null,
-
-                    child: Container(
-                      alignment: Alignment.center,
-                      width: double.infinity,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: _isButtonEnabled ? BUTTON : GRAYSCALE_LABEL_300,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '로그인',
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '계정이 없으신가요?',
-                        style: GoogleFonts.inter(
-                          color: GRAYSCALE_LABEL_950,
-                          fontSize: 15,
+                      Center(
+                        child: Image.asset(
+                          'assets/images/applogo/app_logo.png',
+                          height: 120,
+                          fit: BoxFit.contain,
                         ),
                       ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '회원가입');
-                        },
-                        style: customTextButtonStyle(),
-                        child: Text(
-                          '회원가입',
-                          style: TextStyle(
-                            color: BUTTON,
-                            fontSize: 15.0,
-                            fontWeight: FontWeight.bold,
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _emailController,
+                        cursorColor: BUTTON,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          labelText: '이메일',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '비밀번호찾기');
-                        },
-                        style: customTextButtonStyle(),
-                        child: Text(
-                          '비밀번호 찾기',
-                          style: TextStyle(
-                            color: GRAYSCALE_LABEL_700,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
+                      SizedBox(height: 10),
+                      TextFormField(
+                        controller: _passwordController,
+                        cursorColor: BUTTON,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          labelText: '비밀번호',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
                           ),
                         ),
                       ),
+                      SizedBox(height: 20),
+                      GestureDetector(
+                        onTap: _isButtonEnabled ? _signIn : null,
+
+                        child: Container(
+                          alignment: Alignment.center,
+                          width: double.infinity,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: _isButtonEnabled
+                                ? BUTTON
+                                : GRAYSCALE_LABEL_300,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '로그인',
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '계정이 없으신가요?',
+                            style: GoogleFonts.inter(
+                              color: GRAYSCALE_LABEL_950,
+                              fontSize: 15,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '회원가입');
+                            },
+                            style: customTextButtonStyle(),
+                            child: Text(
+                              '회원가입',
+                              style: TextStyle(
+                                color: BUTTON,
+                                fontSize: 15.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '비밀번호찾기');
+                            },
+                            style: customTextButtonStyle(),
+                            child: Text(
+                              '비밀번호 찾기',
+                              style: TextStyle(
+                                color: GRAYSCALE_LABEL_700,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      // GestureDetector(
+                      //   onTap: () async {
+                      //     await userProvider.googleLogin();
+
+                      //     Navigator.pushReplacement(
+                      //       context,
+                      //       MaterialPageRoute(
+                      //         builder: (context) => TeamSelectPage(),
+                      //       ),
+                      //     );
+                      //   },
+                      //   child: Container(
+                      //     width: double.infinity,
+                      //     height: 58,
+                      //     decoration: BoxDecoration(
+                      //       color: GRAYSCALE_LABEL_50,
+                      //       border: Border.all(color: Colors.black),
+                      //       borderRadius: BorderRadius.circular(12),
+                      //     ),
+                      //     child: Row(
+                      //       mainAxisAlignment: MainAxisAlignment.center,
+                      //       children: [
+                      //         Image.asset(
+                      //           'assets/images/google_icon.png',
+                      //           height: 30,
+                      //         ),
+                      //         SizedBox(width: 10),
+                      //         Text(
+                      //           'Google 계정으로 로그인',
+                      //           style: TextStyle(
+                      //             color: Colors.black,
+                      //             fontSize: 15,
+                      //             fontWeight: FontWeight.bold,
+                      //           ),
+                      //         ),
+                      //       ],
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
-                  // GestureDetector(
-                  //   onTap: () async {
-                  //     await userProvider.googleLogin();
-
-                  //     Navigator.pushReplacement(
-                  //       context,
-                  //       MaterialPageRoute(
-                  //         builder: (context) => TeamSelectPage(),
-                  //       ),
-                  //     );
-                  //   },
-                  //   child: Container(
-                  //     width: double.infinity,
-                  //     height: 58,
-                  //     decoration: BoxDecoration(
-                  //       color: GRAYSCALE_LABEL_50,
-                  //       border: Border.all(color: Colors.black),
-                  //       borderRadius: BorderRadius.circular(12),
-                  //     ),
-                  //     child: Row(
-                  //       mainAxisAlignment: MainAxisAlignment.center,
-                  //       children: [
-                  //         Image.asset(
-                  //           'assets/images/google_icon.png',
-                  //           height: 30,
-                  //         ),
-                  //         SizedBox(width: 10),
-                  //         Text(
-                  //           'Google 계정으로 로그인',
-                  //           style: TextStyle(
-                  //             color: Colors.black,
-                  //             fontSize: 15,
-                  //             fontWeight: FontWeight.bold,
-                  //           ),
-                  //         ),
-                  //       ],
-                  //     ),
-                  //   ),
-                  // ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

@@ -22,15 +22,17 @@ class UploadProvider extends ChangeNotifier {
   File? _video;
   Uint8List? _videoThumbnail = Uint8List(0);
 
-  double _uploadProgress = 0.0;
+  int _uploadProgress = 0;
   bool _isUploading = false;
   String? _meetupId;
+  String _uploadStatusText = '';
 
+  String get uploadStatusText => _uploadStatusText;
   List<File> get images => _images;
   File? get camera => _camera;
   File? get video => _video;
   Uint8List? get videoThumbnail => _videoThumbnail;
-  double get uploadProgress => _uploadProgress;
+  int get uploadProgress => _uploadProgress;
   bool get isUploading => _isUploading;
   String? get meetupId => _meetupId;
 
@@ -73,7 +75,7 @@ class UploadProvider extends ChangeNotifier {
     _video = null;
     _camera = null;
     _videoThumbnail = null;
-    _uploadProgress = 0.0;
+    _uploadProgress = 0;
     _isUploading = false;
     _initialCaption = null;
     _meetupId = null;
@@ -279,7 +281,7 @@ class UploadProvider extends ChangeNotifier {
     required String text,
   }) async {
     _isUploading = true;
-    _uploadProgress = 0.0;
+    _uploadProgress = 0;
     notifyListeners();
 
     List<String> mediaUrls = [];
@@ -292,18 +294,30 @@ class UploadProvider extends ChangeNotifier {
       final url = await _uploadFileWithRetry(img, 'images');
       mediaUrls.add(url);
       uploadedCount++;
-      _uploadProgress = totalCount > 0 ? uploadedCount / totalCount : 1.0;
+      _uploadProgress = totalCount > 0
+          ? uploadedCount * 100 ~/ totalCount
+          : 100;
       notifyListeners();
     }
 
     // 동영상 업로드
     if (_video != null) {
-      // 업로드 전에 압축
+      // 압축 전 상태 텍스트 업데이트 (압축 중 UI가 멈춰 보이는 것 방지)
+      _uploadStatusText = '동영상 압축 중...';
+      notifyListeners();
+
       final compressedVideo = await _compressBeforeUpload(_video!);
+
+      _uploadStatusText = '동영상 업로드 중...';
+      notifyListeners();
+
       final url = await _uploadFileWithRetry(compressedVideo, 'videos');
       mediaUrls.add(url);
       uploadedCount++;
-      _uploadProgress = totalCount > 0 ? uploadedCount / totalCount : 1.0;
+      _uploadProgress = totalCount > 0
+          ? uploadedCount * 100 ~/ totalCount
+          : 100;
+      _uploadStatusText = '';
       notifyListeners();
     }
 
@@ -312,7 +326,9 @@ class UploadProvider extends ChangeNotifier {
       final url = await _uploadFileWithRetry(_camera!, 'images');
       mediaUrls.add(url);
       uploadedCount++;
-      _uploadProgress = totalCount > 0 ? uploadedCount / totalCount : 1.0;
+      _uploadProgress = _uploadProgress = totalCount > 0
+          ? uploadedCount * 100 ~/ totalCount
+          : 100;
       notifyListeners();
     }
 
@@ -327,8 +343,14 @@ class UploadProvider extends ChangeNotifier {
       'createdAt': FieldValue.serverTimestamp(),
     });
 
+    _uploadProgress = 100;
+    _uploadStatusText = '업로드 완료!';
+    notifyListeners();
+
+    // 100% 잠깐 보여주고 사라지게
+    await Future.delayed(const Duration(milliseconds: 800));
+
     _isUploading = false;
-    _uploadProgress = 1.0;
     notifyListeners();
 
     // 완료 후 초기화

@@ -131,60 +131,62 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
                 ),
               ],
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildGuideItem('🎵', '응원가는 자동으로 재생됩니다'),
-                const SizedBox(height: 12),
-                _buildGuideItem('⏱️', '응원가는 1초~5초 정도로 짧아요'),
-                const SizedBox(height: 12),
-                _buildGuideItem('🔊', '이어폰 또는 스피커로 들으시면 더 좋아요'),
-                const SizedBox(height: 12),
-                _buildGuideItem('🤔', '응원가를 듣고 어느 팀의 응원가인지 맞춰보세요'),
-                const SizedBox(height: 12),
-                _buildGuideItem('🔁', '여러 번 재생할 수 있어요'),
-                const SizedBox(height: 20),
-                // 다시 보지 않기 체크박스
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      isChecked = !isChecked;
-                    });
-                  },
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: Checkbox(
-                          value: isChecked,
-                          activeColor: context
-                              .read<TeamProvider>()
-                              .selectedTeam
-                              ?.color,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildGuideItem('🎵', '응원가는 자동으로 재생됩니다'),
+                  const SizedBox(height: 12),
+                  _buildGuideItem('⏱️', '응원가는 1초~5초 정도로 짧아요'),
+                  const SizedBox(height: 12),
+                  _buildGuideItem('🔊', '이어폰 또는 스피커로 들으시면 더 좋아요'),
+                  const SizedBox(height: 12),
+                  _buildGuideItem('🤔', '응원가를 듣고 어느 팀의 응원가인지 맞춰보세요'),
+                  const SizedBox(height: 12),
+                  _buildGuideItem('🔁', '여러 번 재생할 수 있어요'),
+                  const SizedBox(height: 20),
+                  // 다시 보지 않기 체크박스
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        isChecked = !isChecked;
+                      });
+                    },
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Checkbox(
+                            value: isChecked,
+                            activeColor: context
+                                .read<TeamProvider>()
+                                .selectedTeam
+                                ?.color,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                isChecked = value ?? false;
+                              });
+                            },
                           ),
-                          onChanged: (value) {
-                            setState(() {
-                              isChecked = value ?? false;
-                            });
-                          },
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        '다시 보지 않기',
-                        style: TextStyle(
-                          color: GRAYSCALE_LABEL_600,
-                          fontSize: 14,
+                        const SizedBox(width: 8),
+                        const Text(
+                          '다시 보지 않기',
+                          style: TextStyle(
+                            color: GRAYSCALE_LABEL_600,
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             actions: [
               SizedBox(
@@ -708,98 +710,101 @@ class _QuizPlayPageState extends State<QuizPlayPage> {
               ),
 
               // 하단 버튼
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? const Color(0xFF0F172A) : WHITE,
-                  boxShadow: [
-                    BoxShadow(
-                      color: isDarkMode
-                          ? Colors.black.withOpacity(0.3)
-                          : GRAYSCALE_LABEL_200,
-                      blurRadius: 4,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // 이전 버튼
-                    if (quizProvider.currentQuestionsIndex > 0)
+              SafeArea(
+                top: false,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? const Color(0xFF0F172A) : WHITE,
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDarkMode
+                            ? Colors.black.withOpacity(0.3)
+                            : GRAYSCALE_LABEL_200,
+                        blurRadius: 4,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // 이전 버튼
+                      if (quizProvider.currentQuestionsIndex > 0)
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              quizProvider.previousQuestion();
+                              if (widget.category == '응원가(가사)') {
+                                setState(
+                                  () => _isQuestionVisible = true,
+                                ); // 이전 문제는 이미 들었으므로 노출
+                              }
+                            },
+                            child: Container(
+                              alignment: Alignment.center,
+                              width: double.infinity,
+                              height: 58,
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? const Color(0xFF1E293B)
+                                    : WHITE,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isDarkMode
+                                      ? Colors.white10
+                                      : GRAYSCALE_LABEL_300,
+                                ),
+                              ),
+                              child: Text(
+                                '이전',
+                                style: TextStyle(
+                                  fontFamily: 'kbo',
+                                  color: isDarkMode ? Colors.white : Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      if (quizProvider.currentQuestionsIndex > 0)
+                        const SizedBox(width: 12),
+
+                      // 다음 또는 완료 버튼
                       Expanded(
+                        flex: quizProvider.currentQuestionsIndex > 0 ? 1 : 2,
                         child: GestureDetector(
-                          onTap: () {
-                            quizProvider.previousQuestion();
-                            if (widget.category == '응원가(가사)') {
-                              setState(
-                                () => _isQuestionVisible = true,
-                              ); // 이전 문제는 이미 들었으므로 노출
-                            }
-                          },
+                          onTap: quizProvider.showExplanation
+                              ? () => _handleNextOrFinish(context, quizProvider)
+                              : null,
                           child: Container(
                             alignment: Alignment.center,
                             width: double.infinity,
                             height: 58,
                             decoration: BoxDecoration(
-                              color: isDarkMode
-                                  ? const Color(0xFF1E293B)
-                                  : WHITE,
+                              color: quizProvider.showExplanation
+                                  ? selectedTeamColor
+                                  : GRAYSCALE_LABEL_200,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isDarkMode
-                                    ? Colors.white10
-                                    : GRAYSCALE_LABEL_300,
-                              ),
                             ),
                             child: Text(
-                              '이전',
+                              quizProvider.currentQuestionsIndex ==
+                                      quizProvider.totalQuestions - 1
+                                  ? '완료'
+                                  : '다음',
                               style: TextStyle(
+                                color: quizProvider.showExplanation
+                                    ? WHITE
+                                    : GRAYSCALE_LABEL_500,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                                 fontFamily: 'kbo',
-                                color: isDarkMode ? Colors.white : Colors.black,
                               ),
                             ),
                           ),
                         ),
                       ),
-
-                    if (quizProvider.currentQuestionsIndex > 0)
-                      SizedBox(width: 12),
-
-                    // 다음 또는 완료 버튼
-                    Expanded(
-                      flex: quizProvider.currentQuestionsIndex > 0 ? 1 : 2,
-                      child: GestureDetector(
-                        onTap: quizProvider.showExplanation
-                            ? () => _handleNextOrFinish(context, quizProvider)
-                            : null,
-                        child: Container(
-                          alignment: Alignment.center,
-                          width: double.infinity,
-                          height: 58,
-                          decoration: BoxDecoration(
-                            color: quizProvider.showExplanation
-                                ? selectedTeamColor
-                                : GRAYSCALE_LABEL_200,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            quizProvider.currentQuestionsIndex ==
-                                    quizProvider.totalQuestions - 1
-                                ? '완료'
-                                : '다음',
-                            style: TextStyle(
-                              color: quizProvider.showExplanation
-                                  ? WHITE
-                                  : GRAYSCALE_LABEL_500,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'kbo',
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],

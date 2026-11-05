@@ -177,7 +177,7 @@ class _SeasonResultOverlayState extends State<SeasonResultOverlay>
                     child: IntrinsicHeight(
                       child: Column(
                         children: [
-                          const SizedBox(height: 80),
+                          const SizedBox(height: 36),
                           // Header Text
                           FadeTransition(
                             opacity: _contentOpacity,
@@ -281,7 +281,7 @@ class _SeasonResultOverlayState extends State<SeasonResultOverlay>
                               position: _contentSlide,
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 40,
+                                  horizontal: 20,
                                 ),
                                 child: Row(
                                   children: [

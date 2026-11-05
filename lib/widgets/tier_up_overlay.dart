@@ -346,10 +346,13 @@ class _TierUpOverlayState extends State<TierUpOverlay>
                     ),
                   ),
 
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                  SafeArea(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
                         FadeTransition(
                           opacity: _textOpacity,
                           child: SlideTransition(
@@ -492,9 +495,11 @@ class _TierUpOverlayState extends State<TierUpOverlay>
                               ],
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
+                ),
                 ],
               ),
             );

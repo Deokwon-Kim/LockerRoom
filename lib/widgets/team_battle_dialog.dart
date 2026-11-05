@@ -165,9 +165,10 @@ class _TeamBattleDialogState extends State<TeamBattleDialog>
                 ? '이번 퀴즈로 격차를 더 벌려보세요!'
                 : '이번 퀴즈에서 ${scoreDiff + 1}점만 획득하면\n순위를 뒤집을 수 있습니다! 🔥';
 
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+            return SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 Text(
                   mainTitle,
                   style: const TextStyle(
@@ -320,7 +321,8 @@ class _TeamBattleDialogState extends State<TeamBattleDialog>
                   ],
                 ),
               ],
-            );
+            ),
+          );
           },
         ),
       ),

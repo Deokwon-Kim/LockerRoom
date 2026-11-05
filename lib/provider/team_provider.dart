@@ -53,7 +53,7 @@ class TeamProvider with ChangeNotifier {
         symplename: '대한민국',
         stadium: '고척스카이돔',
         logoPath: 'assets/images/logo/korea.jpg',
-        headers: 'assets/images/kbo_header/doosan_bears.png',
+        headers: 'assets/images/kbo_header/korea.png',
         calenderLogo: 'assets/images/logo/korea_calender.png',
         symbolPath: 'assets/images/symbol/newlogo2.png',
         youtubeName: 'KBO',

@@ -73,11 +73,13 @@ class _QuizTabBarState extends State<QuizTabBar> {
 
           // 플로팅 바텀바
           AnimatedPositioned(
-            duration: Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 200),
             curve: Curves.easeInOut,
             left: 20,
             right: 20,
-            bottom: _isBottomBarVisible ? 20 : -90,
+            bottom: _isBottomBarVisible
+                ? (16.0 + MediaQuery.of(context).padding.bottom)
+                : -100.0,
             child: AnimatedOpacity(
               duration: Duration(milliseconds: 200),
               opacity: _isBottomBarVisible ? 1.0 : 0.0,

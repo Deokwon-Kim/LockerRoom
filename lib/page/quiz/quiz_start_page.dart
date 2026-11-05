@@ -332,30 +332,35 @@ class _QuizStartPageState extends State<QuizStartPage> {
             ),
             centerTitle: true,
           ),
-          body: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 헤더 섹션
-                _buildHeader(context),
-                const SizedBox(height: 16),
-                // 내 티어 & 시즌 카드
-                _buildMyTierCard(context),
-                const SizedBox(height: 20),
-
-                // 카테고리 그리드
-                Expanded(
-                  child: GridView.builder(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.1,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                    itemCount: _getCategories().length,
-                    itemBuilder: (context, index) {
+          body: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 헤더 섹션
+                      _buildHeader(context),
+                      const SizedBox(height: 16),
+                      // 내 티어 & 시즌 카드
+                      _buildMyTierCard(context),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1.1,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
                       final category = _getCategories()[index];
                       return _QuizCategoryCard(
                         title: category['title'] as String,
@@ -394,10 +399,11 @@ class _QuizStartPageState extends State<QuizStartPage> {
                         },
                       );
                     },
+                    childCount: _getCategories().length,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],
@@ -591,6 +597,8 @@ class _QuizStartPageState extends State<QuizStartPage> {
                         color: Colors.white38,
                         fontSize: 11,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),

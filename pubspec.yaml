@@ -88,6 +88,7 @@ dependencies:
   flutter_foreground_task: ^6.4.0
   watch_connectivity: ^0.2.4
   package_info_plus: ^9.0.1
+  google_mlkit_text_recognition: ^0.16.0
 
 
 

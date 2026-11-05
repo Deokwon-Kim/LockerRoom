@@ -63,8 +63,9 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
       }
 
       // 2. 지난 시즌 결과 오버레이 확인 (필요한 경우에만 지난 시즌 랭킹 로드)
-      final lastResultShownSeason =
-          _prefs?.getString('last_result_shown_season');
+      final lastResultShownSeason = _prefs?.getString(
+        'last_result_shown_season',
+      );
       final prevSeasonId = QuizSeasonUtils.getPreviousSeasonId();
       final bool needShowResultOverlay =
           prevSeasonId != null && lastResultShownSeason != currentSeasonId;
@@ -272,7 +273,7 @@ class _QuizLobyPageState extends State<QuizLobyPage> {
         final totalParticipants = qrp.rankings.length;
 
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),

@@ -474,7 +474,14 @@ class _SignupPageState extends State<SignupPage> {
                     // mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Image.asset('assets/images/applogo/app_logo.png'),
+                      Center(
+                        child: Image.asset(
+                          'assets/images/applogo/app_logo.png',
+                          height: 120,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       _buildNickNameTextField(
                         userProvider,
                         '닉네임',

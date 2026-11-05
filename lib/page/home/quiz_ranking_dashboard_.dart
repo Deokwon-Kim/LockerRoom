@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/bottom_tab_bar/quiz_tab_bar.dart';
 import 'package:lockerroom/const/color.dart';
-import 'package:lockerroom/model/ranking_team_model.dart';
+import 'package:lockerroom/model/ranking_user_model.dart';
 import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -55,26 +55,15 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
     return Consumer2<QuizRankingProvider, TeamProvider>(
       builder: (context, rankProvider, teamProvider, _) {
         final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-        final myTeam = teamProvider.selectedTeam;
 
         final top3Individuals = rankProvider.rankings.take(3).toList();
         final myIndividualRanking = currentUserId != null
             ? rankProvider.getMyRanking(currentUserId)
             : null;
-        final top3Teams = rankProvider.teamRankings.take(3).toList();
-
-        RankingTeamModel? myTeamRanking;
-        if (myTeam != null) {
-          try {
-            myTeamRanking = rankProvider.teamRankings.firstWhere(
-              (t) =>
-                  t.teamName == myTeam.name || t.teamName == myTeam.symplename,
-            );
-          } catch (_) {}
-        }
 
         return Container(
           width: double.infinity,
+          height: 131,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
@@ -86,7 +75,7 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             child: Stack(
               children: [
                 // 배경 그라데이션
@@ -102,14 +91,16 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
                   ),
                 ),
                 // 배경 트로피 이미지
-                Positioned.fill(
-                  child: Center(
+                Positioned(
+                  top: -10,
+                  left: 210,
+                  child: Transform.rotate(
+                    angle: 0.25,
                     child: Opacity(
                       opacity: 0.15,
                       child: Image.asset(
                         'assets/images/quiz/quiz_trophy_champion2.png',
-                        height: 280, // 전체 대시보드 내에서 적절한 크기로 조정
-                        fit: BoxFit.cover,
+                        height: 150, // 전체 대시보드 내에서 적절한 크기로 조정
                       ),
                     ),
                   ),
@@ -117,134 +108,105 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
                 // 콘텐츠
                 Column(
                   children: [
-                    // 상단 퀴즈 배너 영역
-                    GestureDetector(
-                      onTap: () =>
-                          Navigator.of(context, rootNavigator: true).push(
-                            MaterialPageRoute(
-                              builder: (context) => QuizTabBar(initialIndex: 0),
-                            ),
-                          ),
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                    SizedBox(
+                      height: 115,
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: (index) =>
+                            setState(() => _currentPage = index),
+                        children: [
+                          // 1번째 화면: 퀴즈 배너 (현재 화면)
+                          GestureDetector(
+                            onTap: () =>
+                                Navigator.of(context, rootNavigator: true).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        QuizTabBar(initialIndex: 0),
+                                  ),
+                                ),
+                            child: Container(
+                              color: Colors.transparent,
+                              padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
+                              child: Row(
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: goldColor,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: const Text(
-                                      'BEST FAN CHALLENGE',
-                                      style: TextStyle(
-                                        color: Color(0xFF1A1A1A),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 1.2,
-                                      ),
+                                  Icon(
+                                    Icons.emoji_events,
+                                    color: goldColor,
+                                    size: 60,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: goldColor,
+                                            borderRadius: BorderRadius.circular(
+                                              30,
+                                            ),
+                                          ),
+                                          child: const Text(
+                                            'BEST FAN CHALLENGE',
+                                            style: TextStyle(
+                                              color: Color(0xFF1A1A1A),
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 1.2,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 5),
+                                        const Text(
+                                          '야잘알 테스트',
+                                          style: TextStyle(
+                                            color: WHITE,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        const Text(
+                                          '야구 상식을 뽐내고 팬 랭킹에 도전해 보세요!',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: WHITE,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    '야구 덕력 테스트! 퀴즈 풀기',
-                                    style: TextStyle(
-                                      fontFamily: 'kbo',
-                                      color: WHITE,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  const Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    color: goldColor,
+                                    size: 28,
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(
-                              Icons.play_circle_filled_rounded,
-                              color: goldColor,
-                              size: 32,
-                            ),
-                          ],
-                        ),
+                          ),
+
+                          // 2번째 화면: 랭킹 배너
+                          _buildRankingBanner(
+                            context,
+                            goldColor,
+                            rankProvider,
+                            top3Individuals,
+                            myIndividualRanking,
+                          ),
+                        ],
                       ),
                     ),
 
-                    // const Divider(height: 1, color: Colors.white10),
-
-                    // // 하단 랭킹 영역
-                    // SizedBox(
-                    //   height: 180,
-                    //   child:
-                    //       rankProvider.isLoading &&
-                    //           rankProvider.rankings.isEmpty
-                    //       ? const Center(
-                    //           child: CircularProgressIndicator(
-                    //             color: goldColor,
-                    //           ),
-                    //         )
-                    //       : PageView(
-                    //           controller: _pageController,
-                    //           onPageChanged: (index) =>
-                    //               setState(() => _currentPage = index),
-                    //           children: [
-                    //             _buildRankingPage(
-                    //               title: '개인 순위 TOP 3',
-                    //               top3: top3Individuals
-                    //                   .map(
-                    //                     (e) => _RankingItemData(
-                    //                       name: e.name,
-                    //                       score: e.score,
-                    //                       rank: e.rank,
-                    //                       imageUrl: e.profileUrl,
-                    //                     ),
-                    //                   )
-                    //                   .toList(),
-                    //               myRank: myIndividualRanking != null
-                    //                   ? '${myIndividualRanking.rank}위'
-                    //                   : '순위 없음',
-                    //               myScore: myIndividualRanking != null
-                    //                   ? '${myIndividualRanking.score}점'
-                    //                   : '-',
-                    //               myLabel: '내 개인 순위',
-                    //               isDark: true,
-                    //             ),
-                    //             _buildRankingPage(
-                    //               title: '팀 순위 TOP 3',
-                    //               top3: top3Teams.map((e) {
-                    //                 final team = teamProvider.findTeamByName(
-                    //                   e.teamName,
-                    //                 );
-                    //                 return _RankingItemData(
-                    //                   name: team?.symplename ?? e.teamName,
-                    //                   score: e.totalScore,
-                    //                   rank: e.rank,
-                    //                   imagePath: team?.logoPath,
-                    //                 );
-                    //               }).toList(),
-                    //               myRank: myTeamRanking != null
-                    //                   ? '${myTeamRanking.rank}위'
-                    //                   : (myTeam == null ? '팀 선택 필요' : '기록 없음'),
-                    //               myScore: myTeamRanking != null
-                    //                   ? '${myTeamRanking.totalScore}점'
-                    //                   : '-',
-                    //               myLabel: myTeam != null
-                    //                   ? '${myTeam.symplename} 순위'
-                    //                   : '내 팀 순위',
-                    //               isDark: true,
-                    //             ),
-                    //           ],
-                    //         ),
-                    // ),
-
                     // 인디케이터
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
+                      padding: const EdgeInsets.only(bottom: 10.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(
@@ -273,14 +235,13 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
     );
   }
 
-  Widget _buildRankingPage({
-    required String title,
-    required List<_RankingItemData> top3,
-    required String myRank,
-    required String myScore,
-    required String myLabel,
-    bool isDark = false,
-  }) {
+  Widget _buildRankingBanner(
+    BuildContext context,
+    Color goldColor,
+    QuizRankingProvider rankProvider,
+    List<RankingUserModel> top3Individuals,
+    RankingUserModel? myIndividualRanking,
+  ) {
     return GestureDetector(
       onTap: () => Navigator.of(
         context,
@@ -288,106 +249,125 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
       ).push(MaterialPageRoute(builder: (_) => QuizTabBar(initialIndex: 3))),
       child: Container(
         color: Colors.transparent,
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-        child: Column(
+        padding: const EdgeInsets.fromLTRB(14, 12, 12, 8),
+        child: Row(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white70 : GRAYSCALE_LABEL_900,
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  size: 16,
-                  color: isDark ? Colors.white38 : GRAYSCALE_LABEL_400,
-                ),
-              ],
-            ),
-            const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (top3.length > 1)
-                  _buildTop3Item(top3[1], 2, isDark: isDark)
-                else
-                  const SizedBox(width: 60),
-                if (top3.isNotEmpty)
-                  _buildTop3Item(top3[0], 1, isDark: isDark)
-                else
-                  const SizedBox(width: 70),
-                if (top3.length > 2)
-                  _buildTop3Item(top3[2], 3, isDark: isDark)
-                else
-                  const SizedBox(width: 60),
-              ],
-            ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withOpacity(0.05)
-                    : const Color(0xFFF8F9FA),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    myLabel,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isDark ? Colors.white54 : GRAYSCALE_LABEL_500,
-                      fontWeight: FontWeight.w500,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: goldColor,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: const Text(
+                      'FAN RANKING TOP 3',
+                      style: TextStyle(
+                        color: Color(0xFF1A1A1A),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
                     ),
                   ),
-                  Row(
-                    children: [
-                      Text(
-                        myRank,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : GRAYSCALE_LABEL_900,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        myScore,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isDark ? Colors.white38 : GRAYSCALE_LABEL_400,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 5),
+                  const Text(
+                    '퀴즈 명예의 전당',
+                    style: TextStyle(
+                      color: WHITE,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    myIndividualRanking != null
+                        ? '내 순위: ${myIndividualRanking.rank}위 (${myIndividualRanking.score}점)'
+                        : '지금 도전하고 랭킹을 올려보세요!',
+                    style: const TextStyle(fontSize: 11, color: WHITE),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
+            if (rankProvider.isLoading && top3Individuals.isEmpty)
+              SizedBox(
+                width: 60,
+                child: Center(
+                  child: SizedBox(
+                    width: 10,
+                    height: 10,
+                    child: CircularProgressIndicator(
+                      color: goldColor,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+              )
+            else if (top3Individuals.isNotEmpty)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (top3Individuals.length > 1)
+                    _buildCompactTopItem(
+                      top3Individuals[1].name,
+                      top3Individuals[1].score,
+                      2,
+                      top3Individuals[1].profileUrl,
+                    ),
+                  if (top3Individuals.isNotEmpty) ...[
+                    const SizedBox(width: 4),
+                    _buildCompactTopItem(
+                      top3Individuals[0].name,
+                      top3Individuals[0].score,
+                      1,
+                      top3Individuals[0].profileUrl,
+                    ),
+                  ],
+                  if (top3Individuals.length > 2) ...[
+                    const SizedBox(width: 4),
+                    _buildCompactTopItem(
+                      top3Individuals[2].name,
+                      top3Individuals[2].score,
+                      3,
+                      top3Individuals[2].profileUrl,
+                    ),
+                  ],
+                ],
+              )
+            else
+              Icon(Icons.military_tech_rounded, color: goldColor, size: 36),
+            const SizedBox(width: 8),
+            Icon(Icons.arrow_forward_ios_rounded, color: goldColor, size: 24),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTop3Item(
-    _RankingItemData data,
-    int rank, {
-    bool isDark = false,
-  }) {
-    double avatarSize = rank == 1 ? 44 : 38;
-    Color medalColor = rank == 1
+  Widget _buildCompactTopItem(
+    String name,
+    int score,
+    int rank,
+    String? profileUrl,
+  ) {
+    final double avatarSize = rank == 1 ? 36 : 30;
+    final Color medalColor = rank == 1
         ? const Color(0xFFFFD700)
         : (rank == 2 ? const Color(0xFFC0C0C0) : const Color(0xFFCD7F32));
+
     return Column(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
         Stack(
           alignment: Alignment.bottomRight,
@@ -400,33 +380,28 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
                 border: Border.all(color: medalColor, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: medalColor.withOpacity(0.2),
+                    color: medalColor.withValues(alpha: 0.2),
                     blurRadius: 4,
-                    spreadRadius: 1,
                   ),
                 ],
               ),
               child: ClipOval(
-                child: data.imagePath != null
-                    ? Image.asset(data.imagePath!, fit: BoxFit.cover)
-                    : (data.imageUrl != null
-                          ? Image.network(
-                              data.imageUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.person, size: 20),
-                            )
-                          : Icon(
+                child: profileUrl != null && profileUrl.isNotEmpty
+                    ? Image.network(
+                        profileUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
                               Icons.person,
-                              size: 20,
-                              color: isDark
-                                  ? Colors.white24
-                                  : GRAYSCALE_LABEL_300,
-                            )),
+                              size: 16,
+                              color: Colors.white70,
+                            ),
+                      )
+                    : const Icon(Icons.person, size: 16, color: Colors.white70),
               ),
             ),
             Container(
-              padding: const EdgeInsets.all(3),
+              padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 color: medalColor,
                 shape: BoxShape.circle,
@@ -442,15 +417,15 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 2),
         SizedBox(
-          width: 60,
+          width: 38,
           child: Text(
-            data.name,
-            style: TextStyle(
-              fontSize: 10,
+            name,
+            style: const TextStyle(
+              fontSize: 9,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white : GRAYSCALE_LABEL_800,
+              color: Colors.white,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -458,29 +433,10 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
           ),
         ),
         Text(
-          '${data.score}점',
-          style: TextStyle(
-            fontSize: 9,
-            color: isDark ? Colors.white38 : GRAYSCALE_LABEL_500,
-            fontWeight: FontWeight.w400,
-          ),
+          '$score점',
+          style: const TextStyle(fontSize: 8, color: Colors.white70),
         ),
       ],
     );
   }
-}
-
-class _RankingItemData {
-  final String name;
-  final int score;
-  final int rank;
-  final String? imageUrl;
-  final String? imagePath;
-  _RankingItemData({
-    required this.name,
-    required this.score,
-    required this.rank,
-    this.imageUrl,
-    this.imagePath,
-  });
 }

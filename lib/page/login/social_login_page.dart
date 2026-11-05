@@ -17,16 +17,22 @@ class SocialLoginPage extends StatelessWidget {
     final socialProvider = context.read<SocialLoginProvider>();
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 24.0,
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset('assets/images/logo/app_logo_NoneBack.png'),
-                // Text('더베이스에 오신걸 환영합니다'),
+                Image.asset(
+                  'assets/images/logo/app_logo_NoneBack.png',
+                  height: 140,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(height: 16),
                 if (Platform.isIOS) ...[
                   SizedBox(height: 10),
                   GestureDetector(
@@ -316,7 +322,7 @@ class SocialLoginPage extends StatelessWidget {
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
