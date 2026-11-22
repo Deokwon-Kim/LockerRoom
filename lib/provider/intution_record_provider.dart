@@ -17,6 +17,8 @@ class IntutionRecordProvider extends ChangeNotifier {
   final TextEditingController myScoreController = TextEditingController();
   final TextEditingController oppScoreContreller = TextEditingController();
   final TextEditingController memoController = TextEditingController();
+  final TextEditingController ticketPriceController = TextEditingController();
+  final TextEditingController seatController = TextEditingController();
 
   bool _isLoading = false;
   bool _saving = false;
@@ -66,6 +68,8 @@ class IntutionRecordProvider extends ChangeNotifier {
     myScoreController.dispose();
     oppScoreContreller.dispose();
     memoController.dispose();
+    ticketPriceController.dispose();
+    seatController.dispose();
     super.dispose();
   }
 
@@ -523,6 +527,13 @@ class IntutionRecordProvider extends ChangeNotifier {
         memo: memoController.text.trim().isNotEmpty
             ? memoController.text.trim()
             : null,
+        ticketPrice: int.tryParse(
+              ticketPriceController.text.replaceAll(',', '').trim(),
+            ) ??
+            0,
+        seat: seatController.text.trim().isNotEmpty
+            ? seatController.text.trim()
+            : null,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -545,6 +556,8 @@ class IntutionRecordProvider extends ChangeNotifier {
       myScoreController.clear();
       oppScoreContreller.clear();
       memoController.clear();
+      ticketPriceController.clear();
+      seatController.clear();
       _selectedImage = null;
       _images = [];
       notifyListeners();
@@ -791,5 +804,69 @@ class IntutionRecordProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  // 특정 경기를 선택 상태로 변경
+  void setSelectedGame(ScheduleModel game) {
+    _todayGame = game;
+    _selectedGameIdForRecord = game.gameId;
+
+    // 내 응원팀이 홈팀인지 원정팀인지 판별하여 상대팀 자동설정
+    final myTeam = _selectedTeamSympleForRecord ?? _myTeamSymple;
+    if (myTeam != null) {
+      if (game.homeTeam == myTeam) {
+        _oppTeamSymple = game.awayTeam;
+      } else if (game.awayTeam == myTeam) {
+        _oppTeamSymple = game.homeTeam;
+      } else {
+        // 응원팀 경기가 아닌 책없쾌인 경우 (홈팀을 기본으로 선택)
+        _selectedTeamSympleForRecord = game.homeTeam;
+        _oppTeamSymple = game.awayTeam;
+      }
+    }
+
+    notifyListeners();
+  }
+
+  // 티켓 스캔 데이터 적용 메서드
+  void applyScannedTicketData({
+    required ScheduleModel matchedGame,
+    required DateTime gameDate,
+    int? ticketPrice,
+    String? seat,
+    File? ticketImageFile,
+    required BuildContext context,
+  }) async {
+    // 날짜 & 경기선택
+    await loadGamesByDate(gameDate, context: context);
+    // 스캔된 경기 선택
+    setSelectedGame(matchedGame);
+
+    // 티켓가격 입력 (없으면 0원 처리)
+    ticketPriceController.text = '${ticketPrice ?? 0}';
+
+    // 좌석명 입력 (매핑없이 텍스트 그댇로)
+    if (seat != null && seat.isNotEmpty) {
+      seatController.text = seat;
+    }
+
+    // 종료된 경기는 점수 자동 입력
+    final statusUpper = matchedGame.status.toUpperCase();
+    final isCompleted =
+        matchedGame.status == '종료' || statusUpper.startsWith('FINAL');
+    if (isCompleted) {
+      final myTeam = _selectedTeamSympleForRecord ?? _myTeamSymple;
+      final isHome = matchedGame.homeTeam == myTeam;
+      myScoreController.text =
+          '${isHome ? matchedGame.homeScore : matchedGame.awayScore}';
+      oppScoreContreller.text =
+          '${isHome ? matchedGame.awayScore : matchedGame.homeScore}';
+    }
+
+    // 스캔한 티켓 사진을 이미지 목록에 추가
+    if (ticketImageFile != null && !_images.contains(ticketImageFile)) {
+      _images.add(ticketImageFile);
+    }
+    notifyListeners();
   }
 }

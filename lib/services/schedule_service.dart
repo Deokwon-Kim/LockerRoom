@@ -62,9 +62,9 @@ class ScheduleService {
     ).convert(raw);
     if (rows.isEmpty) return [];
 
-    // Assume first row is header
+    // Assume first row is header (BOM 제거 포함)
     final List<String> header = rows.first
-        .map((e) => e.toString().trim())
+        .map((e) => e.toString().replaceAll('\uFEFF', '').trim())
         .toList();
     final int idxSeason = header.indexOf('season');
     final int idxGameId = header.indexOf('game_id');
@@ -161,9 +161,7 @@ class ScheduleService {
           homeScore = parsed.$2;
         }
         // 필수 필드들이 존재하는지 확인
-        if (idxSeason < 0 ||
-            idxSeason >= r.length ||
-            idxGameId < 0 ||
+        if (idxGameId < 0 ||
             idxGameId >= r.length ||
             idxDate < 0 ||
             idxDate >= r.length ||
@@ -180,9 +178,13 @@ class ScheduleService {
           continue; // 필수 필드가 없으면 스킵
         }
 
+        final int parsedSeason = (idxSeason >= 0 && idxSeason < r.length)
+            ? (int.tryParse(r[idxSeason].toString()) ?? 2025)
+            : (DateTime.tryParse(r[idxDate].toString())?.year ?? 2025);
+
         schedules.add(
           ScheduleModel(
-            season: int.tryParse(r[idxSeason].toString()) ?? 2025,
+            season: parsedSeason,
             gameId: r[idxGameId].toString().trim(),
             dateTimeKst: parseKst(r[idxDate].toString(), r[idxTime].toString()),
             weekday: idxWeekday >= 0 && idxWeekday < r.length

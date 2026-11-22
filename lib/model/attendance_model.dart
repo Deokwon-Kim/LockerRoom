@@ -16,6 +16,9 @@ class AttendanceModel {
   final String? memo;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final int? ticketPrice;
+  final String? seat;
+  final String? seatType;
 
   AttendanceModel({
     required this.gameId,
@@ -33,6 +36,9 @@ class AttendanceModel {
     this.memo,
     this.createdAt,
     this.updatedAt,
+    this.ticketPrice,
+    this.seat,
+    this.seatType,
   });
 
   // Firestore DocumentSnapshot에서 모델로 변환
@@ -58,6 +64,10 @@ class AttendanceModel {
       imageUrls = [data['imageUrl'].toString()];
     }
 
+    final int? ticketPrice = data['ticketPrice'] is int
+        ? data['ticketPrice'] as int
+        : int.tryParse('${data['ticketPrice']}');
+
     return AttendanceModel(
       gameId: data['gameId'] ?? '',
       season: data['season'] ?? 0,
@@ -78,6 +88,9 @@ class AttendanceModel {
       updatedAt: data['updatedAt'] is Timestamp
           ? (data['updatedAt'] as Timestamp).toDate()
           : null,
+      ticketPrice: ticketPrice,
+      seat: data['seat'] as String?,
+      seatType: data['seatType'] as String?,
     );
   }
 
@@ -144,6 +157,9 @@ class AttendanceModel {
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
+      if (ticketPrice != null) 'ticketPrice': ticketPrice,
+      if (seat != null) 'seat': seat,
+      if (seatType != null) 'seatType': seatType,
     };
   }
 

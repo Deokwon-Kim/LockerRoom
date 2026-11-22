@@ -6,9 +6,11 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/attendance_model.dart';
 import 'package:lockerroom/page/intution_record/_record_card.dart';
 import 'package:lockerroom/page/intution_record/intution_record_upload_page.dart';
+import 'package:lockerroom/page/intution_record/ticker_camera_scan_page.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/schdule_Provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/ticket_scan_provider.dart';
 import 'package:provider/provider.dart';
 
 class IntutionRecordListPage extends StatelessWidget {
@@ -75,14 +77,15 @@ class IntutionRecordListPage extends StatelessWidget {
           scrolledUnderElevation: 0,
           actions: [
             IconButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => IntutionRecordUploadPage(),
-                  ),
-                );
-              },
+              onPressed: () => _showAddOptionsSheet(context),
+              // onPressed: () {
+              //   // Navigator.push(
+              //   //   context,
+              //   //   MaterialPageRoute(
+              //   //     builder: (context) => IntutionRecordUploadPage(),
+              //   //   ),
+              //   // );
+              // },
               icon: Icon(Icons.add, size: 30),
             ),
           ],
@@ -145,6 +148,127 @@ class IntutionRecordListPage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showAddOptionsSheet(BuildContext context) {
+    final teamColor =
+        context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: WHITE,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 상단 드래그 핸들
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: GRAYSCALE_LABEL_300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  '직관 기록 추가',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: BLACK,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // 옵션 1: 스마트 티켓 스캔
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: teamColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.document_scanner_outlined,
+                      color: teamColor,
+                    ),
+                  ),
+                  title: const Text(
+                    '스마트 티켓 스캔',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: const Text(
+                    '티켓 사진으로 날짜, 경기, 좌석, 가격 자동 입력',
+                    style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_600),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: GRAYSCALE_LABEL_400,
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext); // 옵션 시트 닫기
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChangeNotifierProvider(
+                          create: (ctx) => TicketScanProvider(
+                            scheduleProvider: ctx.read<ScheduleProvider>(),
+                          ),
+                          child: const TickerCameraScanPage(),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                const Divider(height: 16),
+
+                // 옵션 2: 직접 입력하기
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: GRAYSCALE_LABEL_200,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.edit_note_outlined, color: BLACK),
+                  ),
+                  title: const Text(
+                    '직접 입력하기',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: const Text(
+                    '경기 일정과 직관 내용을 직접 입력',
+                    style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_600),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: GRAYSCALE_LABEL_400,
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext); // 옵션 시트 닫기
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const IntutionRecordUploadPage(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

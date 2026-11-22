@@ -7,9 +7,11 @@ import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lockerroom/model/scanned_ticket_data.dart';
 
 class IntutionRecordUploadPage extends StatefulWidget {
-  const IntutionRecordUploadPage({super.key});
+  final ScannedTicketData? initialScanData;
+  const IntutionRecordUploadPage({super.key, this.initialScanData});
 
   @override
   State<IntutionRecordUploadPage> createState() =>
@@ -26,7 +28,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
   @override
   void initState() {
     super.initState();
-    selectedDate = DateTime.now();
+    selectedDate = widget.initialScanData?.gameDate ?? DateTime.now();
   }
 
   @override
@@ -85,7 +87,24 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => IntutionRecordProvider()..init(context),
+      create: (context) {
+        final provider = IntutionRecordProvider()..init(context);
+
+        if (widget.initialScanData != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final data = widget.initialScanData!;
+            provider.applyScannedTicketData(
+              matchedGame: data.matchedGame,
+              gameDate: data.gameDate,
+              ticketPrice: data.ticketPrice,
+              seat: data.seat,
+              ticketImageFile: data.ticketImageFile,
+              context: context,
+            );
+          });
+        }
+        return provider;
+      },
       child: Consumer<IntutionRecordProvider>(
         builder: (context, intutionProvider, child) {
           if (intutionProvider.isLoding) {
@@ -768,6 +787,80 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                                 ),
                               ),
                             ],
+                          ),
+                          SizedBox(height: 20),
+                          Text(
+                            '좌석 정보(선택)',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          TextFormField(
+                            controller: intutionProvider.seatController,
+                            cursorColor: BUTTON,
+                            decoration: InputDecoration(
+                              hintText: '예: 1루 네이비석 306블럭 3열 39번',
+                              hintStyle: TextStyle(
+                                fontSize: 14,
+                                color: GRAYSCALE_LABEL_400,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: GRAYSCALE_LABEL_300,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          Text(
+                            '티켓 금액(선택)',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          TextFormField(
+                            controller: intutionProvider.ticketPriceController,
+                            keyboardType: TextInputType.number,
+                            cursorColor: BUTTON,
+                            decoration: InputDecoration(
+                              hintText: '예: 26000',
+                              hintStyle: TextStyle(
+                                fontSize: 14,
+                                color: GRAYSCALE_LABEL_400,
+                              ),
+                              suffixText: '원',
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: GRAYSCALE_LABEL_300,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                            ),
                           ),
                           SizedBox(height: 20),
                           Text(
