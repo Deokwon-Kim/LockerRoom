@@ -1,2 +1,5 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include "Generated.xcconfig"
+
+// M-series Mac 시뮬레이터 arm64 빌드 허용
+EXCLUDED_ARCHS[sdk=iphonesimulator*]=i386
