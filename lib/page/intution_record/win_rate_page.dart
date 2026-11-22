@@ -39,6 +39,7 @@ class _WinRatePageState extends State<WinRatePage> {
       appBar: AppBar(
         backgroundColor: BACKGROUND_COLOR,
         elevation: 0,
+        scrolledUnderElevation: 0,
         title: Row(
           children: [
             Text(
@@ -49,6 +50,7 @@ class _WinRatePageState extends State<WinRatePage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+
             SizedBox(width: 12),
             Consumer<IntutionRecordListProvider>(
               builder: (context, lp, child) {
