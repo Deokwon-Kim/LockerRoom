@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/main.dart';
+import 'package:lockerroom/page/intution_record/intution_record_detail_page.dart';
 import 'package:lockerroom/page/quiz/quiz_result_page.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -97,42 +98,139 @@ class _WinRatePageState extends State<WinRatePage> {
           final items = lp.records;
           final teamColor = tp.selectedTeam?.color ?? BUTTON;
 
-          // 승리한 경기 수 계산
+          // 승리한 경기 수, 득실점, 연승, 베스트 매치, 구장 도장깨기 계산
           int wins = 0;
           int losses = 0;
           int draws = 0;
+          int totalMyRuns = 0;
+          int totalOppRuns = 0;
+          int scoredGamesCount = 0;
           int? _parseScore(dynamic v) => v is int ? v : int.tryParse('$v');
 
-          for (final item in items) {
+          // 날짜 오름차순 정렬 (연승 및 최근 흐름 계산용)
+          final sortedChronological = List<Map<String, dynamic>>.from(items)
+            ..sort((a, b) {
+              final da = (a['date'] as String?) ?? '';
+              final db = (b['date'] as String?) ?? '';
+              final cmp = da.compareTo(db);
+              if (cmp != 0) return cmp;
+              final ta = (a['time'] as String?) ?? '';
+              final tb = (b['time'] as String?) ?? '';
+              return ta.compareTo(tb);
+            });
+
+          int maxWinStreak = 0;
+          int runningWinStreak = 0;
+          Map<String, dynamic>? bestMatch;
+          int bestMatchMargin = -999;
+          int bestMatchMyScore = -1;
+
+          final Map<String, int> stadiumVisits = {};
+
+          for (final item in sortedChronological) {
             final int? my = _parseScore(item['myScore']);
             final int? opp = _parseScore(item['opponentScore']);
+            final String rawStadium =
+                (item['stadium'] as String?)?.trim() ?? '';
+            if (rawStadium.isNotEmpty) {
+              final normStadium = _normalizeKboStadium(rawStadium);
+              if (normStadium != null) {
+                stadiumVisits[normStadium] =
+                    (stadiumVisits[normStadium] ?? 0) + 1;
+              }
+            }
+
             if (my != null && opp != null) {
+              totalMyRuns += my;
+              totalOppRuns += opp;
+              scoredGamesCount++;
+
               if (my > opp) {
                 wins++;
+                runningWinStreak++;
+                if (runningWinStreak > maxWinStreak) {
+                  maxWinStreak = runningWinStreak;
+                }
+                final margin = my - opp;
+                if (margin > bestMatchMargin ||
+                    (margin == bestMatchMargin && my > bestMatchMyScore)) {
+                  bestMatchMargin = margin;
+                  bestMatchMyScore = my;
+                  bestMatch = item;
+                }
               } else if (my < opp) {
                 losses++;
+                runningWinStreak = 0;
               } else {
                 draws++;
+                runningWinStreak = 0;
               }
             }
           }
 
+          // 현재 연승/연패 계산 (가장 최근 경기부터 역순 확인)
+          int currentWinStreak = 0;
+          int currentLossStreak = 0;
+          String currentStreakText = '기록 없음';
+          if (sortedChronological.isNotEmpty) {
+            for (int i = sortedChronological.length - 1; i >= 0; i--) {
+              final r = sortedChronological[i];
+              final my = _parseScore(r['myScore']);
+              final opp = _parseScore(r['opponentScore']);
+              if (my == null || opp == null) continue;
+              if (my > opp) {
+                if (currentLossStreak > 0) break;
+                currentWinStreak++;
+              } else if (my < opp) {
+                if (currentWinStreak > 0) break;
+                currentLossStreak++;
+              } else {
+                break;
+              }
+            }
+            if (currentWinStreak > 0) {
+              currentStreakText = '🔥 ${currentWinStreak}연승 중';
+            } else if (currentLossStreak > 0) {
+              currentStreakText = '${currentLossStreak}연패 중';
+            } else {
+              currentStreakText = '직전 경기 무승부';
+            }
+          }
+
+          // 최근 5경기 (오래된 순 -> 최신 순으로 최대 5개)
+          final recentGames = sortedChronological.length > 5
+              ? sortedChronological.sublist(sortedChronological.length - 5)
+              : sortedChronological;
+
           // 승률 계산
           final int totalGames = items.length;
           final double winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
+          final String fairyTitle = _getFairyTitle(
+            totalGames: totalGames,
+            winRate: winRate,
+            currentWinStreak: currentWinStreak,
+          );
+
+          final double avgMyRuns = scoredGamesCount > 0
+              ? totalMyRuns / scoredGamesCount
+              : 0.0;
+          final double avgOppRuns = scoredGamesCount > 0
+              ? totalOppRuns / scoredGamesCount
+              : 0.0;
+          final double avgMargin = avgMyRuns - avgOppRuns;
 
           return SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 1. Hero Section (Win Rate & Logo)
+                  // 1. Hero Section (Win Rate & Logo + 승리요정 칭호 뱃지)
                   Screenshot(
                     controller: _screenshotController,
                     child: Container(
                       width: double.infinity,
-                      height: 320,
+                      height: 340,
                       clipBehavior: Clip.hardEdge,
                       decoration: BoxDecoration(
                         color: WHITE,
@@ -167,16 +265,35 @@ class _WinRatePageState extends State<WinRatePage> {
                             crossAxisAlignment: CrossAxisAlignment.center,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: teamColor.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  fairyTitle,
+                                  style: TextStyle(
+                                    color: teamColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
                               Text(
                                 '승률',
                                 style: TextStyle(
                                   color: GRAYSCALE_LABEL_500,
-                                  fontSize: 20,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 1.5,
                                 ),
                               ),
-                              SizedBox(height: 10),
+                              SizedBox(height: 6),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,7 +301,7 @@ class _WinRatePageState extends State<WinRatePage> {
                                   Text(
                                     winRate.toStringAsFixed(0),
                                     style: GoogleFonts.bebasNeue(
-                                      fontSize: 140,
+                                      fontSize: 132,
                                       fontWeight: FontWeight.bold,
                                       height: 1,
                                       color: teamColor,
@@ -198,18 +315,18 @@ class _WinRatePageState extends State<WinRatePage> {
                                     ),
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.only(top: 20),
+                                    padding: const EdgeInsets.only(top: 18),
                                     child: Text(
                                       '%',
                                       style: GoogleFonts.blackHanSans(
-                                        fontSize: 40,
+                                        fontSize: 38,
                                         color: teamColor,
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
-                              SizedBox(height: 8),
+                              SizedBox(height: 6),
                               Padding(
                                 padding: _isCapturing
                                     ? EdgeInsets.zero
@@ -287,11 +404,570 @@ class _WinRatePageState extends State<WinRatePage> {
                       ),
                     ],
                   ),
+
+                  if (totalGames > 0) ...[
+                    const SizedBox(height: 16),
+
+                    // 3. 최근 직관 흐름 & 최다 연승 기록 카드
+                    _buildStreakAndRecentFormCard(
+                      teamColor: teamColor,
+                      currentStreakText: currentStreakText,
+                      currentWinStreak: currentWinStreak,
+                      maxWinStreak: maxWinStreak,
+                      recentGames: recentGames,
+                      parseScore: _parseScore,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // 4. 직관 공·수 화력 & 최고의 직관 경기 카드
+                    _buildFirepowerAndBestMatchCard(
+                      context: context,
+                      teamColor: teamColor,
+                      avgMyRuns: avgMyRuns,
+                      avgOppRuns: avgOppRuns,
+                      avgMargin: avgMargin,
+                      bestMatch: bestMatch,
+                      parseScore: _parseScore,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // 5. KBO 구장 도장깨기 카드
+                    _buildStadiumStampCard(
+                      teamColor: teamColor,
+                      stadiumVisits: stadiumVisits,
+                    ),
+                  ],
                 ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  static const List<String> _kboMainStadiums = [
+    '잠실',
+    '고척',
+    '문학',
+    '수원',
+    '대전',
+    '대구',
+    '광주',
+    '사직',
+    '창원',
+  ];
+
+  String? _normalizeKboStadium(String stadium) {
+    if (stadium.contains('잠실')) return '잠실';
+    if (stadium.contains('고척')) return '고척';
+    if (stadium.contains('문학') ||
+        stadium.contains('인천') ||
+        stadium.contains('랜더스')) {
+      return '문학';
+    }
+    if (stadium.contains('수원') || stadium.contains('위즈')) return '수원';
+    if (stadium.contains('대전') ||
+        stadium.contains('이글스') ||
+        stadium.contains('볼파크')) {
+      return '대전';
+    }
+    if (stadium.contains('대구') || stadium.contains('라이온즈')) return '대구';
+    if (stadium.contains('광주') || stadium.contains('챔피언스')) return '광주';
+    if (stadium.contains('사직') || stadium.contains('부산')) return '사직';
+    if (stadium.contains('창원') ||
+        stadium.contains('마산') ||
+        stadium.contains('NC')) {
+      return '창원';
+    }
+    return null;
+  }
+
+  String _getFairyTitle({
+    required int totalGames,
+    required double winRate,
+    required int currentWinStreak,
+  }) {
+    if (totalGames == 0) return '⚾ 설레는 첫 직관 대기 중';
+    if (currentWinStreak >= 3) return '🔥 ${currentWinStreak}연승 폭주 승리요정';
+    if (totalGames >= 3 && winRate >= 70) return '🧚 확신의 승리요정';
+    if (totalGames >= 1 && winRate == 100) return '✨ 백전백승 승리요정';
+    if (totalGames >= 5 && winRate >= 55) return '⚾ 든든한 승리 수호신';
+    if (totalGames >= 10 && winRate >= 50) return '🏟️ 야구장 출근도장 승요';
+    if (winRate >= 50) return '🍀 기운 좋은 직관러';
+    return '🕯️ 반등을 노리는 직관러';
+  }
+
+  Widget _buildStreakAndRecentFormCard({
+    required Color teamColor,
+    required String currentStreakText,
+    required int currentWinStreak,
+    required int maxWinStreak,
+    required List<Map<String, dynamic>> recentGames,
+    required int? Function(dynamic) parseScore,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: WHITE,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: BLACK.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '🔥 최근 직관 흐름',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: BLACK,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: currentWinStreak > 0
+                      ? teamColor.withOpacity(0.12)
+                      : GRAYSCALE_LABEL_200,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  currentStreakText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: currentWinStreak > 0
+                        ? teamColor
+                        : GRAYSCALE_LABEL_700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: recentGames.asMap().entries.map((entry) {
+                    final idx = entry.key;
+                    final g = entry.value;
+                    final isLatest = idx == recentGames.length - 1;
+                    final my = parseScore(g['myScore']);
+                    final opp = parseScore(g['opponentScore']);
+                    final oppTeam = (g['oppTeam'] as String?) ?? '';
+
+                    String label = '무';
+                    Color badgeColor = GRAYSCALE_LABEL_500;
+                    if (my != null && opp != null) {
+                      if (my > opp) {
+                        label = '승';
+                        badgeColor = BUTTON;
+                      } else if (my < opp) {
+                        label = '패';
+                        badgeColor = Colors.redAccent;
+                      }
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: isLatest
+                                  ? badgeColor
+                                  : badgeColor.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                              border: isLatest
+                                  ? Border.all(
+                                      color: badgeColor.withOpacity(0.4),
+                                      width: 2,
+                                    )
+                                  : null,
+                            ),
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isLatest ? WHITE : badgeColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            oppTeam.isNotEmpty ? oppTeam : '-',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: isLatest
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              color: isLatest ? BLACK : GRAYSCALE_LABEL_500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    '최다 연승',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: GRAYSCALE_LABEL_500,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${maxWinStreak}연승',
+                    style: GoogleFonts.bebasNeue(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: teamColor,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFirepowerAndBestMatchCard({
+    required BuildContext context,
+    required Color teamColor,
+    required double avgMyRuns,
+    required double avgOppRuns,
+    required double avgMargin,
+    required Map<String, dynamic>? bestMatch,
+    required int? Function(dynamic) parseScore,
+  }) {
+    final marginPrefix = avgMargin > 0 ? '+' : '';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: WHITE,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: BLACK.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '⚡ 직관 공·수 화력',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: BLACK,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _buildMiniMetric(
+                  label: '평균 득점',
+                  value: '${avgMyRuns.toStringAsFixed(1)}점',
+                  color: BUTTON,
+                ),
+              ),
+              Container(width: 1, height: 36, color: GRAYSCALE_LABEL_200),
+              Expanded(
+                child: _buildMiniMetric(
+                  label: '평균 실점',
+                  value: '${avgOppRuns.toStringAsFixed(1)}점',
+                  color: Colors.redAccent,
+                ),
+              ),
+              Container(width: 1, height: 36, color: GRAYSCALE_LABEL_200),
+              Expanded(
+                child: _buildMiniMetric(
+                  label: '평균 득실 마진',
+                  value: '$marginPrefix${avgMargin.toStringAsFixed(1)}',
+                  color: avgMargin >= 0 ? teamColor : GRAYSCALE_LABEL_600,
+                ),
+              ),
+            ],
+          ),
+          if (bestMatch != null) ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1, color: GRAYSCALE_LABEL_200),
+            const SizedBox(height: 14),
+            InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () {
+                final gameId = bestMatch['gameId'] as String?;
+                if (gameId != null && gameId.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => IntutionRecordDetailPage(gameId: gameId),
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: BACKGROUND_COLOR,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.18),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.emoji_events,
+                        color: Colors.orange,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '최고의 직관 승리 경기',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: GRAYSCALE_LABEL_500,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${bestMatch['date'] ?? ''} · vs ${bestMatch['oppTeam'] ?? ''}${bestMatch['stadium'] != null ? ' (${bestMatch['stadium']})' : ''}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: BLACK,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: BUTTON.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${parseScore(bestMatch['myScore']) ?? 0} : ${parseScore(bestMatch['opponentScore']) ?? 0} 승',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: BUTTON,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 18,
+                      color: GRAYSCALE_LABEL_400,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniMetric({
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: GRAYSCALE_LABEL_500,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: GoogleFonts.bebasNeue(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStadiumStampCard({
+    required Color teamColor,
+    required Map<String, int> stadiumVisits,
+  }) {
+    final visitedCount = _kboMainStadiums
+        .where((s) => (stadiumVisits[s] ?? 0) > 0)
+        .length;
+    final progress = visitedCount / _kboMainStadiums.length;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: WHITE,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: BLACK.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '🏟️ KBO 구장 도장깨기',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: BLACK,
+                ),
+              ),
+              Text(
+                '$visitedCount / ${_kboMainStadiums.length} 구장',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: teamColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: GRAYSCALE_LABEL_200,
+              valueColor: AlwaysStoppedAnimation<Color>(teamColor),
+            ),
+          ),
+          const SizedBox(height: 16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 2.3,
+            ),
+            itemCount: _kboMainStadiums.length,
+            itemBuilder: (context, index) {
+              final stadium = _kboMainStadiums[index];
+              final count = stadiumVisits[stadium] ?? 0;
+              final visited = count > 0;
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: visited
+                      ? teamColor.withOpacity(0.1)
+                      : BACKGROUND_COLOR,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: visited ? teamColor : GRAYSCALE_LABEL_200,
+                    width: visited ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      visited ? Icons.verified_rounded : Icons.stadium_outlined,
+                      size: 15,
+                      color: visited ? teamColor : GRAYSCALE_LABEL_400,
+                    ),
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        visited ? '$stadium (${count}회)' : stadium,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: visited
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          color: visited ? BLACK : GRAYSCALE_LABEL_400,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

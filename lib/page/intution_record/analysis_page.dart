@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -15,83 +15,14 @@ class AnalysisPage extends StatefulWidget {
 }
 
 class _AnalysisPageState extends State<AnalysisPage> {
-  String _selectedCategory = '상대별';
-  final List<String> _category = ['상대별', '구장별', '요일별', '홈/원정'];
-
-  void _showCategoryPicker(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: WHITE,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '분석 기준 선택',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: BLACK,
-                ),
-              ),
-              SizedBox(height: 16),
-              ..._category.map((category) {
-                final isSelected = category == _selectedCategory;
-                return ListTile(
-                  title: Text(
-                    category,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: isSelected
-                          ? (context.read<TeamProvider>().selectedTeam?.color ??
-                                BUTTON)
-                          : BLACK,
-                    ),
-                  ),
-                  trailing: isSelected
-                      ? Icon(
-                          Icons.check,
-                          color:
-                              context
-                                  .read<TeamProvider>()
-                                  .selectedTeam
-                                  ?.color ??
-                              BUTTON,
-                        )
-                      : null,
-                  onTap: () {
-                    setState(() {
-                      _selectedCategory = category;
-                    });
-                    Navigator.pop(context);
-                  },
-                );
-              }).toList(),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  String _selectedCategory = '좌석별';
+  final List<String> _categories = ['좌석별', '지출분석', '상대별', '구장별', '요일별', '홈/원정'];
+  final NumberFormat _currencyFormat = NumberFormat('#,###');
 
   void _showYearPicker(BuildContext context, IntutionRecordListProvider irp) {
     final years = irp.availableYears;
-
-    if (years.isEmpty) {
-      years.add(DateTime.now().year);
-    }
-
-    // 전체선택 옵션
+    if (years.isEmpty) years.add(DateTime.now().year);
     final allYears = [null, ...years];
-
     int selectedIndex = allYears.indexOf(irp.selectedYear);
     if (selectedIndex == -1) selectedIndex = 0;
 
@@ -101,32 +32,22 @@ class _AnalysisPageState extends State<AnalysisPage> {
         return Container(
           height: 250,
           color: CupertinoColors.systemBackground.resolveFrom(context),
-          child: Column(
-            children: [
-              // 상단 버튼
-              Expanded(
-                child: CupertinoPicker(
-                  backgroundColor: CupertinoColors.systemBackground.resolveFrom(
-                    context,
-                  ),
-                  itemExtent: 40,
-                  scrollController: FixedExtentScrollController(
-                    initialItem: selectedIndex,
-                  ),
-                  onSelectedItemChanged: (int index) {
-                    irp.setYear(allYears[index]);
-                  },
-                  children: allYears.map((year) {
-                    return Center(
-                      child: Text(
-                        year == null ? '전체' : '$year년',
-                        style: TextStyle(fontSize: 20),
-                      ),
-                    );
-                  }).toList(),
+          child: CupertinoPicker(
+            itemExtent: 40,
+            scrollController: FixedExtentScrollController(
+              initialItem: selectedIndex,
+            ),
+            onSelectedItemChanged: (int index) {
+              irp.setYear(allYears[index]);
+            },
+            children: allYears.map((year) {
+              return Center(
+                child: Text(
+                  year == null ? '전체 시즌' : '$year년',
+                  style: const TextStyle(fontSize: 18),
                 ),
-              ),
-            ],
+              );
+            }).toList(),
           ),
         );
       },
@@ -135,41 +56,55 @@ class _AnalysisPageState extends State<AnalysisPage> {
 
   @override
   Widget build(BuildContext context) {
+    final teamProvider = context.watch<TeamProvider>();
+    final teamColor = teamProvider.selectedTeam?.color ?? BUTTON;
+
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
         backgroundColor: BACKGROUND_COLOR,
         scrolledUnderElevation: 0,
+        elevation: 0,
         title: Row(
           children: [
-            Text(
-              '분석',
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+            const Text(
+              '직관 분석',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: BLACK,
+              ),
             ),
-            SizedBox(width: 12),
+            const SizedBox(width: 10),
             Consumer<IntutionRecordListProvider>(
               builder: (context, lp, child) {
                 return GestureDetector(
                   onTap: () => _showYearPicker(context, lp),
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: WHITE,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: GRAYSCALE_LABEL_300),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          lp.selectedYear == null ? '전체' : '${lp.selectedYear}',
-                          style: GoogleFonts.bebasNeue(
-                            fontSize: 18,
-                            color: GRAYSCALE_LABEL_600,
+                          lp.selectedYear == null
+                              ? '전체'
+                              : '${lp.selectedYear}년',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: BLACK,
                           ),
                         ),
-                        SizedBox(width: 4),
-                        Icon(
+                        const SizedBox(width: 4),
+                        const Icon(
                           Icons.keyboard_arrow_down,
                           size: 16,
                           color: GRAYSCALE_LABEL_600,
@@ -180,69 +115,344 @@ class _AnalysisPageState extends State<AnalysisPage> {
                 );
               },
             ),
-            SizedBox(width: 12),
-            GestureDetector(
-              onTap: () => _showCategoryPicker(context),
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: WHITE,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: GRAYSCALE_LABEL_300),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _selectedCategory,
-                      style: GoogleFonts.blackHanSans(
-                        fontSize: 18,
-                        color: GRAYSCALE_LABEL_600,
-                      ),
-                    ),
-                    SizedBox(width: 4),
-                    Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 16,
-                      color: GRAYSCALE_LABEL_600,
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),
-      body: Consumer2<IntutionRecordListProvider, TeamProvider>(
-        builder: (context, lp, tp, child) {
+      body: Consumer<IntutionRecordListProvider>(
+        builder: (context, lp, child) {
           if (lp.isLoading) {
-            return Center(
-              child: CircularProgressIndicator(
-                color: tp.selectedTeam?.color ?? BUTTON,
-              ),
-            );
+            return Center(child: CircularProgressIndicator(color: teamColor));
           }
 
           final records = lp.records;
           if (records.isEmpty) {
-            return Center(
+            return const Center(
               child: Text(
-                '분석할 기록이 없습니다.',
+                '분석할 직관 기록이 없습니다.',
                 style: TextStyle(color: GRAYSCALE_LABEL_500, fontSize: 16),
               ),
             );
           }
-          return _buildAnalysisView(records, tp.selectedTeam?.color);
+
+          return Column(
+            children: [
+              _buildSummaryHeader(records, teamColor),
+              _buildCategoryTabBar(teamColor),
+              Expanded(child: _buildCurrentView(records, teamColor)),
+            ],
+          );
         },
       ),
     );
   }
 
-  Widget _buildAnalysisView(
+  /// 좌석 전체 문자열에서 블럭/구역/열/번 등 상세 위치를 제외한 '좌석 등급명'만 추출
+  /// 예: "1루 네이비석 306블럭 3열 39번" -> "1루 네이비석"
+  /// 예: "블루석 108블록 5열 12번" -> "블루석"
+  static String extractSeatGrade(String rawSeat) {
+    var s = rawSeat.trim();
+    if (s.isEmpty) return s;
+
+    // 1) 상세 위치 토큰(블럭/블록/구역/섹션/열/번/호/매 및 OCR 변형)부터 끝까지 제거
+    // ※ 주의: Dart RegExp의 \b는 한글 뒤에서 매칭되지 않으므로 사용하지 않음
+    final detailPattern = RegExp(
+      r'(?:^|[\s,\-/]+)(?:제?\s*)?(?:[0-9]+|[A-Za-z]{1,2})\s*(?:블럭|블록|불럭|블력|볼럭|블랙|구역|구억|구여|섹션|열|일|얼|엘|번|빈|변|호|매)(?=\s|$|[0-9가-힣A-Za-z]).*',
+      caseSensitive: false,
+    );
+    final attachedDetailPattern = RegExp(
+      r'(?<=[가-힣])(?:[0-9]+|[A-Za-z]{1,2})\s*(?:블럭|블록|불럭|블력|볼럭|블랙|구역|구억|구여|섹션|열|일|얼|엘|번|빈|변|호|매)(?=\s|$|[0-9가-힣A-Za-z]).*',
+      caseSensitive: false,
+    );
+
+    final withoutAllDetails = s
+        .replaceAll(detailPattern, '')
+        .replaceAll(attachedDetailPattern, '')
+        .trim();
+
+    if (withoutAllDetails.isNotEmpty) {
+      s = withoutAllDetails;
+    } else {
+      // 등급명 없이 "306블럭 3열 39번"처럼 적힌 경우 열/번만 제거하고 "306블럭" 유지
+      final withoutRowNum = s
+          .replaceAll(
+            RegExp(
+              r'(?:[\s,\-/]+)(?:[0-9]+|[A-Za-z]{1,2})\s*(?:열|일|얼|엘|번|빈|변|호|매)(?=\s|$|[0-9가-힣A-Za-z]).*',
+              caseSensitive: false,
+            ),
+            '',
+          )
+          .trim();
+      if (withoutRowNum.isNotEmpty) {
+        s = withoutRowNum;
+      }
+    }
+
+    // 2) "~석/~존/~박스/~라운지/~테라스/~데크/~클럽" 뒤에 남은 숫자나 부가 텍스트가 있으면 등급명까지만 추출
+    final gradeSuffixMatch = RegExp(
+      r'^(.+?(?:석|존|박스|라운지|테라스|데크|클럽))(?:\s+[0-9A-Za-z\-]+.*)?$',
+      caseSensitive: false,
+    ).firstMatch(s);
+    if (gradeSuffixMatch != null) {
+      s = gradeSuffixMatch.group(1)!.trim();
+    }
+
+    // 3) "1루네이비석", "1루측 네이비석" -> "1루 네이비석" 형태로 띄어쓰기 정규화
+    s = s.replaceFirstMapped(
+      RegExp(r'^([13]루)(?:측|쪽)?\s*(?=[가-힣A-Za-z])'),
+      (m) => '${m.group(1)} ',
+    );
+
+    return s.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  /// 띄어쓰기 차이("1루네이비석" vs "1루 네이비석")에 영향받지 않는 그룹핑 키
+  static String normalizeSeatGradeKey(String grade) {
+    return grade.replaceAll(' ', '').toUpperCase();
+  }
+
+  /// 승리 명당 좌석 후보 자격: 최소 1승 이상 & 패배보다 승리가 많거나 같음 (승률 50% 이상)
+  static bool isBestSeatCandidate(_Stats s) {
+    return s.wins > 0 && s.wins >= s.losses;
+  }
+
+  /// 좌석별 순위 정렬 기준:
+  /// 1순위: 명당 후보 여부 (승 >= 패 & 1승 이상)
+  /// 2순위: 다승 (승리 횟수가 많은 순)
+  /// 3순위: 승률 높은 순
+  /// 4순위: 패배 적은 순 -> 총 경기 수 많은 순
+  static int compareSeatStats(_Stats a, _Stats b) {
+    final candA = isBestSeatCandidate(a) ? 1 : 0;
+    final candB = isBestSeatCandidate(b) ? 1 : 0;
+    if (candA != candB) return candB.compareTo(candA);
+
+    final winCmp = b.wins.compareTo(a.wins);
+    if (winCmp != 0) return winCmp;
+
+    final rateA = a.total > 0 ? a.wins / a.total : 0.0;
+    final rateB = b.total > 0 ? b.wins / b.total : 0.0;
+    final rateCmp = rateB.compareTo(rateA);
+    if (rateCmp != 0) return rateCmp;
+
+    final lossCmp = a.losses.compareTo(b.losses);
+    if (lossCmp != 0) return lossCmp;
+
+    return b.total.compareTo(a.total);
+  }
+
+  Widget _buildSummaryHeader(
     List<Map<String, dynamic>> records,
-    Color? teamColor,
+    Color teamColor,
+  ) {
+    int total = records.length;
+    int wins = 0;
+    int losses = 0;
+    int draws = 0;
+    int totalSpent = 0;
+    final Map<String, _Stats> seatGradeStats = {};
+    final Map<String, String> seatGradeLabels = {};
+
+    for (final r in records) {
+      final my = _parseScore(r['myScore']) ?? 0;
+      final opp = _parseScore(r['opponentScore']) ?? 0;
+      final rawSeat = (r['seat'] as String?)?.trim();
+
+      if (rawSeat != null && rawSeat.isNotEmpty) {
+        final grade = extractSeatGrade(rawSeat);
+        if (grade.isNotEmpty) {
+          final key = normalizeSeatGradeKey(grade);
+          seatGradeLabels.putIfAbsent(key, () => grade);
+          final st = seatGradeStats.putIfAbsent(key, () => _Stats());
+          st.total++;
+          if (my > opp) {
+            st.wins++;
+          } else if (my < opp) {
+            st.losses++;
+          } else {
+            st.draws++;
+          }
+        }
+      }
+
+      if (my > opp) {
+        wins++;
+      } else if (my < opp) {
+        losses++;
+      } else {
+        draws++;
+      }
+
+      final price = r['ticketPrice'] is int
+          ? r['ticketPrice'] as int
+          : int.tryParse('${r['ticketPrice']}') ?? 0;
+      totalSpent += price;
+    }
+
+    final winRate = total > 0 ? (wins / total * 100).toStringAsFixed(0) : '0';
+    String bestSeat = '-';
+    _Stats? bestSeatStat;
+
+    final winningSeats = seatGradeStats.entries
+        .where((e) => isBestSeatCandidate(e.value))
+        .toList();
+    if (winningSeats.isNotEmpty) {
+      winningSeats.sort((a, b) => compareSeatStats(a.value, b.value));
+      final bestKey = winningSeats.first.key;
+      bestSeat = seatGradeLabels[bestKey] ?? bestKey;
+      bestSeatStat = winningSeats.first.value;
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: WHITE,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: BLACK.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              Expanded(
+                child: _buildKpiItem('총 직관', '$total경기', teamColor),
+              ),
+              Expanded(
+                child: _buildKpiItem(
+                  '총 승·무·패',
+                  '$wins승 $draws무 $losses패',
+                  teamColor,
+                ),
+              ),
+              Expanded(
+                child: _buildKpiItem('직관 승률', '$winRate%', teamColor),
+              ),
+              Expanded(
+                child: _buildKpiItem(
+                  '총 티켓비용',
+                  totalSpent > 0
+                      ? '${_currencyFormat.format(totalSpent)}원'
+                      : '-',
+                  teamColor,
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 20),
+          Row(
+            children: [
+              const Icon(Icons.stars, color: Colors.amber, size: 18),
+              const SizedBox(width: 6),
+              const Text(
+                '나의 승리 명당 좌석: ',
+                style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_600),
+              ),
+              Expanded(
+                child: Text(
+                  bestSeat,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: teamColor,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                bestSeatStat != null
+                    ? '${bestSeatStat.wins}승 ${bestSeatStat.draws}무 ${bestSeatStat.losses}패'
+                    : '-',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: GRAYSCALE_LABEL_500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKpiItem(String title, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 11, color: GRAYSCALE_LABEL_500),
+          ),
+          const SizedBox(height: 4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: GoogleFonts.bebasNeue(
+                fontSize: 21,
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryTabBar(Color teamColor) {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        itemCount: _categories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final cat = _categories[index];
+          final isSelected = cat == _selectedCategory;
+          return ChoiceChip(
+            label: Text(cat),
+            selected: isSelected,
+            selectedColor: teamColor,
+            backgroundColor: WHITE,
+            labelStyle: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected ? WHITE : GRAYSCALE_LABEL_600,
+            ),
+            side: BorderSide(
+              color: isSelected ? teamColor : GRAYSCALE_LABEL_300,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            onSelected: (val) {
+              if (val) setState(() => _selectedCategory = cat);
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCurrentView(
+    List<Map<String, dynamic>> records,
+    Color teamColor,
   ) {
     switch (_selectedCategory) {
+      case '좌석별':
+        return _SeatAnalysis(records: records, teamColor: teamColor);
+      case '지출분석':
+        return _CostAnalysis(records: records, teamColor: teamColor);
       case '상대별':
         return _OpponentAnalysis(records: records, teamColor: teamColor);
       case '구장별':
@@ -252,282 +462,768 @@ class _AnalysisPageState extends State<AnalysisPage> {
       case '홈/원정':
         return _HomeAwayAnalysis(records: records, teamColor: teamColor);
       default:
-        return _OpponentAnalysis(records: records, teamColor: teamColor);
+        return _SeatAnalysis(records: records, teamColor: teamColor);
     }
+  }
+
+  static int? _parseScore(dynamic v) => v is int ? v : int.tryParse('$v');
+}
+
+// -----------------------------------------------------------------------------
+// [좌석별 분석] 좌석 등급명으로 그룹화 + 탭 시 상세 좌석 드롭다운 표시
+// -----------------------------------------------------------------------------
+class _SeatDetailItem {
+  final String fullSeat;
+  final String date;
+  final String oppTeam;
+  final int? myScore;
+  final int? oppScore;
+
+  const _SeatDetailItem({
+    required this.fullSeat,
+    required this.date,
+    required this.oppTeam,
+    this.myScore,
+    this.oppScore,
+  });
+}
+
+class _SeatAnalysis extends StatefulWidget {
+  final List<Map<String, dynamic>> records;
+  final Color teamColor;
+
+  const _SeatAnalysis({required this.records, required this.teamColor});
+
+  @override
+  State<_SeatAnalysis> createState() => _SeatAnalysisState();
+}
+
+class _SeatAnalysisState extends State<_SeatAnalysis> {
+  final Set<String> _expandedKeys = {};
+
+  @override
+  Widget build(BuildContext context) {
+    final Map<String, _Stats> seatStats = {};
+    final Map<String, String> seatLabels = {};
+    final Map<String, List<_SeatDetailItem>> seatDetails = {};
+
+    for (final r in widget.records) {
+      final rawSeat = (r['seat'] as String?)?.trim();
+      if (rawSeat == null || rawSeat.isEmpty) continue; // 좌석 정보 없는 기록 제외
+
+      final grade = _AnalysisPageState.extractSeatGrade(rawSeat);
+      if (grade.isEmpty) continue;
+      final key = _AnalysisPageState.normalizeSeatGradeKey(grade);
+
+      seatLabels.putIfAbsent(key, () => grade);
+      seatStats.putIfAbsent(key, () => _Stats());
+      seatDetails.putIfAbsent(key, () => []);
+
+      final my = _AnalysisPageState._parseScore(r['myScore']);
+      final opp = _AnalysisPageState._parseScore(r['opponentScore']);
+
+      seatStats[key]!.total++;
+
+      if (my != null && opp != null) {
+        if (my > opp) {
+          seatStats[key]!.wins++;
+        } else if (my < opp) {
+          seatStats[key]!.losses++;
+        } else {
+          seatStats[key]!.draws++;
+        }
+      }
+
+      seatDetails[key]!.add(
+        _SeatDetailItem(
+          fullSeat: rawSeat,
+          date: (r['date'] as String?) ?? '',
+          oppTeam: (r['oppTeam'] as String?) ?? '',
+          myScore: my,
+          oppScore: opp,
+        ),
+      );
+    }
+
+    if (seatStats.isEmpty) {
+      return const Center(
+        child: Text(
+          '좌석이 기록된 경기가 없습니다.\n티켓 스캔으로 좌석을 기록해보세요!',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: GRAYSCALE_LABEL_500, fontSize: 14),
+        ),
+      );
+    }
+
+    // 명당 후보(승 >= 패) & 다승 우선 -> 동률 시 승률 높은 순서대로 정렬
+    final sorted = seatStats.entries.toList()
+      ..sort((a, b) => _AnalysisPageState.compareSeatStats(a.value, b.value));
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: sorted.length,
+      itemBuilder: (context, index) {
+        final entry = sorted[index];
+        final key = entry.key;
+        final stats = entry.value;
+        final label = seatLabels[key] ?? key;
+        final details = List<_SeatDetailItem>.from(seatDetails[key] ?? [])
+          ..sort((a, b) => b.date.compareTo(a.date));
+        final isBest =
+            index == 0 && _AnalysisPageState.isBestSeatCandidate(stats);
+        final winRate = stats.total > 0
+            ? (stats.wins / stats.total * 100)
+            : 0.0;
+        final isExpanded = _expandedKeys.contains(key);
+
+        return _buildExpandableSeatCard(
+          keyStr: key,
+          title: label,
+          badgeText: isBest ? '🥇 승리 요정 명당' : null,
+          stats: stats,
+          winRate: winRate,
+          details: details,
+          isExpanded: isExpanded,
+        );
+      },
+    );
+  }
+
+  Widget _buildExpandableSeatCard({
+    required String keyStr,
+    required String title,
+    String? badgeText,
+    required _Stats stats,
+    required double winRate,
+    required List<_SeatDetailItem> details,
+    required bool isExpanded,
+  }) {
+    final teamColor = widget.teamColor;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isExpanded) {
+            _expandedKeys.remove(keyStr);
+          } else {
+            _expandedKeys.add(keyStr);
+          }
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: WHITE,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: BLACK.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: BLACK,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (badgeText != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            badgeText,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      '${stats.total}경기',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: GRAYSCALE_LABEL_600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      isExpanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      size: 20,
+                      color: GRAYSCALE_LABEL_500,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Text(
+                  '${winRate.toStringAsFixed(0)}%',
+                  style: GoogleFonts.bebasNeue(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: teamColor,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  '승률',
+                  style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+                ),
+                const Spacer(),
+                Text(
+                  '${stats.wins}승  ${stats.draws}무  ${stats.losses}패',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: BLACK,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (stats.total > 0)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: SizedBox(
+                  height: 8,
+                  child: Row(
+                    children: [
+                      if (stats.wins > 0)
+                        Expanded(
+                          flex: stats.wins,
+                          child: Container(color: Colors.blue),
+                        ),
+                      if (stats.draws > 0)
+                        Expanded(
+                          flex: stats.draws,
+                          child: Container(color: GRAYSCALE_LABEL_400),
+                        ),
+                      if (stats.losses > 0)
+                        Expanded(
+                          flex: stats.losses,
+                          child: Container(color: Colors.redAccent),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            if (isExpanded && details.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Divider(height: 1, color: GRAYSCALE_LABEL_200),
+              const SizedBox(height: 10),
+              ...details.map((d) {
+                String resultLabel = '무';
+                Color resultColor = GRAYSCALE_LABEL_500;
+                if (d.myScore != null && d.oppScore != null) {
+                  if (d.myScore! > d.oppScore!) {
+                    resultLabel = '승';
+                    resultColor = Colors.blue;
+                  } else if (d.myScore! < d.oppScore!) {
+                    resultLabel = '패';
+                    resultColor = Colors.redAccent;
+                  }
+                }
+                final metaParts = <String>[
+                  if (d.date.isNotEmpty) d.date,
+                  if (d.oppTeam.isNotEmpty) 'vs ${d.oppTeam}',
+                ];
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 5),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.event_seat_outlined,
+                        size: 15,
+                        color: GRAYSCALE_LABEL_500,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              d.fullSeat,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: BLACK,
+                              ),
+                            ),
+                            if (metaParts.isNotEmpty)
+                              Text(
+                                metaParts.join(' · '),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: resultColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          d.myScore != null && d.oppScore != null
+                              ? '${d.myScore}:${d.oppScore} $resultLabel'
+                              : resultLabel,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: resultColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 
-// 상대별 분석
+// -----------------------------------------------------------------------------
+// [지출 분석]
+// -----------------------------------------------------------------------------
+class _CostAnalysis extends StatelessWidget {
+  final List<Map<String, dynamic>> records;
+  final Color teamColor;
+
+  const _CostAnalysis({required this.records, required this.teamColor});
+
+  @override
+  Widget build(BuildContext context) {
+    final format = NumberFormat('#,###');
+    int totalCost = 0;
+    int costRecordCount = 0;
+    int winCount = 0;
+    final Map<String, int> stadiumCost = {};
+
+    for (final r in records) {
+      final price = r['ticketPrice'] is int
+          ? r['ticketPrice'] as int
+          : int.tryParse('${r['ticketPrice']}');
+      if (price != null && price > 0) {
+        totalCost += price;
+        costRecordCount++;
+
+        final stadium = r['stadium'] ?? '기타 구장';
+        stadiumCost[stadium] = (stadiumCost[stadium] ?? 0) + price;
+      }
+
+      final my = _AnalysisPageState._parseScore(r['myScore']) ?? 0;
+      final opp = _AnalysisPageState._parseScore(r['opponentScore']) ?? 0;
+      if (my > opp) winCount++;
+    }
+
+    if (costRecordCount == 0) {
+      return const Center(
+        child: Text(
+          '티켓 가격이 기록된 경기가 없습니다.\n티켓 스캔을 통해 가격을 기록해보세요!',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: GRAYSCALE_LABEL_500, fontSize: 14),
+        ),
+      );
+    }
+
+    final avgCost = totalCost ~/ costRecordCount;
+    final costPerWin = winCount > 0 ? (totalCost ~/ winCount) : 0;
+    final sortedStadiums = stadiumCost.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildMetricBox(
+                '총 지출액',
+                '${format.format(totalCost)}원',
+                teamColor,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildMetricBox(
+                '경기당 평균',
+                '${format.format(avgCost)}원',
+                GRAYSCALE_LABEL_600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: WHITE,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: GRAYSCALE_LABEL_300),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.military_tech, color: Colors.orange, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '1승을 보기 위해 쓴 비용 (가성비 지수)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: GRAYSCALE_LABEL_600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      winCount > 0
+                          ? '평균 ${format.format(costPerWin)}원'
+                          : '아직 직관 승리가 없습니다 😭',
+                      style: GoogleFonts.bebasNeue(
+                        fontSize: 22,
+                        color: BLACK,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          '🏟️ 구장별 지출 랭킹',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: BLACK,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...sortedStadiums.map((entry) {
+          final percent = totalCost > 0 ? (entry.value / totalCost) : 0.0;
+          return Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: WHITE,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      entry.key,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      '${format.format(entry.value)}원 (${(percent * 100).toStringAsFixed(1)}%)',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: teamColor,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: percent,
+                    minHeight: 8,
+                    backgroundColor: GRAYSCALE_LABEL_300.withOpacity(0.4),
+                    valueColor: AlwaysStoppedAnimation<Color>(teamColor),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildMetricBox(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: WHITE,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: GoogleFonts.bebasNeue(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// [기존 뷰 비주얼 개선] 상대별 / 구장별 / 요일별 / 홈원정
+// -----------------------------------------------------------------------------
 class _OpponentAnalysis extends StatelessWidget {
   final List<Map<String, dynamic>> records;
-  final Color? teamColor;
-
-  const _OpponentAnalysis({required this.records, this.teamColor});
+  final Color teamColor;
+  const _OpponentAnalysis({required this.records, required this.teamColor});
 
   @override
   Widget build(BuildContext context) {
-    // 상대팀별로 그룹화
-    final Map<String, _Stats> opponentStats = {};
-
-    for (final record in records) {
-      final opponent = record['oppTeam'] ?? '알수없음';
-      final myScore = _parseScore(record['myScore']);
-      final oppScore = _parseScore(record['opponentScore']);
-
-      if (!opponentStats.containsKey(opponent)) {
-        opponentStats[opponent] = _Stats();
-      }
-
-      opponentStats[opponent]!.total++;
-      if (myScore != null && oppScore != null) {
-        if (myScore > oppScore) {
-          opponentStats[opponent]!.wins++;
-        } else if (myScore < oppScore) {
-          opponentStats[opponent]!.losses++;
-        } else {
-          opponentStats[opponent]!.draws++;
-        }
+    final Map<String, _Stats> statsMap = {};
+    for (final r in records) {
+      final opp = r['oppTeam'] ?? '기타';
+      final my = _AnalysisPageState._parseScore(r['myScore']);
+      final oppScore = _AnalysisPageState._parseScore(r['opponentScore']);
+      statsMap.putIfAbsent(opp, () => _Stats());
+      statsMap[opp]!.total++;
+      if (my != null && oppScore != null) {
+        if (my > oppScore)
+          statsMap[opp]!.wins++;
+        else if (my < oppScore)
+          statsMap[opp]!.losses++;
+        else
+          statsMap[opp]!.draws++;
       }
     }
-
-    // 경기 수 많은 순으로 정렬
-    final sortedOpponents = opponentStats.entries.toList()
+    final sorted = statsMap.entries.toList()
       ..sort((a, b) => b.value.total.compareTo(a.value.total));
 
     return ListView.builder(
-      padding: EdgeInsets.all(16),
-      itemCount: sortedOpponents.length,
-      itemBuilder: (context, index) {
-        final entry = sortedOpponents[index];
-        final opponent = entry.key;
-        final stats = entry.value;
-        final winRate = stats.total > 0
-            ? (stats.wins / stats.total * 100)
+      padding: const EdgeInsets.all(16),
+      itemCount: sorted.length,
+      itemBuilder: (context, i) {
+        final e = sorted[i];
+        final winRate = e.value.total > 0
+            ? (e.value.wins / e.value.total * 100)
             : 0.0;
-
-        return _StatCard(
-          title: opponent,
-          stats: stats,
+        return _ModernStatCard(
+          title: e.key,
+          stats: e.value,
           winRate: winRate,
           teamColor: teamColor,
         );
       },
     );
   }
-
-  int? _parseScore(dynamic v) => v is int ? v : int.tryParse('$v');
 }
 
-// 구장별 분석
 class _StadiumAnalysis extends StatelessWidget {
   final List<Map<String, dynamic>> records;
-  final Color? teamColor;
-
-  const _StadiumAnalysis({required this.records, this.teamColor});
+  final Color teamColor;
+  const _StadiumAnalysis({required this.records, required this.teamColor});
 
   @override
   Widget build(BuildContext context) {
-    // 구장별로 그룹화
-    final Map<String, _Stats> stadiumStats = {};
-
-    for (final record in records) {
-      final stadium = record['stadium'] ?? '알수없음';
-      final myScore = _parseScore(record['myScore']);
-      final oppScore = _parseScore(record['opponentScore']);
-
-      if (!stadiumStats.containsKey(stadium)) {
-        stadiumStats[stadium] = _Stats();
-      }
-
-      stadiumStats[stadium]!.total++;
-      if (myScore != null && oppScore != null) {
-        if (myScore > oppScore) {
-          stadiumStats[stadium]!.wins++;
-        } else if (myScore < oppScore) {
-          stadiumStats[stadium]!.losses++;
-        } else {
-          stadiumStats[stadium]!.draws++;
-        }
+    final Map<String, _Stats> statsMap = {};
+    for (final r in records) {
+      final stadium = r['stadium'] ?? '기타 구장';
+      final my = _AnalysisPageState._parseScore(r['myScore']);
+      final opp = _AnalysisPageState._parseScore(r['opponentScore']);
+      statsMap.putIfAbsent(stadium, () => _Stats());
+      statsMap[stadium]!.total++;
+      if (my != null && opp != null) {
+        if (my > opp)
+          statsMap[stadium]!.wins++;
+        else if (my < opp)
+          statsMap[stadium]!.losses++;
+        else
+          statsMap[stadium]!.draws++;
       }
     }
-
-    // 경기 수 많은 순으로 정렬
-    final sortedStadiums = stadiumStats.entries.toList()
+    final sorted = statsMap.entries.toList()
       ..sort((a, b) => b.value.total.compareTo(a.value.total));
 
     return ListView.builder(
-      padding: EdgeInsets.all(16),
-      itemCount: sortedStadiums.length,
-      itemBuilder: (context, index) {
-        final entry = sortedStadiums[index];
-        final stadium = entry.key;
-        final stats = entry.value;
-        final winRate = stats.total > 0
-            ? (stats.wins / stats.total * 100)
+      padding: const EdgeInsets.all(16),
+      itemCount: sorted.length,
+      itemBuilder: (context, i) {
+        final e = sorted[i];
+        final winRate = e.value.total > 0
+            ? (e.value.wins / e.value.total * 100)
             : 0.0;
-
-        return _StatCard(
-          title: stadium,
-          stats: stats,
+        return _ModernStatCard(
+          title: e.key,
+          stats: e.value,
           winRate: winRate,
           teamColor: teamColor,
         );
       },
     );
   }
-
-  int? _parseScore(dynamic v) => v is int ? v : int.tryParse('$v');
 }
 
-// 요일별 분석
 class _DayOfWeekAnalysis extends StatelessWidget {
   final List<Map<String, dynamic>> records;
-  final Color? teamColor;
-  const _DayOfWeekAnalysis({required this.records, this.teamColor});
+  final Color teamColor;
+  const _DayOfWeekAnalysis({required this.records, required this.teamColor});
 
   @override
   Widget build(BuildContext context) {
-    // 요일별로 그룹화
-    final Map<String, _Stats> dayStats = {
-      '월요일': _Stats(),
-      '화요일': _Stats(),
-      '수요일': _Stats(),
-      '목요일': _Stats(),
-      '금요일': _Stats(),
-      '토요일': _Stats(),
-      '일요일': _Stats(),
-    };
+    final days = ['화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
+    final Map<String, _Stats> statsMap = {for (var d in days) d: _Stats()};
 
-    final dayNames = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
+    for (final r in records) {
+      final dateStr = r['date'] as String?;
+      if (dateStr == null) continue;
+      final dt = DateTime.tryParse(dateStr.replaceAll('.', '-'));
+      if (dt == null || dt.weekday == 1) continue;
+      final dayName = days[dt.weekday - 2];
 
-    for (final record in records) {
-      final date = record['date'];
-      if (date == null) continue;
-
-      DateTime? dateTime;
-
-      // Timestamp 타입 처리
-      if (date is Timestamp) {
-        dateTime = date.toDate();
-      }
-      // DateTime 타입 처리
-      else if (date is DateTime) {
-        dateTime = date;
-      }
-      // String 타입 처리 (예: "2024-12-04" 또는 "2024.12.04")
-      else if (date is String) {
-        try {
-          // 점(.)을 하이픈(-)으로 변환하여 파싱
-          final normalizedDate = date.replaceAll('.', '-');
-          dateTime = DateTime.parse(normalizedDate);
-        } catch (e) {
-          print('날짜 파싱 실패: $date, 에러: $e');
-          continue;
-        }
-      }
-
-      if (dateTime == null) {
-        print('날짜를 처리할 수 없습니다: $date (타입: ${date.runtimeType})');
-        continue;
-      }
-
-      final dayOfWeek = dayNames[dateTime.weekday - 1];
-      final myScore = _parseScore(record['myScore']);
-      final oppScore = _parseScore(record['opponentScore']);
-
-      dayStats[dayOfWeek]!.total++;
-      if (myScore != null && oppScore != null) {
-        if (myScore > oppScore) {
-          dayStats[dayOfWeek]!.wins++;
-        } else if (myScore < oppScore) {
-          dayStats[dayOfWeek]!.losses++;
-        } else {
-          dayStats[dayOfWeek]!.draws++;
-        }
+      final my = _AnalysisPageState._parseScore(r['myScore']);
+      final opp = _AnalysisPageState._parseScore(r['opponentScore']);
+      statsMap[dayName]!.total++;
+      if (my != null && opp != null) {
+        if (my > opp)
+          statsMap[dayName]!.wins++;
+        else if (my < opp)
+          statsMap[dayName]!.losses++;
+        else
+          statsMap[dayName]!.draws++;
       }
     }
 
     return ListView.builder(
-      padding: EdgeInsets.all(16),
-      itemCount: dayNames.length,
-      itemBuilder: (context, index) {
-        final day = dayNames[index];
-        final stats = dayStats[day]!;
+      padding: const EdgeInsets.all(16),
+      itemCount: days.length,
+      itemBuilder: (context, i) {
+        final d = days[i];
+        final stats = statsMap[d]!;
         final winRate = stats.total > 0
             ? (stats.wins / stats.total * 100)
             : 0.0;
-
-        return _StatCard(
-          title: day,
+        return _ModernStatCard(
+          title: d,
           stats: stats,
           winRate: winRate,
           teamColor: teamColor,
-          showEmptyCard: true,
+          showEmpty: true,
         );
       },
     );
   }
-
-  int? _parseScore(dynamic v) => v is int ? v : int.tryParse('$v');
 }
 
-// 홈/원정분석
 class _HomeAwayAnalysis extends StatelessWidget {
   final List<Map<String, dynamic>> records;
-  final Color? teamColor;
-  const _HomeAwayAnalysis({required this.records, this.teamColor});
+  final Color teamColor;
+  const _HomeAwayAnalysis({required this.records, required this.teamColor});
 
   @override
   Widget build(BuildContext context) {
-    // 홈 /원정별로 그룹화
-    final Map<String, _Stats> homeAwayStats = {'홈': _Stats(), '원정': _Stats()};
+    final Map<String, _Stats> statsMap = {'홈 경기': _Stats(), '원정 경기': _Stats()};
 
-    for (final record in records) {
-      // homeTeam과 myTeam을 비교해서 홈/원정 판단
-      final homeTeam = record['homeTeam'] ?? '';
-      final myTeam = record['myTeam'] ?? '';
-      final isHome = homeTeam == myTeam;
-      final key = isHome ? '홈' : '원정';
-      final myScore = _parseScore(record['myScore']);
-      final oppScore = _parseScore(record['opponentScore']);
-
-      homeAwayStats[key]!.total++;
-      if (myScore != null && oppScore != null) {
-        if (myScore > oppScore) {
-          homeAwayStats[key]!.wins++;
-        } else if (myScore < oppScore) {
-          homeAwayStats[key]!.losses++;
-        } else {
-          homeAwayStats[key]!.draws++;
-        }
+    for (final r in records) {
+      final isHome = (r['homeTeam'] ?? '') == (r['myTeam'] ?? '');
+      final key = isHome ? '홈 경기' : '원정 경기';
+      final my = _AnalysisPageState._parseScore(r['myScore']);
+      final opp = _AnalysisPageState._parseScore(r['opponentScore']);
+      statsMap[key]!.total++;
+      if (my != null && opp != null) {
+        if (my > opp)
+          statsMap[key]!.wins++;
+        else if (my < opp)
+          statsMap[key]!.losses++;
+        else
+          statsMap[key]!.draws++;
       }
     }
+
+    final keys = ['홈 경기', '원정 경기'];
     return ListView.builder(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       itemCount: 2,
-      itemBuilder: (context, index) {
-        final key = index == 0 ? '홈' : '원정';
-        final stats = homeAwayStats[key]!;
+      itemBuilder: (context, i) {
+        final k = keys[i];
+        final stats = statsMap[k]!;
         final winRate = stats.total > 0
             ? (stats.wins / stats.total * 100)
             : 0.0;
-
-        return _StatCard(
-          title: key,
+        return _ModernStatCard(
+          title: k,
           stats: stats,
           winRate: winRate,
           teamColor: teamColor,
-          showEmptyCard: true,
-          isLarge: true, // 홈/ 원정은 큰 카드로 표시
+          showEmpty: true,
         );
       },
     );
   }
-
-  int? _parseScore(dynamic v) => v is int ? v : int.tryParse('$v');
 }
 
-// 통계 데이터 클래스
+// -----------------------------------------------------------------------------
+// [현대적 통계 카드]
+// -----------------------------------------------------------------------------
 class _Stats {
   int total = 0;
   int wins = 0;
@@ -535,47 +1231,38 @@ class _Stats {
   int draws = 0;
 }
 
-// 통계 카드 위젯
-class _StatCard extends StatelessWidget {
+class _ModernStatCard extends StatelessWidget {
   final String title;
+  final String? badgeText;
   final _Stats stats;
   final double winRate;
-  final Color? teamColor;
-  final bool showEmptyCard;
-  final bool isLarge;
-  const _StatCard({
+  final Color teamColor;
+  final bool showEmpty;
+
+  const _ModernStatCard({
     required this.title,
+    this.badgeText,
     required this.stats,
     required this.winRate,
-    this.teamColor,
-    this.showEmptyCard = false,
-    this.isLarge = false,
+    required this.teamColor,
+    this.showEmpty = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final teamProvider = context.read<TeamProvider>();
-
-    // title(팀 이름)로 해당 팀의 색상 찾기
-    final titleTeam = teamProvider.findTeamByName(title);
-    final titleColor = titleTeam?.color ?? teamColor ?? BLACK;
-
-    // 경기가 없으면 표시 안함 (showEmptyCard가 true가 아닌 경우)
-    if (stats.total == 0 && !showEmptyCard) {
-      return SizedBox.shrink();
-    }
+    if (stats.total == 0 && !showEmpty) return const SizedBox.shrink();
 
     return Container(
-      margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(isLarge ? 24 : 16),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: WHITE,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: BLACK.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, 4),
+            color: BLACK.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -585,96 +1272,106 @@ class _StatCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: GoogleFonts.blackHanSans(
-                  fontSize: isLarge ? 24 : 20,
-                  color: titleColor,
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: (teamColor ?? BUTTON).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${stats.total}경기',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: teamColor ?? BUTTON,
+              Row(
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: BLACK,
+                    ),
                   ),
+                  if (badgeText != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        badgeText!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              Text(
+                '${stats.total}경기',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: GRAYSCALE_LABEL_600,
                 ),
               ),
             ],
           ),
-          if (stats.total > 0) ...[
-            SizedBox(height: 16),
-            // 승률 바
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '승률',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: GRAYSCALE_LABEL_500,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '${winRate.toStringAsFixed(0)}%',
-                        style: GoogleFonts.bebasNeue(
-                          fontSize: isLarge ? 36 : 28,
-                          color: teamColor ?? BUTTON,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(
+                '${winRate.toStringAsFixed(0)}%',
+                style: GoogleFonts.bebasNeue(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: teamColor,
                 ),
-              ],
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                '승률',
+                style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+              ),
+              const Spacer(),
+              Text(
+                '${stats.wins}승  ${stats.draws}무  ${stats.losses}패',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: BLACK,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          if (stats.total > 0)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: SizedBox(
+                height: 8,
+                child: Row(
+                  children: [
+                    if (stats.wins > 0)
+                      Expanded(
+                        flex: stats.wins,
+                        child: Container(color: Colors.blue),
+                      ),
+                    if (stats.draws > 0)
+                      Expanded(
+                        flex: stats.draws,
+                        child: Container(color: GRAYSCALE_LABEL_400),
+                      ),
+                    if (stats.losses > 0)
+                      Expanded(
+                        flex: stats.losses,
+                        child: Container(color: Colors.redAccent),
+                      ),
+                  ],
+                ),
+              ),
             ),
-            SizedBox(height: 12),
-            // 승무패 상세
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem('승', stats.wins, Colors.blue),
-                _buildStatItem('무', stats.draws, GRAYSCALE_LABEL_600),
-                _buildStatItem('패', stats.losses, Colors.red),
-              ],
-            ),
-          ] else ...[
-            SizedBox(height: 8),
-            Text(
-              '기록 없음',
-              style: TextStyle(color: GRAYSCALE_LABEL_500, fontSize: 14),
-            ),
-          ],
         ],
       ),
-    );
-  }
-
-  Widget _buildStatItem(String label, int value, Color color) {
-    return Column(
-      children: [
-        Text(label, style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500)),
-        SizedBox(height: 4),
-        Text(
-          '$value',
-          style: GoogleFonts.bebasNeue(
-            fontSize: 24,
-            color: color,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
     );
   }
 }
