@@ -63,44 +63,44 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
 
         return Container(
           width: double.infinity,
-          height: 131,
+          height: 132,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(22),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 15,
-                offset: const Offset(0, 8),
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(22),
             child: Stack(
               children: [
-                // 배경 그라데이션
+                // 배경 그라데이션 (모던 다크 슬레이트)
                 Positioned.fill(
                   child: Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Color(0xFF1A1A1A), Color(0xFF2C2C2C)],
+                        colors: [Color(0xFF16181D), Color(0xFF282C35)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                     ),
                   ),
                 ),
-                // 배경 트로피 이미지
+                // 배경 트로피 이미지 워터마크
                 Positioned(
-                  top: -10,
-                  left: 210,
+                  top: -12,
+                  right: -10,
                   child: Transform.rotate(
-                    angle: 0.25,
+                    angle: 0.22,
                     child: Opacity(
-                      opacity: 0.15,
+                      opacity: 0.14,
                       child: Image.asset(
                         'assets/images/quiz/quiz_trophy_champion2.png',
-                        height: 150, // 전체 대시보드 내에서 적절한 크기로 조정
+                        height: 145,
                       ),
                     ),
                   ),
@@ -109,13 +109,13 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
                 Column(
                   children: [
                     SizedBox(
-                      height: 115,
+                      height: 112,
                       child: PageView(
                         controller: _pageController,
                         onPageChanged: (index) =>
                             setState(() => _currentPage = index),
                         children: [
-                          // 1번째 화면: 퀴즈 배너 (현재 화면)
+                          // 1번째 화면: 퀴즈 배너
                           GestureDetector(
                             onTap: () =>
                                 Navigator.of(context, rootNavigator: true).push(
@@ -126,15 +126,29 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
                                 ),
                             child: Container(
                               color: Colors.transparent,
-                              padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                               child: Row(
                                 children: [
-                                  Icon(
-                                    Icons.emoji_events,
-                                    color: goldColor,
-                                    size: 60,
+                                  Container(
+                                    width: 52,
+                                    height: 52,
+                                    decoration: BoxDecoration(
+                                      color: goldColor.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: goldColor.withValues(alpha: 0.35),
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.emoji_events_rounded,
+                                      color: goldColor,
+                                      size: 30,
+                                    ),
                                   ),
-                                  const SizedBox(width: 5),
+                                  const SizedBox(width: 14),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -145,6 +159,7 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 8,
+                                            vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
                                             color: goldColor,
@@ -155,37 +170,47 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
                                           child: const Text(
                                             'BEST FAN CHALLENGE',
                                             style: TextStyle(
-                                              color: Color(0xFF1A1A1A),
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                              letterSpacing: 1.2,
+                                              color: Color(0xFF16181D),
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: 1.0,
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(height: 5),
+                                        const SizedBox(height: 6),
                                         const Text(
-                                          '야잘알 테스트',
+                                          '야잘알 테스트 도전하기',
                                           style: TextStyle(
                                             color: WHITE,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w800,
                                           ),
                                         ),
                                         const SizedBox(height: 2),
-                                        const Text(
+                                        Text(
                                           '야구 상식을 뽐내고 팬 랭킹에 도전해 보세요!',
                                           style: TextStyle(
                                             fontSize: 11,
-                                            color: WHITE,
+                                            color: WHITE.withValues(alpha: 0.72),
                                           ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const Icon(
-                                    Icons.arrow_forward_ios_rounded,
-                                    color: goldColor,
-                                    size: 28,
+                                  Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: BoxDecoration(
+                                      color: WHITE.withValues(alpha: 0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      color: goldColor,
+                                      size: 14,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -206,17 +231,18 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
 
                     // 인디케이터
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 10.0),
+                      padding: const EdgeInsets.only(bottom: 8.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(
                           2,
-                          (index) => Container(
+                          (index) => AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
                             margin: const EdgeInsets.symmetric(horizontal: 3),
-                            width: 6,
-                            height: 6,
+                            width: _currentPage == index ? 16 : 6,
+                            height: 5,
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
+                              borderRadius: BorderRadius.circular(4),
                               color: _currentPage == index
                                   ? goldColor
                                   : Colors.white24,

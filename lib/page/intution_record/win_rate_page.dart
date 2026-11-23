@@ -43,7 +43,7 @@ class _WinRatePageState extends State<WinRatePage> {
         title: Row(
           children: [
             Text(
-              '승률',
+              '나의 직관',
               style: TextStyle(
                 fontSize: 24,
                 color: BLACK,
@@ -366,47 +366,14 @@ class _WinRatePageState extends State<WinRatePage> {
 
                   SizedBox(height: 20),
 
-                  // 2. Stats Grid
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          label: '경기 수',
-                          value: '$totalGames',
-                          color: BLACK,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          label: '승',
-                          value: '$wins',
-                          color: BUTTON,
-                        ),
-                      ),
-                    ],
+                  // 2. 직관 전적 카드 (컴팩트 4열 + 승무패 비율 바)
+                  _buildRecordOverviewCard(
+                    totalGames: totalGames,
+                    wins: wins,
+                    losses: losses,
+                    draws: draws,
+                    teamColor: teamColor,
                   ),
-                  SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          label: '무',
-                          value: '$draws',
-                          color: GRAYSCALE_LABEL_600,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          label: '패',
-                          value: '$losses',
-                          color: Colors.redAccent,
-                        ),
-                      ),
-                    ],
-                  ),
-
                   if (totalGames > 0) ...[
                     const SizedBox(height: 16),
 
@@ -974,13 +941,21 @@ class _WinRatePageState extends State<WinRatePage> {
     );
   }
 
-  Widget _buildStatCard({
-    required String label,
-    required String value,
-    required Color color,
+  Widget _buildRecordOverviewCard({
+    required int totalGames,
+    required int wins,
+    required int losses,
+    required int draws,
+    required Color teamColor,
   }) {
+    final int winMargin = wins - losses;
+    final String marginText = winMargin > 0
+        ? '승패 마진 +$winMargin'
+        : (winMargin < 0 ? '승패 마진 $winMargin' : '승패 동률');
+
     return Container(
-      padding: EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: WHITE,
         borderRadius: BorderRadius.circular(24),
@@ -988,33 +963,142 @@ class _WinRatePageState extends State<WinRatePage> {
           BoxShadow(
             color: BLACK.withOpacity(0.03),
             blurRadius: 10,
-            offset: Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: GRAYSCALE_LABEL_500,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '⚾ 직관 전적',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: BLACK,
+                ),
+              ),
+              if (totalGames > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: winMargin >= 0
+                        ? teamColor.withOpacity(0.12)
+                        : GRAYSCALE_LABEL_200,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    marginText,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: winMargin >= 0 ? teamColor : GRAYSCALE_LABEL_700,
+                    ),
+                  ),
+                ),
+            ],
           ),
-          SizedBox(height: 8),
-          Text(
-            value,
-            style: GoogleFonts.bebasNeue(
-              fontSize: 42,
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildRecordColumnItem(
+                  label: '경기 수',
+                  value: '$totalGames',
+                  color: BLACK,
+                ),
+              ),
+              Container(width: 1, height: 36, color: GRAYSCALE_LABEL_200),
+              Expanded(
+                child: _buildRecordColumnItem(
+                  label: '승',
+                  value: '$wins',
+                  color: BUTTON,
+                ),
+              ),
+              Container(width: 1, height: 36, color: GRAYSCALE_LABEL_200),
+              Expanded(
+                child: _buildRecordColumnItem(
+                  label: '패',
+                  value: '$losses',
+                  color: Colors.redAccent,
+                ),
+              ),
+              Container(width: 1, height: 36, color: GRAYSCALE_LABEL_200),
+              Expanded(
+                child: _buildRecordColumnItem(
+                  label: '무',
+                  value: '$draws',
+                  color: GRAYSCALE_LABEL_600,
+                ),
+              ),
+            ],
           ),
+          if (totalGames > 0) ...[
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: SizedBox(
+                height: 8,
+                child: Row(
+                  children: [
+                    if (wins > 0)
+                      Expanded(
+                        flex: wins,
+                        child: Container(color: BUTTON),
+                      ),
+                    if (draws > 0)
+                      Expanded(
+                        flex: draws,
+                        child: Container(color: GRAYSCALE_LABEL_400),
+                      ),
+                    if (losses > 0)
+                      Expanded(
+                        flex: losses,
+                        child: Container(color: Colors.redAccent),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildRecordColumnItem({
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: GRAYSCALE_LABEL_500,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: GoogleFonts.bebasNeue(
+            fontSize: 28,
+            color: color,
+            fontWeight: FontWeight.bold,
+            height: 1.0,
+          ),
+        ),
+      ],
     );
   }
 

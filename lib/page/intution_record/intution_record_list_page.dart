@@ -274,65 +274,135 @@ class IntutionRecordListPage extends StatelessWidget {
 }
 
 class _HeaderView extends StatelessWidget {
+  int? _parseScore(dynamic v) => v is int ? v : int.tryParse('$v');
+
   @override
   Widget build(BuildContext context) {
+    final teamColor =
+        context.watch<TeamProvider>().selectedTeam?.color ?? BUTTON;
+
     return Selector<IntutionRecordListProvider, List<Map<String, dynamic>>>(
       selector: (_, lp) => lp.records,
       builder: (context, records, child) {
         int wins = 0, losses = 0, draws = 0;
         for (final d in records) {
-          final my = d['myScore'] ?? '0';
-          final opp = d['opponentScore'] ?? 0;
-          if (my > opp)
-            wins++;
-          else if (my < opp)
-            losses++;
-          else
-            draws++;
+          final my = _parseScore(d['myScore']);
+          final opp = _parseScore(d['opponentScore']);
+          if (my != null && opp != null) {
+            if (my > opp) {
+              wins++;
+            } else if (my < opp) {
+              losses++;
+            } else {
+              draws++;
+            }
+          }
         }
         final total = records.length;
         final winRate = total == 0 ? 0 : (wins / total * 100).round();
+        final int winMargin = wins - losses;
+        final String marginText = winMargin > 0
+            ? '승패 마진 +$winMargin'
+            : (winMargin < 0 ? '승패 마진 $winMargin' : '승패 동률');
 
         return Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: WHITE,
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  offset: Offset(2, 3),
-                  color: BLACK.withOpacity(0.1),
-                  blurRadius: 4,
+                  color: BLACK.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _stat('총 경기', '$total', icon: Icons.stadium_outlined),
-                  _divider(),
-                  _stat(
-                    '승',
-                    '$wins',
-                    color: Colors.blueAccent,
-                    icon: Icons.emoji_events_outlined,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // const Text(
+                    //   '⚾ 직관 전적',
+                    //   style: TextStyle(
+                    //     fontSize: 14,
+                    //     fontWeight: FontWeight.bold,
+                    //     color: BLACK,
+                    //   ),
+                    // ),
+                    // if (total > 0)
+                    //   Container(
+                    //     padding: const EdgeInsets.symmetric(
+                    //       horizontal: 8,
+                    //       vertical: 3,
+                    //     ),
+                    //     decoration: BoxDecoration(
+                    //       color: winMargin >= 0
+                    //           ? teamColor.withOpacity(0.12)
+                    //           : GRAYSCALE_LABEL_200,
+                    //       borderRadius: BorderRadius.circular(10),
+                    //     ),
+                    //     child: Text(
+                    //       marginText,
+                    //       style: TextStyle(
+                    //         fontSize: 11,
+                    //         fontWeight: FontWeight.bold,
+                    //         color: winMargin >= 0
+                    //             ? teamColor
+                    //             : GRAYSCALE_LABEL_700,
+                    //       ),
+                    //     ),
+                    //   ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _stat('경기 수', '$total', color: BLACK),
+                    _divider(),
+                    _stat('승', '$wins', color: BUTTON),
+                    _divider(),
+                    _stat('패', '$losses', color: Colors.redAccent),
+                    _divider(),
+                    _stat('무', '$draws', color: GRAYSCALE_LABEL_600),
+                    _divider(),
+                    _stat('승률', '$winRate%', color: teamColor),
+                  ],
+                ),
+                if (total > 0) ...[
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: SizedBox(
+                      height: 6,
+                      child: Row(
+                        children: [
+                          if (wins > 0)
+                            Expanded(
+                              flex: wins,
+                              child: Container(color: BUTTON),
+                            ),
+                          if (draws > 0)
+                            Expanded(
+                              flex: draws,
+                              child: Container(color: GRAYSCALE_LABEL_400),
+                            ),
+                          if (losses > 0)
+                            Expanded(
+                              flex: losses,
+                              child: Container(color: Colors.redAccent),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
-                  _divider(),
-                  _stat(
-                    '패',
-                    '$losses',
-                    color: Colors.redAccent,
-                    icon: Icons.sentiment_dissatisfied_rounded,
-                  ),
-                  _divider(),
-                  _stat('무', '$draws', icon: Icons.remove),
-                  _divider(),
-                  _stat('승률', '$winRate', icon: Icons.percent_outlined),
                 ],
-              ),
+              ],
             ),
           ),
         );
@@ -341,30 +411,28 @@ class _HeaderView extends StatelessWidget {
   }
 
   Widget _divider() =>
-      Container(width: 1, height: 70, color: GRAYSCALE_LABEL_300);
+      Container(width: 1, height: 28, color: GRAYSCALE_LABEL_200);
 
-  Widget _stat(
-    String label,
-    String value, {
-    Color color = BLACK,
-    IconData? icon,
-  }) {
+  Widget _stat(String label, String value, {Color color = BLACK}) {
     return Expanded(
       child: Column(
         children: [
-          if (icon != null) Icon(icon, color: color, size: 22),
-          SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(color: GRAYSCALE_LABEL_500, fontSize: 12),
+            style: const TextStyle(
+              color: GRAYSCALE_LABEL_500,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             value,
-            style: GoogleFonts.robotoMono(
-              fontSize: 18,
+            style: GoogleFonts.bebasNeue(
+              fontSize: 22,
               fontWeight: FontWeight.bold,
               color: color,
+              height: 1.0,
             ),
           ),
         ],

@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:contained_tab_bar_view/contained_tab_bar_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_link_previewer/flutter_link_previewer.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/market_post_model.dart';
 import 'package:lockerroom/model/post_model.dart';
@@ -13,6 +13,7 @@ import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_edit_page.dart';
 import 'package:lockerroom/page/follow/follow_list_page.dart';
+import 'package:lockerroom/page/myPage/quiz_trophy_page.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
@@ -72,172 +73,446 @@ class _FeedMypageState extends State<FeedMypage> {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     final fp = context.watch<FollowProvider>();
     final tp = context.watch<TeamProvider>();
-    final teamColor = tp.selectedTeam?.color;
+    final myTeamColor = tp.selectedTeam?.color ?? BUTTON;
     final isOwner =
         currentUserId != null && widget.post.userId == currentUserId;
-    return Scaffold(
-      backgroundColor: WHITE,
-      appBar: AppBar(
-        backgroundColor: WHITE,
-        scrolledUnderElevation: 0,
-        title: Transform.translate(
-          offset: Offset(-20, 0),
-          child: Row(
-            children: [
-              Consumer<ProfileProvider>(
-                builder: (context, profileProvider, child) {
-                  profileProvider.subscribeUserProfile(widget.post.userId);
-                  final nickname =
-                      profileProvider.userNicknames[widget.post.userId] ??
-                      widget.post.userNickName;
-                  return Text(
-                    nickname,
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  );
-                },
-              ),
 
-              SizedBox(width: 5),
-              StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                stream: FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(widget.targetUserId)
-                    .snapshots(),
-                builder: (context, snap) {
-                  if (!snap.hasData) return const SizedBox.shrink();
-                  final data = snap.data!.data();
-                  final teamName = data?['team'] as String?;
-                  if (teamName == null || teamName.isEmpty)
-                    return const SizedBox.shrink();
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.targetUserId)
+          .snapshots(),
+      builder: (context, userSnap) {
+        final userData = userSnap.data?.data();
+        final teamName = userData?['team'] as String?;
+        final realName = (userData?['name'] as String?) ?? widget.post.userName;
+        final teams = tp.getTeam('team');
+        TeamModel? targetTeamModel;
+        if (teamName != null && teamName.isNotEmpty) {
+          try {
+            targetTeamModel = teams.firstWhere(
+              (t) => t.name == teamName || t.symplename == teamName,
+            );
+          } catch (_) {}
+        }
+        final activeTeamColor = targetTeamModel?.color ?? myTeamColor;
 
-                  final teams = context.read<TeamProvider>().getTeam('team');
-                  TeamModel? teamModel;
-                  try {
-                    teamModel = teams.firstWhere(
-                      (t) => t.name == teamName || t.symplename == teamName,
-                    );
-                  } catch (_) {}
-
-                  return Transform.translate(
-                    offset: Offset(0, 5),
-                    child: Text(
-                      teamName,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: teamModel?.color,
-                        fontWeight: FontWeight.bold,
+        return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            backgroundColor: BACKGROUND_COLOR,
+            appBar: AppBar(
+              backgroundColor: BACKGROUND_COLOR,
+              scrolledUnderElevation: 0,
+              centerTitle: false,
+              titleSpacing: 0,
+              title: Row(
+                children: [
+                  Flexible(
+                    child: Consumer<ProfileProvider>(
+                      builder: (context, profileProvider, child) {
+                        profileProvider.subscribeUserProfile(
+                          widget.post.userId,
+                        );
+                        final nickname =
+                            profileProvider.userNicknames[widget.post.userId] ??
+                            widget.post.userNickName;
+                        return Text(
+                          nickname,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: GRAYSCALE_LABEL_950,
+                            letterSpacing: -0.4,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
+                    ),
+                  ),
+                  if (teamName != null && teamName.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: activeTeamColor,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: activeTeamColor.withValues(alpha: 0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        teamName,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: WHITE,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                  );
-                },
+                  ],
+                ],
               ),
-            ],
-          ),
-        ),
-        centerTitle: false,
-      ),
-      body: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 5, vertical: 10),
-            child: Padding(
-              padding: const EdgeInsets.only(
-                top: 16.0,
-                left: 16.0,
-                right: 16.0,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Consumer<ProfileProvider>(
-                        builder: (context, pt, child) {
-                          final profileUrl =
-                              pt.userProfiles[widget.post.userId];
-                          return CircleAvatar(
-                            radius: 35,
-                            backgroundImage: profileUrl != null
-                                ? NetworkImage(profileUrl)
-                                : null,
-                            backgroundColor: GRAYSCALE_LABEL_300,
-                            child: profileUrl == null
-                                ? const Icon(
-                                    Icons.person,
-                                    color: Colors.black,
-                                    size: 25,
-                                  )
-                                : null,
-                          );
-                        },
+              // actions: [
+              //   if (!isOwner && currentUserId != null)
+              //     Padding(
+              //       padding: const EdgeInsets.only(right: 16),
+              //       child: Center(
+              //         child: InkWell(
+              //           onTap: () {
+              //             final profileProvider = context
+              //                 .read<ProfileProvider>();
+              //             final nickname =
+              //                 profileProvider.userNicknames[widget
+              //                     .post
+              //                     .userId] ??
+              //                 widget.post.userNickName;
+              //             _showBlockConfirmDialog(
+              //               context,
+              //               nickname,
+              //               widget.post.userId,
+              //               currentUserId,
+              //             );
+              //           },
+              //           borderRadius: BorderRadius.circular(12),
+              //           child: Container(
+              //             width: 38,
+              //             height: 38,
+              //             decoration: BoxDecoration(
+              //               color: WHITE,
+              //               borderRadius: BorderRadius.circular(12),
+              //               border: Border.all(
+              //                 color: GRAYSCALE_LABEL_200.withValues(alpha: 0.8),
+              //               ),
+              //               boxShadow: [
+              //                 BoxShadow(
+              //                   color: BLACK.withValues(alpha: 0.03),
+              //                   blurRadius: 6,
+              //                   offset: const Offset(0, 2),
+              //                 ),
+              //               ],
+              //             ),
+              //             child: const Icon(
+              //               Icons.more_horiz_rounded,
+              //               color: GRAYSCALE_LABEL_700,
+              //               size: 20,
+              //             ),
+              //           ),
+              //         ),
+              //       ),
+              //     ),
+              // ],
+            ),
+            body: Column(
+              children: [
+                // 프로필 히어로 라운지 카드 (내 정보 화면과 동일한 디자인)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: WHITE,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
                       ),
-                      SizedBox(width: 20),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      boxShadow: [
+                        BoxShadow(
+                          color: BLACK.withValues(alpha: 0.04),
+                          blurRadius: 16,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Text(
-                              widget.post.userName,
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
+                            // 아바타 (구단 테마 링)
+                            Consumer<ProfileProvider>(
+                              builder: (context, pt, child) {
+                                pt.subscribeUserProfile(widget.post.userId);
+                                final profileUrl =
+                                    pt.userProfiles[widget.post.userId];
+                                return Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: activeTeamColor.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      width: 2.2,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 38,
+                                    backgroundImage: profileUrl != null
+                                        ? NetworkImage(profileUrl)
+                                        : null,
+                                    backgroundColor: GRAYSCALE_LABEL_100,
+                                    child: profileUrl == null
+                                        ? const Icon(
+                                            Icons.person_rounded,
+                                            color: GRAYSCALE_LABEL_400,
+                                            size: 36,
+                                          )
+                                        : null,
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 16),
+                            // 닉네임, 구단 뱃지, 이름, 팔로우/더보기 버튼
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          realName,
+                                          style: TextStyle(
+                                            fontSize: 19,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 7,
+                                          vertical: 2.5,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: activeTeamColor.withValues(
+                                            alpha: 0.12,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          targetTeamModel != null
+                                              ? '${targetTeamModel.symplename} 직관러'
+                                              : 'KBO 직관러',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: activeTeamColor,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    realName.isNotEmpty
+                                        ? '${targetTeamModel?.stadium ?? "더베이스 라운지"}'
+                                        : (targetTeamModel?.stadium ??
+                                              '더베이스 라운지'),
+                                    style: const TextStyle(
+                                      color: GRAYSCALE_LABEL_500,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (!isOwner && currentUserId != null) ...[
+                                    const SizedBox(height: 10),
+                                    StreamBuilder<bool>(
+                                      stream: context
+                                          .read<BlockProvider>()
+                                          .getBlockedByStream(
+                                            currentUserId,
+                                            widget.targetUserId,
+                                          ),
+                                      builder: (context, snapshot) {
+                                        final isBlockedByTarget =
+                                            snapshot.data ?? false;
+                                        if (isBlockedByTarget) {
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 6,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: GRAYSCALE_LABEL_100,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: const Text(
+                                              '이 사용자가 회원님을 차단했습니다',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: GRAYSCALE_LABEL_600,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                        final isFollowing = fp.isFollowingUser(
+                                          widget.post.userId,
+                                        );
+                                        return Row(
+                                          children: [
+                                            Expanded(
+                                              child: InkWell(
+                                                onTap: () {
+                                                  fp.toggleFollow(
+                                                    widget.post.userId,
+                                                  );
+                                                },
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 7,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: isFollowing
+                                                        ? BACKGROUND_COLOR
+                                                        : activeTeamColor,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
+                                                    border: isFollowing
+                                                        ? Border.all(
+                                                            color:
+                                                                GRAYSCALE_LABEL_300,
+                                                          )
+                                                        : null,
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      isFollowing
+                                                          ? '팔로잉 ✓'
+                                                          : '팔로우',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        color: isFollowing
+                                                            ? GRAYSCALE_LABEL_800
+                                                            : WHITE,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            InkWell(
+                                              onTap: () {
+                                                final profileProvider = context
+                                                    .read<ProfileProvider>();
+                                                final nickname =
+                                                    profileProvider
+                                                        .userNicknames[widget
+                                                        .post
+                                                        .userId] ??
+                                                    widget.post.userNickName;
+                                                _showBlockConfirmDialog(
+                                                  context,
+                                                  nickname,
+                                                  widget.post.userId,
+                                                  currentUserId,
+                                                );
+                                              },
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 7,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: BACKGROUND_COLOR,
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  border: Border.all(
+                                                    color: GRAYSCALE_LABEL_200,
+                                                  ),
+                                                ),
+                                                child: const Text(
+                                                  '차단',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: GRAYSCALE_LABEL_700,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
-                            SizedBox(height: 8),
-                            Row(
-                              children: [
-                                StreamBuilder<List<PostModel>>(
+                          ],
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // 정돈된 3열 스탯 박스 (게시물 | 팔로워 | 팔로잉)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: BACKGROUND_COLOR,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: StreamBuilder<List<PostModel>>(
                                   stream: context
                                       .read<FeedProvider>()
                                       .listenUserPosts(widget.post.userId),
                                   builder: (context, snapshot) {
                                     final count =
                                         (snapshot.data ?? const []).length;
-                                    return Column(
-                                      children: [
-                                        Text(
-                                          '$count',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        Text(
-                                          '게시물',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
+                                    return _buildStatColumn(
+                                      count: count,
+                                      label: '게시물',
                                     );
                                   },
                                 ),
-                                SizedBox(width: 50),
-                                StreamBuilder<int>(
+                              ),
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: GRAYSCALE_LABEL_200,
+                              ),
+                              Expanded(
+                                child: StreamBuilder<int>(
                                   stream: fp.getFollowersCountStream(
                                     widget.targetUserId,
                                   ),
                                   builder: (context, snapshot) {
-                                    if (!snapshot.hasData) {
-                                      final color =
-                                          context
-                                              .read<TeamProvider>()
-                                              .selectedTeam
-                                              ?.color ??
-                                          BUTTON;
-                                      return Center(
-                                        child: SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            color: color,
-                                            strokeWidth: 2,
-                                          ),
-                                        ),
-                                      );
-                                    }
+                                    final count = snapshot.data ?? 0;
                                     return GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
                                       onTap: () {
                                         Navigator.push(
                                           context,
@@ -250,50 +525,28 @@ class _FeedMypageState extends State<FeedMypage> {
                                           ),
                                         );
                                       },
-                                      child: Column(
-                                        children: [
-                                          Text(
-                                            '${snapshot.data}',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          Text(
-                                            "팔로워",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
+                                      child: _buildStatColumn(
+                                        count: count,
+                                        label: '팔로워',
                                       ),
                                     );
                                   },
                                 ),
-                                SizedBox(width: 50),
-                                StreamBuilder<int>(
+                              ),
+                              Container(
+                                width: 1,
+                                height: 28,
+                                color: GRAYSCALE_LABEL_200,
+                              ),
+                              Expanded(
+                                child: StreamBuilder<int>(
                                   stream: fp.getFollowCountStream(
                                     widget.targetUserId,
                                   ),
                                   builder: (context, snapshot) {
-                                    if (!snapshot.hasData) {
-                                      final color =
-                                          context
-                                              .read<TeamProvider>()
-                                              .selectedTeam
-                                              ?.color ??
-                                          BUTTON;
-                                      return Center(
-                                        child: SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            color: color,
-                                            strokeWidth: 2,
-                                          ),
-                                        ),
-                                      );
-                                    }
+                                    final count = snapshot.data ?? 0;
                                     return GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
                                       onTap: () {
                                         Navigator.push(
                                           context,
@@ -306,214 +559,120 @@ class _FeedMypageState extends State<FeedMypage> {
                                           ),
                                         );
                                       },
-                                      child: Column(
-                                        children: [
-                                          Text(
-                                            '${snapshot.data}',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          Text(
-                                            '팔로잉',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
+                                      child: _buildStatColumn(
+                                        count: count,
+                                        label: '팔로잉',
                                       ),
                                     );
                                   },
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(height: 10),
-          if (widget.post.userId != FirebaseAuth.instance.currentUser?.uid)
-            if (currentUserId != null)
-              StreamBuilder<bool>(
-                stream: context.read<BlockProvider>().getBlockedByStream(
-                  currentUserId,
-                  widget.targetUserId,
-                ),
-                builder: (context, snapshot) {
-                  final isBlockedByTarget = snapshot.data ?? false;
-                  return isBlockedByTarget
-                      ? Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: GRAYSCALE_LABEL_100,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '이 사용자가 회원님을 차단했습니다',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: GRAYSCALE_LABEL_600,
-                            ),
-                          ),
-                        )
-                      : Padding(
-                          padding: const EdgeInsets.only(
-                            left: 10.0,
-                            right: 10.0,
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    fp.toggleFollow(widget.post.userId);
-                                  },
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          fp.isFollowingUser(widget.post.userId)
-                                          ? GRAYSCALE_LABEL_100
-                                          : teamColor,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        fp.isFollowingUser(widget.post.userId)
-                                            ? '팔로잉'
-                                            : '팔로우',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          color:
-                                              fp.isFollowingUser(
-                                                widget.post.userId,
-                                              )
-                                              ? Colors.black
-                                              : Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () {
-                                    showMenu<String>(
-                                      context: context,
-                                      position: RelativeRect.fromLTRB(
-                                        300,
-                                        250,
-                                        50,
-                                        0,
-                                      ),
-                                      color: BACKGROUND_COLOR,
-                                      items: [
-                                        PopupMenuItem(
-                                          value: 'block',
-                                          child: Text(
-                                            '사용자 차단',
-                                            style: TextStyle(
-                                              color: RED_DANGER_TEXT_50,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ).then((value) {
-                                      if (value == 'block') {
-                                        final uid = FirebaseAuth
-                                            .instance
-                                            .currentUser
-                                            ?.uid;
-                                        if (uid == null) return;
-                                        final profileProvider = context
-                                            .read<ProfileProvider>();
-                                        final nickname =
-                                            profileProvider.userNicknames[widget
-                                                .post
-                                                .userId] ??
-                                            widget.post.userNickName;
-                                        _showBlockConfirmDialog(
-                                          context,
-                                          nickname,
-                                          widget.post.userId,
-                                          uid,
-                                        );
-                                      }
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: GRAYSCALE_LABEL_100,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '더보기',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
                               ),
                             ],
                           ),
-                        );
-                },
-              ),
-
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: WHITE,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: ContainedTabBarView(
-                tabs: [
-                  Text('게시글', style: TextStyle(color: BLACK)),
-                  Text('마켓', style: TextStyle(color: BLACK)),
-                ],
-                tabBarProperties: TabBarProperties(
-                  indicatorColor: teamColor ?? BUTTON,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicatorWeight: 3.0,
-                  unselectedLabelColor: GRAYSCALE_LABEL_500,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                views: [
-                  UserPostsTab(
-                    targetUserId: widget.targetUserId,
-                    postUserId: widget.post.userId,
-                    isOwner: isOwner,
+
+                // 세그먼트 캡슐 탭바 (게시글 / 트로피)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Container(
+                    height: 46,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: WHITE,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: BLACK.withValues(alpha: 0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TabBar(
+                      indicator: BoxDecoration(
+                        color: activeTeamColor,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: activeTeamColor.withValues(alpha: 0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                      labelColor: WHITE,
+                      unselectedLabelColor: GRAYSCALE_LABEL_500,
+                      labelStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      tabs: const [
+                        Tab(text: '게시글'),
+                        Tab(text: '트로피'),
+                      ],
+                    ),
                   ),
-                  UserMarketPostsTab(
-                    targetUserId: widget.targetUserId,
-                    postUserId: widget.post.userId,
-                    isOwner: isOwner,
+                ),
+
+                const SizedBox(height: 8),
+
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      UserPostsTab(
+                        targetUserId: widget.targetUserId,
+                        postUserId: widget.post.userId,
+                        isOwner: isOwner,
+                      ),
+                      QuizTrophyPage(userId: widget.targetUserId),
+                    ],
                   ),
-                ],
-                onChange: (index) => print(index),
-              ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatColumn({required int count, required String label}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$count',
+          style: GoogleFonts.bebasNeue(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: GRAYSCALE_LABEL_950,
+            height: 1.0,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: GRAYSCALE_LABEL_500,
+          ),
+        ),
+      ],
     );
   }
 
@@ -757,12 +916,50 @@ class UserPostsTab extends StatelessWidget {
         }
         final posts = snapshot.data!;
         if (posts.isEmpty) {
-          return const Center(child: Text('작성한 게시물이 없습니다'));
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: WHITE,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: BLACK.withValues(alpha: 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.edit_note_rounded,
+                    size: 30,
+                    color: GRAYSCALE_LABEL_400,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '작성한 게시물이 없습니다',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: GRAYSCALE_LABEL_600,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          );
         }
         return ListView.builder(
+          padding: const EdgeInsets.only(top: 4, bottom: 24),
           itemCount: posts.length,
           itemBuilder: (_, i) {
             final p = posts[i];
+            final isLiked =
+                currentUserId != null && p.likedBy.contains(currentUserId);
             return GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -772,44 +969,63 @@ class UserPostsTab extends StatelessWidget {
                   ),
                 );
               },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 15,
-                  vertical: 8,
-                ),
-                child: Card(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                decoration: BoxDecoration(
                   color: WHITE,
-                  child: Padding(
-                    padding: EdgeInsets.all(15),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Consumer<ProfileProvider>(
-                              builder: (context, pd, child) {
-                                pd.subscribeUserProfile(postUserId);
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: GRAYSCALE_LABEL_200.withValues(alpha: 0.6),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: BLACK.withValues(alpha: 0.04),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Consumer<ProfileProvider>(
+                            builder: (context, pd, child) {
+                              pd.subscribeUserProfile(postUserId);
 
-                                final profileUrl = pd.userProfiles[postUserId];
-                                return CircleAvatar(
-                                  radius: 25,
+                              final profileUrl = pd.userProfiles[postUserId];
+                              return Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: GRAYSCALE_LABEL_200,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 19,
                                   backgroundImage: profileUrl != null
                                       ? NetworkImage(profileUrl)
                                       : null,
-                                  backgroundColor: GRAYSCALE_LABEL_300,
+                                  backgroundColor: GRAYSCALE_LABEL_100,
                                   child: profileUrl == null
                                       ? const Icon(
-                                          Icons.person,
-                                          color: Colors.black,
-                                          size: 25,
+                                          Icons.person_rounded,
+                                          color: GRAYSCALE_LABEL_500,
+                                          size: 20,
                                         )
                                       : null,
-                                );
-                              },
-                            ),
-                            SizedBox(width: 10),
-                            Column(
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Consumer<ProfileProvider>(
@@ -823,118 +1039,132 @@ class UserPostsTab extends StatelessWidget {
                                         p.userNickName;
                                     return Text(
                                       nickname,
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w500,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: GRAYSCALE_LABEL_950,
                                       ),
                                     );
                                   },
                                 ),
+                                const SizedBox(height: 1),
                                 Text(
                                   timeAgo(p.createdAt),
-                                  style: TextStyle(
-                                    color: GRAYSCALE_LABEL_500,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Spacer(),
-                            IconButton(
-                              onPressed: () {
-                                _showPostOptionBottomSheet(
-                                  context,
-                                  p,
-                                  feedProvider,
-                                  isOwner,
-                                  targetUserId,
-                                  postUserId,
-                                );
-                              },
-                              icon: Icon(Icons.more_horiz),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        // 본문
-                        Text(p.text),
-                        SizedBox(height: 8),
-                        if (extractUrl(p.text) != null) ...[
-                          SizedBox(height: 10),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: WHITE,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.2),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                LinkPreview(
-                                  enableAnimation: true,
-                                  text: extractUrl(p.text)!,
-                                  onLinkPreviewDataFetched: (data) {
-                                    print(
-                                      'Preview data fetched: ${data.title}',
-                                    );
-                                  },
-                                ),
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(color: WHITE),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.link,
-                                        size: 16,
-                                        color: Colors.blue,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          extractUrl(p.text)!,
-                                          style: TextStyle(
-                                            color: Colors.blue,
-                                            fontSize: 13,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
+                                  style: const TextStyle(
+                                    color: GRAYSCALE_LABEL_400,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
                             ),
                           ),
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () {
+                              _showPostOptionBottomSheet(
+                                context,
+                                p,
+                                feedProvider,
+                                isOwner,
+                                targetUserId,
+                                postUserId,
+                              );
+                            },
+                            icon: const Icon(
+                              Icons.more_horiz_rounded,
+                              color: GRAYSCALE_LABEL_500,
+                              size: 20,
+                            ),
+                          ),
                         ],
-                        // 이미지/영상 슬라이드
-                        if (p.mediaUrls.isNotEmpty)
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final bool inSingle = p.mediaUrls.length == 1;
-                              final double avilableWidth = constraints.maxWidth;
-                              // 리스트 높이와 각 아이템 너비를 화면/가용 폭 기준으로 계산
-                              final double listHeight = (avilableWidth * 0.55)
-                                  .clamp(160.0, 320.0);
-                              final double itemWidth = inSingle
-                                  ? avilableWidth
-                                  : (avilableWidth * 0.48).clamp(
-                                      140.0,
-                                      avilableWidth,
-                                    );
+                      ),
+                      if (p.text.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          p.text,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            height: 1.45,
+                            color: GRAYSCALE_LABEL_900,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      if (extractUrl(p.text) != null) ...[
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: BACKGROUND_COLOR,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: GRAYSCALE_LABEL_200.withValues(alpha: 0.8),
+                            ),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              LinkPreview(
+                                enableAnimation: true,
+                                text: extractUrl(p.text)!,
+                                onLinkPreviewDataFetched: (data) {
+                                  debugPrint(
+                                    'Preview data fetched: ${data.title}',
+                                  );
+                                },
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                color: WHITE,
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.link_rounded,
+                                      size: 16,
+                                      color: Colors.blue,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        extractUrl(p.text)!,
+                                        style: const TextStyle(
+                                          color: Colors.blue,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      // 이미지/영상 슬라이드
+                      if (p.mediaUrls.isNotEmpty)
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final bool inSingle = p.mediaUrls.length == 1;
+                            final double avilableWidth = constraints.maxWidth;
+                            final double listHeight = (avilableWidth * 0.55)
+                                .clamp(160.0, 320.0);
+                            final double itemWidth = inSingle
+                                ? avilableWidth
+                                : (avilableWidth * 0.48).clamp(
+                                    140.0,
+                                    avilableWidth,
+                                  );
 
-                              return SizedBox(
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: SizedBox(
                                 height: listHeight,
                                 child: ListView.builder(
                                   scrollDirection: Axis.horizontal,
@@ -947,11 +1177,10 @@ class UserPostsTab extends StatelessWidget {
                                     );
                                     return Padding(
                                       padding: EdgeInsets.only(
-                                        left: 0,
                                         right: inSingle ? 0 : 8,
                                       ),
                                       child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(16),
                                         child: isVideo
                                             ? NetworkVideoPlayer(
                                                 videoUrl: url,
@@ -1001,15 +1230,25 @@ class UserPostsTab extends StatelessWidget {
                                     );
                                   },
                                 ),
-                              );
-                            },
+                              ),
+                            );
+                          },
+                        ),
+                      // 좋아요 + 댓글 캡슐 바
+                      Container(
+                        padding: const EdgeInsets.only(top: 10),
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            top: BorderSide(
+                              color: GRAYSCALE_LABEL_100,
+                              width: 1,
+                            ),
                           ),
-                        SizedBox(height: 8),
-                        // 좋아요 + 댓글
-                        Row(
+                        ),
+                        child: Row(
                           children: [
-                            IconButton(
-                              onPressed: currentUserId != null
+                            InkWell(
+                              onTap: currentUserId != null
                                   ? () => feedProvider.toggleLikeAndNotify(
                                       currentUserId: currentUserId,
                                       post: p,
@@ -1017,59 +1256,117 @@ class UserPostsTab extends StatelessWidget {
                                       postOwnerId: p.userId,
                                     )
                                   : null,
-                              icon: Icon(
-                                currentUserId != null &&
-                                        p.likedBy.contains(currentUserId)
-                                    ? Icons.favorite
-                                    : Icons.favorite_border,
-                                color:
-                                    currentUserId != null &&
-                                        p.likedBy.contains(currentUserId)
-                                    ? Colors.red
-                                    : null,
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 11,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isLiked
+                                      ? Colors.red.withValues(alpha: 0.08)
+                                      : BACKGROUND_COLOR,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isLiked
+                                          ? Icons.favorite_rounded
+                                          : Icons.favorite_border_rounded,
+                                      size: 16,
+                                      color: isLiked
+                                          ? Colors.red
+                                          : GRAYSCALE_LABEL_600,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      '${p.likesCount}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: isLiked
+                                            ? Colors.red
+                                            : GRAYSCALE_LABEL_700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            Transform.translate(
-                              offset: const Offset(-10, 0),
-                              child: Text('${p.likesCount}'),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        FeedDetailPage(post: p),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(CupertinoIcons.chat_bubble),
-                            ),
+                            const SizedBox(width: 8),
                             Consumer<CommentProvider>(
                               builder: (context, commentProvider, child) {
                                 final comments = commentProvider.getComments(
                                   p.id,
                                 );
-                                return Transform.translate(
-                                  offset: Offset(-5, 0),
-                                  child: Text('${comments.length}'),
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 11,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: BACKGROUND_COLOR,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        CupertinoIcons.chat_bubble,
+                                        size: 15,
+                                        color: GRAYSCALE_LABEL_600,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        '${comments.length}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: GRAYSCALE_LABEL_700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 );
                               },
                             ),
                             const Spacer(),
                             if (p.mediaUrls.isNotEmpty)
-                              Text(
-                                '${p.mediaUrls.length}개의 ${p.mediaUrls.length == 1 ? "미디어" : "이미지"}',
-                                style: TextStyle(
-                                  color: GRAYSCALE_LABEL_500,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: BACKGROUND_COLOR,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.photo_library_outlined,
+                                      size: 12,
+                                      color: GRAYSCALE_LABEL_500,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${p.mediaUrls.length}',
+                                      style: const TextStyle(
+                                        color: GRAYSCALE_LABEL_500,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),

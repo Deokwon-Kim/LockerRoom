@@ -5,6 +5,7 @@ import 'package:flutter_link_previewer/flutter_link_previewer.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
+import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_edit_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
@@ -22,7 +23,7 @@ class MypostPage extends StatelessWidget {
     final feedProvider = Provider.of<FeedProvider>(context, listen: false);
 
     return Scaffold(
-      backgroundColor: WHITE,
+      backgroundColor: BACKGROUND_COLOR,
       body: StreamBuilder<List<PostModel>>(
         stream: feedProvider.listenMyPosts(),
         builder: (context, snapshot) {
@@ -39,18 +40,45 @@ class MypostPage extends StatelessWidget {
 
           if (posts.isEmpty) {
             return Center(
-              child: Text(
-                '게시물이 없습니다',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: GRAYSCALE_LABEL_500,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: WHITE,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: BLACK.withValues(alpha: 0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.edit_note_rounded,
+                      size: 30,
+                      color: GRAYSCALE_LABEL_400,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    '아직 작성한 게시물이 없습니다',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: GRAYSCALE_LABEL_600,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             );
           }
 
           return ListView.builder(
+            padding: const EdgeInsets.only(top: 4, bottom: 24),
             itemCount: posts.length,
             itemBuilder: (context, index) {
               return MyPostWidget(
@@ -93,94 +121,138 @@ class MyPostWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final isLiked =
+        currentUserId != null && post.likedBy.contains(currentUserId);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-      child: Card(
-        color: WHITE,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => FeedDetailPage(post: post)),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+        decoration: BoxDecoration(
+          color: WHITE,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: GRAYSCALE_LABEL_200.withValues(alpha: 0.6),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: BLACK.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 작성자 + 프로필
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Consumer<ProfileProvider>(
                     builder: (context, profileProvider, child) {
                       profileProvider.subscribeUserProfile(post.userId);
 
                       final url = profileProvider.userProfiles[post.userId];
-                      return CircleAvatar(
-                        radius: 25,
-                        backgroundImage: url != null ? NetworkImage(url) : null,
-                        backgroundColor: GRAYSCALE_LABEL_300,
-                        child: url == null
-                            ? const Icon(
-                                Icons.person,
-                                color: Colors.black,
-                                size: 25,
-                              )
-                            : null,
+                      return Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: GRAYSCALE_LABEL_200,
+                            width: 1,
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 19,
+                          backgroundImage: url != null
+                              ? NetworkImage(url)
+                              : null,
+                          backgroundColor: GRAYSCALE_LABEL_100,
+                          child: url == null
+                              ? const Icon(
+                                  Icons.person_rounded,
+                                  color: GRAYSCALE_LABEL_500,
+                                  size: 20,
+                                )
+                              : null,
+                        ),
                       );
                     },
                   ),
                   const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Consumer<ProfileProvider>(
-                        builder: (context, profileProvider, child) {
-                          profileProvider.subscribeUserProfile(post.userId);
-                          final nickName =
-                              profileProvider.userNicknames[post.userId] ??
-                              post.userNickName;
-                          return Text(
-                            nickName,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          );
-                        },
-                      ),
-                      Text(
-                        timeAgo(post.createdAt),
-                        style: TextStyle(
-                          color: GRAYSCALE_LABEL_500,
-                          fontSize: 13,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Consumer<ProfileProvider>(
+                          builder: (context, profileProvider, child) {
+                            profileProvider.subscribeUserProfile(post.userId);
+                            final nickName =
+                                profileProvider.userNicknames[post.userId] ??
+                                post.userNickName;
+                            return Text(
+                              nickName,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: GRAYSCALE_LABEL_950,
+                              ),
+                            );
+                          },
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 1),
+                        Text(
+                          timeAgo(post.createdAt),
+                          style: const TextStyle(
+                            color: GRAYSCALE_LABEL_400,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const Spacer(),
-
                   IconButton(
+                    visualDensity: VisualDensity.compact,
                     onPressed: () {
                       _showPostOptionBottomSheet(context, post, feedProvider);
                     },
-                    icon: Icon(Icons.more_horiz),
+                    icon: const Icon(
+                      Icons.more_horiz_rounded,
+                      color: GRAYSCALE_LABEL_500,
+                      size: 20,
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              // 본문
-              Text(post.text),
-              const SizedBox(height: 8),
+              if (post.text.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  post.text,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.45,
+                    color: GRAYSCALE_LABEL_900,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
               if (extractUrl(post.text) != null) ...[
-                SizedBox(height: 10),
                 Container(
+                  margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
-                    color: WHITE,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
+                    color: BACKGROUND_COLOR,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: GRAYSCALE_LABEL_200.withValues(alpha: 0.8),
+                    ),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Column(
@@ -190,25 +262,30 @@ class MyPostWidget extends StatelessWidget {
                         enableAnimation: true,
                         text: extractUrl(post.text)!,
                         onLinkPreviewDataFetched: (data) {
-                          print('Preview data fetched: ${data.title}');
+                          debugPrint('Preview data fetched: ${data.title}');
                         },
                       ),
                       Container(
-                        padding: EdgeInsets.symmetric(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 8,
                         ),
-                        decoration: BoxDecoration(color: WHITE),
+                        color: WHITE,
                         child: Row(
                           children: [
-                            Icon(Icons.link, size: 16, color: Colors.blue),
-                            SizedBox(width: 8),
+                            const Icon(
+                              Icons.link_rounded,
+                              size: 16,
+                              color: Colors.blue,
+                            ),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 extractUrl(post.text)!,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: Colors.blue,
-                                  fontSize: 13,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -227,7 +304,6 @@ class MyPostWidget extends StatelessWidget {
                   builder: (context, constraints) {
                     final bool inSingle = post.mediaUrls.length == 1;
                     final double availableWidth = constraints.maxWidth;
-                    // 리스트 높이와 각 아이템 너비를 화면/가용 폭 기준으로 계산
                     final double listHeight = (availableWidth * 0.55).clamp(
                       160.0,
                       320.0,
@@ -236,111 +312,191 @@ class MyPostWidget extends StatelessWidget {
                         ? availableWidth
                         : (availableWidth * 0.48).clamp(140.0, availableWidth);
 
-                    return SizedBox(
-                      height: listHeight,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: post.mediaUrls.length,
-                        itemBuilder: (_, i) {
-                          final url = post.mediaUrls[i];
-                          final isVideo = MediaUtils.isVideoFromPost(post, i);
-                          return Padding(
-                            padding: EdgeInsets.only(
-                              left: 0,
-                              right: inSingle ? 0 : 8,
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: isVideo
-                                  ? NetworkVideoPlayer(
-                                      videoUrl: url,
-                                      width: itemWidth,
-                                      height: listHeight,
-                                      fit: BoxFit.cover,
-                                      autoPlay: true,
-                                      muted: true,
-                                      showControls: false,
-                                    )
-                                  : Image.network(
-                                      url,
-                                      height: listHeight,
-                                      width: itemWidth,
-                                      fit: BoxFit.cover,
-                                      loadingBuilder:
-                                          (context, child, loadingProgress) {
-                                            if (loadingProgress == null) {
-                                              return child;
-                                            }
-                                            return SizedBox(
-                                              height: listHeight,
-                                              width: itemWidth,
-                                              child: const Center(
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      color: BUTTON,
-                                                    ),
-                                              ),
-                                            );
-                                          },
-                                    ),
-                            ),
-                          );
-                        },
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: SizedBox(
+                        height: listHeight,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: post.mediaUrls.length,
+                          itemBuilder: (_, i) {
+                            final url = post.mediaUrls[i];
+                            final isVideo = MediaUtils.isVideoFromPost(post, i);
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                right: inSingle ? 0 : 8,
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: isVideo
+                                    ? NetworkVideoPlayer(
+                                        videoUrl: url,
+                                        width: itemWidth,
+                                        height: listHeight,
+                                        fit: BoxFit.cover,
+                                        autoPlay: true,
+                                        muted: true,
+                                        showControls: false,
+                                      )
+                                    : Image.network(
+                                        url,
+                                        height: listHeight,
+                                        width: itemWidth,
+                                        fit: BoxFit.cover,
+                                        loadingBuilder:
+                                            (context, child, loadingProgress) {
+                                              if (loadingProgress == null) {
+                                                return child;
+                                              }
+                                              return SizedBox(
+                                                height: listHeight,
+                                                width: itemWidth,
+                                                child: const Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        color: BUTTON,
+                                                      ),
+                                                ),
+                                              );
+                                            },
+                                      ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     );
                   },
                 ),
-              const SizedBox(height: 8),
-              // 좋아요 + 댓글
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () => feedProvider.toggleLikeAndNotify(
-                      currentUserId: currentUserId!,
-                      post: post,
-                      postId: post.id,
-                      postOwnerId: post.userId,
-                    ),
-                    icon: Icon(
-                      currentUserId != null &&
-                              post.likedBy.contains(currentUserId)
-                          ? Icons.favorite
-                          : Icons.favorite_border,
-                      color:
-                          currentUserId != null &&
-                              post.likedBy.contains(currentUserId)
-                          ? Colors.red
-                          : null,
+              // 하단 좋아요 + 댓글 캡슐 바
+              Container(
+                padding: const EdgeInsets.only(top: 10),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: GRAYSCALE_LABEL_100,
+                      width: 1,
                     ),
                   ),
-                  Transform.translate(
-                    offset: const Offset(-10, 0),
-                    child: Text('${post.likesCount}'),
-                  ),
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(CupertinoIcons.chat_bubble),
-                  ),
-                  Consumer<CommentProvider>(
-                    builder: (context, commentProvider, child) {
-                      final comment = commentProvider.getComments(post.id);
-                      return Transform.translate(
-                        offset: Offset(-5, 0),
-                        child: Text('${comment.length}'),
-                      );
-                    },
-                  ),
-
-                  const Spacer(),
-                  Text(
-                    '${post.mediaUrls.length}개의 이미지',
-                    style: TextStyle(
-                      color: GRAYSCALE_LABEL_500,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                ),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: currentUserId == null
+                          ? null
+                          : () => feedProvider.toggleLikeAndNotify(
+                              currentUserId: currentUserId,
+                              post: post,
+                              postId: post.id,
+                              postOwnerId: post.userId,
+                            ),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 11,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isLiked
+                              ? Colors.red.withValues(alpha: 0.08)
+                              : BACKGROUND_COLOR,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isLiked
+                                  ? Icons.favorite_rounded
+                                  : Icons.favorite_border_rounded,
+                              size: 16,
+                              color: isLiked
+                                  ? Colors.red
+                                  : GRAYSCALE_LABEL_600,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              '${post.likesCount}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: isLiked
+                                    ? Colors.red
+                                    : GRAYSCALE_LABEL_700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Consumer<CommentProvider>(
+                      builder: (context, commentProvider, child) {
+                        final comment = commentProvider.getComments(post.id);
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 11,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: BACKGROUND_COLOR,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                CupertinoIcons.chat_bubble,
+                                size: 15,
+                                color: GRAYSCALE_LABEL_600,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                '${comment.length}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: GRAYSCALE_LABEL_700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    const Spacer(),
+                    if (post.mediaUrls.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: BACKGROUND_COLOR,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.photo_library_outlined,
+                              size: 12,
+                              color: GRAYSCALE_LABEL_500,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${post.mediaUrls.length}',
+                              style: const TextStyle(
+                                color: GRAYSCALE_LABEL_500,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),

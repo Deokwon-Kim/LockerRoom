@@ -646,6 +646,8 @@ class IntutionRecordProvider extends ChangeNotifier {
     required int newMyscore,
     required int newOppScore,
     String? newMemo,
+    String? newSeat,
+    int? newTicketPrice,
     List<File>? newImages,
     List<String>? oldImageUrls,
   }) async {
@@ -722,6 +724,15 @@ class IntutionRecordProvider extends ChangeNotifier {
         final trimmedMemo = newMemo.trim();
         updateData['memo'] = trimmedMemo.isNotEmpty ? trimmedMemo : null;
         print('메모 업데이트 시도: $trimmedMemo');
+      }
+
+      if (newSeat != null) {
+        final trimmedSeat = newSeat.trim();
+        updateData['seat'] = trimmedSeat.isNotEmpty ? trimmedSeat : null;
+      }
+
+      if (newTicketPrice != null) {
+        updateData['ticketPrice'] = newTicketPrice;
       }
 
       if (imageUrls.isNotEmpty) {

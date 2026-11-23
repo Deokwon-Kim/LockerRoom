@@ -63,7 +63,7 @@ class _UserPostPageState extends State<UserPostPage> {
 
         final imageUrl = (data['profileImage'] as String?) ?? '';
         return Scaffold(
-          backgroundColor: WHITE,
+          backgroundColor: BACKGROUND_COLOR,
           body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: FirebaseFirestore.instance
                 .collection('posts')
@@ -71,58 +71,123 @@ class _UserPostPageState extends State<UserPostPage> {
                 .orderBy('createdAt', descending: true)
                 .snapshots(),
             builder: (context, snap) {
-              if (!snap.hasData)
+              if (!snap.hasData) {
                 return Center(
                   child: CircularProgressIndicator(color: teamColor),
                 );
+              }
               final posts = snap.data!.docs
                   .map((d) => PostModel.fromDoc(d))
                   .toList();
 
-              if (posts.isEmpty) return Center(child: Text('게시물이 없습니다'));
+              if (posts.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: WHITE,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: BLACK.withValues(alpha: 0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.edit_note_rounded,
+                          size: 30,
+                          color: GRAYSCALE_LABEL_400,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        '작성한 게시물이 없습니다',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: GRAYSCALE_LABEL_600,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
 
               return ListView.builder(
+                padding: const EdgeInsets.only(top: 4, bottom: 24),
                 itemCount: posts.length,
                 itemBuilder: (_, i) {
                   final p = posts[i];
                   final isOwnerOfThisPost =
                       currentUserId != null && p.userId == currentUserId;
-                  return Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => FeedDetailPage(post: p),
-                          ),
-                        );
-                      },
-                      child: Card(
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FeedDetailPage(post: p),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
                         color: WHITE,
-                        child: Padding(
-                          padding: EdgeInsets.all(15),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: GRAYSCALE_LABEL_300,
-                                    radius: 25,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: GRAYSCALE_LABEL_200.withValues(alpha: 0.6),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: BLACK.withValues(alpha: 0.04),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: GRAYSCALE_LABEL_200,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    backgroundColor: GRAYSCALE_LABEL_100,
+                                    radius: 19,
                                     backgroundImage: imageUrl.isNotEmpty
                                         ? NetworkImage(imageUrl)
                                         : null,
                                     child: imageUrl.isEmpty
                                         ? const Icon(
-                                            Icons.person,
-                                            color: Colors.black,
+                                            Icons.person_rounded,
+                                            color: GRAYSCALE_LABEL_500,
+                                            size: 20,
                                           )
                                         : null,
                                   ),
-                                  SizedBox(width: 10),
-                                  Column(
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
@@ -140,191 +205,202 @@ class _UserPostPageState extends State<UserPostPage> {
                                                   p.userNickName;
                                               return Text(
                                                 nickName,
-                                                style: TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.bold,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: GRAYSCALE_LABEL_950,
                                                 ),
                                               );
                                             },
                                       ),
+                                      const SizedBox(height: 1),
                                       Text(
                                         timeAgo(p.createdAt),
-                                        style: TextStyle(
-                                          color: GRAYSCALE_LABEL_500,
-                                          fontSize: 13,
+                                        style: const TextStyle(
+                                          color: GRAYSCALE_LABEL_400,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  Spacer(),
-                                  IconButton(
-                                    onPressed: () {
-                                      _showPostOptionBottomSheet(
-                                        context,
-                                        p,
-                                        feedProvider,
-                                        isOwnerOfThisPost,
-                                      );
-                                    },
-                                    icon: Icon(Icons.more_horiz),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 8),
-                              // 본문
-                              Text(p.text),
-                              SizedBox(height: 8),
-                              if (extractUrl(p.text) != null) ...[
-                                SizedBox(height: 10),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: WHITE,
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.grey.withOpacity(0.2),
-                                        blurRadius: 8,
-                                        offset: Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      LinkPreview(
-                                        enableAnimation: true,
-                                        text: extractUrl(p.text)!,
-                                        onLinkPreviewDataFetched: (data) {
-                                          print(
-                                            'Preview data fetched: ${data.title}',
-                                          );
-                                        },
-                                      ),
-                                      Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 8,
-                                        ),
-                                        decoration: BoxDecoration(color: WHITE),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.link,
-                                              size: 16,
-                                              color: Colors.blue,
-                                            ),
-                                            SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                extractUrl(p.text)!,
-                                                style: TextStyle(
-                                                  color: Colors.blue,
-                                                  fontSize: 13,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
+                                ),
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  onPressed: () {
+                                    _showPostOptionBottomSheet(
+                                      context,
+                                      p,
+                                      feedProvider,
+                                      isOwnerOfThisPost,
+                                    );
+                                  },
+                                  icon: const Icon(
+                                    Icons.more_horiz_rounded,
+                                    color: GRAYSCALE_LABEL_500,
+                                    size: 20,
                                   ),
                                 ),
                               ],
-
-                              // 이미지/영상 슬라이드
-                              if (p.mediaUrls.isNotEmpty)
-                                LayoutBuilder(
-                                  builder: (context, constraint) {
-                                    final bool inSingle =
-                                        p.mediaUrls.length == 1;
-                                    final double avilableWidth =
-                                        constraint.maxWidth;
-                                    final double listHeight =
-                                        (avilableWidth * 0.55).clamp(160, 320);
-                                    final double itemWidth = inSingle
-                                        ? avilableWidth
-                                        : (avilableWidth * 0.48).clamp(
-                                            140,
-                                            avilableWidth,
-                                          );
-
-                                    return SizedBox(
-                                      height: listHeight,
-                                      child: ListView.builder(
-                                        scrollDirection: Axis.horizontal,
-                                        itemCount: p.mediaUrls.length,
-                                        itemBuilder: (_, i) {
-                                          final url = p.mediaUrls[i];
-                                          final isVideo =
-                                              MediaUtils.isVideoFromPost(p, i);
-                                          return Padding(
-                                            padding: EdgeInsets.only(
-                                              left: 0,
-                                              right: inSingle ? 0 : 8,
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              child: isVideo
-                                                  ? NetworkVideoPlayer(
-                                                      videoUrl: url,
-                                                      width: itemWidth,
-                                                      height: listHeight,
-                                                      fit: BoxFit.cover,
-                                                      autoPlay: true,
-                                                      muted: true,
-                                                      showControls: false,
-                                                    )
-                                                  : Image.network(
-                                                      url,
-                                                      height: listHeight,
-                                                      width: itemWidth,
-                                                      fit: BoxFit.cover,
-                                                      loadingBuilder:
-                                                          (
-                                                            context,
-                                                            child,
-                                                            loadingProgress,
-                                                          ) {
-                                                            if (loadingProgress ==
-                                                                null) {
-                                                              return child;
-                                                            }
-                                                            final color =
-                                                                context
-                                                                    .read<
-                                                                      TeamProvider
-                                                                    >()
-                                                                    .selectedTeam
-                                                                    ?.color ??
-                                                                BUTTON;
-                                                            return SizedBox(
-                                                              height:
-                                                                  listHeight,
-                                                              width: itemWidth,
-                                                              child: Center(
-                                                                child:
-                                                                    CircularProgressIndicator(
-                                                                      color:
-                                                                          color,
-                                                                    ),
-                                                              ),
-                                                            );
-                                                          },
-                                                    ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    );
-                                  },
+                            ),
+                            if (p.text.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              Text(
+                                p.text,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  height: 1.45,
+                                  color: GRAYSCALE_LABEL_900,
                                 ),
+                              ),
                             ],
-                          ),
+                            const SizedBox(height: 10),
+                            if (extractUrl(p.text) != null) ...[
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                decoration: BoxDecoration(
+                                  color: BACKGROUND_COLOR,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: GRAYSCALE_LABEL_200.withValues(
+                                      alpha: 0.8,
+                                    ),
+                                  ),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    LinkPreview(
+                                      enableAnimation: true,
+                                      text: extractUrl(p.text)!,
+                                      onLinkPreviewDataFetched: (data) {
+                                        debugPrint(
+                                          'Preview data fetched: ${data.title}',
+                                        );
+                                      },
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      color: WHITE,
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.link_rounded,
+                                            size: 16,
+                                            color: Colors.blue,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              extractUrl(p.text)!,
+                                              style: const TextStyle(
+                                                color: Colors.blue,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+
+                            // 이미지/영상 슬라이드
+                            if (p.mediaUrls.isNotEmpty)
+                              LayoutBuilder(
+                                builder: (context, constraint) {
+                                  final bool inSingle = p.mediaUrls.length == 1;
+                                  final double avilableWidth =
+                                      constraint.maxWidth;
+                                  final double listHeight =
+                                      (avilableWidth * 0.55).clamp(160, 320);
+                                  final double itemWidth = inSingle
+                                      ? avilableWidth
+                                      : (avilableWidth * 0.48).clamp(
+                                          140,
+                                          avilableWidth,
+                                        );
+
+                                  return SizedBox(
+                                    height: listHeight,
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: p.mediaUrls.length,
+                                      itemBuilder: (_, i) {
+                                        final url = p.mediaUrls[i];
+                                        final isVideo =
+                                            MediaUtils.isVideoFromPost(p, i);
+                                        return Padding(
+                                          padding: EdgeInsets.only(
+                                            right: inSingle ? 0 : 8,
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            child: isVideo
+                                                ? NetworkVideoPlayer(
+                                                    videoUrl: url,
+                                                    width: itemWidth,
+                                                    height: listHeight,
+                                                    fit: BoxFit.cover,
+                                                    autoPlay: true,
+                                                    muted: true,
+                                                    showControls: false,
+                                                  )
+                                                : Image.network(
+                                                    url,
+                                                    height: listHeight,
+                                                    width: itemWidth,
+                                                    fit: BoxFit.cover,
+                                                    loadingBuilder:
+                                                        (
+                                                          context,
+                                                          child,
+                                                          loadingProgress,
+                                                        ) {
+                                                          if (loadingProgress ==
+                                                              null) {
+                                                            return child;
+                                                          }
+                                                          final color =
+                                                              context
+                                                                  .read<
+                                                                    TeamProvider
+                                                                  >()
+                                                                  .selectedTeam
+                                                                  ?.color ??
+                                                              BUTTON;
+                                                          return SizedBox(
+                                                            height: listHeight,
+                                                            width: itemWidth,
+                                                            child: Center(
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                    color:
+                                                                        color,
+                                                                  ),
+                                                            ),
+                                                          );
+                                                        },
+                                                  ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  );
+                                },
+                              ),
+                          ],
                         ),
                       ),
                     ),

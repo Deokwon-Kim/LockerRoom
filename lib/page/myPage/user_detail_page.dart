@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:contained_tab_bar_view/contained_tab_bar_view.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/model/team_model.dart';
-import 'package:lockerroom/page/my_post/user_market_post_page.dart';
+import 'package:lockerroom/page/myPage/quiz_trophy_page.dart';
 import 'package:lockerroom/page/my_post/user_post_page.dart';
 import 'package:lockerroom/page/follow/follow_list_page.dart';
 import 'package:lockerroom/provider/block_provider.dart';
@@ -122,9 +122,9 @@ class _UserDetailPageState extends State<UserDetailPage> {
           stream: widget.userId.isEmpty
               ? Stream.value(null)
               : FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(widget.userId)
-                  .snapshots(),
+                    .collection('users')
+                    .doc(widget.userId)
+                    .snapshots(),
           builder: (context, snap) {
             if (!snap.hasData) {
               final color =
@@ -149,422 +149,583 @@ class _UserDetailPageState extends State<UserDetailPage> {
                 ? null
                 : (data['birthYear'] as num).toInt();
             final imageUrl = (data['profileImage'] as String?) ?? '';
+            final activeTeamColor = teamModel?.color ?? teamColor ?? BUTTON;
+            final isOtherUser =
+                widget.userId != FirebaseAuth.instance.currentUser?.uid &&
+                widget.userId.isNotEmpty;
 
-            return Scaffold(
-              backgroundColor: WHITE,
-              appBar: AppBar(
-                backgroundColor: WHITE,
-                title: Row(
-                  children: [
-                    Transform.translate(
-                      offset: Offset(-15, 0),
-                      child: Text(
-                        nickName,
-                        style: TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.bold,
+            return DefaultTabController(
+              length: 2,
+              child: Scaffold(
+                backgroundColor: BACKGROUND_COLOR,
+                appBar: AppBar(
+                  backgroundColor: BACKGROUND_COLOR,
+                  scrolledUnderElevation: 0,
+                  centerTitle: false,
+                  titleSpacing: 0,
+                  title: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          nickName,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: GRAYSCALE_LABEL_950,
+                            letterSpacing: -0.4,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    ),
-                    if (birthYear != null) ...[
-                      SizedBox(width: 8),
-                      Transform.translate(
-                        offset: Offset(-15, 5),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: activeTeamColor,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: activeTeamColor.withValues(alpha: 0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
                         child: Text(
-                          '($birthYear년생)',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: GRAYSCALE_LABEL_500,
-                            fontWeight: FontWeight.bold,
+                          teamName,
+                          style: const TextStyle(
+                            color: WHITE,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
                     ],
-                    SizedBox(width: 5),
-                    Transform.translate(
-                      offset: Offset(-15, 5),
-                      child: Text(
-                        teamName,
-                        style: TextStyle(
-                          color: teamModel?.color,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                  ),
+                ),
+                body: Column(
+                  children: [
+                    // 프로필 히어로 라운지 카드 (내 정보 페이지와 통일)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                      child: Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: WHITE,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: BLACK.withValues(alpha: 0.04),
+                              blurRadius: 16,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
                         ),
+                        child: Column(
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: activeTeamColor.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      width: 2.2,
+                                    ),
+                                  ),
+                                  child: CircleAvatar(
+                                    backgroundColor: GRAYSCALE_LABEL_100,
+                                    radius: 38,
+                                    backgroundImage: imageUrl.isNotEmpty
+                                        ? NetworkImage(imageUrl)
+                                        : null,
+                                    child: imageUrl.isEmpty
+                                        ? const Icon(
+                                            Icons.person_rounded,
+                                            color: GRAYSCALE_LABEL_400,
+                                            size: 36,
+                                          )
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              nickName,
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w800,
+                                                color: GRAYSCALE_LABEL_950,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 7,
+                                              vertical: 2.5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: activeTeamColor.withValues(
+                                                alpha: 0.12,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              teamModel != null
+                                                  ? '${teamModel.name} 직관러'
+                                                  : 'KBO 직관러',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w800,
+                                                color: activeTeamColor,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        [
+                                          if (userName.isNotEmpty) userName,
+                                          if (birthYear != null) '$birthYear년생',
+                                          teamModel?.stadium ?? '더베이스 라운지',
+                                        ].join(' · '),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: GRAYSCALE_LABEL_500,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (isOtherUser) ...[
+                                        const SizedBox(height: 10),
+                                        StreamBuilder<bool>(
+                                          stream: context
+                                              .read<BlockProvider>()
+                                              .getBlockedByStream(
+                                                FirebaseAuth
+                                                        .instance
+                                                        .currentUser
+                                                        ?.uid ??
+                                                    '',
+                                                widget.userId,
+                                              ),
+                                          builder: (context, snapshot) {
+                                            final isBlockedByTarget =
+                                                snapshot.data ?? false;
+                                            if (isBlockedByTarget) {
+                                              return Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 6,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: GRAYSCALE_LABEL_100,
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                child: const Text(
+                                                  '이 사용자가 회원님을 차단했습니다',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: GRAYSCALE_LABEL_600,
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                            final isFollowing = fp
+                                                .isFollowingUser(widget.userId);
+                                            return Row(
+                                              children: [
+                                                Expanded(
+                                                  child: InkWell(
+                                                    onTap: () {
+                                                      fp.toggleFollow(
+                                                        widget.userId,
+                                                      );
+                                                    },
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
+                                                    child: Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            vertical: 7,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: isFollowing
+                                                            ? BACKGROUND_COLOR
+                                                            : activeTeamColor,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              10,
+                                                            ),
+                                                        border: isFollowing
+                                                            ? Border.all(
+                                                                color:
+                                                                    GRAYSCALE_LABEL_300,
+                                                              )
+                                                            : null,
+                                                      ),
+                                                      child: Center(
+                                                        child: Text(
+                                                          isFollowing
+                                                              ? '팔로잉 ✓'
+                                                              : '팔로우',
+                                                          style: TextStyle(
+                                                            fontSize: 12,
+                                                            fontWeight:
+                                                                FontWeight.w800,
+                                                            color: isFollowing
+                                                                ? GRAYSCALE_LABEL_800
+                                                                : WHITE,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                InkWell(
+                                                  onTap: () {
+                                                    showMenu<String>(
+                                                      context: context,
+                                                      position:
+                                                          const RelativeRect.fromLTRB(
+                                                            300,
+                                                            220,
+                                                            40,
+                                                            0,
+                                                          ),
+                                                      color: WHITE,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              14,
+                                                            ),
+                                                      ),
+                                                      items: const [
+                                                        PopupMenuItem(
+                                                          value: 'report',
+                                                          child: Text(
+                                                            '사용자 신고',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  RED_DANGER_TEXT_50,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        PopupMenuItem(
+                                                          value: 'block',
+                                                          child: Text(
+                                                            '사용자 차단',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  RED_DANGER_TEXT_50,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ).then((value) {
+                                                      if (value == 'block') {
+                                                        final uid = FirebaseAuth
+                                                            .instance
+                                                            .currentUser
+                                                            ?.uid;
+                                                        if (uid == null) return;
+                                                        _showBlockConfirmDialog(
+                                                          context,
+                                                          nickName,
+                                                          widget.userId,
+                                                          uid,
+                                                        );
+                                                      } else if (value ==
+                                                          'report') {
+                                                        _showUserReportDialog(
+                                                          context,
+                                                          nickName,
+                                                          widget.userId,
+                                                        );
+                                                      }
+                                                    });
+                                                  },
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  child: Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 7,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: BACKGROUND_COLOR,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            10,
+                                                          ),
+                                                      border: Border.all(
+                                                        color:
+                                                            GRAYSCALE_LABEL_200,
+                                                      ),
+                                                    ),
+                                                    child: const Text(
+                                                      '더보기',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color:
+                                                            GRAYSCALE_LABEL_700,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // 정돈된 3열 스탯 박스 (게시물 | 팔로워 | 팔로잉)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: BACKGROUND_COLOR,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: GRAYSCALE_LABEL_200.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: StreamBuilder<List<PostModel>>(
+                                      stream: context
+                                          .read<FeedProvider>()
+                                          .listenUserPosts(widget.userId),
+                                      builder: (context, snapshot) {
+                                        final count =
+                                            (snapshot.data ?? const []).length;
+                                        return _buildStatColumn(
+                                          count: count,
+                                          label: '게시물',
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 1,
+                                    height: 28,
+                                    color: GRAYSCALE_LABEL_200,
+                                  ),
+                                  Expanded(
+                                    child: StreamBuilder<int>(
+                                      stream: fp.getFollowersCountStream(
+                                        widget.userId,
+                                      ),
+                                      builder: (context, snpshot) {
+                                        final count = snpshot.data ?? 0;
+                                        return GestureDetector(
+                                          behavior: HitTestBehavior.opaque,
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    FollowListPage(
+                                                      userId: widget.userId,
+                                                      initialIndex: 0,
+                                                    ),
+                                              ),
+                                            );
+                                          },
+                                          child: _buildStatColumn(
+                                            count: count,
+                                            label: '팔로워',
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 1,
+                                    height: 28,
+                                    color: GRAYSCALE_LABEL_200,
+                                  ),
+                                  Expanded(
+                                    child: StreamBuilder<int>(
+                                      stream: fp.getFollowCountStream(
+                                        widget.userId,
+                                      ),
+                                      builder: (context, snpshot) {
+                                        final count = snpshot.data ?? 0;
+                                        return GestureDetector(
+                                          behavior: HitTestBehavior.opaque,
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    FollowListPage(
+                                                      userId: widget.userId,
+                                                      initialIndex: 1,
+                                                    ),
+                                              ),
+                                            );
+                                          },
+                                          child: _buildStatColumn(
+                                            count: count,
+                                            label: '팔로잉',
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // 세그먼트 캡슐 탭바 (게시글 / 트로피)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        height: 46,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: WHITE,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: BLACK.withValues(alpha: 0.03),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: TabBar(
+                          indicator: BoxDecoration(
+                            color: activeTeamColor,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: activeTeamColor.withValues(alpha: 0.25),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          dividerColor: Colors.transparent,
+                          labelColor: WHITE,
+                          unselectedLabelColor: GRAYSCALE_LABEL_500,
+                          labelStyle: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          unselectedLabelStyle: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          tabs: const [
+                            Tab(text: '📝 게시글'),
+                            Tab(text: '🏆 트로피'),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          UserPostPage(userId: widget.userId),
+                          QuizTrophyPage(userId: widget.userId),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-              body: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(15.0),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: GRAYSCALE_LABEL_300,
-                          radius: 40,
-                          backgroundImage: imageUrl.isNotEmpty
-                              ? NetworkImage(imageUrl)
-                              : null,
-                          child: imageUrl.isEmpty
-                              ? const Icon(Icons.person, color: Colors.black)
-                              : null,
-                        ),
-                        SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                userName,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              SizedBox(height: 5),
-                              Row(
-                                children: [
-                                  StreamBuilder<List<PostModel>>(
-                                    stream: context
-                                        .read<FeedProvider>()
-                                        .listenUserPosts(widget.userId),
-                                    builder: (context, snapshot) {
-                                      final count =
-                                          (snapshot.data ?? const []).length;
-                                      return Column(
-                                        children: [
-                                          Text(
-                                            '$count',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          Text(
-                                            '게시물',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                  SizedBox(width: 50),
-                                  StreamBuilder<int>(
-                                    stream: fp.getFollowersCountStream(
-                                      widget.userId,
-                                    ),
-                                    builder: (context, snpshot) {
-                                      if (!snpshot.hasData) {
-                                        final teamColor =
-                                            context
-                                                .read<TeamProvider>()
-                                                .selectedTeam
-                                                ?.color ??
-                                            BUTTON;
-                                        return Center(
-                                          child: SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              color: teamColor,
-                                              strokeWidth: 2,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      return GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  FollowListPage(
-                                                    userId: widget.userId,
-                                                    initialIndex: 0,
-                                                  ),
-                                            ),
-                                          );
-                                        },
-                                        child: Column(
-                                          children: [
-                                            Text(
-                                              '${snpshot.data}',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            Text(
-                                              '팔로워',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  SizedBox(width: 50),
-                                  StreamBuilder<int>(
-                                    stream: fp.getFollowCountStream(
-                                      widget.userId,
-                                    ),
-                                    builder: (context, snpshot) {
-                                      if (!snpshot.hasData) {
-                                        final teamColor =
-                                            context
-                                                .read<TeamProvider>()
-                                                .selectedTeam
-                                                ?.color ??
-                                            BUTTON;
-                                        return Center(
-                                          child: SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              color: teamColor,
-                                              strokeWidth: 2,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      return GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  FollowListPage(
-                                                    userId: widget.userId,
-                                                    initialIndex: 1,
-                                                  ),
-                                            ),
-                                          );
-                                        },
-                                        child: Column(
-                                          children: [
-                                            Text(
-                                              '${snpshot.data}',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                            Text(
-                                              '팔로잉',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  if (widget.userId != FirebaseAuth.instance.currentUser?.uid &&
-                      widget.userId.isNotEmpty)
-                    StreamBuilder<bool>(
-                      stream: context.read<BlockProvider>().getBlockedByStream(
-                        FirebaseAuth.instance.currentUser?.uid ?? '',
-                        widget.userId,
-                      ),
-                      builder: (context, snapshot) {
-                        final isBlockedByTarget = snapshot.data ?? false;
-                        return isBlockedByTarget
-                            ? Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: GRAYSCALE_LABEL_100,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  '이 사용자가 회원님을 차단했습니다',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: GRAYSCALE_LABEL_600,
-                                  ),
-                                ),
-                              )
-                            : Padding(
-                                padding: const EdgeInsets.only(
-                                  left: 10.0,
-                                  right: 10.0,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          fp.toggleFollow(widget.userId);
-                                        },
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 8,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                fp.isFollowingUser(
-                                                  widget.userId,
-                                                )
-                                                ? GRAYSCALE_LABEL_100
-                                                : teamColor,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              fp.isFollowingUser(widget.userId)
-                                                  ? '팔로잉'
-                                                  : '팔로우',
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold,
-                                                color:
-                                                    fp.isFollowingUser(
-                                                      widget.userId,
-                                                    )
-                                                    ? Colors.black
-                                                    : Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Expanded(
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          showMenu<String>(
-                                            context: context,
-                                            position: RelativeRect.fromLTRB(
-                                              300,
-                                              250,
-                                              50,
-                                              0,
-                                            ),
-                                            color: BACKGROUND_COLOR,
-                                            items: [
-                                              PopupMenuItem(
-                                                value: 'report',
-                                                child: Text(
-                                                  '사용자 신고',
-                                                  style: TextStyle(
-                                                    color: RED_DANGER_TEXT_50,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                              PopupMenuItem(
-                                                value: 'block',
-                                                child: Text(
-                                                  '사용자 차단',
-                                                  style: TextStyle(
-                                                    color: RED_DANGER_TEXT_50,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ).then((value) {
-                                            if (value == 'block') {
-                                              final uid = FirebaseAuth
-                                                  .instance
-                                                  .currentUser
-                                                  ?.uid;
-                                              if (uid == null) return;
-                                              _showBlockConfirmDialog(
-                                                context,
-                                                nickName,
-                                                widget.userId,
-                                                uid,
-                                              );
-                                            } else if (value == 'report') {
-                                              _showUserReportDialog(
-                                                context,
-                                                nickName,
-                                                widget.userId,
-                                              );
-                                            }
-                                          });
-                                        },
-                                        child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 8,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: GRAYSCALE_LABEL_100,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              '더보기',
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                      },
-                    ),
-
-                  SizedBox(height: 10),
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: WHITE,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: ContainedTabBarView(
-                        tabs: [
-                          Text('게시글', style: TextStyle(color: BLACK)),
-                          Text('마켓', style: TextStyle(color: BLACK)),
-                        ],
-                        tabBarProperties: TabBarProperties(
-                          indicatorColor: teamColor,
-                          indicatorSize: TabBarIndicatorSize.tab,
-                          indicatorWeight: 3.0,
-                          unselectedLabelColor: GRAYSCALE_LABEL_500,
-                        ),
-                        views: [
-                          UserPostPage(userId: widget.userId),
-                          UserMarketPostPage(userId: widget.userId),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildStatColumn({required int count, required String label}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$count',
+          style: GoogleFonts.bebasNeue(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: GRAYSCALE_LABEL_950,
+            height: 1.0,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: GRAYSCALE_LABEL_500,
+          ),
+        ),
+      ],
     );
   }
 

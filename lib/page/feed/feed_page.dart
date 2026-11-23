@@ -36,6 +36,8 @@ class _FeedPageState extends State<FeedPage> {
   late FeedProvider _feedProvider;
   BlockProvider? _blockProvider;
   VoidCallback? _blockListener;
+  String _selectedFilter = '전체';
+  final List<String> _filters = ['전체', '인기글 🔥', '직관모임 🤝', '사진/영상 📸'];
 
   @override
   void initState() {
@@ -70,38 +72,166 @@ class _FeedPageState extends State<FeedPage> {
     super.dispose();
   }
 
+  List<PostModel> _applyCategoryFilter(List<PostModel> posts) {
+    switch (_selectedFilter) {
+      case '인기글 🔥':
+        final popular = posts.where((p) => p.likesCount > 0).toList()
+          ..sort((a, b) => b.likesCount.compareTo(a.likesCount));
+        return popular.isNotEmpty ? popular : posts;
+      case '직관모임 🤝':
+        return posts.where((p) => p.meetupId != null).toList();
+      case '사진/영상 📸':
+        return posts.where((p) => p.mediaUrls.isNotEmpty).toList();
+      default:
+        return posts;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final teamColor =
+        context.watch<TeamProvider>().selectedTeam?.color ?? BUTTON;
+
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Image.asset('assets/images/applogo/app_logo.png', height: 100),
-        centerTitle: true,
+        titleSpacing: 20,
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/applogo/app_logo.png',
+              height: 36,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              '라커룸 피드',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: BLACK,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ],
+        ),
+        centerTitle: false,
         scrolledUnderElevation: 0,
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: WHITE,
+        elevation: 0,
         actions: [
-          IconButton(
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => FeedSearchPage()),
-              );
-              if (!mounted) return;
-              context.read<FeedProvider>().setQuery('');
-            },
-            icon: Icon(Icons.search, color: BUTTON),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => FeedSearchPage()),
+                );
+                if (!mounted) return;
+                context.read<FeedProvider>().setQuery('');
+              },
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: BACKGROUND_COLOR,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  CupertinoIcons.search,
+                  color: GRAYSCALE_LABEL_800,
+                  size: 18,
+                ),
+              ),
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
+          // 상단 카테고리 필터 칩 바
+          Container(
+            width: double.infinity,
+            color: WHITE,
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _filters.map((filter) {
+                  final isSelected = _selectedFilter == filter;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedFilter = filter),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected ? teamColor : BACKGROUND_COLOR,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected
+                                ? teamColor
+                                : GRAYSCALE_LABEL_200,
+                          ),
+                        ),
+                        child: Text(
+                          filter,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w600,
+                            color: isSelected ? WHITE : GRAYSCALE_LABEL_600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          const Divider(height: 1, color: GRAYSCALE_LABEL_200),
           Expanded(
             child: Consumer2<FeedProvider, ProfileProvider>(
               builder: (context, feedProvider, profileProvider, child) {
-                final allPosts = feedProvider.filteredPosts;
+                final allPosts = _applyCategoryFilter(
+                  feedProvider.filteredPosts,
+                );
+
+                if (allPosts.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          CupertinoIcons.chat_bubble_2,
+                          size: 42,
+                          color: GRAYSCALE_LABEL_400,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          '해당 카테고리에 게시물이 없습니다',
+                          style: TextStyle(
+                            color: GRAYSCALE_LABEL_500,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
 
                 return ListView.builder(
+                  padding: const EdgeInsets.only(top: 12, bottom: 24),
                   itemCount: allPosts.length,
                   itemBuilder: (context, index) => PostWidget(
                     post: allPosts[index],
@@ -132,6 +262,7 @@ class _PostWidgetState extends State<PostWidget> {
   late final CommentProvider _commentProvider;
   BlockProvider? _blockProvider;
   VoidCallback? _blockListener;
+  int _currentMediaIndex = 0;
 
   String timeAgo(DateTime date) {
     final now = DateTime.now();
@@ -210,6 +341,8 @@ class _PostWidgetState extends State<PostWidget> {
         currentUserId != null && widget.post.userId == currentUserId;
     final selectedColor =
         Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
+    final isLiked =
+        currentUserId != null && widget.post.likedBy.contains(currentUserId);
 
     return GestureDetector(
       onTap: () {
@@ -220,634 +353,665 @@ class _PostWidgetState extends State<PostWidget> {
           ),
         );
       },
-      child: Padding(
-        padding: const EdgeInsets.only(left: 15, right: 15, bottom: 15),
-        child: Card(
+      child: Container(
+        margin: const EdgeInsets.only(left: 16, right: 16, bottom: 14),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
           color: WHITE,
-
-          child: Padding(
-            padding: const EdgeInsets.all(15.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: GRAYSCALE_LABEL_100),
+          boxShadow: [
+            BoxShadow(
+              color: BLACK.withValues(alpha: 0.04),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. 작성자 헤더
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // 작성자 + 프로필
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Consumer<ProfileProvider>(
-                      builder: (context, profileProvider, child) {
-                        profileProvider.subscribeUserProfile(
-                          widget.post.userId,
-                        );
-
-                        final url =
-                            profileProvider.userProfiles[widget.post.userId];
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => FeedMypage(
-                                  post: widget.post,
-                                  targetUserId: widget.post.userId,
-                                ),
-                              ),
-                            );
-                          },
-                          child: CircleAvatar(
-                            radius: 25,
-                            backgroundImage: url != null
-                                ? NetworkImage(url)
-                                : null,
-                            backgroundColor: GRAYSCALE_LABEL_300,
-                            child: url == null
-                                ? const Icon(
-                                    Icons.person,
-                                    color: Colors.black,
-                                    size: 25,
-                                  )
-                                : null,
-                          ),
-                        );
-                      },
-                    ),
-
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Consumer<ProfileProvider>(
-                          builder: (context, profileProvider, child) {
-                            profileProvider.subscribeUserProfile(
-                              widget.post.userId,
-                            );
-                            final nickname =
-                                profileProvider.userNicknames[widget
-                                    .post
-                                    .userId] ??
-                                widget.post.userNickName;
-
-                            return Padding(
-                              padding: const EdgeInsets.only(left: 10, top: 8),
-                              child: Text(
-                                nickname,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 10.0),
-                          child: Text(
-                            timeAgo(widget.post.createdAt),
-                            style: TextStyle(
-                              color: GRAYSCALE_LABEL_500,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Spacer(),
-
-                    IconButton(
-                      onPressed: () {
-                        _showPostOptionBottomSheet(
+                Consumer<ProfileProvider>(
+                  builder: (context, profileProvider, child) {
+                    profileProvider.subscribeUserProfile(widget.post.userId);
+                    final url =
+                        profileProvider.userProfiles[widget.post.userId];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
                           context,
-                          widget.post,
-                          isOwner,
+                          MaterialPageRoute(
+                            builder: (context) => FeedMypage(
+                              post: widget.post,
+                              targetUserId: widget.post.userId,
+                            ),
+                          ),
                         );
                       },
-                      icon: Icon(Icons.more_horiz),
-                    ),
-                  ],
+                      child: CircleAvatar(
+                        radius: 19,
+                        backgroundImage: url != null ? NetworkImage(url) : null,
+                        backgroundColor: GRAYSCALE_LABEL_200,
+                        child: url == null
+                            ? const Icon(
+                                Icons.person,
+                                color: GRAYSCALE_LABEL_600,
+                                size: 20,
+                              )
+                            : null,
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(height: 8),
-                // 본문
-                Text(widget.post.text),
-                const SizedBox(height: 8),
-                if (widget.post.meetupId != null) ...[
-                  FutureBuilder<MeetupModel?>(
-                    future: context.read<MeetupProvider>().getMeetupById(
-                      widget.post.meetupId!,
-                    ),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Container(
-                          height: 80,
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            color: GRAYSCALE_LABEL_100,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        );
-                      }
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Consumer<ProfileProvider>(
+                        builder: (context, profileProvider, child) {
+                          profileProvider.subscribeUserProfile(
+                            widget.post.userId,
+                          );
+                          final nickname =
+                              profileProvider
+                                  .userNicknames[widget.post.userId] ??
+                              widget.post.userNickName;
 
-                      if (!snapshot.hasData || snapshot.data == null) {
-                        return const SizedBox.shrink();
-                      }
-
-                      final meetup = snapshot.data!;
-                      final teamProvider = context.read<TeamProvider>();
-                      final homeTeamColor =
-                          teamProvider.findTeamByName(meetup.homeTeam)?.color ??
-                          BUTTON;
-
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  MeetupDetailPage(meetup: meetup),
+                          return Text(
+                            nickname,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: BLACK,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           );
                         },
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            color: WHITE,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: GRAYSCALE_LABEL_200,
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.03),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: IntrinsicHeight(
-                              child: Row(
-                                children: [
-                                  // 왼쪽 컬러 엑센트 바
-                                  Container(width: 8, color: homeTeamColor),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color: homeTeamColor
-                                                      .withOpacity(0.1),
-                                                  borderRadius:
-                                                      BorderRadius.circular(6),
-                                                ),
-                                                child: Text(
-                                                  '직관모임',
-                                                  style: TextStyle(
-                                                    color: homeTeamColor,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                              const Spacer(),
-                                              Icon(
-                                                Icons.arrow_forward_ios,
-                                                size: 14,
-                                                color: homeTeamColor,
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 10),
-                                          Text(
-                                            meetup.title,
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              height: 1.2,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.sports_baseball,
-                                                size: 14,
-                                                color: homeTeamColor,
-                                              ),
-                                              SizedBox(width: 4),
-                                              Text(
-                                                '${meetup.homeTeam} vs ${meetup.awayTeam}',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.calendar_today_outlined,
-                                                size: 14,
-                                                color: homeTeamColor,
-                                              ),
-                                              SizedBox(width: 4),
-                                              Text(
-                                                '${meetup.gameDate} ${meetup.gameTime}',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 12,
-                                                  color: GRAYSCALE_LABEL_500,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(height: 4),
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.location_on_outlined,
-                                                color: homeTeamColor,
-                                                size: 14,
-                                              ),
-                                              SizedBox(width: 4),
-                                              Text(
-                                                meetup.stadium,
-                                                style: TextStyle(
-                                                  color: homeTeamColor,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        timeAgo(widget.post.createdAt),
+                        style: const TextStyle(
+                          color: GRAYSCALE_LABEL_400,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: () {
+                    _showPostOptionBottomSheet(
+                      context,
+                      widget.post,
+                      isOwner,
+                    );
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.all(6.0),
+                    child: Icon(
+                      Icons.more_horiz,
+                      color: GRAYSCALE_LABEL_500,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            if (widget.post.text.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                widget.post.text,
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.48,
+                  color: GRAYSCALE_LABEL_900,
+                ),
+              ),
+            ],
+
+            // 2. 직관모임 첨부 카드 (티켓 스타일)
+            if (widget.post.meetupId != null) ...[
+              const SizedBox(height: 12),
+              FutureBuilder<MeetupModel?>(
+                future: context.read<MeetupProvider>().getMeetupById(
+                  widget.post.meetupId!,
+                ),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Container(
+                      height: 76,
+                      decoration: BoxDecoration(
+                        color: BACKGROUND_COLOR,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  }
+
+                  if (!snapshot.hasData || snapshot.data == null) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final meetup = snapshot.data!;
+                  final teamProvider = context.read<TeamProvider>();
+                  final homeTeamColor =
+                      teamProvider.findTeamByName(meetup.homeTeam)?.color ??
+                      selectedColor;
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              MeetupDetailPage(meetup: meetup),
                         ),
                       );
                     },
-                  ),
-                ],
-                // URL프리뷰 표시
-                if (extractUrl(widget.post.text) != null) ...[
-                  SizedBox(height: 10),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: WHITE,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.2),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        LinkPreview(
-                          enableAnimation: true,
-                          text: extractUrl(widget.post.text)!,
-                          onLinkPreviewDataFetched: (data) {
-                            print('Preview data fetched: ${data.title}');
-                          },
-                        ),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: BACKGROUND_COLOR,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: GRAYSCALE_LABEL_200),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 5,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: homeTeamColor,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                           ),
-                          decoration: BoxDecoration(color: WHITE),
-                          child: Row(
-                            children: [
-                              Icon(Icons.link, size: 16, color: Colors.blue),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  extractUrl(widget.post.text)!,
-                                  style: TextStyle(
-                                    color: Colors.blue,
-                                    fontSize: 13,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: homeTeamColor.withValues(
+                                          alpha: 0.12,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        '🤝 직관모임',
+                                        style: TextStyle(
+                                          color: homeTeamColor,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        '${meetup.gameDate} ${meetup.gameTime}',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: GRAYSCALE_LABEL_500,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  meetup.title,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: BLACK,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '${meetup.awayTeam} vs ${meetup.homeTeam} · ${meetup.stadium} (${meetup.participants.length}/${meetup.maxParticipants}명)',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: GRAYSCALE_LABEL_600,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: WHITE,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: GRAYSCALE_LABEL_200),
+                            ),
+                            child: Text(
+                              '참여 ›',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: homeTeamColor,
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-                SizedBox(height: 8),
+                  );
+                },
+              ),
+            ],
 
-                // 이미지/영상 슬라이드
-                if (widget.post.mediaUrls.isNotEmpty)
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final bool isSingle = widget.post.mediaUrls.length == 1;
-                      final double availableWidth = constraints.maxWidth;
-
-                      // 싱글 이미지: 원본 비율 유지, 여러 이미지: 정사각형 슬라이더
-                      if (isSingle) {
-                        final url = widget.post.mediaUrls[0];
-                        final isVideo = MediaUtils.isVideoFromPost(
-                          widget.post,
-                          0,
-                        );
-
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: isVideo
-                              ? AspectRatio(
-                                  aspectRatio: 16 / 9,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              FullscreenVideoPlayer(
-                                                videoUrl: url,
-                                              ),
-                                        ),
-                                      );
-                                    },
-                                    child: NetworkVideoPlayer(
-                                      videoUrl: url,
-                                      width: availableWidth,
-                                      height: availableWidth * 9 / 16,
-                                      fit: BoxFit.contain,
-                                      autoPlay: true,
-                                      muted: true,
-                                      showControls: false,
-                                    ),
-                                  ),
-                                )
-                              : GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            FullscreenImageViewer(
-                                              imageUrls: widget.post.mediaUrls,
-                                              initialIndex: 0,
-                                            ),
-                                      ),
-                                    );
-                                  },
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxHeight: 500, // 최대 높이 제한
-                                    ),
-                                    child: Image.network(
-                                      url,
-                                      width: availableWidth,
-                                      fit: BoxFit.contain,
-                                      loadingBuilder:
-                                          (context, child, loadingProgress) {
-                                            if (loadingProgress == null)
-                                              return child;
-                                            return Container(
-                                              height: 200,
-                                              child: Center(
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      color: selectedColor,
-                                                    ),
-                                              ),
-                                            );
-                                          },
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                            return Container(
-                                              height: 200,
-                                              color: GRAYSCALE_LABEL_200,
-                                              child: Center(
-                                                child: Icon(
-                                                  Icons.broken_image,
-                                                  color: GRAYSCALE_LABEL_500,
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                    ),
-                                  ),
-                                ),
-                        );
-                      } else {
-                        // 멀티 이미지: 정사각형 슬라이더 유지
-                        final double listHeight = availableWidth * 0.7;
-                        final double itemWidth = (availableWidth * 0.7);
-
-                        return SizedBox(
-                          height: listHeight,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: widget.post.mediaUrls.length,
-                            itemBuilder: (_, i) {
-                              final url = widget.post.mediaUrls[i];
-                              final isVideo = MediaUtils.isVideoFromPost(
-                                widget.post,
-                                i,
-                              );
-                              return Padding(
-                                padding: EdgeInsets.only(right: 8),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: isVideo
-                                      ? GestureDetector(
-                                          onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    FullscreenVideoPlayer(
-                                                      videoUrl: url,
-                                                    ),
-                                              ),
-                                            );
-                                          },
-                                          child: NetworkVideoPlayer(
-                                            videoUrl: url,
-                                            width: itemWidth,
-                                            height: listHeight,
-                                            fit: BoxFit.cover,
-                                            autoPlay: true,
-                                            muted: true,
-                                            showControls: false,
-                                          ),
-                                        )
-                                      : GestureDetector(
-                                          onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    FullscreenImageViewer(
-                                                      imageUrls:
-                                                          widget.post.mediaUrls,
-                                                      initialIndex: i,
-                                                    ),
-                                              ),
-                                            );
-                                          },
-                                          child: Image.network(
-                                            url,
-                                            height: listHeight,
-                                            width: itemWidth,
-                                            fit: BoxFit.cover,
-                                            loadingBuilder:
-                                                (
-                                                  context,
-                                                  child,
-                                                  loadingProgress,
-                                                ) {
-                                                  if (loadingProgress == null)
-                                                    return child;
-                                                  return SizedBox(
-                                                    height: listHeight,
-                                                    width: itemWidth,
-                                                    child: Center(
-                                                      child:
-                                                          CircularProgressIndicator(
-                                                            color:
-                                                                selectedColor,
-                                                          ),
-                                                    ),
-                                                  );
-                                                },
-                                          ),
-                                        ),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                // 좋아요 버튼
-                Row(
+            // 3. URL 프리뷰 표시
+            if (extractUrl(widget.post.text) != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: BACKGROUND_COLOR,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: GRAYSCALE_LABEL_200),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    IconButton(
-                      onPressed: () => widget.feedProvider.toggleLikeAndNotify(
-                        postId: widget.post.id,
-                        post: widget.post,
-                        currentUserId: currentUserId!,
-                        postOwnerId: widget.post.userId,
-                      ),
-                      icon: Icon(
-                        (FirebaseAuth.instance.currentUser?.uid != null &&
-                                widget.post.likedBy.contains(
-                                  FirebaseAuth.instance.currentUser!.uid,
-                                ))
-                            ? Icons.favorite
-                            : Icons.favorite_border,
-                        color:
-                            (FirebaseAuth.instance.currentUser?.uid != null &&
-                                widget.post.likedBy.contains(
-                                  FirebaseAuth.instance.currentUser!.uid,
-                                ))
-                            ? Colors.red
-                            : null,
-                      ),
+                    LinkPreview(
+                      enableAnimation: true,
+                      text: extractUrl(widget.post.text)!,
+                      onLinkPreviewDataFetched: (_) {},
                     ),
-                    Transform.translate(
-                      offset: Offset(-10, 0),
-                      child: Text('${widget.post.likesCount}'),
-                    ),
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    FeedDetailPage(post: widget.post),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      color: WHITE,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.link, size: 15, color: Colors.blue),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              extractUrl(widget.post.text)!,
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                fontSize: 12,
                               ),
-                            );
-                          },
-                          icon: Icon(CupertinoIcons.chat_bubble),
-                        ),
-                        Consumer<CommentProvider>(
-                          builder: (context, commentProvider, child) {
-                            final comment = commentProvider.getComments(
-                              widget.post.id,
-                            );
-                            return Transform.translate(
-                              offset: Offset(-5, 0),
-                              child: Text('${comment.length}'),
-                            );
-                          },
-                        ),
-                      ],
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-                if (widget.post.mediaUrls.isNotEmpty)
-                  Builder(
-                    builder: (context) {
-                      int videoCount = 0;
-                      int imageCount = 0;
+              ),
+            ],
 
-                      for (int i = 0; i < widget.post.mediaUrls.length; i++) {
-                        if (MediaUtils.isVideoFromPost(widget.post, i)) {
-                          videoCount++;
-                        } else {
-                          imageCount++;
-                        }
-                      }
+            // 4. 이미지/영상 스냅 슬라이더 (1/N 캡슐 + 하단 도트 인디케이터)
+            if (widget.post.mediaUrls.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final bool isSingle = widget.post.mediaUrls.length == 1;
+                  final double availableWidth = constraints.maxWidth;
 
-                      String mediaText;
-                      if (videoCount > 0 && imageCount > 0) {
-                        mediaText = '이미지 $imageCount개, 동영상 $videoCount개';
-                      } else if (videoCount > 0) {
-                        mediaText = '$videoCount개의 동영상';
-                      } else {
-                        mediaText = '$imageCount개의 이미지';
-                      }
+                  if (isSingle) {
+                    final url = widget.post.mediaUrls[0];
+                    final isVideo = MediaUtils.isVideoFromPost(widget.post, 0);
 
-                      return Text(
-                        mediaText,
-                        style: TextStyle(
-                          color: GRAYSCALE_LABEL_500,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: isVideo
+                          ? AspectRatio(
+                              aspectRatio: 16 / 9,
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          FullscreenVideoPlayer(videoUrl: url),
+                                    ),
+                                  );
+                                },
+                                child: NetworkVideoPlayer(
+                                  videoUrl: url,
+                                  width: availableWidth,
+                                  height: availableWidth * 9 / 16,
+                                  fit: BoxFit.contain,
+                                  autoPlay: true,
+                                  muted: true,
+                                  showControls: false,
+                                ),
+                              ),
+                            )
+                          : GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FullscreenImageViewer(
+                                      imageUrls: widget.post.mediaUrls,
+                                      initialIndex: 0,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxHeight: 420,
+                                ),
+                                child: Image.network(
+                                  url,
+                                  width: availableWidth,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                        if (loadingProgress == null) {
+                                          return child;
+                                        }
+                                        return SizedBox(
+                                          height: 220,
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                              color: selectedColor,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      height: 200,
+                                      color: GRAYSCALE_LABEL_100,
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.broken_image_outlined,
+                                          color: GRAYSCALE_LABEL_400,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                    );
+                  } else {
+                    final double sliderHeight = availableWidth * 0.78;
+                    final int totalMedia = widget.post.mediaUrls.length;
+                    final int safeIndex =
+                        _currentMediaIndex.clamp(0, totalMedia - 1);
+
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: SizedBox(
+                        height: sliderHeight,
+                        width: availableWidth,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            PageView.builder(
+                              itemCount: totalMedia,
+                              onPageChanged: (idx) {
+                                setState(() => _currentMediaIndex = idx);
+                              },
+                              itemBuilder: (_, i) {
+                                final url = widget.post.mediaUrls[i];
+                                final isVideo = MediaUtils.isVideoFromPost(
+                                  widget.post,
+                                  i,
+                                );
+                                return isVideo
+                                    ? GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  FullscreenVideoPlayer(
+                                                    videoUrl: url,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                        child: NetworkVideoPlayer(
+                                          videoUrl: url,
+                                          width: availableWidth,
+                                          height: sliderHeight,
+                                          fit: BoxFit.cover,
+                                          autoPlay: true,
+                                          muted: true,
+                                          showControls: false,
+                                        ),
+                                      )
+                                    : GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  FullscreenImageViewer(
+                                                    imageUrls:
+                                                        widget.post.mediaUrls,
+                                                    initialIndex: i,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                        child: Image.network(
+                                          url,
+                                          height: sliderHeight,
+                                          width: availableWidth,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder:
+                                              (
+                                                context,
+                                                child,
+                                                loadingProgress,
+                                              ) {
+                                                if (loadingProgress == null) {
+                                                  return child;
+                                                }
+                                                return SizedBox(
+                                                  height: sliderHeight,
+                                                  width: availableWidth,
+                                                  child: Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          color: selectedColor,
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                        ),
+                                      );
+                              },
+                            ),
+                            // 우측 상단 1 / N 캡슐 인디케이터
+                            Positioned(
+                              top: 12,
+                              right: 12,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  '${safeIndex + 1} / $totalMedia',
+                                  style: const TextStyle(
+                                    color: WHITE,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // 하단 도트 인디케이터
+                            Positioned(
+                              bottom: 10,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: List.generate(
+                                  totalMedia,
+                                  (dotIdx) => AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 2.5,
+                                    ),
+                                    width: safeIndex == dotIdx ? 14 : 5,
+                                    height: 5,
+                                    decoration: BoxDecoration(
+                                      color: safeIndex == dotIdx
+                                          ? WHITE
+                                          : WHITE.withValues(alpha: 0.45),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      );
-                    },
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+
+            const SizedBox(height: 14),
+
+            // 5. 하단 액션 바 (알약형 좋아요 / 댓글 버튼)
+            Row(
+              children: [
+                InkWell(
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: currentUserId == null
+                      ? null
+                      : () => widget.feedProvider.toggleLikeAndNotify(
+                          postId: widget.post.id,
+                          post: widget.post,
+                          currentUserId: currentUserId,
+                          postOwnerId: widget.post.userId,
+                        ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isLiked
+                          ? Colors.red.withValues(alpha: 0.1)
+                          : BACKGROUND_COLOR,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isLiked ? Icons.favorite : Icons.favorite_border,
+                          size: 16,
+                          color: isLiked ? Colors.red : GRAYSCALE_LABEL_600,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          '${widget.post.likesCount}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isLiked ? Colors.red : GRAYSCALE_LABEL_700,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                ),
+                const SizedBox(width: 8),
+                Consumer<CommentProvider>(
+                  builder: (context, commentProvider, child) {
+                    final comments = commentProvider.getComments(
+                      widget.post.id,
+                    );
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                FeedDetailPage(post: widget.post),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: BACKGROUND_COLOR,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              CupertinoIcons.chat_bubble,
+                              size: 15,
+                              color: GRAYSCALE_LABEL_600,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              '${comments.length}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: GRAYSCALE_LABEL_700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );

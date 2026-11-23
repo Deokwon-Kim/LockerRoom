@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/attendance_model.dart';
 import 'package:lockerroom/model/schedule_model.dart';
+import 'package:lockerroom/page/intution_record/ticker_camera_scan_page.dart';
 import 'package:lockerroom/provider/intution_record_provider.dart';
+import 'package:lockerroom/provider/schdule_Provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/ticket_scan_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
@@ -94,6 +97,9 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
   late final TextEditingController _myTeamScore;
   late final TextEditingController _oppTeamScore;
   late final TextEditingController _memoController;
+  late final TextEditingController _seatController;
+  late final TextEditingController _ticketPriceController;
+  late final Future<AttendanceModel?> _attendanceFuture;
   bool _controllersInitialized = false;
   AttendanceModel? _loadedAttendance;
 
@@ -102,6 +108,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
     super.initState();
     _newImagesPageController = PageController();
     _existingImagesPageController = PageController();
+    _attendanceFuture = _loadAttendance();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<IntutionRecordProvider>().resetState();
     });
@@ -115,6 +122,15 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
     _memoController = TextEditingController(
       text: widget.attendanceModel?.memo ?? '',
     );
+    _seatController = TextEditingController(
+      text: widget.attendanceModel?.seat ?? '',
+    );
+    _ticketPriceController = TextEditingController(
+      text: (widget.attendanceModel?.ticketPrice != null &&
+              widget.attendanceModel!.ticketPrice! > 0)
+          ? widget.attendanceModel!.ticketPrice.toString()
+          : '',
+    );
   }
 
   @override
@@ -122,6 +138,8 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
     _myTeamScore.dispose();
     _oppTeamScore.dispose();
     _memoController.dispose();
+    _seatController.dispose();
+    _ticketPriceController.dispose();
     _newImagesPageController.dispose();
     _existingImagesPageController.dispose();
     _currentImageIndex.dispose();
@@ -134,9 +152,59 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
       _myTeamScore.text = attendance.myScore.toString();
       _oppTeamScore.text = attendance.opponentScore.toString();
       _memoController.text = attendance.memo ?? '';
+      _seatController.text = attendance.seat ?? '';
+      _ticketPriceController.text =
+          (attendance.ticketPrice != null && attendance.ticketPrice! > 0)
+              ? attendance.ticketPrice.toString()
+              : '';
       _controllersInitialized = true;
     }
     _loadedAttendance = attendance;
+  }
+
+  Future<void> _scanTicketForSeatAndPrice() async {
+    FocusScope.of(context).unfocus();
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider(
+          create: (ctx) => TicketScanProvider(
+            scheduleProvider: ctx.read<ScheduleProvider>(),
+          ),
+          child: const TickerCameraScanPage(returnOnlySeatAndPrice: true),
+        ),
+      ),
+    );
+
+    if (!mounted || result == null) return;
+
+    final scannedSeat = (result['seat'] as String?)?.trim() ?? '';
+    final scannedPrice = (result['ticketPrice'] as int?) ?? 0;
+
+    if (scannedSeat.isNotEmpty) {
+      _seatController.text = scannedSeat;
+    }
+    if (scannedPrice > 0) {
+      _ticketPriceController.text = '$scannedPrice';
+    }
+
+    if (scannedSeat.isNotEmpty || scannedPrice > 0) {
+      toastification.show(
+        context: context,
+        alignment: Alignment.bottomCenter,
+        type: ToastificationType.success,
+        autoCloseDuration: const Duration(seconds: 2),
+        title: const Text('티켓에서 좌석·금액 정보를 불러왔습니다'),
+      );
+    } else {
+      toastification.show(
+        context: context,
+        alignment: Alignment.bottomCenter,
+        type: ToastificationType.warning,
+        autoCloseDuration: const Duration(seconds: 2),
+        title: const Text('티켓에서 좌석·금액을 인식하지 못했습니다. 직접 입력해 주세요.'),
+      );
+    }
   }
 
   @override
@@ -186,11 +254,21 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                           return;
                         }
 
+                        final parsedPrice =
+                            int.tryParse(
+                              _ticketPriceController.text
+                                  .replaceAll(',', '')
+                                  .trim(),
+                            ) ??
+                            0;
+
                         final success = await irp.updateRecord(
                           gameId: widget.gameId,
                           newMyscore: myScore,
                           newOppScore: oppScore,
                           newMemo: _memoController.text.trim(),
+                          newSeat: _seatController.text.trim(),
+                          newTicketPrice: parsedPrice,
                           newImages: irp.image.isNotEmpty ? irp.image : null,
                           oldImageUrls: _loadedAttendance?.imageUrls,
                         );
@@ -236,7 +314,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
             onTap: () => FocusScope.of(context).unfocus(),
             behavior: HitTestBehavior.translucent,
             child: FutureBuilder<AttendanceModel?>(
-              future: _loadAttendance(),
+              future: _attendanceFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
@@ -537,6 +615,133 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                                 ),
                               ),
                             ],
+                          ),
+                          SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '좌석 정보(선택)',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              InkWell(
+                                borderRadius: BorderRadius.circular(20),
+                                onTap: _scanTicketForSeatAndPrice,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        (teamProvider.selectedTeam?.color ??
+                                                BUTTON)
+                                            .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color:
+                                          (teamProvider.selectedTeam?.color ??
+                                                  BUTTON)
+                                              .withOpacity(0.35),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.document_scanner_outlined,
+                                        size: 15,
+                                        color:
+                                            teamProvider.selectedTeam?.color ??
+                                            BUTTON,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        '티켓 스캔으로 자동 입력',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color:
+                                              teamProvider
+                                                  .selectedTeam
+                                                  ?.color ??
+                                              BUTTON,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 10),
+                          TextFormField(
+                            controller: _seatController,
+                            cursorColor: BUTTON,
+                            decoration: InputDecoration(
+                              hintText: '예: 1루 네이비석 306블럭 3열 39번',
+                              hintStyle: TextStyle(
+                                fontSize: 14,
+                                color: GRAYSCALE_LABEL_400,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: GRAYSCALE_LABEL_300,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                          Text(
+                            '티켓 금액(선택)',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          TextFormField(
+                            controller: _ticketPriceController,
+                            keyboardType: TextInputType.number,
+                            cursorColor: BUTTON,
+                            decoration: InputDecoration(
+                              hintText: '예: 26000',
+                              hintStyle: TextStyle(
+                                fontSize: 14,
+                                color: GRAYSCALE_LABEL_400,
+                              ),
+                              suffixText: '원',
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: GRAYSCALE_LABEL_300,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                            ),
                           ),
                           SizedBox(height: 20),
                           Text(

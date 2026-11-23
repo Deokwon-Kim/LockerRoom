@@ -39,7 +39,7 @@ class _QuizTrophyPageState extends State<QuizTrophyPage> {
         }
 
         return Container(
-          color: GRAYSCALE_LABEL_50,
+          color: BACKGROUND_COLOR,
           child: GridView.builder(
             padding: const EdgeInsets.all(20),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

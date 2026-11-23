@@ -15,6 +15,9 @@ import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/home/quiz_ranking_dashboard_.dart';
 import 'package:lockerroom/page/intution_record/all_users_intution_record_page.dart';
+import 'package:lockerroom/page/intution_record/intution_record_upload_page.dart';
+import 'package:lockerroom/page/intution_record/ticker_camera_scan_page.dart';
+import 'package:lockerroom/provider/ticket_scan_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
 // import 'package:lockerroom/page/food_store/ballParkStore_page.dart';
@@ -130,8 +133,8 @@ class _HomePageState extends State<HomePage> {
         final selectedTeam = teamProvider.selectedTeam ?? widget.teamModel;
         _maybeFetchVideos(selectedTeam);
         final statusBarHeight = MediaQuery.of(context).padding.top;
-        const headerContentHeight = 80.0;
-        const overlapHeight = 18.0;
+        const headerContentHeight = 84.0;
+        const overlapHeight = 24.0;
         final totalHeaderHeight =
             statusBarHeight + headerContentHeight + overlapHeight;
 
@@ -145,7 +148,7 @@ class _HomePageState extends State<HomePage> {
             backgroundColor: BACKGROUND_COLOR,
             body: Stack(
               children: [
-                // 1. 상단 팀 헤더 이미지 (배경)
+                // 1. 상단 팀 헤더 이미지 (배경 + 다크 그라데이션 오버레이)
                 Positioned(
                   top: 0,
                   left: 0,
@@ -155,12 +158,23 @@ class _HomePageState extends State<HomePage> {
                     fit: StackFit.expand,
                     children: [
                       Image.asset(selectedTeam.headers, fit: BoxFit.cover),
-                      Container(color: Colors.black.withValues(alpha: 0.15)),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.25),
+                              Colors.black.withValues(alpha: 0.55),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
 
-                // 2. 상단이 둥근 바디 (헤더 위를 18px 덮고 올라옴)
+                // 2. 상단이 둥근 바디 (헤더 위를 24px 덮고 올라옴)
                 Positioned(
                   top: statusBarHeight + headerContentHeight,
                   left: 0,
@@ -170,224 +184,264 @@ class _HomePageState extends State<HomePage> {
                     decoration: const BoxDecoration(
                       color: BACKGROUND_COLOR,
                       borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(12),
+                        top: Radius.circular(24),
                       ),
                     ),
                     child: ClipRRect(
                       borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
+                        top: Radius.circular(24),
                       ),
-                      child: Stack(
-                        children: [
-                          SingleChildScrollView(
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    16,
-                                    16,
-                                    16,
-                                    32,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      _buildMatchCard(context, selectedTeam),
-                                      const SizedBox(height: 12),
-                                      QuizRankingDashboard(
-                                        selectedTeam: selectedTeam,
-                                      ),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 36),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 1) 오늘의 경기 / 다음 경기 매치업 카드
+                            _buildMatchCard(context, selectedTeam),
+                            const SizedBox(height: 14),
 
-                                      // _buildAllStadiumsWeather(context),
-                                      const SizedBox(height: 12),
-                                      _buildFeedSection(context, selectedTeam),
+                            // 2) 야잘알 퀴즈 & 명예의 전당 슬라이드 배너
+                            QuizRankingDashboard(selectedTeam: selectedTeam),
+                            const SizedBox(height: 14),
 
-                                      // _buildSectionHeader('나의 직관 기록 🏟'),
-                                      const SizedBox(height: 12),
-                                      _buildIntutionRecord(),
-                                      const SizedBox(height: 24),
-                                      _buildMeetupSection(
-                                        context,
-                                        selectedTeam,
-                                      ),
-                                      const SizedBox(height: 24),
+                            // 3) 나의 직관 리포트 & 원탭 티켓 스캔 카드
+                            _buildIntutionRecord(),
+                            const SizedBox(height: 22),
 
-                                      // const SizedBox(height: 24),
-                                      // _buildStadiumSection(context, selectedTeam),
-                                      const SizedBox(height: 24),
-                                      GestureDetector(
-                                        onTap: () {
-                                          launchUrl(
-                                            Uri.parse(selectedTeam.youtubeUrl),
-                                            mode:
-                                                LaunchMode.externalApplication,
-                                          );
-                                        },
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                selectedTeam.youtubeName,
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            const Text(
-                                              '더보기',
-                                              style: TextStyle(
-                                                color: GRAYSCALE_LABEL_500,
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 5),
-                                            const Icon(
-                                              Icons.arrow_forward_ios,
-                                              size: 10,
-                                              color: GRAYSCALE_LABEL_500,
-                                            ),
-                                          ],
+                            // 4) 실시간 팬들의 이야기 (Edge-to-Edge 가로 스크롤)
+                            _buildFeedSection(context, selectedTeam),
+                            const SizedBox(height: 22),
+
+                            // 5) 같이 보면 더 즐거운 직관 (Edge-to-Edge 가로 스크롤)
+                            _buildMeetupSection(context, selectedTeam),
+                            const SizedBox(height: 22),
+
+                            // 6) 구단 공식 유튜브 섹션
+                            GestureDetector(
+                              onTap: () {
+                                launchUrl(
+                                  Uri.parse(selectedTeam.youtubeUrl),
+                                  mode: LaunchMode.externalApplication,
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        '🎬 ${selectedTeam.youtubeName}',
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          color: BLACK,
+                                          letterSpacing: -0.3,
                                         ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      SizedBox(height: 10),
-                                      Consumer<VideoProvider>(
-                                        builder: (context, videoProvider, child) {
-                                          if (videoProvider.isLoading) {
-                                            return Center(
-                                              child: CircularProgressIndicator(
-                                                color: selectedTeam.color,
-                                              ),
-                                            );
-                                          }
-                                          final videos = videoProvider.videos;
-                                          if (videos.isEmpty) {
-                                            return const Center(
-                                              child: Text('영상이 존재하지 않습니다.'),
-                                            );
-                                          }
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      '더보기',
+                                      style: TextStyle(
+                                        color: GRAYSCALE_LABEL_500,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 3),
+                                    const Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      size: 11,
+                                      color: GRAYSCALE_LABEL_500,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Consumer<VideoProvider>(
+                              builder: (context, videoProvider, child) {
+                                if (videoProvider.isLoading) {
+                                  return Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24.0),
+                                      child: CircularProgressIndicator(
+                                        color: selectedTeam.color,
+                                      ),
+                                    ),
+                                  );
+                                }
+                                final videos = videoProvider.videos;
+                                if (videos.isEmpty) {
+                                  return _buildEmptyCard('영상이 존재하지 않습니다.');
+                                }
 
-                                          return Column(
-                                            children: [
-                                              // 첫 번째 큰 영상
-                                              _buildVideoItem(
-                                                context,
-                                                videos[0],
-                                                isLarge: true,
-                                              ),
-                                              if (videos.length > 1) ...[
-                                                const SizedBox(height: 12),
-                                                Row(
-                                                  children: [
-                                                    // 두 번째 작은 영상
-                                                    Expanded(
-                                                      child: _buildVideoItem(
-                                                        context,
-                                                        videos[1],
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 12),
-                                                    // 세 번째 작은 영상 (있을 경우만)
-                                                    Expanded(
-                                                      child: videos.length > 2
-                                                          ? _buildVideoItem(
-                                                              context,
-                                                              videos[2],
-                                                            )
-                                                          : const SizedBox.shrink(),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ],
-                                          );
-                                        },
+                                return Column(
+                                  children: [
+                                    _buildVideoItem(
+                                      context,
+                                      videos[0],
+                                      isLarge: true,
+                                    ),
+                                    if (videos.length > 1) ...[
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildVideoItem(
+                                              context,
+                                              videos[1],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: videos.length > 2
+                                                ? _buildVideoItem(
+                                                    context,
+                                                    videos[2],
+                                                  )
+                                                : const SizedBox.shrink(),
+                                          ),
+                                        ],
                                       ),
                                     ],
-                                  ),
-                                ),
-                              ],
+                                  ],
+                                );
+                              },
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
 
-                // 3. 앱바 콘텐츠 (로고, 팀명/슬로건, 알림 버튼)
+                // 3. 앱바 콘텐츠 (로고, 팀명/슬로건, 글래스모피즘 알림 버튼)
                 Positioned(
                   top: statusBarHeight,
-                  left: 0,
-                  right: 0,
+                  left: 16,
+                  right: 16,
                   height: headerContentHeight,
                   child: Row(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(12),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: WHITE.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: WHITE.withValues(alpha: 0.25),
+                          ),
+                        ),
                         child: Image.asset(
                           selectedTeam.logoPath,
                           fit: BoxFit.contain,
                         ),
                       ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            selectedTeam.name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Text(
-                            '오늘도 함께 응원해요!',
-                            style: TextStyle(color: WHITE, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 10.0),
-                        child: Consumer<NotificationProvider>(
-                          builder: (context, ntp, child) {
-                            return badges.Badge(
-                              position: badges.BadgePosition.topEnd(
-                                top: 0,
-                                end: 0,
-                              ),
-                              badgeAnimation: const badges.BadgeAnimation.slide(
-                                animationDuration: Duration(milliseconds: 300),
-                              ),
-                              showBadge: ntp.unreadCount > 0,
-                              badgeStyle: const badges.BadgeStyle(
-                                badgeColor: RED_DANGER_TEXT_50,
-                                padding: EdgeInsets.all(5),
-                              ),
-                              badgeContent: Text(
-                                '${ntp.unreadCount}',
-                                style: const TextStyle(
-                                  color: WHITE,
-                                  fontSize: 12,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    selectedTeam.name,
+                                    style: const TextStyle(
+                                      color: WHITE,
+                                      fontSize: 19,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.4,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: WHITE.withValues(alpha: 0.22),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Text(
+                                    'MY TEAM',
+                                    style: TextStyle(
+                                      color: WHITE,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              '오늘도 승리의 함성을 함께해요!',
+                              style: TextStyle(
+                                color: WHITE.withValues(alpha: 0.85),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
                               ),
-                              child: IconButton(
-                                onPressed: () =>
-                                    Navigator.pushNamed(context, '알림센터'),
-                                icon: const Icon(
+                            ),
+                          ],
+                        ),
+                      ),
+                      Consumer<NotificationProvider>(
+                        builder: (context, ntp, child) {
+                          return badges.Badge(
+                            position: badges.BadgePosition.topEnd(
+                              top: -2,
+                              end: -2,
+                            ),
+                            badgeAnimation: const badges.BadgeAnimation.slide(
+                              animationDuration: Duration(milliseconds: 300),
+                            ),
+                            showBadge: ntp.unreadCount > 0,
+                            badgeStyle: const badges.BadgeStyle(
+                              badgeColor: RED_DANGER_TEXT_50,
+                              padding: EdgeInsets.all(5),
+                            ),
+                            badgeContent: Text(
+                              '${ntp.unreadCount}',
+                              style: const TextStyle(
+                                color: WHITE,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(22),
+                              onTap: () => Navigator.pushNamed(context, '알림센터'),
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: WHITE.withValues(alpha: 0.16),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: WHITE.withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                child: const Icon(
                                   CupertinoIcons.bell,
                                   color: WHITE,
+                                  size: 20,
                                 ),
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -590,13 +644,11 @@ class _HomePageState extends State<HomePage> {
         final isPpd = activeGame?.status == 'PPD' || activeGame?.status == '취소';
 
         // 경기 구장 날씨 로드
-        if (activeGame != null) {
-          final weather = weatherProvider.getWeatherForStadium(
-            activeGame.stadium,
-          );
-          if (weather == null) {
-            weatherProvider.fetchSingleWeather(activeGame.stadium);
-          }
+        final activeWeather = activeGame != null
+            ? weatherProvider.getWeatherForStadium(activeGame.stadium)
+            : null;
+        if (activeGame != null && activeWeather == null) {
+          weatherProvider.fetchSingleWeather(activeGame.stadium);
         }
 
         final homeTeam = activeGame != null
@@ -612,6 +664,12 @@ class _HomePageState extends State<HomePage> {
             (activeGame.dateTimeKst.year == now.year &&
                 activeGame.dateTimeKst.month == now.month &&
                 activeGame.dateTimeKst.day == now.day);
+
+        final bool isMyTeamHome =
+            activeGame != null &&
+            (activeGame.homeTeam == selectedTeam.symplename ||
+                activeGame.homeTeam == selectedTeam.name);
+
         return GestureDetector(
           onTap: () => Navigator.push(
             context,
@@ -621,389 +679,418 @@ class _HomePageState extends State<HomePage> {
           ),
           child: Container(
             width: double.infinity,
-            height: 200,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: WHITE,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: GRAYSCALE_LABEL_100),
               boxShadow: [
                 BoxShadow(
-                  color: teamColor.withOpacity(0.2),
-                  blurRadius: 5,
-                  offset: Offset(0, 2),
+                  color: BLACK.withValues(alpha: 0.04),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(
-                    top: 10.0,
-                    left: 14,
-                    right: 14,
-                  ),
-                  child: Row(
-                    children: [
+                // 상단 헤더 (LIVE / 오늘의 경기 + 구장 날씨 칩 + 전체 일정)
+                Row(
+                  children: [
+                    if (isLive) ...[
                       Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          color: selectedTeam.color,
-                          borderRadius: BorderRadius.circular(12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
                         ),
-                        child: Icon(
-                          Icons.calendar_month_outlined,
-                          color: WHITE,
-                          size: 20,
+                        decoration: BoxDecoration(
+                          color: RED_DANGER_TEXT_50,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'LIVE · ${activeGame?.inning ?? "진행중"}',
+                          style: const TextStyle(
+                            color: WHITE,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
-
-                      Text(
-                        isToday ? '오늘의 경기' : '경기 일정',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  SchedulePage(teamModel: selectedTeam),
-                            ),
-                          );
-                        },
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '전체 경기 보기',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: GRAYSCALE_LABEL_500,
-                              ),
-                            ),
-                            SizedBox(width: 2),
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: GRAYSCALE_LABEL_500,
-                              size: 12,
-                            ),
-                          ],
+                    ] else ...[
+                      Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          color: teamColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.sports_baseball_rounded,
+                          color: teamColor,
+                          size: 15,
                         ),
                       ),
+                      const SizedBox(width: 8),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (activeGame == null)
-                  Container(
-                    width: double.infinity,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      color: GRAYSCALE_LABEL_100,
-                      borderRadius: BorderRadius.circular(12),
+                    Text(
+                      isToday ? '오늘의 경기' : '다음 경기 일정',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: BLACK,
+                      ),
                     ),
-                    child: const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.sports_baseball_outlined,
-                            size: 34,
-                            color: GRAYSCALE_LABEL_400,
+                    const Spacer(),
+                    if (activeWeather != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F9FF),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${activeWeather.jikgwanEmoji} ${activeWeather.temp.toStringAsFixed(0)}°C · ${activeWeather.jikgwanLabel}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF0369A1),
                           ),
-                          SizedBox(height: 8),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                SchedulePage(teamModel: selectedTeam),
+                          ),
+                        );
+                      },
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           Text(
-                            '예정된 경기가 없습니다',
+                            '전체 일정',
                             style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                               color: GRAYSCALE_LABEL_500,
                             ),
+                          ),
+                          SizedBox(width: 2),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: GRAYSCALE_LABEL_400,
+                            size: 11,
                           ),
                         ],
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (activeGame == null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 28),
+                    decoration: BoxDecoration(
+                      color: BACKGROUND_COLOR,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.sports_baseball_outlined,
+                          size: 32,
+                          color: GRAYSCALE_LABEL_400,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          '예정된 경기가 없습니다',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: GRAYSCALE_LABEL_500,
+                          ),
+                        ),
+                      ],
                     ),
                   )
                 else
                   Container(
                     width: double.infinity,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      color: GRAYSCALE_LABEL_50,
-                      borderRadius: BorderRadius.circular(12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
                     ),
-                    child: Column(
+                    decoration: BoxDecoration(
+                      color: BACKGROUND_COLOR,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            crossAxisAlignment: CrossAxisAlignment.center,
+                        // 원정팀 (Away)
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              // 원정팀 (Away)
-                              Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (awayTeam != null &&
+                              Container(
+                                width: 58,
+                                height: 58,
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: WHITE,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: GRAYSCALE_LABEL_100,
+                                  ),
+                                ),
+                                child:
+                                    (awayTeam != null &&
                                         awayTeam.logoPath.isNotEmpty)
-                                      Image.asset(
+                                    ? Image.asset(
                                         awayTeam.logoPath,
-                                        height: 102,
                                         fit: BoxFit.contain,
                                       )
-                                    else
-                                      const SizedBox(height: 1),
-
-                                    Text(
-                                      activeGame.awayTeam,
-                                      style: const TextStyle(
-                                        color: BLACK,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
+                                    : const Icon(
+                                        Icons.sports_baseball,
+                                        color: GRAYSCALE_LABEL_400,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
                               ),
-
-                              // 중앙 스코어 / VS
-                              Padding(
-                                padding: const EdgeInsets.only(top: 30),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (isLive || isFinal) ...[
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            '${activeGame.awayScore}',
-                                            style: const TextStyle(
-                                              fontFamily: 'kbo',
-                                              color: BLACK,
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const Padding(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 6.0,
-                                            ),
-                                            child: Text(
-                                              ':',
-                                              style: TextStyle(
-                                                color: BLACK,
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                          Text(
-                                            '${activeGame.homeScore}',
-                                            style: const TextStyle(
-                                              fontFamily: 'kbo',
-                                              color: BLACK,
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isLive
-                                              ? RED_DANGER_TEXT_50
-                                              : GRAYSCALE_LABEL_600,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          isLive
-                                              ? (activeGame.inning ?? 'LIVE')
-                                              : '경기 종료',
-                                          style: const TextStyle(
-                                            color: WHITE,
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(height: 5),
-                                      Text(
-                                        activeGame.stadium,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          color: GRAYSCALE_LABEL_500,
-                                        ),
-                                      ),
-                                    ] else if (isPpd) ...[
-                                      Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Text(
-                                            'VS',
-                                            style: TextStyle(
-                                              fontFamily: 'kbo',
-                                              color: BLACK,
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: GRAYSCALE_LABEL_500,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: const Text(
-                                              '경기 취소',
-                                              style: TextStyle(
-                                                color: WHITE,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ] else ...[
-                                      Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Text(
-                                            'VS',
-                                            style: TextStyle(
-                                              fontFamily: 'kbo',
-                                              color: BLACK,
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${DateFormat('MM.dd E HH:mm', 'ko').format(activeGame.dateTimeKst)}\n${activeGame.stadium}',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: BLACK.withValues(
-                                                alpha: 0.7,
-                                              ),
-                                              fontSize: 11,
-                                              height: 1.3,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ],
+                              const SizedBox(height: 6),
+                              Text(
+                                activeGame.awayTeam,
+                                style: const TextStyle(
+                                  color: BLACK,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
                                 ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-
-                              // 홈팀 (Home)
-                              Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (homeTeam != null &&
-                                        homeTeam.logoPath.isNotEmpty)
-                                      Image.asset(
-                                        homeTeam.logoPath,
-                                        height: 102,
-                                        fit: BoxFit.contain,
-                                      )
-                                    else
-                                      const SizedBox(height: 42),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      activeGame.homeTeam,
-                                      style: const TextStyle(
-                                        color: BLACK,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
+                              const Text(
+                                '원정',
+                                style: TextStyle(
+                                  color: GRAYSCALE_LABEL_400,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        // Container(
-                        //   width: double.infinity,
-                        //   height: 40,
-                        //   decoration: BoxDecoration(
-                        //     color: GRAYSCALE_LABEL_100,
-                        //     borderRadius: BorderRadius.circular(12),
-                        //   ),
-                        //   child: Row(
-                        //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        //     children: [
-                        //       TextButton(
-                        //         onPressed: () {},
-                        //         child: Row(
-                        //           children: [
-                        //             Icon(
-                        //               CupertinoIcons.chart_bar_fill,
-                        //               color: BLACK,
-                        //             ),
-                        //             SizedBox(width: 5),
-                        //             Text(
-                        //               '승부 예측',
-                        //               style: TextStyle(
-                        //                 fontSize: 12,
-                        //                 fontWeight: FontWeight.bold,
-                        //                 color: GRAYSCALE_LABEL_500,
-                        //               ),
-                        //             ),
-                        //           ],
-                        //         ),
-                        //       ),
-                        //       Container(
-                        //         width: 1,
-                        //         height: 20,
-                        //         color: GRAYSCALE_LABEL_500,
-                        //       ),
-                        //       TextButton(
-                        //         onPressed: () {},
-                        //         child: Row(
-                        //           children: [
-                        //             Icon(
-                        //               CupertinoIcons.chart_bar_alt_fill,
-                        //               color: BLACK,
-                        //             ),
-                        //             SizedBox(width: 5),
-                        //             Text(
-                        //               '승부 예측',
-                        //               style: TextStyle(
-                        //                 fontSize: 12,
-                        //                 fontWeight: FontWeight.bold,
-                        //                 color: GRAYSCALE_LABEL_500,
-                        //               ),
-                        //             ),
-                        //           ],
-                        //         ),
-                        //       ),
-                        //     ],
-                        //   ),
-                        // ),
+
+                        // 중앙 스코어 / 경기 시작 시간
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isLive || isFinal) ...[
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '${activeGame.awayScore}',
+                                      style: GoogleFonts.bebasNeue(
+                                        color: !isMyTeamHome
+                                            ? teamColor
+                                            : GRAYSCALE_LABEL_700,
+                                        fontSize: 36,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1.0,
+                                      ),
+                                    ),
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 10.0,
+                                      ),
+                                      child: Text(
+                                        ':',
+                                        style: TextStyle(
+                                          color: GRAYSCALE_LABEL_300,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      '${activeGame.homeScore}',
+                                      style: GoogleFonts.bebasNeue(
+                                        color: isMyTeamHome
+                                            ? teamColor
+                                            : GRAYSCALE_LABEL_700,
+                                        fontSize: 36,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1.0,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isLive
+                                        ? RED_DANGER_TEXT_50
+                                        : GRAYSCALE_LABEL_600,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    isLive
+                                        ? (activeGame.inning ?? 'LIVE')
+                                        : '경기 종료',
+                                    style: const TextStyle(
+                                      color: WHITE,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  activeGame.stadium,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: GRAYSCALE_LABEL_500,
+                                  ),
+                                ),
+                              ] else if (isPpd) ...[
+                                Text(
+                                  'VS',
+                                  style: GoogleFonts.bebasNeue(
+                                    color: GRAYSCALE_LABEL_400,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: GRAYSCALE_LABEL_500,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text(
+                                    '경기 취소',
+                                    style: TextStyle(
+                                      color: WHITE,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  activeGame.stadium,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: GRAYSCALE_LABEL_500,
+                                  ),
+                                ),
+                              ] else ...[
+                                Text(
+                                  DateFormat(
+                                    'HH:mm',
+                                  ).format(activeGame.dateTimeKst),
+                                  style: GoogleFonts.bebasNeue(
+                                    color: teamColor,
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1.0,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  DateFormat(
+                                    'MM.dd (E)',
+                                    'ko',
+                                  ).format(activeGame.dateTimeKst),
+                                  style: const TextStyle(
+                                    color: BLACK,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  activeGame.stadium,
+                                  style: const TextStyle(
+                                    color: GRAYSCALE_LABEL_500,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+
+                        // 홈팀 (Home)
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 58,
+                                height: 58,
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: WHITE,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: GRAYSCALE_LABEL_100,
+                                  ),
+                                ),
+                                child:
+                                    (homeTeam != null &&
+                                        homeTeam.logoPath.isNotEmpty)
+                                    ? Image.asset(
+                                        homeTeam.logoPath,
+                                        fit: BoxFit.contain,
+                                      )
+                                    : const Icon(
+                                        Icons.sports_baseball,
+                                        color: GRAYSCALE_LABEL_400,
+                                      ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                activeGame.homeTeam,
+                                style: const TextStyle(
+                                  color: BLACK,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const Text(
+                                '홈',
+                                style: TextStyle(
+                                  color: GRAYSCALE_LABEL_400,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -1338,35 +1425,45 @@ class _HomePageState extends State<HomePage> {
   // }
 
   Widget _buildSectionHeader(String title, {VoidCallback? onSeeAll}) {
-    return Consumer<TeamProvider>(
-      builder: (context, teamProvider, child) {
-        final teamColor = teamProvider.selectedTeam?.color;
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Icon(Icons.people_sharp, color: teamColor),
-            SizedBox(width: 2),
-            Text(
-              title,
-              style: GoogleFonts.gothicA1(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                color: GRAYSCALE_LABEL_900,
-                letterSpacing: -0.5,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: BLACK,
+              letterSpacing: -0.3,
+            ),
+          ),
+          if (onSeeAll != null)
+            GestureDetector(
+              onTap: onSeeAll,
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '더보기',
+                    style: TextStyle(
+                      color: GRAYSCALE_LABEL_500,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                  SizedBox(width: 3),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: GRAYSCALE_LABEL_500,
+                    size: 11,
+                  ),
+                ],
               ),
             ),
-            if (onSeeAll != null)
-              IconButton(
-                onPressed: onSeeAll,
-                icon: const Icon(
-                  Icons.arrow_forward_ios_outlined,
-                  color: GRAYSCALE_LABEL_500,
-                  size: 18,
-                ),
-              ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -1377,186 +1474,69 @@ class _HomePageState extends State<HomePage> {
             .where((m) => !m.isFull)
             .take(5)
             .toList();
-        final teamColor = selectedTeam?.color;
-        return Container(
-          width: double.infinity,
-          height: 250,
-          decoration: BoxDecoration(
-            color: WHITE,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: selectedTeam.color,
-                blurRadius: 5,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: teamColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.handshake_outlined,
-                        size: 15,
-                        color: WHITE,
-                      ),
-                    ),
-                    SizedBox(width: 5),
-                    Transform.translate(
-                      offset: Offset(-10, 0),
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => MeetupPage(),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          '같이 보면 더 즐거운 직관',
-                          style: GoogleFonts.gothicA1(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: GRAYSCALE_LABEL_900,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Spacer(),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => MeetupPage()),
-                        );
-                      },
-                      child: Row(
-                        children: [
-                          Text(
-                            '더보기',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: GRAYSCALE_LABEL_500,
-                            ),
-                          ),
-                          SizedBox(width: 2),
-                          Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            color: GRAYSCALE_LABEL_500,
-                            size: 12,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                if (recruitingMeetups.isEmpty)
-                  _buildEmptyCard('현재 모집 중인 직관 모임이 없습니다')
-                else
-                  SizedBox(
-                    height: 180,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: recruitingMeetups.length,
-                      itemBuilder: (context, index) => _buildMeetupMiniCard(
-                        context,
-                        recruitingMeetups[index],
-                        selectedTeam,
-                      ),
-                    ),
-                  ),
-              ],
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader(
+              '🤝 같이 보면 더 즐거운 직관',
+              onSeeAll: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MeetupPage()),
+                );
+              },
             ),
-          ),
+            const SizedBox(height: 12),
+            if (recruitingMeetups.isEmpty)
+              _buildEmptyCard('현재 모집 중인 직관 모임이 없습니다')
+            else
+              SizedBox(
+                height: 184,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  itemCount: recruitingMeetups.length,
+                  itemBuilder: (context, index) => _buildMeetupMiniCard(
+                    context,
+                    recruitingMeetups[index],
+                    selectedTeam,
+                  ),
+                ),
+              ),
+          ],
         );
       },
     );
   }
 
   Widget _buildFeedSection(BuildContext context, TeamModel selectedTeam) {
-    return Consumer2<FeedProvider, TeamProvider>(
-      builder: (context, feedProvider, teamProvider, _) {
+    return Consumer<FeedProvider>(
+      builder: (context, feedProvider, _) {
         final recentPosts = feedProvider.posts.take(5).toList();
-        final teamColor =
-            teamProvider.selectedTeam?.color ?? selectedTeam.color;
-        return Container(
-          width: double.infinity,
-          height: 310,
-          decoration: BoxDecoration(
-            color: WHITE,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: teamColor.withOpacity(0.2),
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildSectionHeader('야구 팬들의 이야기'),
-                    GestureDetector(
-                      onTap: () => widget.onTabTab(1),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '더보기',
-                            style: TextStyle(
-                              color: GRAYSCALE_LABEL_500,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                          SizedBox(width: 2),
-                          Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 11,
-                            color: GRAYSCALE_LABEL_500,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                if (recentPosts.isEmpty)
-                  _buildEmptyCard('최근 게시물이 존재하지 않습니다')
-                else
-                  SizedBox(
-                    height: 250,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: recentPosts.length,
-                      itemBuilder: (context, index) =>
-                          _buildFeedHighlightCard(context, recentPosts[index]),
-                    ),
-                  ),
-              ],
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader(
+              '🔥 실시간 팬들의 이야기',
+              onSeeAll: () => widget.onTabTab(1),
             ),
-          ),
+            const SizedBox(height: 12),
+            if (recentPosts.isEmpty)
+              _buildEmptyCard('최근 게시물이 존재하지 않습니다')
+            else
+              SizedBox(
+                height: 238,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  itemCount: recentPosts.length,
+                  itemBuilder: (context, index) =>
+                      _buildFeedHighlightCard(context, recentPosts[index]),
+                ),
+              ),
+          ],
         );
       },
     );
@@ -1565,7 +1545,6 @@ class _HomePageState extends State<HomePage> {
   Widget _buildFeedHighlightCard(BuildContext context, PostModel post) {
     return Consumer<ProfileProvider>(
       builder: (context, profileProvider, _) {
-        // 유저 정보 구독
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (context.mounted) {
             profileProvider.subscribeUserProfile(post.userId);
@@ -1584,16 +1563,17 @@ class _HomePageState extends State<HomePage> {
             MaterialPageRoute(builder: (context) => FeedDetailPage(post: post)),
           ),
           child: Container(
-            width: 200,
-            margin: const EdgeInsets.only(right: 12, bottom: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+            width: 210,
+            margin: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: WHITE,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: GRAYSCALE_LABEL_100),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
+                  color: BLACK.withValues(alpha: 0.04),
+                  blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ],
@@ -1602,110 +1582,135 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (hasMedia) ...[
-                  // const Spacer(),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     child: SizedBox(
-                      width: 200,
-                      height: 150,
-                      child: isVideo
-                          ? Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                IgnorePointer(
+                      width: double.infinity,
+                      height: 122,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          isVideo
+                              ? IgnorePointer(
                                   child: NetworkVideoPlayer(
                                     videoUrl: post.mediaUrls.first,
                                     width: double.infinity,
-                                    height: 130,
+                                    height: 122,
                                     fit: BoxFit.cover,
                                     autoPlay: true,
                                     muted: true,
                                     showControls: false,
                                   ),
-                                ),
-                                Positioned(
-                                  right: 8,
-                                  top: 8,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.6,
+                                )
+                              : Image.network(
+                                  post.mediaUrls.first,
+                                  width: double.infinity,
+                                  height: 122,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                        color: GRAYSCALE_LABEL_100,
+                                        alignment: Alignment.center,
+                                        child: const Icon(
+                                          Icons.broken_image_outlined,
+                                          color: GRAYSCALE_LABEL_400,
+                                        ),
                                       ),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: const Icon(
-                                      Icons.videocam_rounded,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
+                                ),
+                          if (isVideo)
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Icon(
+                                  Icons.videocam_rounded,
+                                  color: WHITE,
+                                  size: 14,
+                                ),
+                              ),
+                            )
+                          else if (post.mediaUrls.length > 1)
+                            Positioned(
+                              right: 8,
+                              bottom: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.55),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '1/${post.mediaUrls.length}',
+                                  style: const TextStyle(
+                                    color: WHITE,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ],
-                            )
-                          : Image.network(
-                              post.mediaUrls.first,
-                              width: double.infinity,
-                              height: 130,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Container(
-                                    color: GRAYSCALE_LABEL_200,
-                                    alignment: Alignment.center,
-                                    child: const Icon(
-                                      Icons.broken_image,
-                                      color: GRAYSCALE_LABEL_400,
-                                    ),
-                                  ),
+                              ),
                             ),
-                    ),
-                  ),
-                ],
-                SizedBox(height: 5),
-                Padding(
-                  padding: const EdgeInsets.only(left: 5.0),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 14,
-                        backgroundColor: BACKGROUND_COLOR,
-                        foregroundImage: authorProfileUrl != null
-                            ? NetworkImage(authorProfileUrl)
-                            : null,
-                        child: const Icon(Icons.person, size: 14),
-                      ),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            authorName,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            DateFormat('M.d HH:mm').format(post.createdAt),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: GRAYSCALE_LABEL_400,
-                            ),
-                          ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
+                  const SizedBox(height: 10),
+                ],
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 13,
+                      backgroundColor: GRAYSCALE_LABEL_200,
+                      foregroundImage: authorProfileUrl != null
+                          ? NetworkImage(authorProfileUrl)
+                          : null,
+                      child: const Icon(
+                        Icons.person,
+                        size: 13,
+                        color: GRAYSCALE_LABEL_600,
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        authorName,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: BLACK,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      DateFormat('M.d').format(post.createdAt),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: GRAYSCALE_LABEL_400,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  post.text,
-                  style: const TextStyle(fontSize: 11, height: 1.4),
-                  maxLines: hasMedia ? 2 : 6,
-                  overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Text(
+                    post.text,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.4,
+                      color: GRAYSCALE_LABEL_800,
+                    ),
+                    maxLines: hasMedia ? 2 : 5,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -1793,7 +1798,7 @@ class _HomePageState extends State<HomePage> {
     final maxCount = meetup.maxParticipants;
     final fillRatio = maxCount > 0 ? currentCount / maxCount : 0.0;
     final gameDate = DateTime.tryParse(meetup.gameDate);
-    final teamColor = teamProvider.selectedTeam?.color;
+    final teamColor = teamProvider.selectedTeam?.color ?? selectedTeam.color;
 
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -1803,16 +1808,17 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       child: Container(
-        width: 185,
-        margin: EdgeInsets.symmetric(horizontal: 5),
+        width: 200,
+        margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
           color: WHITE,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: GRAYSCALE_LABEL_100),
           boxShadow: [
             BoxShadow(
-              color: teamColor!.withOpacity(0.2),
-              blurRadius: 10,
-              offset: Offset(0, 4),
+              color: BLACK.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -2292,424 +2298,418 @@ class _HomePageState extends State<HomePage> {
           IntutionRecordListProvider()..subscribe(autoSetYear: false),
       child: Consumer2<IntutionRecordListProvider, TeamProvider>(
         builder: (context, ip, tp, child) {
+          final teamColor = tp.selectedTeam?.color ?? widget.selectedTeam.color;
           if (ip.isLoading) {
-            final selectedColor = tp.selectedTeam?.color ?? BUTTON;
-            return Center(
-              child: CircularProgressIndicator(color: selectedColor),
-            );
-          }
-          final items = ip.records;
-          final selectedTeamColor =
-              tp.selectedTeam?.color ?? widget.selectedTeam.color;
-          if (items.isEmpty) {
             return Container(
               width: double.infinity,
-              height: 190,
+              height: 170,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
                 color: WHITE,
-                boxShadow: [
-                  BoxShadow(
-                    color: selectedTeamColor.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(22),
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: selectedTeamColor,
-                          ),
-                          child: Icon(
-                            CupertinoIcons.ticket_fill,
-                            color: WHITE,
-                            size: 16,
-                          ),
-                        ),
-                        SizedBox(width: 5),
-                        Transform.translate(
-                          offset: Offset(-10, 0),
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => IntutionTabBar(),
-                                ),
-                              );
-                            },
-                            child: Text(
-                              '나의 직관 기록',
-                              style: GoogleFonts.gothicA1(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: GRAYSCALE_LABEL_900,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Spacer(),
-                        GestureDetector(
-                          onTap: () {
-                            // Navigator.push(
-                            //   context,
-                            //   MaterialPageRoute(
-                            //     builder: (context) =>
-                            //         AllUsersIntutionRecordPage(),
-                            //   ),
-                            // );
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => IntutionTabBar(),
-                              ),
-                            );
-                          },
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '더보기',
-                                style: TextStyle(
-                                  color: GRAYSCALE_LABEL_500,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(width: 2), // 원하는 만큼 간격 조절 (2~4)
-                              Icon(
-                                Icons.arrow_forward_ios_outlined,
-                                color: GRAYSCALE_LABEL_500,
-                                size: 12,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    Center(
-                      child: Image.asset(
-                        'assets/images/stadium.png',
-                        height: 60,
-                      ),
-                    ),
-                    Text(
-                      '아직 직관 기록이 없어요!',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '처음으로 야구장에 방문한 순간을 기록해보세요.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: GRAYSCALE_LABEL_400,
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                IntutionTabBar(initialIndex: 1),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: 200,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          color: GRAYSCALE_LABEL_100,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.calendar_month_outlined,
-                              color: GRAYSCALE_LABEL_500,
-                              size: 12,
-                            ),
-                            SizedBox(width: 2),
-                            Text(
-                              '직관 기록 추가하기',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: GRAYSCALE_LABEL_500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              child: Center(child: CircularProgressIndicator(color: teamColor)),
             );
           }
+
+          final items = ip.records;
           int wins = 0;
           int losses = 0;
           int draws = 0;
-          int? _prseScore(dynamic v) => v is int ? v : int.tryParse('$v');
-          for (final d in items) {
-            final int? my = _prseScore(d['myScore']);
-            final int? opp = _prseScore(d['opponentScore']);
+          int? parseScore(dynamic v) => v is int ? v : int.tryParse('$v');
+
+          final sortedChronological = List<Map<String, dynamic>>.from(items)
+            ..sort((a, b) {
+              final da = (a['date'] as String?) ?? '';
+              final db = (b['date'] as String?) ?? '';
+              final cmp = da.compareTo(db);
+              if (cmp != 0) return cmp;
+              final ta = (a['time'] as String?) ?? '';
+              final tb = (b['time'] as String?) ?? '';
+              return ta.compareTo(tb);
+            });
+
+          for (final d in sortedChronological) {
+            final int? my = parseScore(d['myScore']);
+            final int? opp = parseScore(d['opponentScore']);
             if (my != null && opp != null) {
-              if (my > opp)
+              if (my > opp) {
                 wins++;
-              else if (my < opp)
+              } else if (my < opp) {
                 losses++;
-              else
+              } else {
                 draws++;
+              }
             }
           }
 
           final int totalGames = items.length;
           final double winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
-          final teamColor = tp.selectedTeam?.color ?? Colors.blueAccent;
+
+          int currentWinStreak = 0;
+          for (int i = sortedChronological.length - 1; i >= 0; i--) {
+            final r = sortedChronological[i];
+            final my = parseScore(r['myScore']);
+            final opp = parseScore(r['opponentScore']);
+            if (my == null || opp == null) continue;
+            if (my > opp) {
+              currentWinStreak++;
+            } else {
+              break;
+            }
+          }
+
+          String fairyBadge = '⚾ 첫 직관 대기 중';
+          if (totalGames > 0) {
+            if (currentWinStreak >= 3) {
+              fairyBadge = '🔥 ${currentWinStreak}연승 폭주 승요';
+            } else if (totalGames >= 3 && winRate >= 70) {
+              fairyBadge = '🧚 확신의 승리요정';
+            } else if (winRate == 100) {
+              fairyBadge = '✨ 백전백승 승리요정';
+            } else if (winRate >= 50) {
+              fairyBadge = '🍀 기운 좋은 직관러';
+            } else {
+              fairyBadge = '🕯️ 반등을 노리는 직관러';
+            }
+          }
+
+          final recent5 = sortedChronological.length > 5
+              ? sortedChronological.sublist(sortedChronological.length - 5)
+              : sortedChronological;
 
           return Container(
             width: double.infinity,
-            height: 180,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
               color: WHITE,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: GRAYSCALE_LABEL_100),
               boxShadow: [
                 BoxShadow(
-                  color: teamColor.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: Offset(0, 4),
+                  color: BLACK.withValues(alpha: 0.04),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 상단 헤더 (타이틀 + 승리요정 칭호 뱃지 + 리포트 보기)
+                Row(
+                  children: [
+                    const Text(
+                      '나의 직관 리포트',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: BLACK,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: teamColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        fairyBadge,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
                           color: teamColor,
                         ),
-                        child: Icon(
-                          CupertinoIcons.ticket_fill,
-                          color: WHITE,
-                          size: 16,
-                        ),
                       ),
-                      SizedBox(width: 5),
-                      Transform.translate(
-                        offset: Offset(-10, 0),
-                        child: TextButton(
-                          onPressed: () {
-                            // Navigator.push(
-                            //   context,
-                            //   MaterialPageRoute(
-                            //     builder: (context) => IntutionTabBar(),
-                            //   ),
-                            // );
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AllUsersIntutionRecordPage(),
-                              ),
-                            );
-                          },
-                          child: Text(
-                            '나의 직관 기록',
-                            style: GoogleFonts.gothicA1(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                              color: GRAYSCALE_LABEL_900,
-                              letterSpacing: -0.5,
-                            ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const IntutionTabBar(),
                           ),
-                        ),
-                      ),
-                      Spacer(),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => IntutionTabBar(),
-                              // AllUsersIntutionRecordPage(),
-                            ),
-                          );
-                        },
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '더보기',
-                              style: TextStyle(
-                                color: GRAYSCALE_LABEL_500,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(width: 2), // 원하는 만큼 간격 조절 (2~4)
-                            Icon(
-                              Icons.arrow_forward_ios_outlined,
-                              color: GRAYSCALE_LABEL_500,
-                              size: 12,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => IntutionTabBar(),
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        );
+                      },
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          _buildMiniStat('총 경기', '$totalGames', teamColor),
-                          Container(
-                            width: 1,
-                            height: 48,
-                            color: const Color(0xFFE5E7EB),
+                          Text(
+                            '리포트 보기',
+                            style: TextStyle(
+                              color: GRAYSCALE_LABEL_500,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          Stack(
-                            alignment: Alignment.center,
+                          SizedBox(width: 2),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: GRAYSCALE_LABEL_400,
+                            size: 11,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // 중단 요약 박스 (승률 & 전적 + 최근 5경기 흐름 도트)
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const IntutionTabBar(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: BACKGROUND_COLOR,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: totalGames == 0
+                        ? const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              SizedBox(
-                                width: 54,
-                                height: 54,
-                                child: CircularProgressIndicator(
-                                  value: winRate / 100,
-                                  strokeWidth: 10,
-                                  backgroundColor: teamColor.withOpacity(0.1),
-                                  color: teamColor,
-                                  strokeCap: StrokeCap.round,
-                                ),
-                              ),
                               Column(
-                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '${winRate.toStringAsFixed(0)}%',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w800,
-                                      color: GRAYSCALE_LABEL_900,
+                                    '아직 기록된 직관 경기가 없어요',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: BLACK,
                                     ),
                                   ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    '티켓 사진 한 장으로 좌석과 경기를 자동 기록해보세요!',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: GRAYSCALE_LABEL_500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Icon(
+                                CupertinoIcons.ticket_fill,
+                                color: GRAYSCALE_LABEL_400,
+                                size: 22,
+                              ),
+                            ],
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   const Text(
-                                    '승률',
+                                    '통산 직관 승률',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: GRAYSCALE_LABEL_500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.baseline,
+                                    textBaseline: TextBaseline.alphabetic,
+                                    children: [
+                                      Text(
+                                        '${winRate.toStringAsFixed(0)}%',
+                                        style: GoogleFonts.bebasNeue(
+                                          fontSize: 30,
+                                          fontWeight: FontWeight.bold,
+                                          color: teamColor,
+                                          height: 1.0,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '${totalGames}전 ${wins}승 ${draws}무 ${losses}패',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: GRAYSCALE_LABEL_800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  const Text(
+                                    '최근 5경기 흐름',
                                     style: TextStyle(
                                       fontSize: 10,
-                                      color: GRAYSCALE_LABEL_500,
                                       fontWeight: FontWeight.w600,
+                                      color: GRAYSCALE_LABEL_400,
                                     ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: recent5.asMap().entries.map((e) {
+                                      final isLatest =
+                                          e.key == recent5.length - 1;
+                                      final my = parseScore(e.value['myScore']);
+                                      final opp = parseScore(
+                                        e.value['opponentScore'],
+                                      );
+                                      String label = '무';
+                                      Color dotColor = GRAYSCALE_LABEL_500;
+                                      if (my != null && opp != null) {
+                                        if (my > opp) {
+                                          label = '승';
+                                          dotColor = BUTTON;
+                                        } else if (my < opp) {
+                                          label = '패';
+                                          dotColor = Colors.redAccent;
+                                        }
+                                      }
+                                      return Container(
+                                        width: 22,
+                                        height: 22,
+                                        margin: const EdgeInsets.only(left: 4),
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: isLatest
+                                              ? dotColor
+                                              : dotColor.withValues(
+                                                  alpha: 0.14,
+                                                ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Text(
+                                          label,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: isLatest ? WHITE : dotColor,
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
                                   ),
                                 ],
                               ),
                             ],
                           ),
-                          Container(
-                            width: 1,
-                            height: 48,
-                            color: const Color(0xFFE5E7EB),
-                          ),
-                          _buildMiniStat('승리', '$wins', Colors.blueAccent),
-                          Container(
-                            width: 1,
-                            height: 48,
-                            color: const Color(0xFFE5E7EB),
-                          ),
-                          _buildMiniStat('패배', '$losses', Colors.redAccent),
-                        ],
-                      ),
-                    ),
                   ),
-                  SizedBox(height: 20),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => IntutionTabBar(),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: GRAYSCALE_LABEL_100,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 20,
-                              height: 20,
-                              decoration: BoxDecoration(
-                                color: GRAYSCALE_LABEL_500,
-                                borderRadius: BorderRadius.circular(30),
+                ),
+
+                const SizedBox(height: 10),
+
+                // 하단 원탭 퀵 액션 버튼 (스마트 티켓 스캔 / 직관 직접 기록)
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChangeNotifierProvider(
+                                create: (ctx) => TicketScanProvider(
+                                  scheduleProvider: ctx
+                                      .read<ScheduleProvider>(),
+                                ),
+                                child: const TickerCameraScanPage(),
                               ),
-                              child: Icon(
-                                Icons.rocket_launch_rounded,
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: teamColor,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.document_scanner_outlined,
                                 color: WHITE,
-                                size: 12,
+                                size: 15,
                               ),
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              '이번 시즌 직관 기록을 확인해보세요!',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: GRAYSCALE_LABEL_700,
-                                fontWeight: FontWeight.bold,
+                              SizedBox(width: 6),
+                              Text(
+                                '스마트 티켓 스캔',
+                                style: TextStyle(
+                                  color: WHITE,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            Spacer(),
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 12,
-                              color: GRAYSCALE_LABEL_500,
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const IntutionRecordUploadPage(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: BACKGROUND_COLOR,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: GRAYSCALE_LABEL_200),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.edit_note_rounded,
+                                color: GRAYSCALE_LABEL_800,
+                                size: 17,
+                              ),
+                              SizedBox(width: 5),
+                              Text(
+                                '직관 직접 기록',
+                                style: TextStyle(
+                                  color: GRAYSCALE_LABEL_800,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           );
         },

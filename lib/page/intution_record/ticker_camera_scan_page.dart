@@ -7,7 +7,13 @@ import 'package:lockerroom/provider/ticket_scan_provider.dart';
 import 'package:provider/provider.dart';
 
 class TickerCameraScanPage extends StatefulWidget {
-  const TickerCameraScanPage({super.key});
+  /// 기존 직관 기록 상세 페이지에서 좌석/금액만 스캔하여 결과를 바로 반환할지 여부
+  final bool returnOnlySeatAndPrice;
+
+  const TickerCameraScanPage({
+    super.key,
+    this.returnOnlySeatAndPrice = false,
+  });
 
   @override
   State<TickerCameraScanPage> createState() => _TickerCameraScanPageState();
@@ -28,6 +34,24 @@ class _TickerCameraScanPageState extends State<TickerCameraScanPage> {
 
   Future<void> _navigateToResultPage(TicketScanProvider scanProvider) async {
     if (!mounted) return;
+    if (widget.returnOnlySeatAndPrice) {
+      final scannedSeat =
+          scanProvider.seatController.text.trim().isNotEmpty
+              ? scanProvider.seatController.text.trim()
+              : (scanProvider.parsedResult?.seatType?.trim() ?? '');
+      final scannedPrice =
+          int.tryParse(
+            scanProvider.priceController.text.replaceAll(',', '').trim(),
+          ) ??
+          scanProvider.parsedResult?.ticketPrice ??
+          0;
+      Navigator.pop(context, <String, dynamic>{
+        'seat': scannedSeat,
+        'ticketPrice': scannedPrice,
+      });
+      return;
+    }
+
     setState(() => _isResultRouteActive = true);
     await Navigator.push(
       context,
