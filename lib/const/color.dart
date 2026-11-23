@@ -70,8 +70,9 @@ const BACKGROUND_COLOR = Color(0xFFF9FAFC);
 // HEART FILL COLOR
 const HEART_FILL = Color(0xFFFF6262);
 
-// HOME BUTTON COLOR
-const BUTTON = Color(0xff002063);
+// HOME BUTTON COLOR (ILU Deep Navy + Coral Accent)
+const BUTTON = Color(0xFF141B2D);
+const ACCENT_CORAL = Color(0xFFFF5B37);
 
 // PRIMARY
 const ORANGE_PRIMARY_200 = Color(0xFFFFF2DF);

@@ -61,7 +61,7 @@ class CustormerCenterPage extends StatelessWidget {
                         onConfirm: () {
                           sendInquiryEmail(
                             'MyWay 1:1 문의',
-                            '안녕하세요, 더베이스 팀 입니다.\n\n문의 내용을 작성해주세요 :)',
+                            '안녕하세요, ILU 팀 입니다.\n\n문의 내용을 작성해주세요 :)',
                           );
                         },
                       );

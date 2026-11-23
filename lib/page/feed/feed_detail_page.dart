@@ -143,7 +143,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
           padding: const EdgeInsets.only(top: 10.0),
           child: Column(
             children: [
-              Image.asset('assets/images/applogo/app_logo.png', height: 100),
+              Image.asset('assets/images/applogo/ilu_app_icon.png', height: 36),
             ],
           ),
         ),

@@ -39,7 +39,7 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
             const SizedBox(height: 24),
             _buildSection(
               '1. 개요',
-              '더베이스(이하 "회사")는 이용자의 개인정보를 보호하고 개인정보와 관련한 이용자의 고충을 원활하게 처리하기 위하여 다음과 같은 개인정보 처리방침을 수립·공개합니다.',
+              'ILU(이하 "회사")는 이용자의 개인정보를 보호하고 개인정보와 관련한 이용자의 고충을 원활하게 처리하기 위하여 다음과 같은 개인정보 처리방침을 수립·공개합니다.',
             ),
             const SizedBox(height: 20),
             _buildSection('2. 수집하는 개인정보의 항목 및 수집 방법', '''회사는 다음과 같은 개인정보를 수집합니다:

@@ -913,7 +913,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
     try {
       if (_latestMeetup == null) return;
 
-      final title = '[더베이스] ${_latestMeetup!.title} 모임 초대';
+      final title = '[ILU] ${_latestMeetup!.title} 모임 초대';
       final text =
           '$title ⚾\n\n모임 참여하기: https://lockerroom-e9f39.web.app/meetup/${_latestMeetup!.id}';
 
@@ -943,7 +943,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
       debugPrint('Share card generation error: $e');
       // 실패 시 폴백 (기본 텍스트 공유)
       final text =
-          '[더베이스] ${_latestMeetup!.title} 모임 초대 ⚾\n\n모임 참여하기: https://lockerroom-e9f39.web.app/meetup/${_latestMeetup!.id}';
+          '[ILU] ${_latestMeetup!.title} 모임 초대 ⚾\n\n모임 참여하기: https://lockerroom-e9f39.web.app/meetup/${_latestMeetup!.id}';
       Share.share(text);
     }
   }

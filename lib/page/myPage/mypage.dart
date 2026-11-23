@@ -439,7 +439,7 @@ class _MypageState extends State<Mypage> {
                                       widget.user?.name ??
                                       '';
                                   final stadiumName =
-                                      selectedTeam?.stadium ?? '더베이스 라운지';
+                                      selectedTeam?.stadium ?? 'ILU 라운지';
                                   return Text(
                                     realName.isNotEmpty
                                         ? '$realName · $stadiumName'

@@ -337,7 +337,7 @@ class _UploadPageState extends State<FeedUploadPage> {
                                           child: Text(
                                             userNickName.isNotEmpty
                                                 ? userNickName
-                                                : '더베이스 팬',
+                                                : 'ILU 팬',
                                             style: const TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w800,
@@ -374,7 +374,7 @@ class _UploadPageState extends State<FeedUploadPage> {
                                     ),
                                     const SizedBox(height: 2),
                                     const Text(
-                                      '전체 공개 · 더베이스 피드',
+                                      '전체 공개 · ILU 피드',
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,

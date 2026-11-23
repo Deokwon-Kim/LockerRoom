@@ -1254,7 +1254,7 @@ class _QuizResultPageState extends State<QuizResultPage>
 
       uploadProvider.setImages([tempFile]);
       uploadProvider.setInitialCaption(
-        '더베이스 ${widget.result.category} 퀴즈 ${widget.result.score}점 달성! 🎉\n\n#야구퀴즈 #야빠 #더베이스 #${widget.result.category}',
+        'ILU ${widget.result.category} 퀴즈 ${widget.result.score}점 달성! 🎉\n\n#야구퀴즈 #야빠 #ILU #${widget.result.category}',
       );
 
       // 공유 카운트 증가
@@ -1306,7 +1306,7 @@ class _QuizResultPageState extends State<QuizResultPage>
     await Share.shareXFiles(
       [XFile(imagePath)],
       text:
-          '더베이스 ${widget.result.category} 퀴즈 ${widget.result.score}점 달성! 🎉\n\n#야구퀴즈 #야빠 #더베이스 #${widget.result.category}',
+          'ILU ${widget.result.category} 퀴즈 ${widget.result.score}점 달성! 🎉\n\n#야구퀴즈 #야빠 #ILU #${widget.result.category}',
       sharePositionOrigin: sharePositionOrigin,
     );
 

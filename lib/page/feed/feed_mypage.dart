@@ -317,9 +317,9 @@ class _FeedMypageState extends State<FeedMypage> {
                                   const SizedBox(height: 3),
                                   Text(
                                     realName.isNotEmpty
-                                        ? '${targetTeamModel?.stadium ?? "더베이스 라운지"}'
+                                        ? '${targetTeamModel?.stadium ?? "ILU 라운지"}'
                                         : (targetTeamModel?.stadium ??
-                                              '더베이스 라운지'),
+                                              'ILU 라운지'),
                                     style: const TextStyle(
                                       color: GRAYSCALE_LABEL_500,
                                       fontSize: 12,

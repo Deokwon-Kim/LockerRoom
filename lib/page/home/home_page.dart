@@ -20,20 +20,9 @@ import 'package:lockerroom/page/intution_record/ticker_camera_scan_page.dart';
 import 'package:lockerroom/provider/ticket_scan_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
-// import 'package:lockerroom/page/food_store/ballParkStore_page.dart';
-// import 'package:lockerroom/page/food_store/championsFieldStore_page.dart';
-// import 'package:lockerroom/page/food_store/giantsStroe_page.dart';
-// import 'package:lockerroom/page/food_store/gocheokStore_page.dart';
-// import 'package:lockerroom/page/food_store/jamsilStore_page.dart';
-// import 'package:lockerroom/page/food_store/landersfield_Store_page.dart';
-// import 'package:lockerroom/page/food_store/lionsParksStore_page.dart';
-// import 'package:lockerroom/page/food_store/ncParkStore_page.dart';
-// import 'package:lockerroom/page/food_store/wizParkStore_page.dart';
 import 'package:lockerroom/page/meetup/meetup_detail_page.dart';
 import 'package:lockerroom/page/meetup/meetup_page.dart';
 import 'package:lockerroom/page/schedule/schedule.dart';
-// import 'package:lockerroom/page/schedule/schedule.dart';
-// import 'package:lockerroom/page/weather/weather_detail_page.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
@@ -2358,14 +2347,18 @@ class _HomePageState extends State<HomePage> {
             }
           }
 
-          String fairyBadge = '⚾ 첫 직관 대기 중';
+          String fairyBadge = '⚾ 설레는 첫 직관 대기 중';
           if (totalGames > 0) {
             if (currentWinStreak >= 3) {
-              fairyBadge = '🔥 ${currentWinStreak}연승 폭주 승요';
+              fairyBadge = '🔥 ${currentWinStreak}연승 폭주 승리요정';
             } else if (totalGames >= 3 && winRate >= 70) {
               fairyBadge = '🧚 확신의 승리요정';
             } else if (winRate == 100) {
               fairyBadge = '✨ 백전백승 승리요정';
+            } else if (totalGames >= 5 && winRate >= 55) {
+              fairyBadge = '⚾ 든든한 승리 수호신';
+            } else if (totalGames >= 10 && winRate >= 50) {
+              fairyBadge = '🏟️ 야구장 출근도장 승요';
             } else if (winRate >= 50) {
               fairyBadge = '🍀 기운 좋은 직관러';
             } else {

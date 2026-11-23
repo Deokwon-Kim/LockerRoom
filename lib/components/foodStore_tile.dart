@@ -28,7 +28,7 @@ class FoodstoreTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(60),
                   child: Image.asset(
                     foodStoreModel.storePhoto ??
-                        'assets/images/applogo/app_logo.png',
+                    'assets/images/applogo/ilu_app_icon.png',
                     height: 120,
                     width: 120,
                   ),

@@ -308,7 +308,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                         [
                                           if (userName.isNotEmpty) userName,
                                           if (birthYear != null) '$birthYear년생',
-                                          teamModel?.stadium ?? '더베이스 라운지',
+                                          teamModel?.stadium ?? 'ILU 라운지',
                                         ].join(' · '),
                                         style: const TextStyle(
                                           fontSize: 12,

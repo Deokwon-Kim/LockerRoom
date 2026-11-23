@@ -61,7 +61,7 @@ class VersionCheck {
             '새로운 버전 업데이트',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          content: Text('더 안정적이고 새로워진 더베이스를 이용하기 위해 최신 버전으로 업데이트가 필요합니다.'),
+          content: Text('더 안정적이고 새로워진 ILU를 이용하기 위해 최신 버전으로 업데이트가 필요합니다.'),
           actions: [
             if (!isForce)
               TextButton(

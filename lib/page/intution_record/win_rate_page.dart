@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/main.dart';
+import 'package:lockerroom/page/intution_record/intuition_recap_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_detail_page.dart';
 import 'package:lockerroom/page/quiz/quiz_result_page.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
@@ -29,6 +30,7 @@ class WinRatePage extends StatefulWidget {
 class _WinRatePageState extends State<WinRatePage> {
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _isCapturing = false;
+  bool _showAllOpponents = false;
   @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
@@ -128,6 +130,7 @@ class _WinRatePageState extends State<WinRatePage> {
           int bestMatchMyScore = -1;
 
           final Map<String, int> stadiumVisits = {};
+          final Map<String, _OpponentStat> oppStats = {};
 
           for (final item in sortedChronological) {
             final int? my = _parseScore(item['myScore']);
@@ -142,10 +145,33 @@ class _WinRatePageState extends State<WinRatePage> {
               }
             }
 
+            final String rawOpp = (item['oppTeam'] as String?)?.trim() ?? '';
+            final oppTeamModel = rawOpp.isNotEmpty
+                ? tp.findTeamByName(rawOpp)
+                : null;
+            final String oppKey = oppTeamModel?.symplename ?? rawOpp;
+
             if (my != null && opp != null) {
               totalMyRuns += my;
               totalOppRuns += opp;
               scoredGamesCount++;
+
+              if (oppKey.isNotEmpty) {
+                final stat = oppStats.putIfAbsent(
+                  oppKey,
+                  () => _OpponentStat(
+                    name: oppKey,
+                    color: oppTeamModel?.color ?? GRAYSCALE_LABEL_600,
+                  ),
+                );
+                if (my > opp) {
+                  stat.wins++;
+                } else if (my < opp) {
+                  stat.losses++;
+                } else {
+                  stat.draws++;
+                }
+              }
 
               if (my > opp) {
                 wins++;
@@ -366,6 +392,19 @@ class _WinRatePageState extends State<WinRatePage> {
 
                   SizedBox(height: 20),
 
+                  if (totalGames > 0) ...[
+                    _buildRecapBannerCard(
+                      context: context,
+                      records: items,
+                      selectedYear: lp.selectedYear,
+                      teamColor: teamColor,
+                      userNickName: userNickName,
+                      totalGames: totalGames,
+                      visitedStadiumCount: stadiumVisits.length,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
                   // 2. 직관 전적 카드 (컴팩트 4열 + 승무패 비율 바)
                   _buildRecordOverviewCard(
                     totalGames: totalGames,
@@ -407,12 +446,442 @@ class _WinRatePageState extends State<WinRatePage> {
                       teamColor: teamColor,
                       stadiumVisits: stadiumVisits,
                     ),
+
+                    if (oppStats.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+
+                      // 6. 상대팀별 직관 상성 리포트 카드
+                      _buildOpponentMatchupCard(
+                        teamColor: teamColor,
+                        oppStats: oppStats.values.toList(),
+                      ),
+                    ],
                   ],
                 ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  Color _resolveDarkAccent(Color raw) {
+    if (raw.toARGB32() == KIWOOM.toARGB32()) {
+      return raw;
+    }
+    final hsl = HSLColor.fromColor(raw);
+    if (hsl.saturation < 0.12 && hsl.lightness < 0.22) {
+      return const Color(0xFFFF4D4D);
+    }
+    if (hsl.lightness < 0.22) {
+      return hsl
+          .withLightness(0.56)
+          .withSaturation((hsl.saturation * 1.1).clamp(0.45, 0.95))
+          .toColor();
+    }
+    return raw;
+  }
+
+  Widget _buildRecapBannerCard({
+    required BuildContext context,
+    required List<Map<String, dynamic>> records,
+    required int? selectedYear,
+    required Color teamColor,
+    required String userNickName,
+    required int totalGames,
+    required int visitedStadiumCount,
+  }) {
+    final yearText = selectedYear == null ? '전체 시즌' : '${selectedYear}년';
+    final brightAccent = _resolveDarkAccent(teamColor);
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => IntuitionRecapPage(
+              records: records,
+              selectedYear: selectedYear,
+              teamColor: teamColor,
+              userNickName: userNickName,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF14161D), Color(0xFF1E222D)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: brightAccent.withValues(alpha: 0.45)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: brightAccent.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: brightAccent.withValues(alpha: 0.45)),
+              ),
+              child: Icon(
+                Icons.route_rounded,
+                color: brightAccent,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: brightAccent,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '$yearText 리캡',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'ANIMATION',
+                        style: TextStyle(
+                          color: Color(0xFF8B92A5),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    '내 직관 여정 애니메이션 보기',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$totalGames경기 · $visitedStadiumCount개 구장 이동 경로 한눈에 보기',
+                    style: const TextStyle(
+                      color: Color(0xFFA0A6B8),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: brightAccent,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOpponentMatchupCard({
+    required Color teamColor,
+    required List<_OpponentStat> oppStats,
+  }) {
+    final sorted = List<_OpponentStat>.from(oppStats)
+      ..sort((a, b) {
+        final cmpTotal = b.total.compareTo(a.total);
+        if (cmpTotal != 0) return cmpTotal;
+        return b.winRate.compareTo(a.winRate);
+      });
+
+    // 킬러 상대 (최소 2경기 이상 & 승 > 패 중 다승 우선 -> 승률 순)
+    // 천적 상대 (최소 2경기 이상 & 패 > 승 중 다패 우선 -> 낮은 승률 순)
+    _OpponentStat? killerTarget;
+    for (final s in sorted) {
+      if (s.total >= 2 && s.wins > s.losses) {
+        if (killerTarget == null ||
+            s.wins > killerTarget.wins ||
+            (s.wins == killerTarget.wins && s.winRate > killerTarget.winRate)) {
+          killerTarget = s;
+        }
+      }
+    }
+
+    _OpponentStat? nemesisTarget;
+    for (final s in sorted) {
+      if (s.total >= 2 && s.losses > s.wins) {
+        if (nemesisTarget == null ||
+            s.losses > nemesisTarget.losses ||
+            (s.losses == nemesisTarget.losses &&
+                s.winRate < nemesisTarget.winRate)) {
+          nemesisTarget = s;
+        }
+      }
+    }
+
+    final displayList = _showAllOpponents || sorted.length <= 4
+        ? sorted
+        : sorted.take(4).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: WHITE,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7)),
+        boxShadow: [
+          BoxShadow(
+            color: BLACK.withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '⚔️ 상대팀별 직관 상성',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: GRAYSCALE_LABEL_950,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: teamColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '${sorted.length}개 구단 맞대결',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: teamColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (killerTarget != null || nemesisTarget != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (killerTarget != null)
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 9,
+                      ),
+                      decoration: BoxDecoration(
+                        color: teamColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: teamColor.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '🔥 내 승요 먹잇감',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: teamColor,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'vs ${killerTarget.name}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: GRAYSCALE_LABEL_950,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (killerTarget != null && nemesisTarget != null)
+                  const SizedBox(width: 8),
+                if (nemesisTarget != null)
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 9,
+                      ),
+                      decoration: BoxDecoration(
+                        color: RED_DANGER_TEXT_50.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: RED_DANGER_TEXT_50.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '😭 주의할 천적',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: RED_DANGER_TEXT_50,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'vs ${nemesisTarget.name}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: GRAYSCALE_LABEL_950,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 14),
+          ...displayList.map((stat) {
+            final rate = stat.winRate;
+            final isStrong = rate >= 50;
+            final barColor = isStrong ? teamColor : GRAYSCALE_LABEL_400;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 11),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: stat.color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        stat.name,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: GRAYSCALE_LABEL_900,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${stat.wins}승 ${stat.draws > 0 ? '${stat.draws}무 ' : ''}${stat.losses}패',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: GRAYSCALE_LABEL_500,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      SizedBox(
+                        width: 42,
+                        child: Text(
+                          '${rate.round()}%',
+                          textAlign: TextAlign.right,
+                          style: GoogleFonts.bebasNeue(
+                            fontSize: 18,
+                            color: isStrong ? teamColor : GRAYSCALE_LABEL_700,
+                            height: 1.0,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (rate / 100).clamp(0.0, 1.0),
+                      minHeight: 5,
+                      backgroundColor: GRAYSCALE_LABEL_100,
+                      color: barColor,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          if (sorted.length > 4)
+            Center(
+              child: InkWell(
+                onTap: () =>
+                    setState(() => _showAllOpponents = !_showAllOpponents),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
+                  child: Text(
+                    _showAllOpponents
+                        ? '접기 ▲'
+                        : '전체 상대팀 보기 (${sorted.length}팀) ▼',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: teamColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -1249,7 +1718,7 @@ class _WinRatePageState extends State<WinRatePage> {
 
       uploadProvider.setImages([tempFile]);
       uploadProvider.setInitialCaption(
-        '더베이스 직관 승률 ${winRate.toStringAsFixed(0)}% 달성! 🎉\n\n#직관승률 #승요 #더베이스 #직관러',
+        'ILU 직관 승률 ${winRate.toStringAsFixed(0)}% 달성! 🎉\n\n#직관승률 #승요 #ILU #직관러',
       );
 
       // AuthWrapper를 통해 이동하여 사용자 정보 로드 및 초기화 보장
@@ -1308,7 +1777,7 @@ class _WinRatePageState extends State<WinRatePage> {
     await Share.shareXFiles(
       [XFile(imagePath)],
       text:
-          '더베이스 직관 승률 ${winRate.toStringAsFixed(0)}% 달성! 🎉\n\n#직관승률 #승요 #더베이스 #직관러',
+          'ILU 직관 승률 ${winRate.toStringAsFixed(0)}% 달성! 🎉\n\n#직관승률 #승요 #ILU #직관러',
       sharePositionOrigin: sharePositionOrigin,
     );
   }
@@ -1373,4 +1842,17 @@ class _WinRatePageState extends State<WinRatePage> {
       },
     );
   }
+}
+
+class _OpponentStat {
+  final String name;
+  final Color color;
+  int wins = 0;
+  int losses = 0;
+  int draws = 0;
+
+  _OpponentStat({required this.name, required this.color});
+
+  int get total => wins + losses + draws;
+  double get winRate => total > 0 ? (wins / total) * 100 : 0.0;
 }

@@ -101,8 +101,8 @@ class _FeedPageState extends State<FeedPage> {
         title: Row(
           children: [
             Image.asset(
-              'assets/images/applogo/app_logo.png',
-              height: 36,
+              'assets/images/applogo/ilu_app_icon.png',
+              height: 30,
               fit: BoxFit.contain,
             ),
             const SizedBox(width: 8),

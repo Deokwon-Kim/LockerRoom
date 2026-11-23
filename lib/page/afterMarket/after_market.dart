@@ -92,7 +92,7 @@ class _AfterMarketState extends State<AfterMarket> {
         automaticallyImplyLeading: false,
         backgroundColor: BACKGROUND_COLOR,
         title: Text(
-          '더베이스 마켓',
+          'ILU 마켓',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         actions: [
