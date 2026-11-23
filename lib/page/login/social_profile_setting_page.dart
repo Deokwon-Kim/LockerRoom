@@ -19,156 +19,26 @@ class SocialProfileSettingPage extends StatefulWidget {
 class _SocialProfileSettingPageState extends State<SocialProfileSettingPage> {
   final TextEditingController _nickNameController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
+  final FocusNode _nickNameFocus = FocusNode();
+  final FocusNode _nameFocus = FocusNode();
 
-  bool _allFieldsFilled = false;
   bool _isNicknameValid = true;
   bool _isNameValid = true;
-  String _nickNameErrorMessage = '';
-  String _nameErrorMessage = '';
-  // 현재 포커스된 필드 추적
-  String _currentFocusField = '';
   bool _isAppleLogin = false;
+  bool _isSubmitting = false;
+  String _nameErrorMessage = '';
 
   @override
   void initState() {
     super.initState();
     _checkLoginProvider();
-  }
-
-  void _checkLoginProvider() {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user != null) {
-      // 애플 로그인 여부 확인
-      setState(() {
-        _isAppleLogin = user.providerData.any(
-          (element) => element.providerId == 'apple.com',
-        );
-
-        if (_isAppleLogin && user.displayName != null && user.displayName!.isNotEmpty) {
-          // 서양식 "덕원 김" → 한국식 "김덕원" 변환
-          final parts = user.displayName!.trim().split(' ');
-          final koreanName = parts.length >= 2
-              ? parts.reversed.join('')
-              : user.displayName!.replaceAll(' ', '');
-          _nameController.text = koreanName;
-        }
-      });
-    }
-  }
-
-  // 닉네임 유효성 검사
-  void _validateNickname() {
-    final nickname = _nickNameController.text;
-
-    if (nickname.isEmpty) {
-      _isNicknameValid = true;
-      _nickNameErrorMessage = '';
-      return;
-    }
-
-    // UTF-8 인코딩을 사용하여 바이트 수 계산
-    final bytes = utf8.encode(nickname);
-    final byteLength = bytes.length;
-
-    setState(() {
-      if (byteLength < 6) {
-        _isNicknameValid = false;
-        _nickNameErrorMessage = '닉네임은 한글 2자, 영문 6자 이상이어야 합니다';
-      } else {
-        _isNicknameValid = true;
-        _nickNameErrorMessage = '';
-      }
+    _nickNameController.addListener(_onFormChanged);
+    _nameController.addListener(_onFormChanged);
+    _nickNameFocus.addListener(() {
+      if (mounted) setState(() {});
     });
-  }
-
-  // 이름 유효성 검사
-  void _validateName() {
-    final name = _nameController.text;
-
-    if (name.isEmpty) {
-      _isNameValid = true;
-      _nameErrorMessage = '';
-      return;
-    }
-
-    // UTF-8 인코딩을 사용하여 바이트 수 계산
-    final bytes = utf8.encode(name);
-    final byteLength = bytes.length;
-
-    setState(() {
-      if (byteLength < 2) {
-        _isNameValid = false;
-        _nameErrorMessage = '이름은 2자 이상 10자 이하로 입력해주세요';
-      } else {
-        _isNameValid = true;
-        _nameErrorMessage = '';
-      }
-    });
-  }
-
-  // 현재 표시할 에러 메시지 가져오기
-  String _getCurrentErrorMessage() {
-    // 모든 필드가 채워지고 유효하면 빈 메시지 반환
-    if (_allFieldsFilled) {
-      return '';
-    }
-
-    // 필드 입력 여부 확인
-    bool hasEmptyField =
-        _nickNameController.text.isEmpty || _nameController.text.isEmpty;
-
-    // 닉네임 필드에 텍스트가 있고 유효하지 않은 경우
-    if (_nickNameController.text.isNotEmpty && !_isNicknameValid) {
-      return _nickNameErrorMessage;
-    }
-
-    // 이름 필드에 텍스트가 있고 유효하지 않은 경우
-    if (_nameController.text.isNotEmpty && !_isNameValid) {
-      return _nameErrorMessage;
-    }
-
-    // 현재 포커스된 필드의 에러 메시지 반환 (위의 조건에 해당하지 않는 경우)
-    String errorMessage = '';
-    switch (_currentFocusField) {
-      case 'nickname':
-        errorMessage = _nickNameErrorMessage.isNotEmpty
-            ? _nickNameErrorMessage
-            : '';
-        break;
-      case 'name':
-        errorMessage = _nameErrorMessage.isNotEmpty ? _nameErrorMessage : '';
-        break;
-    }
-
-    if (errorMessage.isNotEmpty) {
-      return errorMessage;
-    }
-
-    // 다른 에러 메시지가 없고 입력란이 비어있으면 기본 메시지 반환
-    if (hasEmptyField) {
-      return '모든 입력란을 채워주세요';
-    }
-
-    return '';
-  }
-
-  void _checkFields() {
-    final userProvider = context.read<UserProvider>();
-    final nickname = _nickNameController.text;
-    final bytes = utf8.encode(nickname);
-    final byteLength = bytes.length;
-
-    // 닉네임: 바이트 길이 6 이상 AND 중복 확인 완료(available 상태)
-    bool isNicknameValid =
-        nickname.isNotEmpty &&
-        byteLength >= 6 &&
-        userProvider.state == UserNickNameCheckState.available;
-
-    setState(() {
-      _allFieldsFilled =
-          isNicknameValid &&
-          (_isAppleLogin || (_nameController.text.isNotEmpty && _isNameValid));
+    _nameFocus.addListener(() {
+      if (mounted) setState(() {});
     });
   }
 
@@ -176,310 +46,428 @@ class _SocialProfileSettingPageState extends State<SocialProfileSettingPage> {
   void dispose() {
     _nickNameController.dispose();
     _nameController.dispose();
-
+    _nickNameFocus.dispose();
+    _nameFocus.dispose();
     super.dispose();
+  }
+
+  void _checkLoginProvider() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final isApple = user.providerData.any(
+      (element) => element.providerId == 'apple.com',
+    );
+    _isAppleLogin = isApple;
+
+    if (isApple && user.displayName != null && user.displayName!.isNotEmpty) {
+      final parts = user.displayName!.trim().split(' ');
+      final koreanName = parts.length >= 2
+          ? parts.reversed.join('')
+          : user.displayName!.replaceAll(' ', '');
+      _nameController.text = koreanName;
+    }
+  }
+
+  void _onFormChanged() {
+    final nickname = _nickNameController.text;
+    _isNicknameValid = nickname.isEmpty || utf8.encode(nickname).length >= 6;
+
+    final name = _nameController.text;
+    if (name.isEmpty) {
+      _isNameValid = true;
+      _nameErrorMessage = '';
+    } else if (utf8.encode(name).length < 2) {
+      _isNameValid = false;
+      _nameErrorMessage = '이름은 2자 이상 입력해주세요';
+    } else {
+      _isNameValid = true;
+      _nameErrorMessage = '';
+    }
+
+    if (mounted) setState(() {});
+  }
+
+  bool _canSubmit(UserProvider userProvider) {
+    final nickname = _nickNameController.text;
+    final isNicknameReady =
+        nickname.isNotEmpty &&
+        utf8.encode(nickname).length >= 6 &&
+        userProvider.state == UserNickNameCheckState.available;
+
+    return isNicknameReady &&
+        (_isAppleLogin || (_nameController.text.isNotEmpty && _isNameValid));
+  }
+
+  Future<void> _submitProfile() async {
+    if (_isSubmitting) return;
+    FocusScope.of(context).unfocus();
+    setState(() => _isSubmitting = true);
+
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      final userDoc = FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid);
+      final nameToSave = _isAppleLogin
+          ? (currentUser.displayName ?? '')
+          : _nameController.text.trim();
+
+      await userDoc.set({
+        'userNickName': _nickNameController.text,
+        'name': nameToSave,
+        'isProfileCompleted': true,
+      }, SetOptions(merge: true));
+
+      if (!mounted) return;
+      await context.read<UserProvider>().loadNickname();
+      if (!mounted) return;
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const TermsGatePage()),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // 중앙에 표시할 메시지 가져오기
-    final String centerMessage = _getCurrentErrorMessage();
     final userProvider = context.watch<UserProvider>();
-
-    // UserProvider 상태 변경 감시 후 필드 상태 업데이트
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkFields();
-    });
+    final canSubmit = _canSubmit(userProvider) && !_isSubmitting;
 
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       appBar: AppBar(
         backgroundColor: BACKGROUND_COLOR,
-        title: Text(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        title: const Text(
           '프로필 설정',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: GRAYSCALE_LABEL_950,
+          ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              '당신의 팬 프로필을 완성해주세요',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 20),
-            _buildNickNameTextField(
-              userProvider,
-              '닉네임',
-              _nickNameController,
-
-              isValid: _isNicknameValid,
-            ),
-            const SizedBox(height: 20.0),
-            if (!_isAppleLogin) ...[
-              _buildTextField('이름', _nameController, isValid: _isNameValid),
-              const SizedBox(height: 20.0),
-            ],
-            Center(
-              child: Text(
-                centerMessage,
-                style: TextStyle(
-                  color: centerMessage.isEmpty
-                      ? Colors.transparent
-                      : Colors.red[400],
-                  fontSize: 14.0,
-                ),
-              ),
-            ),
-            Spacer(),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 20.0),
-              child: SizedBox(
-                width: double.infinity,
-                height: 58.0,
-                child: Consumer<UserProvider>(
-                  builder: (context, userProvider, child) {
-                    return ElevatedButton(
-                      onPressed: _allFieldsFilled
-                          ? () async {
-                              final currentUser =
-                                  FirebaseAuth.instance.currentUser;
-                              if (currentUser != null) {
-                                final userDoc = FirebaseFirestore.instance
-                                    .collection('users')
-                                    .doc(currentUser.uid);
-                                final nameToSave = _isAppleLogin
-                                    ? (currentUser.displayName ?? '')
-                                    : _nameController.text;
-
-                                await userDoc.set({
-                                  'userNickName': _nickNameController.text,
-                                  'name': nameToSave,
-                                  'isProfileCompleted': true,
-                                }, SetOptions(merge: true));
-                                if (!mounted) return;
-                                await context
-                                    .read<UserProvider>()
-                                    .loadNickname();
-                                Navigator.of(context).pushReplacement(
-                                  MaterialPageRoute(
-                                    builder: (context) => TermsGatePage(),
-                                  ),
-                                );
-                              }
-                            }
-                          : null,
-
-                      style: ElevatedButton.styleFrom(
-                        overlayColor: Colors.transparent,
-                        backgroundColor: BUTTON,
-                        disabledBackgroundColor: GRAYSCALE_LABEL_300,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 16),
+                      const Text(
+                        '당신의 팬 프로필을 완성해주세요',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: GRAYSCALE_LABEL_950,
+                          letterSpacing: -0.4,
                         ),
                       ),
-                      child: userProvider.isLoading
-                          ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 3,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : const Text(
-                              '다음',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16.0,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    );
-                  },
+                      const SizedBox(height: 6),
+                      const Text(
+                        '커뮤니티에서 사용할 닉네임을 설정해주세요',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: GRAYSCALE_LABEL_600,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      _buildInputField(
+                        label: '닉네임',
+                        hintText: '한글 2자 또는 영문 6자 이상',
+                        controller: _nickNameController,
+                        focusNode: _nickNameFocus,
+                        nextFocusNode: _isAppleLogin ? null : _nameFocus,
+                        prefixIcon: Icons.badge_outlined,
+                        isValid:
+                            _isNicknameValid &&
+                            userProvider.state !=
+                                UserNickNameCheckState.duplicated,
+                        onChanged: (value) {
+                          context.read<UserProvider>().onUserNickNameChanged(
+                            value,
+                          );
+                        },
+                        statusWidget: _buildNicknameStatus(userProvider),
+                      ),
+                      if (!_isAppleLogin) ...[
+                        const SizedBox(height: 18),
+                        _buildInputField(
+                          label: '이름',
+                          hintText: '이름을 입력해주세요',
+                          controller: _nameController,
+                          focusNode: _nameFocus,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) {
+                            if (canSubmit) _submitProfile();
+                          },
+                          prefixIcon: Icons.person_outline_rounded,
+                          isValid: _isNameValid,
+                          errorText: _nameErrorMessage,
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: canSubmit ? BUTTON : GRAYSCALE_LABEL_300,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: canSubmit
+                        ? [
+                            BoxShadow(
+                              color: BUTTON.withValues(alpha: 0.22),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: canSubmit ? _submitProfile : null,
+                      borderRadius: BorderRadius.circular(14),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: Center(
+                          child: (_isSubmitting || userProvider.isLoading)
+                              ? const SizedBox(
+                                  height: 22,
+                                  width: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.2,
+                                    color: WHITE,
+                                  ),
+                                )
+                              : const Text(
+                                  '다음',
+                                  style: TextStyle(
+                                    color: WHITE,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTextField(
-    String hintText,
-    TextEditingController controller, {
-    FocusNode? focusNode,
-    bool isPassword = false,
-    TextInputType? keyboardType,
-    String? errorText,
-    double height = 50.0,
+  Widget _buildInputField({
+    required String label,
+    required String hintText,
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required IconData prefixIcon,
+    FocusNode? nextFocusNode,
+    TextInputAction? textInputAction,
+    ValueChanged<String>? onFieldSubmitted,
+    ValueChanged<String>? onChanged,
     bool isValid = true,
+    String? errorText,
+    Widget? statusWidget,
   }) {
-    // 현재 필드가 포커스되었는지 확인
-    bool isFieldFocused = focusNode != null && focusNode.hasFocus;
-
-    // 유효하지 않고 포커스가 없는 경우에만 빨간색 테두리 표시
-    bool shouldShowRedBorder =
-        !isValid && !isFieldFocused && controller.text.isNotEmpty;
+    final hasError =
+        !isValid && !focusNode.hasFocus && controller.text.isNotEmpty;
+    final showErrorText =
+        errorText != null &&
+        errorText.isNotEmpty &&
+        controller.text.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          height: height,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8.0),
-            border: Border.all(
-              color:
-                  shouldShowRedBorder ||
-                      (errorText != null && errorText.isNotEmpty)
-                  ? Colors.red.shade400
-                  : GRAYSCALE_LABEL_400,
-              width: 1.0,
+        Padding(
+          padding: const EdgeInsets.only(left: 2, bottom: 6),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: GRAYSCALE_LABEL_800,
             ),
-          ),
-          child: TextFormField(
-            cursorColor: BUTTON,
-            controller: controller,
-            focusNode: focusNode,
-            obscureText: isPassword,
-            keyboardType: keyboardType,
-            style: const TextStyle(fontSize: 15.0),
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: TextStyle(color: Colors.grey[500], fontSize: 15.0),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 12.0,
-              ),
-            ),
-            onChanged: (value) {
-              setState(() {});
-            },
           ),
         ),
+        TextFormField(
+          cursorColor: BUTTON,
+          controller: controller,
+          focusNode: focusNode,
+          textInputAction:
+              textInputAction ??
+              (nextFocusNode != null
+                  ? TextInputAction.next
+                  : TextInputAction.done),
+          onFieldSubmitted:
+              onFieldSubmitted ??
+              (_) {
+                if (nextFocusNode != null) {
+                  FocusScope.of(context).requestFocus(nextFocusNode);
+                }
+              },
+          onChanged: onChanged,
+          style: const TextStyle(
+            fontSize: 15,
+            color: GRAYSCALE_LABEL_950,
+          ),
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: const TextStyle(
+              color: GRAYSCALE_LABEL_400,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+            ),
+            filled: true,
+            fillColor: WHITE,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            prefixIcon: Icon(prefixIcon, color: GRAYSCALE_LABEL_500, size: 20),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: (hasError || showErrorText)
+                    ? Colors.red.shade400
+                    : GRAYSCALE_LABEL_200,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: showErrorText ? Colors.red.shade400 : BUTTON,
+                width: 1.5,
+              ),
+            ),
+          ),
+        ),
+        if (statusWidget != null) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: statusWidget,
+          ),
+        ] else if (showErrorText) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(
+              errorText,
+              style: TextStyle(
+                color: Colors.red.shade500,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildNickNameTextField(
-    UserProvider userProvider,
-    String hintText,
-    TextEditingController controller, {
-    FocusNode? focusNode,
-    TextInputType? keyboardType,
-    String? errorText,
-    double height = 50.0,
-    bool isValid = true,
-  }) {
-    // 현재 필드가 포커스되었는지 확인
-    bool isFieldFocused = focusNode != null && focusNode.hasFocus;
-
-    // 유효하지 않고 포커스가 없는 경우에만 빨간색 테두리 표시
-    bool shouldShowRedBorder =
-        !isValid && !isFieldFocused && controller.text.isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          height: height,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8.0),
-            border: Border.all(
-              color:
-                  shouldShowRedBorder ||
-                      (errorText != null && errorText.isNotEmpty)
-                  ? Colors.red.shade400
-                  : GRAYSCALE_LABEL_400,
-              width: 1.0,
-            ),
-          ),
-          child: TextFormField(
-            cursorColor: BUTTON,
-            controller: _nickNameController,
-            focusNode: focusNode,
-            keyboardType: keyboardType,
-            style: const TextStyle(fontSize: 15.0),
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: TextStyle(color: Colors.grey[500], fontSize: 15.0),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 12.0,
-              ),
-            ),
-            onChanged: (value) {
-              _validateNickname();
-              context.read<UserProvider>().onUserNickNameChanged(value);
-            },
-          ),
-        ),
-
-        const SizedBox(height: 16),
-        _buildStatus(userProvider),
-      ],
-    );
-  }
-
-  Widget _buildStatus(UserProvider userProvider) {
+  Widget? _buildNicknameStatus(UserProvider userProvider) {
     final nickname = _nickNameController.text;
-    final bytes = utf8.encode(nickname);
-    final byteLength = bytes.length;
+    if (nickname.isEmpty) return null;
 
-    // 닉네임이 비어있으면 안내 메시지
-    if (nickname.isEmpty) {
-      return const Text('닉네임을 입력해주세요');
-    }
-
-    // 바이트 길이가 부족하면 길이 오류 표시
-    if (byteLength < 6) {
+    if (utf8.encode(nickname).length < 6) {
       return Text(
         '닉네임은 한글 2자, 영문 6자 이상이어야 합니다',
-        style: TextStyle(color: Colors.red[400]),
+        style: TextStyle(
+          color: Colors.red.shade500,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
       );
     }
 
-    // 바이트 길이 충분 → 중복 확인 상태 표시
     switch (userProvider.state) {
       case UserNickNameCheckState.idle:
-        return const Text('닉네임을 확인 중입니다...');
+        return const Text(
+          '닉네임을 확인 중입니다...',
+          style: TextStyle(color: GRAYSCALE_LABEL_500, fontSize: 12),
+        );
       case UserNickNameCheckState.checking:
         return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              height: 16,
-              width: 16,
+              height: 13,
+              width: 13,
               child: CircularProgressIndicator(strokeWidth: 2, color: BUTTON),
             ),
-            const SizedBox(width: 8),
-            const Text('중복 확인 중...'),
+            const SizedBox(width: 6),
+            const Text(
+              '중복 확인 중...',
+              style: TextStyle(color: GRAYSCALE_LABEL_600, fontSize: 12),
+            ),
           ],
         );
       case UserNickNameCheckState.available:
-        return Text(
-          userProvider.message ?? '사용 가능한 닉네임입니다.',
-          style: const TextStyle(color: Colors.green),
+        return Row(
+          children: [
+            const Icon(
+              Icons.check_circle_rounded,
+              color: GREEN_SUCCESS_TEXT_50,
+              size: 14,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              userProvider.message ?? '사용 가능한 닉네임입니다.',
+              style: const TextStyle(
+                color: GREEN_SUCCESS_TEXT_50,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         );
       case UserNickNameCheckState.duplicated:
-        return Text(
-          userProvider.message ?? '이미 사용 중인 닉네임입니다.',
-          style: const TextStyle(color: Colors.red),
+        return Row(
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              color: Colors.red.shade500,
+              size: 14,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              userProvider.message ?? '이미 사용 중인 닉네임입니다.',
+              style: TextStyle(
+                color: Colors.red.shade500,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         );
       case UserNickNameCheckState.error:
         return Text(
           userProvider.message ?? '확인 중 오류가 발생했습니다.',
-          style: const TextStyle(color: Colors.orange),
+          style: const TextStyle(color: Colors.orange, fontSize: 12),
         );
     }
   }

@@ -12,311 +12,246 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 class SocialLoginPage extends StatelessWidget {
   const SocialLoginPage({super.key});
 
+  Future<void> _handleSocialLogin(
+    BuildContext context, {
+    required String method,
+    required Future<void> Function() loginAction,
+  }) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) =>
+            Center(child: CircularProgressIndicator(color: BUTTON)),
+      );
+
+      await loginAction();
+
+      FirebaseAnalytics.instance.logEvent(
+        name: 'login',
+        parameters: {'method': method},
+      );
+
+      navigatorKey.currentState?.pop();
+
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const AuthWrapper()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('로그인에 실패했습니다. 다시 시도해주세요.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final socialProvider = context.read<SocialLoginProvider>();
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20.0,
-              vertical: 24.0,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/images/logo/app_logo_NoneBack.png',
-                  height: 140,
-                  fit: BoxFit.contain,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 24.0,
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight - 48.0,
                 ),
-                const SizedBox(height: 16),
-                if (Platform.isIOS) ...[
-                  SizedBox(height: 10),
-                  GestureDetector(
-                    onTap: () async {
-                      try {
-                        // 로딩 표시
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (context) => Center(
-                            child: CircularProgressIndicator(color: BUTTON),
-                          ),
-                        );
-
-                        await socialProvider.signWithApple();
-
-                        // Firebase Analytics 이벤트 기록
-                        FirebaseAnalytics.instance.logEvent(
-                          name: 'login',
-                          parameters: {'method': 'apple'},
-                        );
-
-                        // 다이얼 로그 닫기
-                        navigatorKey.currentState?.pop();
-
-                        // AuthWrapper로 명시적 이동
-                        if (context.mounted) {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                              builder: (context) => const AuthWrapper(),
-                            ),
-                            (route) => false,
-                          );
-                        }
-                      } catch (e) {
-                        print('애플 로그인 실패: $e');
-                        if (context.mounted) {
-                          Navigator.pop(context);
-                        }
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('로그인에 실패했습니다. 다시 시도해주세요.'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      height: 58,
-                      decoration: BoxDecoration(
-                        color: BLACK,
-                        borderRadius: BorderRadius.circular(8),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      const Spacer(flex: 2),
+                      Image.asset(
+                        'assets/images/applogo/ilu_app_icon.png',
+                        height: 175,
+                        fit: BoxFit.contain,
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset(
+                      const SizedBox(height: 18),
+                      const Text(
+                        '1루부터 시작하는 야구 일상',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: GRAYSCALE_LABEL_700,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const Spacer(flex: 3),
+                      if (Platform.isIOS) ...[
+                        _SocialLoginButton(
+                          backgroundColor: BLACK,
+                          textColor: WHITE,
+                          label: '애플로 시작하기',
+                          leading: Image.asset(
                             'assets/images/logo/apple.jpg',
-                            height: 30,
+                            height: 24,
                           ),
-                          Text(
-                            '애플로 시작하기',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: WHITE,
+                          onTap: () => _handleSocialLogin(
+                            context,
+                            method: 'apple',
+                            loginAction: socialProvider.signWithApple,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      _SocialLoginButton(
+                        backgroundColor: WHITE,
+                        textColor: GRAYSCALE_LABEL_900,
+                        borderColor: GRAYSCALE_LABEL_200,
+                        label: '구글로 시작하기',
+                        leading: Image.asset(
+                          'assets/images/logo/google.png',
+                          height: 20,
+                        ),
+                        onTap: () => _handleSocialLogin(
+                          context,
+                          method: 'google',
+                          loginAction: socialProvider.googleLogin,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _SocialLoginButton(
+                        backgroundColor: const Color(0xFFFEE500),
+                        textColor: const Color(0xFF191919),
+                        label: '카카오로 시작하기',
+                        leading: Image.asset(
+                          'assets/images/logo/kakao.png',
+                          height: 24,
+                        ),
+                        onTap: () => _handleSocialLogin(
+                          context,
+                          method: 'kakao',
+                          loginAction: socialProvider.kakaoLogin,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: GRAYSCALE_LABEL_200,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            child: Text(
+                              '또는',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: GRAYSCALE_LABEL_500,
+                              ),
+                            ),
+                          ),
+                          const Expanded(
+                            child: Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: GRAYSCALE_LABEL_200,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                ],
-
-                SizedBox(height: 10),
-                //구글 로그인
-                GestureDetector(
-                  onTap: () async {
-                    try {
-                      // 로딩 표시
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (context) => Center(
-                          child: CircularProgressIndicator(color: BUTTON),
+                      const SizedBox(height: 20),
+                      _SocialLoginButton(
+                        backgroundColor: WHITE,
+                        textColor: GRAYSCALE_LABEL_900,
+                        borderColor: GRAYSCALE_LABEL_200,
+                        label: '이메일로 시작하기',
+                        leading: const Icon(
+                          Icons.mail_outline_rounded,
+                          size: 20,
+                          color: GRAYSCALE_LABEL_800,
                         ),
-                      );
-
-                      await socialProvider.googleLogin();
-
-                      // Firebase Analytics 이벤트 기록
-                      FirebaseAnalytics.instance.logEvent(
-                        name: 'login',
-                        parameters: {'method': 'google'},
-                      );
-
-                      // navigatorKey를 사용하여 다이얼로그 확실히 닫기
-                      navigatorKey.currentState?.pop();
-
-                      // AuthWrapper로 명시적으로 이동 (authStateChanges가 발생하지 않을 수 있으므로)
-                      if (context.mounted) {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (context) => const AuthWrapper(),
-                          ),
-                          (route) => false,
-                        );
-                      }
-                    } catch (e) {
-                      print('구글 로그인 실패: $e');
-                      // 로딩 닫기
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                      }
-
-                      // 에러 메시지 표시
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('로그인에 실패했습니다. 다시 시도해주세요.'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    height: 58,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: GRAYSCALE_LABEL_200),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          'assets/images/logo/google.png',
-                          height: 20,
-                        ),
-                        Transform.translate(
-                          offset: Offset(-5, 0),
-                          child: Text(
-                            '구글로 시작하기',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LoginPage(),
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: 10),
-                GestureDetector(
-                  onTap: () async {
-                    try {
-                      // 로딩 표시
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (context) => Center(
-                          child: CircularProgressIndicator(color: BUTTON),
-                        ),
-                      );
-
-                      await socialProvider.kakaoLogin();
-
-                      // Firebase Analytics 이벤트 기록
-                      FirebaseAnalytics.instance.logEvent(
-                        name: 'login',
-                        parameters: {'method': 'kakao'},
-                      );
-
-                      // navigatorKey를 사용하여 다이얼로그 확실히 닫기
-                      navigatorKey.currentState?.pop();
-
-                      // AuthWrapper로 명시적으로 이동 (authStateChanges가 발생하지 않을 수 있으므로)
-                      if (context.mounted) {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (context) => const AuthWrapper(),
-                          ),
-                          (route) => false,
-                        );
-                      }
-                    } catch (e) {
-                      print('카카오 로그인 실패 :$e');
-                      // 로딩 닫기
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                      }
-
-                      // 에러 메시지 표시
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('로그인에 실패했습니다. 다시 시도해주세요.'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    height: 58,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Color(0xffFDDC3F),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset('assets/images/logo/kakao.png', height: 30),
-                        Text(
-                          '카카오로 시작하기',
-                          style: TextStyle(
-                            color: Color(0xff3A2929),
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: 30),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Container(height: 1, color: GRAYSCALE_LABEL_400),
-                    ),
-                    SizedBox(width: 10),
-                    Text(
-                      'OR',
-                      style: TextStyle(
-                        color: GRAYSCALE_LABEL_400,
-                        fontWeight: FontWeight.bold,
+                          );
+                        },
                       ),
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Container(height: 1, color: GRAYSCALE_LABEL_400),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                    ],
+                  ),
                 ),
-                SizedBox(height: 10),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => LoginPage()),
-                    );
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    height: 58,
-                    decoration: BoxDecoration(
-                      color: WHITE,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: GRAYSCALE_LABEL_200),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.email),
-                        SizedBox(width: 10),
-                        Text(
-                          '이메일로 시작하기',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _SocialLoginButton extends StatelessWidget {
+  final Color backgroundColor;
+  final Color textColor;
+  final Color? borderColor;
+  final String label;
+  final Widget leading;
+  final VoidCallback onTap;
+
+  const _SocialLoginButton({
+    required this.backgroundColor,
+    required this.textColor,
+    this.borderColor,
+    required this.label,
+    required this.leading,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(14),
+        border: borderColor != null ? Border.all(color: borderColor!) : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                leading,
+                const SizedBox(width: 10),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                    letterSpacing: -0.2,
                   ),
                 ),
               ],
