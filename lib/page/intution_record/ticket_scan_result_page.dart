@@ -59,9 +59,16 @@ class TicketScanResultPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TicketScanProvider>();
-    final teamColor =
-        context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
+    final teamProvider = context.read<TeamProvider>();
+    final teamColor = teamProvider.selectedTeam?.color ?? BUTTON;
     final game = provider.selectedMatchedGame;
+
+    final awayTeamModel = game != null
+        ? teamProvider.findTeamByName(game.awayTeam)
+        : null;
+    final homeTeamModel = game != null
+        ? teamProvider.findTeamByName(game.homeTeam)
+        : null;
 
     final dateStr = provider.selectedDate != null
         ? DateFormat('yyyy년 M월 d일 (E)', 'ko_KR').format(provider.selectedDate!)
@@ -98,130 +105,203 @@ class TicketScanResultPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. 티켓 이미지 카드
-              if (provider.scannedImageFile != null)
-                Center(
-                  child: Stack(
-                    alignment: Alignment.bottomRight,
+              // 1. 매치업 카드 (스캔된 티켓 이미지 대신 매칭된 경기 정보 표시)
+              if (game != null)
+                Container(
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+                  decoration: BoxDecoration(
+                    color: WHITE,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: GRAYSCALE_LABEL_200),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
                     children: [
-                      Container(
-                        width: 170,
-                        height: 220,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Image.file(
-                          provider.scannedImageFile!,
-                          fit: BoxFit.cover,
-                          cacheWidth: 510,
-                        ),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: InkWell(
-                        onTap: () => _changePhoto(context, provider),
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.65),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.camera_alt_outlined,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                '사진 변경',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 20),
-
-            // 2. 매치업 타이틀 & 뱃지
-            if (game != null)
-              Center(
-                child: Column(
-                  children: [
-                    Text(
-                      '${game.awayTeam} vs ${game.homeTeam}',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: BLACK,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${game.stadium} · ${game.season} KBO 정규리그',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: GRAYSCALE_LABEL_600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.green.shade200),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(
-                            Icons.check_circle_outline,
-                            color: Colors.green.shade700,
-                            size: 16,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.green.shade200),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_circle_outline,
+                                  color: Colors.green.shade700,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '티켓 정보 매칭 완료',
+                                  style: TextStyle(
+                                    color: Colors.green.shade800,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '티켓 정보 매칭 완료',
-                            style: TextStyle(
-                              color: Colors.green.shade800,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                          InkWell(
+                            onTap: () => _changePhoto(context, provider),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: GRAYSCALE_LABEL_100,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.camera_alt_outlined,
+                                    size: 13,
+                                    color: GRAYSCALE_LABEL_700,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    '다시 스캔',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: GRAYSCALE_LABEL_700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Image.asset(
+                                  awayTeamModel?.calenderLogo ??
+                                      'assets/images/applogo/ilu_app_icon.png',
+                                  width: 56,
+                                  height: 56,
+                                  fit: BoxFit.contain,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  game.awayTeam,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: GRAYSCALE_LABEL_950,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                const Text(
+                                  '원정',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: GRAYSCALE_LABEL_500,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: GRAYSCALE_LABEL_50,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Text(
+                                  'VS',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                    color: GRAYSCALE_LABEL_500,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                game.stadium,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: GRAYSCALE_LABEL_800,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${game.season} KBO',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                Image.asset(
+                                  homeTeamModel?.calenderLogo ??
+                                      'assets/images/applogo/ilu_app_icon.png',
+                                  width: 56,
+                                  height: 56,
+                                  fit: BoxFit.contain,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  game.homeTeam,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: GRAYSCALE_LABEL_950,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                const Text(
+                                  '홈',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: GRAYSCALE_LABEL_500,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
             // 3. 복수 매칭 경기 선택
             if (provider.matchedGames.length > 1) ...[

@@ -527,7 +527,8 @@ class IntutionRecordProvider extends ChangeNotifier {
         memo: memoController.text.trim().isNotEmpty
             ? memoController.text.trim()
             : null,
-        ticketPrice: int.tryParse(
+        ticketPrice:
+            int.tryParse(
               ticketPriceController.text.replaceAll(',', '').trim(),
             ) ??
             0,
@@ -621,6 +622,15 @@ class IntutionRecordProvider extends ChangeNotifier {
   void removeImageAt(int index) {
     if (index >= 0 && index < _images.length) {
       _images.removeAt(index);
+      notifyListeners();
+    }
+  }
+
+  // 대표 사진 설정 (선택한 이미지를 0번 인덱스로 이동)
+  void setRepresentativeImage(int index) {
+    if (index > 0 && index < _images.length) {
+      final selected = _images.removeAt(index);
+      _images.insert(0, selected);
       notifyListeners();
     }
   }

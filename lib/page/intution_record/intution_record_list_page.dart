@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/attendance_model.dart';
 import 'package:lockerroom/page/intution_record/_record_card.dart';
+import 'package:lockerroom/page/intution_record/_ticket_stub_tile.dart';
+import 'package:lockerroom/page/intution_record/intution_record_detail_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_upload_page.dart';
 import 'package:lockerroom/page/intution_record/ticker_camera_scan_page.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
@@ -13,8 +15,15 @@ import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/ticket_scan_provider.dart';
 import 'package:provider/provider.dart';
 
-class IntutionRecordListPage extends StatelessWidget {
+class IntutionRecordListPage extends StatefulWidget {
   const IntutionRecordListPage({super.key});
+
+  @override
+  State<IntutionRecordListPage> createState() => _IntutionRecordListPageState();
+}
+
+class _IntutionRecordListPageState extends State<IntutionRecordListPage> {
+  bool _isTicketGridMode = true;
 
   // Timestamp → DateTime 변환 헬퍼
   DateTime? _toDateTime(dynamic value) {
@@ -68,9 +77,13 @@ class IntutionRecordListPage extends StatelessWidget {
         backgroundColor: BACKGROUND_COLOR,
         appBar: AppBar(
           backgroundColor: BACKGROUND_COLOR,
-          title: Text(
+          title: const Text(
             '나의 직관기록',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: GRAYSCALE_LABEL_950,
+            ),
           ),
           centerTitle: true,
           elevation: 0,
@@ -78,26 +91,29 @@ class IntutionRecordListPage extends StatelessWidget {
           actions: [
             IconButton(
               onPressed: () => _showAddOptionsSheet(context),
-              // onPressed: () {
-              //   // Navigator.push(
-              //   //   context,
-              //   //   MaterialPageRoute(
-              //   //     builder: (context) => IntutionRecordUploadPage(),
-              //   //   ),
-              //   // );
-              // },
-              icon: Icon(Icons.add, size: 30),
+              icon: const Icon(
+                Icons.add_rounded,
+                size: 28,
+                color: GRAYSCALE_LABEL_900,
+              ),
             ),
           ],
         ),
         body: Column(
           children: [
-            // ------------------ 통계 + 필터 영역 ------------------
             _HeaderView(),
-            SizedBox(height: 10),
-            _FilterBar(),
+            const SizedBox(height: 6),
+            _FilterBar(
+              isTicketGridMode: _isTicketGridMode,
+              onToggleViewMode: () {
+                setState(() {
+                  _isTicketGridMode = !_isTicketGridMode;
+                });
+              },
+            ),
+            const SizedBox(height: 6),
 
-            // ------------------ 리스트 ------------------
+            // ------------------ 리스트 / 4열 티켓 그리드 ------------------
             Expanded(
               child:
                   Selector<
@@ -107,11 +123,156 @@ class IntutionRecordListPage extends StatelessWidget {
                     selector: (_, lp) => lp.records,
                     builder: (context, records, child) {
                       if (records.isEmpty) {
-                        return Center(child: Text('직관 기록이 없습니다'));
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 64,
+                                  height: 64,
+                                  decoration: const BoxDecoration(
+                                    color: GRAYSCALE_LABEL_100,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.sports_baseball_outlined,
+                                    size: 30,
+                                    color: GRAYSCALE_LABEL_500,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  '아직 직관 기록이 없어요',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: GRAYSCALE_LABEL_900,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  '첫 직관의 순간을 기록해보세요!',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: GRAYSCALE_LABEL_500,
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                TextButton.icon(
+                                  onPressed: () =>
+                                      _showAddOptionsSheet(context),
+                                  icon: const Icon(Icons.add_rounded, size: 18),
+                                  label: const Text(
+                                    '기록 추가하기',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    backgroundColor: BUTTON,
+                                    foregroundColor: WHITE,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 10,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      if (_isTicketGridMode) {
+                        final isDescending = context
+                            .select<IntutionRecordListProvider, bool>(
+                              (lp) => lp.isDescending,
+                            );
+                        return GridView.builder(
+                          physics: const ClampingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+                          itemCount: records.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 0.53,
+                              ),
+                          itemBuilder: (context, i) {
+                            final d = records[i];
+                            final attendance = _toAttendance(d);
+                            final myTeam = d['myTeam'] ?? '';
+                            final oppTeam = d['oppTeam'] ?? '';
+                            final myScore = d['myScore'] ?? 0;
+                            final oppScore = d['opponentScore'] ?? 0;
+                            final isWin = myScore > oppScore;
+                            final ticketNumber = isDescending
+                                ? (records.length - i)
+                                : (i + 1);
+
+                            final tp = Provider.of<TeamProvider>(
+                              context,
+                              listen: false,
+                            );
+                            final team = tp.findTeamByName(myTeam);
+                            final color = team?.color ?? GRAYSCALE_LABEL_500;
+
+                            return TicketStubTile(
+                              data: d,
+                              attendance: attendance,
+                              recordedTeam: team,
+                              recordedTeamColor: color,
+                              ticketNumber: ticketNumber,
+                              isWin: isWin,
+                              myScore: myScore,
+                              oppScore: oppScore,
+                              myTeam: myTeam,
+                              oppTeam: oppTeam,
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (dialogContext) =>
+                                      VerticalTicketPreviewDialog(
+                                        data: d,
+                                        attendance: attendance,
+                                        recordedTeam: team,
+                                        recordedTeamColor: color,
+                                        ticketNumber: ticketNumber,
+                                        isWin: isWin,
+                                        myScore: myScore,
+                                        oppScore: oppScore,
+                                        myTeam: myTeam,
+                                        oppTeam: oppTeam,
+                                        onOpenDetail: () {
+                                          Navigator.pop(dialogContext);
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  IntutionRecordDetailPage(
+                                                    gameId: d['gameId'],
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                );
+                              },
+                            );
+                          },
+                        );
                       }
 
                       return ListView.builder(
-                        physics: ClampingScrollPhysics(),
+                        physics: const ClampingScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: 24),
                         itemCount: records.length,
                         itemBuilder: (context, i) {
                           final d = records[i];
@@ -327,40 +488,40 @@ class _HeaderView extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // const Text(
-                    //   '⚾ 직관 전적',
-                    //   style: TextStyle(
-                    //     fontSize: 14,
-                    //     fontWeight: FontWeight.bold,
-                    //     color: BLACK,
-                    //   ),
-                    // ),
-                    // if (total > 0)
-                    //   Container(
-                    //     padding: const EdgeInsets.symmetric(
-                    //       horizontal: 8,
-                    //       vertical: 3,
-                    //     ),
-                    //     decoration: BoxDecoration(
-                    //       color: winMargin >= 0
-                    //           ? teamColor.withOpacity(0.12)
-                    //           : GRAYSCALE_LABEL_200,
-                    //       borderRadius: BorderRadius.circular(10),
-                    //     ),
-                    //     child: Text(
-                    //       marginText,
-                    //       style: TextStyle(
-                    //         fontSize: 11,
-                    //         fontWeight: FontWeight.bold,
-                    //         color: winMargin >= 0
-                    //             ? teamColor
-                    //             : GRAYSCALE_LABEL_700,
-                    //       ),
-                    //     ),
-                    //   ),
+                    const Text(
+                      '⚾ 직관 전적',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: GRAYSCALE_LABEL_950,
+                      ),
+                    ),
+                    if (total > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: winMargin >= 0
+                              ? teamColor.withValues(alpha: 0.12)
+                              : GRAYSCALE_LABEL_100,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          marginText,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: winMargin >= 0
+                                ? teamColor
+                                : GRAYSCALE_LABEL_700,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     _stat('경기 수', '$total', color: BLACK),
@@ -441,39 +602,145 @@ class _HeaderView extends StatelessWidget {
   }
 }
 
-// FilterBar - 정렬/연도 필터
+// FilterBar - 정렬/연도 필터 + 티켓/카드 뷰 전환
 class _FilterBar extends StatelessWidget {
+  final bool isTicketGridMode;
+  final VoidCallback onToggleViewMode;
+
+  const _FilterBar({
+    required this.isTicketGridMode,
+    required this.onToggleViewMode,
+  });
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
       child: Consumer<IntutionRecordListProvider>(
         builder: (context, lp, child) {
           return Row(
             children: [
-              InkWell(
-                onTap: () => _showYearPicker(context, lp),
-                child: Row(
-                  children: [
-                    Text(
-                      lp.selectedYear == null ? '전체' : '${lp.selectedYear}년',
-                      style: GoogleFonts.roboto(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+              Material(
+                color: WHITE,
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  onTap: () => _showYearPicker(context, lp),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
                     ),
-                    Icon(Icons.keyboard_arrow_down),
-                  ],
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: GRAYSCALE_LABEL_200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_rounded,
+                          size: 14,
+                          color: GRAYSCALE_LABEL_600,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          lp.selectedYear == null
+                              ? '전체'
+                              : '${lp.selectedYear}년',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: GRAYSCALE_LABEL_900,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 18,
+                          color: GRAYSCALE_LABEL_600,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              Spacer(),
-              GestureDetector(
-                onTap: lp.toggleSortOrder,
-                child: Row(
-                  children: [
-                    Icon(Icons.swap_vert),
-                    Text(lp.isDescending ? '최신순' : '이전순'),
-                  ],
+              const Spacer(),
+              Material(
+                color: WHITE,
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  onTap: onToggleViewMode,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: GRAYSCALE_LABEL_200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isTicketGridMode
+                              ? Icons.view_agenda_outlined
+                              : Icons.grid_view_rounded,
+                          size: 15,
+                          color: GRAYSCALE_LABEL_700,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          isTicketGridMode ? '카드형' : '티켓형',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: GRAYSCALE_LABEL_800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Material(
+                color: WHITE,
+                borderRadius: BorderRadius.circular(20),
+                child: InkWell(
+                  onTap: lp.toggleSortOrder,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: GRAYSCALE_LABEL_200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.swap_vert_rounded,
+                          size: 16,
+                          color: GRAYSCALE_LABEL_600,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          lp.isDescending ? '최신순' : '이전순',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: GRAYSCALE_LABEL_800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],

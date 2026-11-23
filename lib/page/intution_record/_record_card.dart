@@ -57,17 +57,17 @@ class RecordCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: WHITE,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: GRAYSCALE_LABEL_200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 6,
-              offset: Offset(1, 2),
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Column(
-          // crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildImageArea(pageIndex),
             _buildGameScore(),
@@ -142,42 +142,86 @@ class RecordCard extends StatelessWidget {
 
   Widget _buildImageArea(ValueNotifier<int> pageIndex) {
     final urls = attendance.imageUrls;
+    final isDraw = myScore == oppScore;
+    final resultLabel = isWin ? 'WIN' : (isDraw ? 'DRAW' : 'LOSE');
+    final resultColor = isWin
+        ? recordedTeamColor
+        : (isDraw ? GRAYSCALE_LABEL_600 : Colors.redAccent);
+
+    final resultBadge = Positioned(
+      top: 12,
+      left: 12,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: resultColor,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Text(
+          resultLabel,
+          style: const TextStyle(
+            color: WHITE,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
 
     if (urls.isEmpty) {
-      return Container(
-        height: 300,
-        decoration: BoxDecoration(
-          color: recordedTeamColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-        ),
-        alignment: Alignment.center,
-        child: recordedTeam != null
-            ? Image.asset(recordedTeam!.logoPath, height: 120)
-            : const SizedBox(),
+      return Stack(
+        children: [
+          Container(
+            height: 220,
+            decoration: BoxDecoration(
+              color: recordedTeamColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(15),
+              ),
+            ),
+            alignment: Alignment.center,
+            child: recordedTeam != null
+                ? Image.asset(recordedTeam!.logoPath, height: 100)
+                : const SizedBox(),
+          ),
+          resultBadge,
+        ],
       );
     }
 
     return Stack(
       children: [
         SizedBox(
-          height: 300,
+          height: 280,
           child: PageView.builder(
             onPageChanged: (i) => pageIndex.value = i,
             itemCount: urls.length,
             itemBuilder: (_, i) {
               return ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(15),
+                ),
                 child: CachedNetworkImage(
                   imageUrl: urls[i],
                   fit: BoxFit.cover,
                   memCacheWidth: 900,
-                  placeholder: (context, url) =>
-                      Container(color: recordedTeamColor.withOpacity(0.15)),
+                  placeholder: (context, url) => Container(
+                    color: recordedTeamColor.withValues(alpha: 0.15),
+                  ),
                 ),
               );
             },
           ),
         ),
+        resultBadge,
         // 이미지 개수 인디케이터
         if (urls.length > 1)
           Positioned(
@@ -244,44 +288,63 @@ class RecordCard extends StatelessWidget {
 
   Widget _buildGameScore() {
     return Padding(
-      padding: const EdgeInsets.only(top: 10.0),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             '$myScore',
             style: GoogleFonts.roboto(
-              fontSize: 34,
-              fontWeight: FontWeight.bold,
+              fontSize: 30,
+              height: 1.05,
+              fontWeight: FontWeight.w800,
               color: isWin ? recordedTeamColor : GRAYSCALE_LABEL_500,
             ),
           ),
-          SizedBox(width: 18),
+          const SizedBox(width: 14),
           Flexible(
             child: Text(
               myTeam,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: GRAYSCALE_LABEL_950,
+              ),
               textAlign: TextAlign.end,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          SizedBox(width: 8),
-          Text('vs', style: TextStyle(fontSize: 18)),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
+          const Text(
+            'vs',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: GRAYSCALE_LABEL_400,
+            ),
+          ),
+          const SizedBox(width: 8),
           Flexible(
             child: Text(
               oppTeam,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: GRAYSCALE_LABEL_950,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          SizedBox(width: 18),
+          const SizedBox(width: 14),
           Text(
             '$oppScore',
             style: GoogleFonts.roboto(
-              fontSize: 34,
-              fontWeight: FontWeight.bold,
-              color: GRAYSCALE_LABEL_500,
+              fontSize: 30,
+              height: 1.05,
+              fontWeight: FontWeight.w800,
+              color: !isWin && oppScore > myScore
+                  ? GRAYSCALE_LABEL_900
+                  : GRAYSCALE_LABEL_500,
             ),
           ),
         ],
@@ -290,7 +353,7 @@ class RecordCard extends StatelessWidget {
   }
 
   Widget _buildMeta(ScheduleModel? schedule) {
-    String _formatDate(String dateStr) {
+    String formatDate(String dateStr) {
       try {
         final parts = dateStr.split('.');
         if (parts.length == 3) {
@@ -305,27 +368,34 @@ class RecordCard extends StatelessWidget {
       return dateStr;
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 2, bottom: 10),
-      child: Transform.translate(
-        offset: Offset(0, -10),
-        child: Column(
-          children: [
-            Text(
-              _formatDate(data['date']),
+    final stadium = (data['stadium'] ?? '').toString();
 
-              style: TextStyle(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Column(
+        children: [
+          Text(
+            formatDate(data['date']),
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.2,
+              color: GRAYSCALE_LABEL_600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          if (stadium.isNotEmpty) ...[
+            const SizedBox(height: 1),
+            Text(
+              stadium,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.2,
                 color: GRAYSCALE_LABEL_500,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            SizedBox(height: 4),
-            Text(
-              data['stadium'] ?? '',
-              style: TextStyle(color: GRAYSCALE_LABEL_500),
-            ),
           ],
-        ),
+        ],
       ),
     );
   }
