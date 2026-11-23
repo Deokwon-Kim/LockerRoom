@@ -43,8 +43,8 @@ android {
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 151
-        versionName = "1.4.3"
+        versionCode = 153
+        versionName = "1.4.4"
     }
 
     signingConfigs {
@@ -89,4 +89,5 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("com.google.mlkit:text-recognition-korean:16.0.1")
 }

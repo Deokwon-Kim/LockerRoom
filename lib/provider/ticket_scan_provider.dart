@@ -22,14 +22,12 @@ class TicketScanProvider extends ChangeNotifier {
   final ScheduleProvider? _scheduleProvider;
 
   TicketScanProvider({ScheduleProvider? scheduleProvider})
-      : _scheduleProvider = scheduleProvider;
+    : _scheduleProvider = scheduleProvider;
 
   final _koreanRecognizer = TextRecognizer(
     script: TextRecognitionScript.korean,
   );
-  final _latinRecognizer = TextRecognizer(
-    script: TextRecognitionScript.latin,
-  );
+  final _latinRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
   final ScheduleService _scheduleService = ScheduleService();
   final ImagePicker _picker = ImagePicker();
   // 1. 카메라 상태 (Provider가 관리)
@@ -67,7 +65,8 @@ class TicketScanProvider extends ChangeNotifier {
 
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
-        _errorMessage = '사용 가능한 카메라를 찾을 수 없습니다.\n(시뮬레이터 환경에서는 갤러리 선택을 이용해 주세요.)';
+        _errorMessage =
+            '사용 가능한 카메라를 찾을 수 없습니다.\n(시뮬레이터 환경에서는 갤러리 선택을 이용해 주세요.)';
         notifyListeners();
         return;
       }
@@ -78,9 +77,9 @@ class TicketScanProvider extends ChangeNotifier {
       );
       _cameraController = CameraController(
         backCamera,
-        ResolutionPreset.max,
+        Platform.isAndroid ? ResolutionPreset.high : ResolutionPreset.max,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
+        imageFormatGroup: Platform.isIOS ? ImageFormatGroup.jpeg : null,
       );
       await _cameraController!.initialize();
       try {
@@ -260,14 +259,21 @@ class TicketScanProvider extends ChangeNotifier {
     selectedDate = _parsedResult?.gameDate ?? selectedDate;
     // 날짜 기반 공식 일정의 경기 시간 우선 불러오기
     if (_selectedMatchedGame != null) {
-      final h =
-          _selectedMatchedGame!.dateTimeKst.hour.toString().padLeft(2, '0');
-      final m =
-          _selectedMatchedGame!.dateTimeKst.minute.toString().padLeft(2, '0');
+      final h = _selectedMatchedGame!.dateTimeKst.hour.toString().padLeft(
+        2,
+        '0',
+      );
+      final m = _selectedMatchedGame!.dateTimeKst.minute.toString().padLeft(
+        2,
+        '0',
+      );
       selectedTime = '$h:$m';
     } else if (_matchedGames.isNotEmpty) {
       final h = _matchedGames.first.dateTimeKst.hour.toString().padLeft(2, '0');
-      final m = _matchedGames.first.dateTimeKst.minute.toString().padLeft(2, '0');
+      final m = _matchedGames.first.dateTimeKst.minute.toString().padLeft(
+        2,
+        '0',
+      );
       selectedTime = '$h:$m';
     } else {
       selectedTime = _parsedResult?.gameTime;
@@ -285,8 +291,8 @@ class TicketScanProvider extends ChangeNotifier {
     // 1) ScheduleProvider(정적 CSV + 실시간 Firestore games 통합 데이터) 우선 사용
     final List<ScheduleModel> allSchedules =
         (_scheduleProvider != null && _scheduleProvider.loaded)
-            ? _scheduleProvider.allSchedules
-            : await _scheduleService.loadSchedules();
+        ? _scheduleProvider.allSchedules
+        : await _scheduleService.loadSchedules();
 
     final sameDayGames = allSchedules.where((g) {
       return g.dateTimeKst.year == targetDate.year &&
@@ -359,14 +365,21 @@ class TicketScanProvider extends ChangeNotifier {
     }
     // 경기가 선택되었거나 목록이 있으면 공식 경기 시작 시간으로 갱신
     if (_selectedMatchedGame != null) {
-      final h =
-          _selectedMatchedGame!.dateTimeKst.hour.toString().padLeft(2, '0');
-      final m =
-          _selectedMatchedGame!.dateTimeKst.minute.toString().padLeft(2, '0');
+      final h = _selectedMatchedGame!.dateTimeKst.hour.toString().padLeft(
+        2,
+        '0',
+      );
+      final m = _selectedMatchedGame!.dateTimeKst.minute.toString().padLeft(
+        2,
+        '0',
+      );
       selectedTime = '$h:$m';
     } else if (_matchedGames.isNotEmpty) {
       final h = _matchedGames.first.dateTimeKst.hour.toString().padLeft(2, '0');
-      final m = _matchedGames.first.dateTimeKst.minute.toString().padLeft(2, '0');
+      final m = _matchedGames.first.dateTimeKst.minute.toString().padLeft(
+        2,
+        '0',
+      );
       selectedTime = '$h:$m';
     }
   }
@@ -435,7 +448,7 @@ class TicketScanProvider extends ChangeNotifier {
       gameDate: finalGameDate,
       ticketPrice: price,
       seat: (seat.isNotEmpty && seat != '미지정') ? seat : null,
-      ticketImageFile: _scannedImageFile,
+      ticketImageFile: null,
     );
 
     // 스캔(TickerCameraScanPage) & 결과(TicketScanResultPage) 화면만 닫고
