@@ -107,6 +107,10 @@ class ProfileProvider extends ChangeNotifier {
   final Map<String, String?> _userNicknames = {};
   Map<String, String?> get userNicknames => _userNicknames;
 
+  // 여러 유저 응원팀 캐싱
+  final Map<String, String?> _userTeams = {};
+  Map<String, String?> get userTeams => _userTeams;
+
   final Map<String, StreamSubscription> _subscriptions = {};
 
   // 로그인한 유저 프로필 구독
@@ -127,9 +131,19 @@ class ProfileProvider extends ChangeNotifier {
         );
   }
 
-  // 특정 유저 프로필 구독(피드 전용) - 프로필 이미지와 닉네임 모두 구독
+  // 특정 유저 프로필 구독(피드 전용) - 프로필 이미지, 닉네임, 응원팀 모두 구독
   void subscribeUserProfile(String userId) {
-    if (_subscriptions.containsKey(userId)) return; // 이미 구독 중이면 무시
+    if (_subscriptions.containsKey(userId)) {
+      // Hot Reload 등으로 구독은 이미 있으나 _userTeams가 비어 있는 경우 1회 보완
+      if (!_userTeams.containsKey(userId)) {
+        _userTeams[userId] = null;
+        _userCollection.doc(userId).get().then((doc) {
+          _userTeams[userId] = doc.data()?['team'] as String?;
+          notifyListeners();
+        }).catchError((_) {});
+      }
+      return;
+    }
 
     final sub = _userCollection
         .doc(userId)
@@ -139,6 +153,7 @@ class ProfileProvider extends ChangeNotifier {
             final data = doc.data();
             _userProfiles[userId] = data?['profileImage'] as String?;
             _userNicknames[userId] = data?['userNickName'] as String?;
+            _userTeams[userId] = data?['team'] as String?;
             notifyListeners();
           },
           onError: (e) {
@@ -155,6 +170,7 @@ class ProfileProvider extends ChangeNotifier {
     _subscriptions.remove(userId);
     _userProfiles.remove(userId);
     _userNicknames.remove(userId);
+    _userTeams.remove(userId);
     notifyListeners();
   }
 
@@ -165,6 +181,7 @@ class ProfileProvider extends ChangeNotifier {
     _subscriptions.clear();
     _userProfiles.clear();
     _userNicknames.clear();
+    _userTeams.clear();
   }
 
   @override

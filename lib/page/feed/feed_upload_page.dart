@@ -6,6 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter_link_previewer/flutter_link_previewer.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/meetup_model.dart';
+import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
@@ -54,28 +56,34 @@ class _UploadPageState extends State<FeedUploadPage> {
     return match?.group(0);
   }
 
-  Future<void> _handleUpload({
+  void _handleUpload({
     required UploadProvider uploadProvider,
     required String userNickName,
     required String? name,
-  }) async {
+  }) {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
     FocusScope.of(context).unfocus();
 
-    await uploadProvider.uploadAndSavePost(
+    final hasImage =
+        uploadProvider.images.isNotEmpty || uploadProvider.camera != null;
+    final hasVideo = uploadProvider.video != null;
+    final captionText = _captionController.text;
+
+    uploadProvider.startBackgroundPost(
       userId: currentUser.uid,
       userNickName: userNickName,
       name: name ?? '',
-      text: _captionController.text,
-    );
-
-    await FirebaseAnalytics.instance.logEvent(
-      name: 'feed_upload',
-      parameters: {
-        'has_image': uploadProvider.images.isNotEmpty ? 1 : 0,
-        'has_video': uploadProvider.video != null ? 1 : 0,
+      text: captionText,
+      onCompleted: () {
+        FirebaseAnalytics.instance.logEvent(
+          name: 'feed_upload',
+          parameters: {
+            'has_image': hasImage ? 1 : 0,
+            'has_video': hasVideo ? 1 : 0,
+          },
+        );
       },
     );
 
@@ -433,8 +441,7 @@ class _UploadPageState extends State<FeedUploadPage> {
                                 color: GRAYSCALE_LABEL_950,
                               ),
                               decoration: const InputDecoration(
-                                hintText:
-                                    '오늘 직관 분위기나 야구 이야기를 자유롭게 남겨보세요! (필수)',
+                                hintText: '오늘 직관 분위기나 야구 이야기를 자유롭게 남겨보세요! (필수)',
                                 hintStyle: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
@@ -447,41 +454,94 @@ class _UploadPageState extends State<FeedUploadPage> {
                             ),
                           ),
 
-                          // 직관 모임 첨부 배너
+                          // 직관 모임 첨부 배너 (티켓 스타일 + 해제 가능)
                           if (uploadProvider.meetupId != null) ...[
                             const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: themeColor.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: themeColor.withValues(alpha: 0.2),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.groups_rounded,
-                                    color: themeColor,
-                                    size: 20,
+                            FutureBuilder<MeetupModel?>(
+                              future: context
+                                  .read<MeetupProvider>()
+                                  .getMeetupById(uploadProvider.meetupId!),
+                              builder: (context, snapshot) {
+                                final meetup = snapshot.data;
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 12,
                                   ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      '직관 모임 정보가 게시물에 함께 공유됩니다',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: themeColor,
-                                      ),
+                                  decoration: BoxDecoration(
+                                    color: themeColor.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: themeColor.withValues(alpha: 0.25),
                                     ),
                                   ),
-                                ],
-                              ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 36,
+                                        height: 36,
+                                        decoration: BoxDecoration(
+                                          color: WHITE,
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.groups_rounded,
+                                          color: themeColor,
+                                          size: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              meetup?.title ??
+                                                  '직관 모임 정보가 함께 공유됩니다',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w800,
+                                                color: themeColor,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            if (meetup != null) ...[
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                '${meetup.awayTeam} vs ${meetup.homeTeam} · ${meetup.stadium}',
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: GRAYSCALE_LABEL_600,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      InkWell(
+                                        onTap: () =>
+                                            uploadProvider.setMeetupId(null),
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(4),
+                                          child: Icon(
+                                            Icons.close_rounded,
+                                            size: 18,
+                                            color: themeColor,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
                           ],
 
@@ -690,6 +750,82 @@ class _UploadPageState extends State<FeedUploadPage> {
                                 },
                               ),
                             ),
+                            if (uploadProvider.video != null &&
+                                (uploadProvider.isPreProcessingVideo ||
+                                    uploadProvider
+                                        .videoPreprocessLabel
+                                        .isNotEmpty)) ...[
+                              const SizedBox(height: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: BACKGROUND_COLOR,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: GRAYSCALE_LABEL_200.withValues(
+                                      alpha: 0.7,
+                                    ),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              uploadProvider
+                                                      .isPreProcessingVideo
+                                                  ? Icons.bolt_rounded
+                                                  : Icons.check_circle_rounded,
+                                              size: 14,
+                                              color: themeColor,
+                                            ),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              uploadProvider
+                                                  .videoPreprocessLabel,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: themeColor,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Text(
+                                          '${uploadProvider.videoPreprocessProgress}%',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                            color: GRAYSCALE_LABEL_700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value:
+                                            uploadProvider
+                                                .videoPreprocessProgress /
+                                            100,
+                                        minHeight: 4,
+                                        backgroundColor: GRAYSCALE_LABEL_200,
+                                        color: themeColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ],
                         ],
                       ),
@@ -790,46 +926,85 @@ class _UploadPageState extends State<FeedUploadPage> {
                       ),
                     ],
 
-                    const SizedBox(height: 20),
-
-                    // 하단 피드 업로드 완료 버튼
-                    SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: ElevatedButton(
-                        onPressed: canUpload
-                            ? () => _handleUpload(
-                                uploadProvider: uploadProvider,
-                                userNickName: userNickName,
-                                name: name,
-                              )
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: themeColor,
-                          disabledBackgroundColor: GRAYSCALE_LABEL_300,
-                          elevation: canUpload ? 2 : 0,
-                          shadowColor: themeColor.withValues(alpha: 0.35),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
+                    // 직관모임 첨부 버튼 (피드의 '직관모임 🤝' 필터와 연동)
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () => _showMeetupPickerBottomSheet(
+                        context,
+                        uploadProvider,
+                        themeColor,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
                         ),
-                        child: uploadProvider.isUploading
-                            ? const SizedBox(
-                                height: 22,
-                                width: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  color: WHITE,
-                                ),
-                              )
-                            : const Text(
-                                '피드 업로드 완료',
-                                style: TextStyle(
-                                  color: WHITE,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                        decoration: BoxDecoration(
+                          color: WHITE,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: uploadProvider.meetupId != null
+                                ? themeColor.withValues(alpha: 0.5)
+                                : GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: BLACK.withValues(alpha: 0.03),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: themeColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
                               ),
+                              child: Icon(
+                                Icons.groups_rounded,
+                                color: themeColor,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    uploadProvider.meetupId != null
+                                        ? '첨부된 직관모임 변경하기'
+                                        : '내 직관모임 첨부하기 (선택)',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w800,
+                                      color: GRAYSCALE_LABEL_900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  const Text(
+                                    '모임을 첨부하면 피드의 직관모임 탭에도 함께 노출돼요',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: GRAYSCALE_LABEL_500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              color: GRAYSCALE_LABEL_400,
+                              size: 22,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -837,77 +1012,199 @@ class _UploadPageState extends State<FeedUploadPage> {
               ),
             ),
           ),
-          // 업로드 오버레이 (화면 전체를 덮는 풀스크린)
-          if (uploadProvider.isUploading)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.5),
-                child: Center(
-                  child: Container(
-                    width: 230,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 26,
-                    ),
-                    decoration: BoxDecoration(
-                      color: WHITE,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 24,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 68,
-                              height: 68,
-                              child: CircularProgressIndicator(
-                                value: uploadProvider.uploadProgress > 0
-                                    ? uploadProvider.uploadProgress / 100
-                                    : null,
-                                strokeWidth: 5,
-                                color: themeColor,
-                                backgroundColor: GRAYSCALE_LABEL_200,
-                              ),
-                            ),
-                            Text(
-                              '${uploadProvider.uploadProgress}%',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: GRAYSCALE_LABEL_900,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 18),
-                        Text(
-                          uploadProvider.uploadStatusText.isNotEmpty
-                              ? uploadProvider.uploadStatusText
-                              : '게시물 업로드 중...',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: GRAYSCALE_LABEL_950,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
+    );
+  }
+
+  void _showMeetupPickerBottomSheet(
+    BuildContext context,
+    UploadProvider uploadProvider,
+    Color themeColor,
+  ) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: BACKGROUND_COLOR,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.55,
+          minChildSize: 0.35,
+          maxChildSize: 0.85,
+          expand: false,
+          builder: (_, scrollController) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: GRAYSCALE_LABEL_300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        '참여 중인 직관모임 선택',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: GRAYSCALE_LABEL_950,
+                        ),
+                      ),
+                      if (uploadProvider.meetupId != null)
+                        TextButton(
+                          onPressed: () {
+                            uploadProvider.setMeetupId(null);
+                            Navigator.pop(sheetContext);
+                          },
+                          child: const Text(
+                            '첨부 해제',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: RED_DANGER_TEXT_50,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: StreamBuilder<List<MeetupModel>>(
+                      stream: context
+                          .read<MeetupProvider>()
+                          .getJoinedMeetupStream(currentUser.uid),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return Center(
+                            child: CircularProgressIndicator(color: themeColor),
+                          );
+                        }
+                        final meetups = snapshot.data!;
+                        if (meetups.isEmpty) {
+                          return const Center(
+                            child: Text(
+                              '참여 중인 직관모임이 없습니다.\n직관모임 탭에서 모임을 만들거나 참여해 보세요!',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: GRAYSCALE_LABEL_500,
+                                fontWeight: FontWeight.w600,
+                                height: 1.5,
+                              ),
+                            ),
+                          );
+                        }
+                        return ListView.separated(
+                          controller: scrollController,
+                          itemCount: meetups.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (_, index) {
+                            final m = meetups[index];
+                            final isSelected = uploadProvider.meetupId == m.id;
+                            return InkWell(
+                              onTap: () {
+                                uploadProvider.setMeetupId(m.id);
+                                Navigator.pop(sheetContext);
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: WHITE,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? themeColor
+                                        : GRAYSCALE_LABEL_200,
+                                    width: isSelected ? 1.6 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: themeColor.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        Icons.groups_rounded,
+                                        color: themeColor,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            m.title,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w800,
+                                              color: GRAYSCALE_LABEL_950,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            '${m.awayTeam} vs ${m.homeTeam} · ${m.stadium} (${m.gameDate})',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: GRAYSCALE_LABEL_500,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (isSelected)
+                                      Icon(
+                                        Icons.check_circle_rounded,
+                                        color: themeColor,
+                                        size: 22,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -925,9 +1222,7 @@ class _UploadPageState extends State<FeedUploadPage> {
         decoration: BoxDecoration(
           color: BACKGROUND_COLOR,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: GRAYSCALE_LABEL_200.withValues(alpha: 0.8),
-          ),
+          border: Border.all(color: GRAYSCALE_LABEL_200.withValues(alpha: 0.8)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1169,10 +1464,7 @@ class _UploadPageState extends State<FeedUploadPage> {
 
     return Stack(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: mediaContent,
-        ),
+        ClipRRect(borderRadius: BorderRadius.circular(16), child: mediaContent),
         Positioned(
           bottom: 6,
           left: 6,
@@ -1186,11 +1478,7 @@ class _UploadPageState extends State<FeedUploadPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (isVideo) ...[
-                  const Icon(
-                    Icons.play_arrow_rounded,
-                    color: WHITE,
-                    size: 12,
-                  ),
+                  const Icon(Icons.play_arrow_rounded, color: WHITE, size: 12),
                   const SizedBox(width: 2),
                 ],
                 Text(

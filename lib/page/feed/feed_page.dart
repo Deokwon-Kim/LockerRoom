@@ -17,6 +17,7 @@ import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/block_provider.dart';
+import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
@@ -106,7 +107,7 @@ class _FeedPageState extends State<FeedPage> {
             ),
             const SizedBox(width: 8),
             const Text(
-              '라커룸 피드',
+              '피드',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
@@ -176,9 +177,7 @@ class _FeedPageState extends State<FeedPage> {
                           color: isSelected ? teamColor : BACKGROUND_COLOR,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isSelected
-                                ? teamColor
-                                : GRAYSCALE_LABEL_200,
+                            color: isSelected ? teamColor : GRAYSCALE_LABEL_200,
                           ),
                         ),
                         child: Text(
@@ -199,6 +198,115 @@ class _FeedPageState extends State<FeedPage> {
             ),
           ),
           const Divider(height: 1, color: GRAYSCALE_LABEL_200),
+          // 백그라운드 업로드 진행/실패 배너 (인스타/스레드 스타일)
+          Consumer<UploadProvider>(
+            builder: (context, uploadProvider, _) {
+              if (!uploadProvider.isUploading && !uploadProvider.uploadFailed) {
+                return const SizedBox.shrink();
+              }
+              return Container(
+                width: double.infinity,
+                color: WHITE,
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        if (uploadProvider.uploadFailed)
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            color: RED_DANGER_TEXT_50,
+                            size: 18,
+                          )
+                        else if (uploadProvider.uploadProgress >= 100)
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: teamColor,
+                            size: 18,
+                          )
+                        else
+                          SizedBox(
+                            width: 15,
+                            height: 15,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: teamColor,
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            uploadProvider.uploadStatusText.isNotEmpty
+                                ? uploadProvider.uploadStatusText
+                                : '게시물 업로드 중...',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: uploadProvider.uploadFailed
+                                  ? RED_DANGER_TEXT_50
+                                  : GRAYSCALE_LABEL_900,
+                            ),
+                          ),
+                        ),
+                        if (uploadProvider.uploadFailed) ...[
+                          InkWell(
+                            onTap: () => uploadProvider.retryLastFailedUpload(),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              child: Text(
+                                '다시 시도',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: teamColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              size: 16,
+                              color: GRAYSCALE_LABEL_500,
+                            ),
+                            onPressed: () =>
+                                uploadProvider.dismissUploadError(),
+                          ),
+                        ] else
+                          Text(
+                            '${uploadProvider.uploadProgress}%',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: teamColor,
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (uploadProvider.isUploading) ...[
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: uploadProvider.uploadProgress / 100,
+                          minHeight: 3.5,
+                          backgroundColor: GRAYSCALE_LABEL_100,
+                          color: teamColor,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
           Expanded(
             child: Consumer2<FeedProvider, ProfileProvider>(
               builder: (context, feedProvider, profileProvider, child) {
@@ -418,19 +526,56 @@ class _PostWidgetState extends State<PostWidget> {
                             widget.post.userId,
                           );
                           final nickname =
-                              profileProvider
-                                  .userNicknames[widget.post.userId] ??
+                              profileProvider.userNicknames[widget
+                                  .post
+                                  .userId] ??
                               widget.post.userNickName;
+                          final teamName =
+                              profileProvider.userTeams[widget.post.userId];
+                          final userTeam =
+                              teamName != null && teamName.isNotEmpty
+                              ? context.read<TeamProvider>().findTeamByName(
+                                  teamName,
+                                )
+                              : null;
 
-                          return Text(
-                            nickname,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: BLACK,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          return Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  nickname,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                    color: BLACK,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (teamName != null && teamName.isNotEmpty) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: (userTeam?.color ?? selectedColor)
+                                        .withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    userTeam?.symplename ?? teamName,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: userTeam?.color ?? selectedColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           );
                         },
                       ),
@@ -449,11 +594,7 @@ class _PostWidgetState extends State<PostWidget> {
                 InkWell(
                   borderRadius: BorderRadius.circular(20),
                   onTap: () {
-                    _showPostOptionBottomSheet(
-                      context,
-                      widget.post,
-                      isOwner,
-                    );
+                    _showPostOptionBottomSheet(context, widget.post, isOwner);
                   },
                   child: const Padding(
                     padding: EdgeInsets.all(6.0),
@@ -769,8 +910,10 @@ class _PostWidgetState extends State<PostWidget> {
                   } else {
                     final double sliderHeight = availableWidth * 0.78;
                     final int totalMedia = widget.post.mediaUrls.length;
-                    final int safeIndex =
-                        _currentMediaIndex.clamp(0, totalMedia - 1);
+                    final int safeIndex = _currentMediaIndex.clamp(
+                      0,
+                      totalMedia - 1,
+                    );
 
                     return ClipRRect(
                       borderRadius: BorderRadius.circular(16),
