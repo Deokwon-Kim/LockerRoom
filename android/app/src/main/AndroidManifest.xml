@@ -20,7 +20,7 @@
   
 
     <application
-        android:label="더베이스"
+        android:label="ILU"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
