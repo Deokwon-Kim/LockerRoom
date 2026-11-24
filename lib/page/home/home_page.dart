@@ -20,6 +20,7 @@ import 'package:lockerroom/page/intution_record/ticker_camera_scan_page.dart';
 import 'package:lockerroom/provider/ticket_scan_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
+import 'package:lockerroom/widgets/team_news_section.dart';
 import 'package:lockerroom/page/meetup/meetup_detail_page.dart';
 import 'package:lockerroom/page/meetup/meetup_page.dart';
 import 'package:lockerroom/page/schedule/schedule.dart';
@@ -120,7 +121,9 @@ class _HomePageState extends State<HomePage> {
     return Consumer<TeamProvider>(
       builder: (context, teamProvider, child) {
         final selectedTeam = teamProvider.selectedTeam ?? widget.teamModel;
-        _maybeFetchVideos(selectedTeam);
+        if (teamProvider.selectedTeam != null) {
+          _maybeFetchVideos(teamProvider.selectedTeam!);
+        }
         final statusBarHeight = MediaQuery.of(context).padding.top;
         const headerContentHeight = 84.0;
         const overlapHeight = 24.0;
@@ -195,6 +198,10 @@ class _HomePageState extends State<HomePage> {
 
                             // 3) 나의 직관 리포트 & 원탭 티켓 스캔 카드
                             _buildIntutionRecord(),
+                            const SizedBox(height: 16),
+
+                            // 3-1) 응원팀별 주요뉴스
+                            TeamNewsSection(selectedTeam: selectedTeam),
                             const SizedBox(height: 22),
 
                             // 4) 실시간 팬들의 이야기 (Edge-to-Edge 가로 스크롤)

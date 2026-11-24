@@ -16,11 +16,13 @@ class VideoProvider with ChangeNotifier {
   List<Video> _videos = [];
   final Map<String, String> _channelIdToUploadsId = {};
   final Map<String, _CachedVideos> _cachedTeamVideos = {};
+  int _requestSeq = 0;
 
   bool get isLoading => _isLoading;
   List<Video> get videos => _videos;
 
   Future<void> fetchTeamVideos(TeamModel team, String apiKey) async {
+    final int reqId = ++_requestSeq;
     _isLoading = true;
     notifyListeners();
     try {
@@ -30,6 +32,7 @@ class VideoProvider with ChangeNotifier {
       final now = DateTime.now();
       if (cached != null &&
           now.difference(cached.fetchedAt) < const Duration(minutes: 60)) {
+        if (reqId != _requestSeq) return;
         _videos = cached.videos;
         _isLoading = false;
         notifyListeners();
@@ -41,6 +44,7 @@ class VideoProvider with ChangeNotifier {
         team.channelId,
         apiKey,
       );
+      if (reqId != _requestSeq) return;
       if (uploadsId == null) {
         _videos = [];
         _isLoading = false;
@@ -56,6 +60,7 @@ class VideoProvider with ChangeNotifier {
           '&playlistId=$uploadsId'
           '&key=$apiKey';
       final response = await http.get(Uri.parse(playlistApi));
+      if (reqId != _requestSeq) return;
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -79,11 +84,14 @@ class VideoProvider with ChangeNotifier {
         debugPrint('API Error : ${response.body}');
       }
     } catch (e) {
+      if (reqId != _requestSeq) return;
       _videos = [];
       debugPrint('비디오 패치 에러: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (reqId == _requestSeq) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 

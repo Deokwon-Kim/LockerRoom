@@ -334,7 +334,11 @@ class FeedProvider extends ChangeNotifier {
   // 게시글 삭제 시 해당 게시글의 모든 댓글도 함께 삭제
   Future<void> deletePost(PostModel post) async {
     for (final url in post.mediaUrls) {
-      await FirebaseStorage.instance.refFromURL(url).delete();
+      try {
+        await FirebaseStorage.instance.refFromURL(url).delete();
+      } catch (_) {
+        // 이미 삭제되었거나 접근 불가한 미디어 파일이 있어도 게시글 삭제 진행
+      }
     }
     final firestore = FirebaseFirestore.instance;
     final postRef = _postCollection.doc(post.id);

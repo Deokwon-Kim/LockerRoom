@@ -1581,23 +1581,35 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                 SizedBox(height: 10),
                 GestureDetector(
                   onTap: () {
+                    final pageContext = this.context;
                     Navigator.pop(context); // 바텀시트 닫기
                     showDialog(
-                      context: context,
-                      builder: (context) => ConfirmationDialog(
+                      context: pageContext,
+                      builder: (dialogContext) => ConfirmationDialog(
                         title: '삭제 확인',
                         content: '게시물을 삭제 하시겠습니까?',
                         onConfirm: () async {
-                          await feedProvider.deletePost(_currentPost);
-                          toastification.show(
-                            context: context,
-                            type: ToastificationType.success,
-                            alignment: Alignment.bottomCenter,
-                            autoCloseDuration: Duration(seconds: 2),
-                            title: Text('게시물을 삭제했습니다'),
-                          );
-                          if (!mounted) return;
-                          Navigator.pop(context);
+                          try {
+                            await feedProvider.deletePost(_currentPost);
+                            if (!mounted) return;
+                            toastification.show(
+                              context: pageContext,
+                              type: ToastificationType.success,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: const Duration(seconds: 2),
+                              title: const Text('게시물을 삭제했습니다'),
+                            );
+                            Navigator.of(pageContext).pop();
+                          } catch (_) {
+                            if (!mounted) return;
+                            toastification.show(
+                              context: pageContext,
+                              type: ToastificationType.error,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: const Duration(seconds: 2),
+                              title: const Text('게시물 삭제에 실패했습니다'),
+                            );
+                          }
                         },
                       ),
                     );
