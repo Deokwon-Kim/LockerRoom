@@ -42,6 +42,8 @@ import 'package:lockerroom/provider/feed_edit_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:lockerroom/provider/food_store_provider.dart';
+import 'package:lockerroom/provider/seat_view_provider.dart';
+import 'package:lockerroom/provider/team_news_provider.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/marketFeedEdit_provider.dart';
@@ -206,6 +208,8 @@ Future<void> main() async {
           ChangeNotifierProvider(create: (context) => TabProvider()),
           ChangeNotifierProvider(create: (context) => ChatProvider()),
           ChangeNotifierProvider(create: (context) => WeatherProvider()),
+          ChangeNotifierProvider(create: (context) => TeamNewsProvider()),
+          ChangeNotifierProvider(create: (context) => SeatViewProvider()),
         ],
         child: const MyApp(),
       ),

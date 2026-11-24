@@ -4,6 +4,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/page/intution_record/analysis_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/page/intution_record/win_rate_page.dart';
+import 'package:lockerroom/page/seat_view/seat_view_feed_page.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/widgets/svg_icon.dart';
@@ -53,7 +54,13 @@ class _IntutionTabBarState extends State<IntutionTabBar> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = [WinRatePage(), IntutionRecordListPage(), AnalysisPage()];
+    final initialStadium = context.read<TeamProvider>().selectedTeam?.stadium;
+    final pages = [
+      WinRatePage(),
+      IntutionRecordListPage(),
+      AnalysisPage(),
+      SeatViewFeedPage(initialStadium: initialStadium),
+    ];
     return ChangeNotifierProvider(
       create: (_) => IntutionRecordListProvider()..subscribe(),
       child: Scaffold(
@@ -108,6 +115,11 @@ class _IntutionTabBarState extends State<IntutionTabBar> {
                         icon: CupertinoIcons.graph_circle_fill,
                         label: '분석',
                         index: 2,
+                      ),
+                      _buildNavItem(
+                        icon: Icons.photo_camera_front_rounded,
+                        label: '시야',
+                        index: 3,
                       ),
                     ],
                   ),
