@@ -6,12 +6,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/attendance_model.dart';
 import 'package:lockerroom/model/schedule_model.dart';
+import 'package:lockerroom/page/intution_record/_ticket_stub_tile.dart';
 import 'package:lockerroom/page/intution_record/ticker_camera_scan_page.dart';
 import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/schdule_Provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/ticket_scan_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
+import 'package:lockerroom/widgets/stadium_receipt_card.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -101,6 +103,9 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
   late final TextEditingController _memoController;
   late final TextEditingController _seatController;
   late final TextEditingController _ticketPriceController;
+  late final TextEditingController _foodCostController;
+  List<String> _foodItems = [];
+  Map<String, int> _foodPrices = {};
   late final Future<AttendanceModel?> _attendanceFuture;
   bool _controllersInitialized = false;
   AttendanceModel? _loadedAttendance;
@@ -134,6 +139,17 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
           ? widget.attendanceModel!.ticketPrice.toString()
           : '',
     );
+    _foodCostController = TextEditingController(
+      text:
+          (widget.attendanceModel?.foodCost != null &&
+              widget.attendanceModel!.foodCost! > 0)
+          ? widget.attendanceModel!.foodCost.toString()
+          : '',
+    );
+    _foodItems = List<String>.from(widget.attendanceModel?.foodItems ?? []);
+    _foodPrices = Map<String, int>.from(
+      widget.attendanceModel?.foodPrices ?? {},
+    );
   }
 
   @override
@@ -143,6 +159,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
     _memoController.dispose();
     _seatController.dispose();
     _ticketPriceController.dispose();
+    _foodCostController.dispose();
     _newImagesPageController.dispose();
     _existingImagesPageController.dispose();
     _currentImageIndex.dispose();
@@ -160,9 +177,43 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
           (attendance.ticketPrice != null && attendance.ticketPrice! > 0)
           ? attendance.ticketPrice.toString()
           : '';
+      _foodCostController.text =
+          (attendance.foodCost != null && attendance.foodCost! > 0)
+          ? attendance.foodCost.toString()
+          : '';
+      _foodItems = List<String>.from(attendance.foodItems);
+      _foodPrices = Map<String, int>.from(attendance.foodPrices);
       _controllersInitialized = true;
     }
     _loadedAttendance = attendance;
+  }
+
+  Future<void> _confirmAndDelete(AttendanceModel attendance) async {
+    final confirmed = await showDeleteAttendanceConfirmDialog(context);
+    if (!confirmed || !mounted) return;
+
+    final ok = await context.read<IntutionRecordProvider>().deleteRecord(
+      attendance,
+    );
+    if (!mounted) return;
+    if (ok) {
+      toastification.show(
+        context: context,
+        alignment: Alignment.bottomCenter,
+        type: ToastificationType.success,
+        autoCloseDuration: const Duration(seconds: 2),
+        title: const Text('직관기록이 삭제되었습니다'),
+      );
+      Navigator.of(context).pop(true);
+    } else {
+      toastification.show(
+        context: context,
+        alignment: Alignment.bottomCenter,
+        type: ToastificationType.error,
+        autoCloseDuration: const Duration(seconds: 2),
+        title: const Text('직관기록 삭제에 실패했습니다'),
+      );
+    }
   }
 
   Future<void> _scanTicketForSeatAndPrice() async {
@@ -261,6 +312,8 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
     final parsedPrice =
         int.tryParse(_ticketPriceController.text.replaceAll(',', '').trim()) ??
         0;
+    final parsedFoodCost =
+        int.tryParse(_foodCostController.text.replaceAll(',', '').trim()) ?? 0;
 
     final success = await irp.updateRecord(
       gameId: widget.gameId,
@@ -269,6 +322,9 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
       newMemo: _memoController.text.trim(),
       newSeat: _seatController.text.trim(),
       newTicketPrice: parsedPrice,
+      newFoodCost: parsedFoodCost,
+      newFoodItems: _foodItems,
+      newFoodPrices: _foodPrices,
       newImages: irp.image.isNotEmpty ? irp.image : null,
       oldImageUrls: _loadedAttendance?.imageUrls,
     );
@@ -416,33 +472,61 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                           ),
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () => setState(() => _isEditing = true),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.edit_outlined, size: 14, color: WHITE),
-                              SizedBox(width: 4),
-                              Text(
-                                '수정',
-                                style: TextStyle(
-                                  color: WHITE,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () => _confirmAndDelete(attendance),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 7,
                               ),
-                            ],
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.45),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Icon(
+                                Icons.delete_outline_rounded,
+                                size: 17,
+                                color: Color(0xFFFF8A80),
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => setState(() => _isEditing = true),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.45),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.edit_outlined,
+                                    size: 14,
+                                    color: WHITE,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    '수정',
+                                    style: TextStyle(
+                                      color: WHITE,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -704,6 +788,40 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                             ),
                           ],
                         ),
+                        if (attendance.foodItems.isNotEmpty ||
+                            (attendance.foodCost ?? 0) > 0) ...[
+                          const Divider(height: 20, color: GRAYSCALE_LABEL_100),
+                          Row(
+                            children: [
+                              const SizedBox(
+                                width: 68,
+                                child: Text(
+                                  '구장 먹거리',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: GRAYSCALE_LABEL_500,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  [
+                                    if (attendance.foodItems.isNotEmpty)
+                                      attendance.foodItems.join('·'),
+                                    if ((attendance.foodCost ?? 0) > 0)
+                                      _formatPrice(attendance.foodCost!),
+                                  ].join(' · '),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: GRAYSCALE_LABEL_950,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -1663,6 +1781,54 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                               prefixIcon: Icons.confirmation_number_outlined,
                               suffixText: '원',
                             ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildSectionTitle('구장 먹거리', isOptional: true),
+                          const SizedBox(height: 10),
+                          StadiumFoodSelector(
+                            selectedItems: _foodItems,
+                            itemPrices: _foodPrices,
+                            onToggleItem: (item) {
+                              setState(() {
+                                if (_foodItems.contains(item)) {
+                                  _foodItems.remove(item);
+                                  _foodPrices.remove(item);
+                                  final total = _foodPrices.values.fold<int>(
+                                    0,
+                                    (sum, v) => sum + v,
+                                  );
+                                  _foodCostController.text = total > 0
+                                      ? '$total'
+                                      : '';
+                                } else {
+                                  _foodItems.add(item);
+                                }
+                              });
+                            },
+                            onAddCustomItem: (item) {
+                              setState(() {
+                                if (!_foodItems.contains(item)) {
+                                  _foodItems.add(item);
+                                }
+                              });
+                            },
+                            onItemPriceChanged: (item, price) {
+                              setState(() {
+                                if (price > 0) {
+                                  _foodPrices[item] = price;
+                                } else {
+                                  _foodPrices.remove(item);
+                                }
+                                final total = _foodPrices.values.fold<int>(
+                                  0,
+                                  (sum, v) => sum + v,
+                                );
+                                _foodCostController.text = total > 0
+                                    ? '$total'
+                                    : '';
+                              });
+                            },
+                            costController: _foodCostController,
                           ),
                           const SizedBox(height: 20),
                           _buildSectionTitle('메모', isOptional: true),

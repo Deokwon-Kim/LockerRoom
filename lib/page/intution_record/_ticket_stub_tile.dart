@@ -359,6 +359,7 @@ class VerticalTicketPreviewDialog extends StatelessWidget {
   final String myTeam;
   final String oppTeam;
   final VoidCallback onOpenDetail;
+  final VoidCallback? onDelete;
 
   const VerticalTicketPreviewDialog({
     super.key,
@@ -373,6 +374,7 @@ class VerticalTicketPreviewDialog extends StatelessWidget {
     required this.myTeam,
     required this.oppTeam,
     required this.onOpenDetail,
+    this.onDelete,
   });
 
   String _formatPrice(dynamic raw) {
@@ -652,27 +654,60 @@ class VerticalTicketPreviewDialog extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 46,
-                        child: ElevatedButton(
-                          onPressed: onOpenDetail,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: recordedTeamColor,
-                            foregroundColor: WHITE,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      Row(
+                        children: [
+                          if (onDelete != null) ...[
+                            SizedBox(
+                              height: 46,
+                              child: OutlinedButton(
+                                onPressed: onDelete,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.redAccent,
+                                  side: const BorderSide(
+                                    color: Colors.redAccent,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  '삭제',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                          ],
+                          Expanded(
+                            child: SizedBox(
+                              height: 46,
+                              child: ElevatedButton(
+                                onPressed: onOpenDetail,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: recordedTeamColor,
+                                  foregroundColor: WHITE,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  '상세페이지 보기',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                          child: const Text(
-                            '상세페이지 보기',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
@@ -684,6 +719,51 @@ class VerticalTicketPreviewDialog extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 직관기록 삭제 전 확인 팝업
+Future<bool> showDeleteAttendanceConfirmDialog(BuildContext context) async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: WHITE,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text(
+        '직관기록 삭제',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+      ),
+      content: const Text(
+        '이 직관기록을 삭제할까요?\n삭제한 기록과 사진은 복구할 수 없습니다.',
+        style: TextStyle(
+          fontSize: 13.5,
+          color: GRAYSCALE_LABEL_700,
+          height: 1.45,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text(
+            '취소',
+            style: TextStyle(color: GRAYSCALE_LABEL_600),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.redAccent,
+            foregroundColor: WHITE,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          child: const Text('삭제', style: TextStyle(fontWeight: FontWeight.w700)),
+        ),
+      ],
+    ),
+  );
+  return result ?? false;
 }
 
 class _MetaCell extends StatelessWidget {

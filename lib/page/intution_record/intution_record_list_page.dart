@@ -10,10 +10,12 @@ import 'package:lockerroom/page/intution_record/intution_record_detail_page.dart
 import 'package:lockerroom/page/intution_record/intution_record_upload_page.dart';
 import 'package:lockerroom/page/intution_record/ticker_camera_scan_page.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
+import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/schdule_Provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/ticket_scan_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:toastification/toastification.dart';
 
 class IntutionRecordListPage extends StatefulWidget {
   const IntutionRecordListPage({super.key});
@@ -61,6 +63,25 @@ class _IntutionRecordListPageState extends State<IntutionRecordListPage> {
       memo: data['memo'],
       createdAt: _toDateTime(data['createdAt']),
       updatedAt: _toDateTime(data['updatedAt']),
+      ticketPrice: data['ticketPrice'] is int
+          ? data['ticketPrice'] as int
+          : int.tryParse('${data['ticketPrice']}'),
+      seat: data['seat'] as String?,
+      seatType: data['seatType'] as String?,
+      foodCost: data['foodCost'] is int
+          ? data['foodCost'] as int
+          : int.tryParse('${data['foodCost']}'),
+      foodItems: data['foodItems'] is List
+          ? List<String>.from(data['foodItems'])
+          : const [],
+      foodPrices: data['foodPrices'] is Map
+          ? (data['foodPrices'] as Map).map(
+              (k, v) => MapEntry(
+                k.toString(),
+                v is int ? v : int.tryParse('$v') ?? 0,
+              ),
+            )
+          : const {},
     );
   }
 
@@ -259,6 +280,34 @@ class _IntutionRecordListPageState extends State<IntutionRecordListPage> {
                                                   IntutionRecordDetailPage(
                                                     gameId: d['gameId'],
                                                   ),
+                                            ),
+                                          );
+                                        },
+                                        onDelete: () async {
+                                          final confirmed =
+                                              await showDeleteAttendanceConfirmDialog(
+                                                dialogContext,
+                                              );
+                                          if (!confirmed || !context.mounted) {
+                                            return;
+                                          }
+                                          Navigator.pop(dialogContext);
+                                          final ok = await context
+                                              .read<IntutionRecordProvider>()
+                                              .deleteRecord(attendance);
+                                          if (!context.mounted) return;
+                                          toastification.show(
+                                            context: context,
+                                            type: ok
+                                                ? ToastificationType.success
+                                                : ToastificationType.error,
+                                            autoCloseDuration: const Duration(
+                                              seconds: 2,
+                                            ),
+                                            title: Text(
+                                              ok
+                                                  ? '직관기록이 삭제되었습니다'
+                                                  : '직관기록 삭제에 실패했습니다',
                                             ),
                                           );
                                         },
