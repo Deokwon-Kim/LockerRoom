@@ -19,6 +19,9 @@ class AttendanceModel {
   final int? ticketPrice;
   final String? seat;
   final String? seatType;
+  final int? foodCost;
+  final List<String> foodItems;
+  final Map<String, int> foodPrices;
 
   AttendanceModel({
     required this.gameId,
@@ -39,6 +42,9 @@ class AttendanceModel {
     this.ticketPrice,
     this.seat,
     this.seatType,
+    this.foodCost,
+    this.foodItems = const [],
+    this.foodPrices = const {},
   });
 
   // Firestore DocumentSnapshot에서 모델로 변환
@@ -68,6 +74,24 @@ class AttendanceModel {
         ? data['ticketPrice'] as int
         : int.tryParse('${data['ticketPrice']}');
 
+    final int? foodCost = data['foodCost'] is int
+        ? data['foodCost'] as int
+        : int.tryParse('${data['foodCost']}');
+
+    final List<String> foodItems = data['foodItems'] is List
+        ? List<String>.from(data['foodItems'])
+        : const [];
+
+    final Map<String, int> foodPrices = {};
+    if (data['foodPrices'] is Map) {
+      (data['foodPrices'] as Map).forEach((k, v) {
+        final parsed = v is int ? v : int.tryParse('$v') ?? 0;
+        if (parsed > 0) {
+          foodPrices[k.toString()] = parsed;
+        }
+      });
+    }
+
     return AttendanceModel(
       gameId: data['gameId'] ?? '',
       season: data['season'] ?? 0,
@@ -91,6 +115,9 @@ class AttendanceModel {
       ticketPrice: ticketPrice,
       seat: data['seat'] as String?,
       seatType: data['seatType'] as String?,
+      foodCost: foodCost,
+      foodItems: foodItems,
+      foodPrices: foodPrices,
     );
   }
 
@@ -160,6 +187,9 @@ class AttendanceModel {
       if (ticketPrice != null) 'ticketPrice': ticketPrice,
       if (seat != null) 'seat': seat,
       if (seatType != null) 'seatType': seatType,
+      if (foodCost != null) 'foodCost': foodCost,
+      if (foodItems.isNotEmpty) 'foodItems': foodItems,
+      if (foodPrices.isNotEmpty) 'foodPrices': foodPrices,
     };
   }
 
@@ -180,6 +210,12 @@ class AttendanceModel {
     String? memo,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? ticketPrice,
+    String? seat,
+    String? seatType,
+    int? foodCost,
+    List<String>? foodItems,
+    Map<String, int>? foodPrices,
   }) {
     return AttendanceModel(
       gameId: gameId ?? this.gameId,
@@ -197,6 +233,12 @@ class AttendanceModel {
       memo: memo ?? this.memo,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      ticketPrice: ticketPrice ?? this.ticketPrice,
+      seat: seat ?? this.seat,
+      seatType: seatType ?? this.seatType,
+      foodCost: foodCost ?? this.foodCost,
+      foodItems: foodItems ?? this.foodItems,
+      foodPrices: foodPrices ?? this.foodPrices,
     );
   }
 }

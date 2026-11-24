@@ -13,6 +13,7 @@ import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
+import 'package:lockerroom/widgets/base_running_diamond.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -416,6 +417,11 @@ class _WinRatePageState extends State<WinRatePage> {
                   if (totalGames > 0) ...[
                     const SizedBox(height: 16),
 
+                    // ILU 1루부터 홈까지 베이스 러닝 챌린지
+                    BaseRunningDiamond(totalGames: totalGames),
+
+                    const SizedBox(height: 16),
+
                     // 3. 최근 직관 흐름 & 최다 연승 기록 카드
                     _buildStreakAndRecentFormCard(
                       teamColor: teamColor,
@@ -536,11 +542,7 @@ class _WinRatePageState extends State<WinRatePage> {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: brightAccent.withValues(alpha: 0.45)),
               ),
-              child: Icon(
-                Icons.route_rounded,
-                color: brightAccent,
-                size: 24,
-              ),
+              child: Icon(Icons.route_rounded, color: brightAccent, size: 24),
             ),
             const SizedBox(width: 14),
             Expanded(

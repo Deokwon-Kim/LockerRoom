@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/widgets/stadium_receipt_card.dart';
 import 'package:provider/provider.dart';
 
 class AnalysisPage extends StatefulWidget {
@@ -320,9 +321,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Expanded(
-                child: _buildKpiItem('총 직관', '$total경기', teamColor),
-              ),
+              Expanded(child: _buildKpiItem('총 직관', '$total경기', teamColor)),
               Expanded(
                 child: _buildKpiItem(
                   '총 승·무·패',
@@ -330,9 +329,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                   teamColor,
                 ),
               ),
-              Expanded(
-                child: _buildKpiItem('직관 승률', '$winRate%', teamColor),
-              ),
+              Expanded(child: _buildKpiItem('직관 승률', '$winRate%', teamColor)),
               Expanded(
                 child: _buildKpiItem(
                   '총 티켓비용',
@@ -423,6 +420,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
             label: Text(cat),
             selected: isSelected,
             selectedColor: teamColor,
+            checkmarkColor: WHITE,
             backgroundColor: WHITE,
             labelStyle: TextStyle(
               fontSize: 13,
@@ -842,32 +840,44 @@ class _CostAnalysis extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final format = NumberFormat('#,###');
+    final selectedYear = context
+        .watch<IntutionRecordListProvider>()
+        .selectedYear;
     int totalCost = 0;
     int costRecordCount = 0;
     int winCount = 0;
+    int lossCount = 0;
     final Map<String, int> stadiumCost = {};
 
     for (final r in records) {
-      final price = r['ticketPrice'] is int
+      final ticketPrice = r['ticketPrice'] is int
           ? r['ticketPrice'] as int
-          : int.tryParse('${r['ticketPrice']}');
-      if (price != null && price > 0) {
-        totalCost += price;
+          : int.tryParse('${r['ticketPrice']}') ?? 0;
+      final foodCost = r['foodCost'] is int
+          ? r['foodCost'] as int
+          : int.tryParse('${r['foodCost']}') ?? 0;
+      final gameTotal = ticketPrice + foodCost;
+      if (gameTotal > 0) {
+        totalCost += gameTotal;
         costRecordCount++;
 
         final stadium = r['stadium'] ?? '기타 구장';
-        stadiumCost[stadium] = (stadiumCost[stadium] ?? 0) + price;
+        stadiumCost[stadium] = (stadiumCost[stadium] ?? 0) + gameTotal;
       }
 
       final my = _AnalysisPageState._parseScore(r['myScore']) ?? 0;
       final opp = _AnalysisPageState._parseScore(r['opponentScore']) ?? 0;
-      if (my > opp) winCount++;
+      if (my > opp) {
+        winCount++;
+      } else if (my < opp) {
+        lossCount++;
+      }
     }
 
     if (costRecordCount == 0) {
       return const Center(
         child: Text(
-          '티켓 가격이 기록된 경기가 없습니다.\n티켓 스캔을 통해 가격을 기록해보세요!',
+          '티켓 가격이나 먹거리 비용이 기록된 경기가 없습니다.\n직관 기록 시 티켓·먹거리 비용을 입력해보세요!',
           textAlign: TextAlign.center,
           style: TextStyle(color: GRAYSCALE_LABEL_500, fontSize: 14),
         ),
@@ -882,6 +892,13 @@ class _CostAnalysis extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        StadiumReceiptCard(
+          records: records,
+          selectedYear: selectedYear,
+          wins: winCount,
+          losses: lossCount,
+        ),
+        const SizedBox(height: 14),
         Row(
           children: [
             Expanded(

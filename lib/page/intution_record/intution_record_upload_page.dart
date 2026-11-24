@@ -8,6 +8,7 @@ import 'package:toastification/toastification.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lockerroom/model/scanned_ticket_data.dart';
+import 'package:lockerroom/widgets/stadium_receipt_card.dart';
 
 class IntutionRecordUploadPage extends StatefulWidget {
   final ScannedTicketData? initialScanData;
@@ -983,6 +984,17 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                           ),
                         ),
                         const SizedBox(height: 22),
+                        _buildSectionTitle('구장 먹거리', isOptional: true),
+                        const SizedBox(height: 10),
+                        StadiumFoodSelector(
+                          selectedItems: intutionProvider.foodItems,
+                          itemPrices: intutionProvider.foodPrices,
+                          onToggleItem: intutionProvider.toggleFoodItem,
+                          onAddCustomItem: intutionProvider.addFoodItem,
+                          onItemPriceChanged: intutionProvider.setFoodItemPrice,
+                          costController: intutionProvider.foodCostController,
+                        ),
+                        const SizedBox(height: 22),
                         _buildSectionTitle('메모', isOptional: true),
                         const SizedBox(height: 10),
                         TextField(
@@ -994,6 +1006,39 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                           style: const TextStyle(fontSize: 15, height: 1.5),
                           decoration: _buildInputDecoration(
                             hintText: '오늘 경기에서 기억에 남는 순간을 기록해보세요',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: WHITE,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: GRAYSCALE_LABEL_200),
+                          ),
+                          child: SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            activeThumbColor: ACCENT_CORAL,
+                            title: const Text(
+                              '👀 좌석 시야 게시판에 공유하기',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: GRAYSCALE_LABEL_950,
+                              ),
+                            ),
+                            subtitle: const Text(
+                              '사진과 좌석 정보를 입력하면 다른 팬에게도 시야가 공유됩니다',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: GRAYSCALE_LABEL_500,
+                              ),
+                            ),
+                            value: intutionProvider.shareSeatView,
+                            onChanged: intutionProvider.setShareSeatView,
                           ),
                         ),
                       ],

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lockerroom/model/attendance_model.dart';
 import 'package:lockerroom/model/schedule_model.dart';
+import 'package:lockerroom/model/seat_view_model.dart';
 import 'package:lockerroom/provider/schdule_Provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
@@ -19,6 +20,60 @@ class IntutionRecordProvider extends ChangeNotifier {
   final TextEditingController memoController = TextEditingController();
   final TextEditingController ticketPriceController = TextEditingController();
   final TextEditingController seatController = TextEditingController();
+  final TextEditingController foodCostController = TextEditingController();
+
+  final List<String> _foodItems = [];
+  final Map<String, int> _foodPrices = {};
+  bool _shareSeatView = true;
+
+  List<String> get foodItems => List.unmodifiable(_foodItems);
+  Map<String, int> get foodPrices => Map.unmodifiable(_foodPrices);
+  bool get shareSeatView => _shareSeatView;
+
+  void setShareSeatView(bool value) {
+    _shareSeatView = value;
+    notifyListeners();
+  }
+
+  void toggleFoodItem(String item) {
+    if (_foodItems.contains(item)) {
+      _foodItems.remove(item);
+      _foodPrices.remove(item);
+      _syncFoodCostFromItems();
+    } else {
+      _foodItems.add(item);
+    }
+    notifyListeners();
+  }
+
+  void addFoodItem(String item) {
+    final trimmed = item.trim();
+    if (trimmed.isNotEmpty && !_foodItems.contains(trimmed)) {
+      _foodItems.add(trimmed);
+      notifyListeners();
+    }
+  }
+
+  void setFoodItemPrice(String item, int price) {
+    if (price > 0) {
+      _foodPrices[item] = price;
+    } else {
+      _foodPrices.remove(item);
+    }
+    _syncFoodCostFromItems();
+    notifyListeners();
+  }
+
+  void _syncFoodCostFromItems() {
+    if (_foodPrices.isEmpty) {
+      if (_foodItems.isNotEmpty) {
+        foodCostController.text = '';
+      }
+      return;
+    }
+    final total = _foodPrices.values.fold<int>(0, (sum, v) => sum + v);
+    foodCostController.text = total > 0 ? '$total' : '';
+  }
 
   bool _isLoading = false;
   bool _saving = false;
@@ -70,6 +125,7 @@ class IntutionRecordProvider extends ChangeNotifier {
     memoController.dispose();
     ticketPriceController.dispose();
     seatController.dispose();
+    foodCostController.dispose();
     super.dispose();
   }
 
@@ -535,6 +591,11 @@ class IntutionRecordProvider extends ChangeNotifier {
         seat: seatController.text.trim().isNotEmpty
             ? seatController.text.trim()
             : null,
+        foodCost:
+            int.tryParse(foodCostController.text.replaceAll(',', '').trim()) ??
+            0,
+        foodItems: List<String>.from(_foodItems),
+        foodPrices: Map<String, int>.from(_foodPrices),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -545,6 +606,31 @@ class IntutionRecordProvider extends ChangeNotifier {
           .collection('attendances')
           .doc(g.gameId)
           .set(attendance.toMap(), SetOptions(merge: true));
+
+      // 좌석 시야 게시판 공유 토글이 켜져 있고 좌석·사진이 있으면 공용 seat_views에도 등록
+      if (_shareSeatView &&
+          imageUrls.isNotEmpty &&
+          seatController.text.trim().isNotEmpty) {
+        final seatStr = seatController.text.trim();
+        final seatView = SeatViewModel(
+          id: '',
+          userId: user.uid,
+          userNickName: user.displayName ?? '야구팬',
+          userProfileImage: user.photoURL,
+          stadium: SeatViewModel.normalizeStadium(g.stadium),
+          zone: SeatViewModel.inferZone(seatStr),
+          seatText: seatStr,
+          blockNumber: SeatViewModel.extractBlock(seatStr),
+          imageUrls: imageUrls,
+          review: memoController.text.trim(),
+          tags: const [],
+          likedBy: const [],
+          createdAt: DateTime.now(),
+        );
+        await FirebaseFirestore.instance
+            .collection('seat_views')
+            .add(seatView.toMap());
+      }
 
       _saveProgress = 100;
       _saveStatusText = '저장 완료!';
@@ -559,6 +645,9 @@ class IntutionRecordProvider extends ChangeNotifier {
       memoController.clear();
       ticketPriceController.clear();
       seatController.clear();
+      foodCostController.clear();
+      _foodItems.clear();
+      _foodPrices.clear();
       _selectedImage = null;
       _images = [];
       notifyListeners();
@@ -658,6 +747,9 @@ class IntutionRecordProvider extends ChangeNotifier {
     String? newMemo,
     String? newSeat,
     int? newTicketPrice,
+    int? newFoodCost,
+    List<String>? newFoodItems,
+    Map<String, int>? newFoodPrices,
     List<File>? newImages,
     List<String>? oldImageUrls,
   }) async {
@@ -743,6 +835,18 @@ class IntutionRecordProvider extends ChangeNotifier {
 
       if (newTicketPrice != null) {
         updateData['ticketPrice'] = newTicketPrice;
+      }
+
+      if (newFoodCost != null) {
+        updateData['foodCost'] = newFoodCost;
+      }
+
+      if (newFoodItems != null) {
+        updateData['foodItems'] = newFoodItems;
+      }
+
+      if (newFoodPrices != null) {
+        updateData['foodPrices'] = newFoodPrices;
       }
 
       if (imageUrls.isNotEmpty) {
