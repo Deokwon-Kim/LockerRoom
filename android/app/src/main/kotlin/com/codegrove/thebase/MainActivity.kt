@@ -19,6 +19,7 @@ import java.util.concurrent.Executors
 
 class MainActivity : FlutterActivity() {
   private val channelName = "com.codegrove.thebase/recap_video"
+  private val ceremonyChannelName = "com.codegrove.thebase/ceremony_video"
   private val encodeExecutor = Executors.newSingleThreadExecutor()
   private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -64,6 +65,153 @@ class MainActivity : FlutterActivity() {
           else -> result.notImplemented()
         }
       }
+
+    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ceremonyChannelName)
+      .setMethodCallHandler { call, result ->
+        if (call.method == "encodeCeremonyVideo") {
+          val framesDir = call.argument<String>("framesDir")
+          val outputPath = call.argument<String>("outputPath")
+          val audioPath = call.argument<String>("audioPath")
+          val fpsArg = call.argument<Int>("fps") ?: 24
+          if (framesDir.isNullOrEmpty() || outputPath.isNullOrEmpty()) {
+            result.error("INVALID_ARGS", "framesDir 및 outputPath가 필요합니다.", null)
+          } else {
+            encodeCeremonyVideo(framesDir, audioPath, fpsArg.coerceAtLeast(1), outputPath, result)
+          }
+        } else {
+          result.notImplemented()
+        }
+      }
+  }
+
+  private fun encodeCeremonyVideo(
+    framesDir: String,
+    audioPath: String?,
+    fpsArg: Int,
+    finalPath: String,
+    result: MethodChannel.Result
+  ) {
+    encodeExecutor.execute {
+      var codec: MediaCodec? = null
+      var surface: Surface? = null
+      var muxer: MediaMuxer? = null
+      var localMuxerStarted = false
+      var localTrackIndex = -1
+      var localFrameIndex = 0L
+
+      try {
+        val dir = File(framesDir)
+        val frameFiles = dir.listFiles { f ->
+          f.isFile && f.name.endsWith(".png", ignoreCase = true)
+        }?.sortedBy { it.name } ?: emptyList()
+
+        if (frameFiles.isEmpty()) {
+          mainHandler.post { result.error("NO_FRAMES", "유효한 PNG 프레임이 없습니다.", null) }
+          return@execute
+        }
+
+        val boundsOpts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(frameFiles.first().absolutePath, boundsOpts)
+        val width = ((boundsOpts.outWidth / 2) * 2).coerceAtLeast(2)
+        val height = ((boundsOpts.outHeight / 2) * 2).coerceAtLeast(2)
+
+        val hasAudio = !audioPath.isNullOrEmpty() && File(audioPath).exists()
+        val rawPath = if (hasAudio) "$finalPath.raw.mp4" else finalPath
+
+        File(rawPath).takeIf { it.exists() }?.delete()
+        File(finalPath).takeIf { it.exists() }?.delete()
+
+        val format = MediaFormat.createVideoFormat("video/avc", width, height).apply {
+          setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
+          setInteger(MediaFormat.KEY_BIT_RATE, 3_500_000)
+          setInteger(MediaFormat.KEY_FRAME_RATE, fpsArg)
+          setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1)
+        }
+
+        codec = MediaCodec.createEncoderByType("video/avc").apply {
+          configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+        }
+        surface = codec.createInputSurface()
+        codec.start()
+
+        muxer = MediaMuxer(rawPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+        val bufferInfo = MediaCodec.BufferInfo()
+
+        fun drainLocal(endOfStream: Boolean) {
+          val activeCodec = codec ?: return
+          val activeMuxer = muxer ?: return
+          while (true) {
+            val outId = activeCodec.dequeueOutputBuffer(bufferInfo, 10_000L)
+            if (outId == MediaCodec.INFO_TRY_AGAIN_LATER) {
+              if (!endOfStream) break
+            } else if (outId == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+              if (!localMuxerStarted) {
+                localTrackIndex = activeMuxer.addTrack(activeCodec.outputFormat)
+                activeMuxer.start()
+                localMuxerStarted = true
+              }
+            } else if (outId >= 0) {
+              val encoded = activeCodec.getOutputBuffer(outId)
+              if (encoded != null && bufferInfo.size > 0 &&
+                (bufferInfo.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0 &&
+                localMuxerStarted
+              ) {
+                encoded.position(bufferInfo.offset)
+                encoded.limit(bufferInfo.offset + bufferInfo.size)
+                bufferInfo.presentationTimeUs = localFrameIndex * (1_000_000L / fpsArg)
+                localFrameIndex++
+                activeMuxer.writeSampleData(localTrackIndex, encoded, bufferInfo)
+              }
+              activeCodec.releaseOutputBuffer(outId, false)
+              if ((bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) break
+            }
+          }
+        }
+
+        for (file in frameFiles) {
+          val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+            ?: throw IllegalStateException("비트맵 디코딩 실패: ${file.name}")
+          val canvas = surface.lockCanvas(null)
+          try {
+            canvas.drawBitmap(bitmap, null, Rect(0, 0, width, height), null)
+          } finally {
+            surface.unlockCanvasAndPost(canvas)
+            bitmap.recycle()
+          }
+          drainLocal(endOfStream = false)
+        }
+
+        codec.signalEndOfInputStream()
+        drainLocal(endOfStream = true)
+
+        val totalDurationUs = localFrameIndex * (1_000_000L / fpsArg)
+        try { codec.stop() } catch (_: Exception) {}
+        try { codec.release() } catch (_: Exception) {}
+        try { surface.release() } catch (_: Exception) {}
+        try { if (localMuxerStarted) muxer.stop() } catch (_: Exception) {}
+        try { muxer.release() } catch (_: Exception) {}
+        codec = null
+        surface = null
+        muxer = null
+
+        if (hasAudio && audioPath != null) {
+          val merged = mergeAudioWithVideo(rawPath, audioPath, finalPath, totalDurationUs)
+          if (!merged) {
+            File(rawPath).copyTo(File(finalPath), overwrite = true)
+          }
+          File(rawPath).takeIf { it.exists() }?.delete()
+        }
+
+        mainHandler.post { result.success(finalPath) }
+      } catch (e: Exception) {
+        try { codec?.stop() } catch (_: Exception) {}
+        try { codec?.release() } catch (_: Exception) {}
+        try { surface?.release() } catch (_: Exception) {}
+        try { if (localMuxerStarted) muxer?.stop() } catch (_: Exception) {}
+        try { muxer?.release() } catch (_: Exception) {}
+        mainHandler.post { result.error("CEREMONY_ENCODE_ERR", e.message, null) }
+      }
+    }
   }
 
   private fun startEncoding(

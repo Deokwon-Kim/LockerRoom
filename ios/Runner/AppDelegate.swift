@@ -21,6 +21,9 @@ import flutter_foreground_task
     if let registrar = self.registrar(forPlugin: "RecapVideoEncoderPlugin") {
       RecapVideoEncoderPlugin.register(with: registrar)
     }
+    if let registrar = self.registrar(forPlugin: "CeremonyVideoPlugin") {
+      CeremonyVideoPlugin.register(with: registrar)
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 }
@@ -32,6 +35,9 @@ func registerPlugins(registry: FlutterPluginRegistry) {
   }
   if let registrar = registry.registrar(forPlugin: "RecapVideoEncoderPlugin") {
     RecapVideoEncoderPlugin.register(with: registrar)
+  }
+  if let registrar = registry.registrar(forPlugin: "CeremonyVideoPlugin") {
+    CeremonyVideoPlugin.register(with: registrar)
   }
 }
 
@@ -81,7 +87,7 @@ class VisionOcrPlugin: NSObject, FlutterPlugin {
       }
 
       request.recognitionLevel = .accurate
-      request.recognitionLanguages = ["ko-KR", "en-US"]
+      request.recognitionLanguages = ["ko-KR", "ja-JP", "en-US"]
       request.usesLanguageCorrection = true
 
       let orientation = self.cgImageOrientation(from: image.imageOrientation)
@@ -426,5 +432,289 @@ class RecapVideoEncoderPlugin: NSObject, FlutterPlugin {
     assetWriter = nil
     writerInput = nil
     pixelBufferAdaptor = nil
+  }
+}
+
+class CeremonyVideoPlugin: NSObject, FlutterPlugin {
+  static func register(with registrar: FlutterPluginRegistrar) {
+    let channel = FlutterMethodChannel(
+      name: "com.codegrove.thebase/ceremony_video",
+      binaryMessenger: registrar.messenger()
+    )
+    let instance = CeremonyVideoPlugin()
+    registrar.addMethodCallDelegate(instance, channel: channel)
+  }
+
+  private let encodeQueue = DispatchQueue(label: "com.codegrove.thebase.ceremonyVideo")
+
+  func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    guard call.method == "encodeCeremonyVideo" else {
+      result(FlutterMethodNotImplemented)
+      return
+    }
+    guard let args = call.arguments as? [String: Any],
+          let framesDir = args["framesDir"] as? String,
+          let outputPath = args["outputPath"] as? String else {
+      result(FlutterError(code: "INVALID_ARGS", message: "framesDir 및 outputPath가 필요합니다.", details: nil))
+      return
+    }
+    let audioPath = args["audioPath"] as? String
+    let fps = max(1, (args["fps"] as? Int) ?? 24)
+    encodeCeremonyVideo(
+      framesDir: framesDir,
+      audioPath: audioPath,
+      fps: fps,
+      outputPath: outputPath,
+      result: result
+    )
+  }
+
+  private func encodeCeremonyVideo(
+    framesDir: String,
+    audioPath: String?,
+    fps: Int,
+    outputPath: String,
+    result: @escaping FlutterResult
+  ) {
+    encodeQueue.async {
+      let fm = FileManager.default
+      let dirURL = URL(fileURLWithPath: framesDir, isDirectory: true)
+      guard let allURLs = try? fm.contentsOfDirectory(
+        at: dirURL,
+        includingPropertiesForKeys: nil,
+        options: [.skipsHiddenFiles]
+      ) else {
+        DispatchQueue.main.async {
+          result(FlutterError(code: "FRAMES_DIR_ERR", message: "프레임 디렉토리를 읽을 수 없습니다.", details: nil))
+        }
+        return
+      }
+
+      let frameURLs = allURLs
+        .filter { $0.pathExtension.lowercased() == "png" }
+        .sorted { $0.lastPathComponent < $1.lastPathComponent }
+
+      guard let firstURL = frameURLs.first,
+            let firstImage = UIImage(contentsOfFile: firstURL.path),
+            let firstCG = firstImage.cgImage else {
+        DispatchQueue.main.async {
+          result(FlutterError(code: "NO_FRAMES", message: "유효한 PNG 프레임이 없습니다.", details: nil))
+        }
+        return
+      }
+
+      let evenW = max(2, (firstCG.width / 2) * 2)
+      let evenH = max(2, (firstCG.height / 2) * 2)
+      let validAudioPath = (audioPath != nil && !audioPath!.isEmpty && fm.fileExists(atPath: audioPath!))
+        ? audioPath!
+        : nil
+      let rawVideoPath = validAudioPath != nil ? "\(outputPath).raw.mp4" : outputPath
+
+      try? fm.removeItem(atPath: rawVideoPath)
+      try? fm.removeItem(atPath: outputPath)
+
+      do {
+        let writer = try AVAssetWriter(outputURL: URL(fileURLWithPath: rawVideoPath), fileType: .mp4)
+        let settings: [String: Any] = [
+          AVVideoCodecKey: AVVideoCodecType.h264,
+          AVVideoWidthKey: evenW,
+          AVVideoHeightKey: evenH,
+          AVVideoCompressionPropertiesKey: [
+            AVVideoAverageBitRateKey: 3_500_000,
+            AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
+          ],
+        ]
+        let input = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
+        input.expectsMediaDataInRealTime = false
+
+        let attrs: [String: Any] = [
+          kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32ARGB,
+          kCVPixelBufferWidthKey as String: evenW,
+          kCVPixelBufferHeightKey as String: evenH,
+        ]
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+          assetWriterInput: input,
+          sourcePixelBufferAttributes: attrs
+        )
+
+        guard writer.canAdd(input) else {
+          DispatchQueue.main.async {
+            result(FlutterError(code: "WRITER_INIT_ERR", message: "AVAssetWriterInput 추가 실패", details: nil))
+          }
+          return
+        }
+
+        writer.add(input)
+        writer.startWriting()
+        writer.startSession(atSourceTime: .zero)
+
+        let timescale = Int32(fps)
+        let rgbColorSpace = CGColorSpaceCreateDeviceRGB()
+
+        for (index, url) in frameURLs.enumerated() {
+          var appendError: String?
+          autoreleasepool {
+            guard let img = UIImage(contentsOfFile: url.path),
+                  let cgImage = img.cgImage else {
+              appendError = "프레임 디코딩 실패: \(url.lastPathComponent)"
+              return
+            }
+
+            var waitCount = 0
+            while !input.isReadyForMoreMediaData && waitCount < 400 {
+              Thread.sleep(forTimeInterval: 0.005)
+              waitCount += 1
+            }
+
+            guard let pool = adaptor.pixelBufferPool else {
+              appendError = "PixelBufferPool 생성 실패"
+              return
+            }
+
+            var pixelBufferOut: CVPixelBuffer?
+            let status = CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &pixelBufferOut)
+            guard status == kCVReturnSuccess, let pixelBuffer = pixelBufferOut else {
+              appendError = "PixelBuffer 할당 실패"
+              return
+            }
+
+            CVPixelBufferLockBaseAddress(pixelBuffer, [])
+            if let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer),
+               let ctx = CGContext(
+                 data: baseAddress,
+                 width: evenW,
+                 height: evenH,
+                 bitsPerComponent: 8,
+                 bytesPerRow: CVPixelBufferGetBytesPerRow(pixelBuffer),
+                 space: rgbColorSpace,
+                 bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue
+               ) {
+              ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: evenW, height: evenH))
+            }
+            CVPixelBufferUnlockBaseAddress(pixelBuffer, [])
+
+            let pts = CMTime(value: Int64(index), timescale: timescale)
+            if !adaptor.append(pixelBuffer, withPresentationTime: pts) {
+              appendError = writer.error?.localizedDescription ?? "프레임 추가 실패"
+            }
+          }
+
+          if let msg = appendError {
+            writer.cancelWriting()
+            try? fm.removeItem(atPath: rawVideoPath)
+            DispatchQueue.main.async {
+              result(FlutterError(code: "APPEND_ERR", message: msg, details: nil))
+            }
+            return
+          }
+        }
+
+        input.markAsFinished()
+        writer.finishWriting {
+          if let error = writer.error {
+            try? fm.removeItem(atPath: rawVideoPath)
+            DispatchQueue.main.async {
+              result(FlutterError(code: "FINISH_ERR", message: error.localizedDescription, details: nil))
+            }
+            return
+          }
+
+          if let aPath = validAudioPath {
+            self.mergeAudio(videoPath: rawVideoPath, audioPath: aPath, outputPath: outputPath, result: result)
+          } else {
+            DispatchQueue.main.async { result(outputPath) }
+          }
+        }
+      } catch {
+        DispatchQueue.main.async {
+          result(FlutterError(code: "WRITER_ERR", message: error.localizedDescription, details: nil))
+        }
+      }
+    }
+  }
+
+  private func mergeAudio(
+    videoPath: String,
+    audioPath: String,
+    outputPath: String,
+    result: @escaping FlutterResult
+  ) {
+    let composition = AVMutableComposition()
+    let videoAsset = AVURLAsset(url: URL(fileURLWithPath: videoPath))
+    let audioAsset = AVURLAsset(url: URL(fileURLWithPath: audioPath))
+
+    guard let videoTrack = videoAsset.tracks(withMediaType: .video).first,
+          let compVideoTrack = composition.addMutableTrack(
+            withMediaType: .video,
+            preferredTrackID: kCMPersistentTrackID_Invalid
+          ) else {
+      try? FileManager.default.moveItem(atPath: videoPath, toPath: outputPath)
+      DispatchQueue.main.async { result(outputPath) }
+      return
+    }
+
+    let videoDuration = videoAsset.duration
+    do {
+      try compVideoTrack.insertTimeRange(
+        CMTimeRange(start: .zero, duration: videoDuration),
+        of: videoTrack,
+        at: .zero
+      )
+
+      if let audioTrack = audioAsset.tracks(withMediaType: .audio).first,
+         let compAudioTrack = composition.addMutableTrack(
+           withMediaType: .audio,
+           preferredTrackID: kCMPersistentTrackID_Invalid
+         ) {
+        let audioDuration = audioAsset.duration
+        if audioDuration.seconds > 0 {
+          var cursor = CMTime.zero
+          while CMTimeCompare(cursor, videoDuration) < 0 {
+            let remaining = CMTimeSubtract(videoDuration, cursor)
+            let chunk = CMTimeCompare(audioDuration, remaining) < 0 ? audioDuration : remaining
+            try compAudioTrack.insertTimeRange(
+              CMTimeRange(start: .zero, duration: chunk),
+              of: audioTrack,
+              at: cursor
+            )
+            cursor = CMTimeAdd(cursor, chunk)
+          }
+        }
+      }
+    } catch {
+      try? FileManager.default.moveItem(atPath: videoPath, toPath: outputPath)
+      DispatchQueue.main.async { result(outputPath) }
+      return
+    }
+
+    let outUrl = URL(fileURLWithPath: outputPath)
+    try? FileManager.default.removeItem(at: outUrl)
+
+    guard let exporter = AVAssetExportSession(
+      asset: composition,
+      presetName: AVAssetExportPresetHighestQuality
+    ) else {
+      try? FileManager.default.moveItem(atPath: videoPath, toPath: outputPath)
+      DispatchQueue.main.async { result(outputPath) }
+      return
+    }
+
+    exporter.outputURL = outUrl
+    exporter.outputFileType = .mp4
+    exporter.shouldOptimizeForNetworkUse = true
+    exporter.exportAsynchronously {
+      try? FileManager.default.removeItem(atPath: videoPath)
+      DispatchQueue.main.async {
+        if exporter.status == .completed {
+          result(outputPath)
+        } else {
+          result(FlutterError(
+            code: "EXPORT_ERR",
+            message: exporter.error?.localizedDescription ?? "오디오 병합 실패",
+            details: nil
+          ))
+        }
+      }
+    }
   }
 }

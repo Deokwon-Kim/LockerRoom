@@ -4,6 +4,7 @@ class TeamModel {
   final String name;
   final String symplename;
   final String stadium;
+  final String? sympleStadiumName;
   final String? stadium3d;
   final String logoPath;
   final String headers;
@@ -18,6 +19,7 @@ class TeamModel {
     required this.name,
     required this.symplename,
     required this.stadium,
+    this.sympleStadiumName,
     required this.logoPath,
     required this.headers,
     required this.calenderLogo,

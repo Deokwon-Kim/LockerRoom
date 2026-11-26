@@ -29,7 +29,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.522222120326-4s4d7d34noaqm4rhr3pc87clajn28lfs</string>
+				<string>com.googleusercontent.apps.522222120326-aclnlvp235mt4tk3db69vjbk9smnca6q</string>
 			</array>
 		</dict>
 		<dict>
@@ -37,14 +37,14 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>kakao71c8ab0d692ecbaa94a2e029ce6b3af6</string>
+				<string>kakao5dc345e3e92a6c8b341f6b946f2ede2f</string>
 			</array>
 		</dict>
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.codegrove.thebase</string>
+			<string>com.dwkim.ilu</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>lockerroom</string>

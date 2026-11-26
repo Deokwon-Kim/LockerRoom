@@ -287,6 +287,7 @@ class TeamProvider with ChangeNotifier {
         name: '두산베어스',
         symplename: '두산',
         stadium: '잠실야구장',
+        sympleStadiumName: '잠실',
         logoPath: 'assets/images/korean_logo/bears.png',
         headers: 'assets/images/kbo_header/doosan_bears.png',
         calenderLogo: 'assets/images/korean_logo/bears.png',
@@ -301,6 +302,7 @@ class TeamProvider with ChangeNotifier {
         name: '삼성라이온즈',
         symplename: '삼성',
         stadium: '라이온즈 파크',
+        sympleStadiumName: '대구',
         logoPath: 'assets/images/korean_logo/lions.png',
         headers: 'assets/images/kbo_header/samsung_lions.png',
         calenderLogo: 'assets/images/korean_logo/lions.png',
@@ -314,6 +316,7 @@ class TeamProvider with ChangeNotifier {
         name: '롯데자이언츠',
         symplename: '롯데',
         stadium: '사직야구장',
+        sympleStadiumName: '사직',
         logoPath: 'assets/images/korean_logo/giants.png',
         headers: 'assets/images/kbo_header/lotte_giants.png',
         calenderLogo: 'assets/images/korean_logo/giants.png',
@@ -327,6 +330,7 @@ class TeamProvider with ChangeNotifier {
         name: '기아타이거즈',
         symplename: '기아',
         stadium: '챔피언스필드',
+        sympleStadiumName: '광주',
         logoPath: 'assets/images/korean_logo/tigers.png',
         headers: 'assets/images/kbo_header/kia_tigers.png',
         calenderLogo: 'assets/images/korean_logo/tigers.png',
@@ -340,6 +344,7 @@ class TeamProvider with ChangeNotifier {
         name: 'LG트윈스',
         symplename: 'LG',
         stadium: '잠실야구장',
+        sympleStadiumName: '잠실',
         logoPath: 'assets/images/korean_logo/twins.png',
         headers: 'assets/images/kbo_header/lg_twins.png',
         calenderLogo: 'assets/images/korean_logo/twins.png',
@@ -354,6 +359,7 @@ class TeamProvider with ChangeNotifier {
         name: 'SSG랜더스',
         symplename: 'SSG',
         stadium: '랜더스필드',
+        sympleStadiumName: '문학',
         logoPath: 'assets/images/korean_logo/landers.png',
         headers: 'assets/images/kbo_header/ssg_landers.png',
         calenderLogo: 'assets/images/korean_logo/landers.png',
@@ -382,6 +388,7 @@ class TeamProvider with ChangeNotifier {
         name: '한화이글스',
         symplename: '한화',
         stadium: '한화생명볼파크',
+        sympleStadiumName: '대전',
         logoPath: 'assets/images/korean_logo/eagles.png',
         headers: 'assets/images/kbo_header/hanwha_eagles.png',
         calenderLogo: 'assets/images/korean_logo/eagles.png',
@@ -396,6 +403,7 @@ class TeamProvider with ChangeNotifier {
         name: '키움히어로즈',
         symplename: '키움',
         stadium: '고척스카이돔',
+        sympleStadiumName: '고척',
         logoPath: 'assets/images/korean_logo/heroes.png',
         headers: 'assets/images/kbo_header/kiwoom_heroes.png',
         calenderLogo: 'assets/images/korean_logo/heroes.png',
@@ -425,6 +433,7 @@ class TeamProvider with ChangeNotifier {
         name: 'NC다이노스',
         symplename: 'NC',
         stadium: '창원NC파크',
+        sympleStadiumName: '창원',
         logoPath: 'assets/images/korean_logo/dinos.png',
         headers: 'assets/images/kbo_header/nc_dinos.png',
         calenderLogo: 'assets/images/korean_logo/dinos.png',
@@ -439,6 +448,7 @@ class TeamProvider with ChangeNotifier {
         name: 'KT위즈',
         symplename: 'KT',
         stadium: '위즈파크',
+        sympleStadiumName: '수원',
         logoPath: 'assets/images/korean_logo/wiz.png',
         headers: 'assets/images/kbo_header/kt_wiz.png',
         calenderLogo: 'assets/images/korean_logo/wiz.png',
@@ -473,6 +483,46 @@ class TeamProvider with ChangeNotifier {
     } catch (_) {
       return null;
     }
+  }
+
+  // 구장명을 짧은 표기(예: 잠실, 문학, 대전, 대구, 창원, 광주)로 변환
+  String sympleStadiumName(String? stadium) {
+    final raw = (stadium ?? '').trim();
+    if (raw.isEmpty) return '';
+
+    final teams = _teamList['team'] ?? [];
+    for (final t in teams) {
+      if (t.sympleStadiumName != null &&
+          t.sympleStadiumName!.isNotEmpty &&
+          (raw == t.stadium ||
+              raw.contains(t.stadium) ||
+              t.stadium.contains(raw))) {
+        return t.sympleStadiumName!;
+      }
+    }
+
+    if (raw.contains('잠실')) return '잠실';
+    if (raw.contains('랜더스') ||
+        raw.contains('문학') ||
+        raw.contains('SSG') ||
+        raw.contains('행복드림')) {
+      return '문학';
+    }
+    if (raw.contains('대전') || raw.contains('한화생명') || raw.contains('이글스파크')) {
+      return '대전';
+    }
+    if (raw.contains('대구') || raw.contains('라이온즈')) return '대구';
+    if (raw.contains('창원') || raw.contains('NC')) return '창원';
+    if (raw.contains('광주') || raw.contains('챔피언스')) return '광주';
+    if (raw.contains('고척')) return '고척';
+    if (raw.contains('사직') || raw.contains('부산')) return '사직';
+    if (raw.contains('수원') || raw.contains('위즈')) return '수원';
+
+    return raw
+        .replaceAll('야구장', '')
+        .replaceAll('구장', '')
+        .replaceAll('파크', '')
+        .trim();
   }
 
   Future<void> setTeam(String team) async {

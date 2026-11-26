@@ -90,6 +90,9 @@ dependencies:
   package_info_plus: ^9.0.1
   google_mlkit_text_recognition: ^1.0.3
   camera: ^0.12.2
+  sign_in_with_apple: ^8.2.0
+  crypto: ^3.0.8
+  webview_flutter: ^4.14.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -142,6 +145,16 @@ flutter:
   # list giving the asset and other descriptors for the font. For
   # example:
   fonts:
+    - family: Pretendard
+      fonts:
+        - asset: fonts/Pretendard-Regular.otf
+          weight: 400
+        - asset: fonts/Pretendard-Medium.otf
+          weight: 500
+        - asset: fonts/Pretendard-SemiBold.otf
+          weight: 600
+        - asset: fonts/Pretendard-Bold.otf
+          weight: 700
     - family: kbo
       fonts:
         - asset: fonts/KBO Dia Gothic_bold.ttf

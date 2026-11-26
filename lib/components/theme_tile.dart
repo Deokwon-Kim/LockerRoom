@@ -18,46 +18,109 @@ class ThemeTile extends StatelessWidget {
       onTap: onTap,
       child: Stack(
         children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: EdgeInsets.all(15),
-                margin: EdgeInsets.symmetric(horizontal: 0),
-                decoration: BoxDecoration(
-                  color: teamModel.color,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color.fromARGB(255, 255, 188, 2)
-                        : teamModel.color,
-                    width: 3,
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final double size =
-                          constraints.biggest.shortestSide; // 정사각형 내부 한변 기준
-                      final double logoSize = size * 1; // 내부 여백 고려한 비율
-                      return Center(
-                        child: SizedBox(
-                          width: logoSize,
-                          height: logoSize,
-                          child: Image.asset(
-                            teamModel.logoPath,
-                            fit: BoxFit.contain,
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: teamModel.color,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isSelected
+                    ? const Color.fromARGB(255, 255, 188, 2)
+                    : teamModel.color,
+                width: 3,
+              ),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide =
+                    constraints.maxWidth > constraints.maxHeight * 1.25;
+                if (isWide) {
+                  final double logoSize = (constraints.maxHeight * 0.84).clamp(
+                    36.0,
+                    68.0,
+                  );
+                  return Row(
+                    children: [
+                      SizedBox(
+                        width: logoSize,
+                        height: logoSize,
+                        child: Image.asset(
+                          teamModel.logoPath,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          teamModel.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                            shadows: [
+                              Shadow(
+                                color: Color(0x47000000),
+                                blurRadius: 4,
+                                offset: Offset(0, 1),
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-              ),
+                      ),
+                    ],
+                  );
+                }
 
-              // 체크 아이콘 (오른쪽 위)
-            ],
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, inner) {
+                          final double logoSize =
+                              inner.biggest.shortestSide * 0.88;
+                          return Center(
+                            child: SizedBox(
+                              width: logoSize,
+                              height: logoSize,
+                              child: Image.asset(
+                                teamModel.logoPath,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      teamModel.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                        shadows: [
+                          Shadow(
+                            color: Color(0x47000000),
+                            blurRadius: 4,
+                            offset: Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
           if (isSelected)
             Positioned(

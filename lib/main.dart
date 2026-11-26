@@ -101,9 +101,14 @@ Future<void> main() async {
     }
 
     //kakao 로그인 초기화
+    final kakaoNativeKey = dotenv.env['KAKAO_NATIVE_APP_KEY'];
     KakaoSdk.init(
-      nativeAppKey: dotenv.env['KAKAO_NATIVE_APP_KEY'],
+      nativeAppKey: kakaoNativeKey,
       javaScriptAppKey: dotenv.env['KAKAO_JAVASCRIPT_APP_KEY'],
+    );
+    final kakaoOrigin = await KakaoSdk.origin;
+    debugPrint(
+      '[KAKAO_INIT] envKey=$kakaoNativeKey, sdkAppKey=${KakaoSdk.appKey}, origin=$kakaoOrigin',
     );
 
     await Firebase.initializeApp(
@@ -248,6 +253,7 @@ class _MyAppState extends State<MyApp> {
     return ToastificationWrapper(
       child: MaterialApp(
         theme: ThemeData(
+          fontFamily: 'Pretendard',
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
           splashFactory: NoSplash.splashFactory,
@@ -455,11 +461,12 @@ class AuthWrapper extends StatelessWidget {
                   (data['userNickName'] as String).isNotEmpty;
               final hasName =
                   data['name'] != null && (data['name'] as String).isNotEmpty;
+              final isProfileCompleted = data['isProfileCompleted'] == true;
 
               print('hasNickName: $hasNickName');
               print('hasName: $hasName');
 
-              if (!hasNickName || !hasName) {
+              if (!hasNickName || (!hasName && !isProfileCompleted)) {
                 print('프로필 설정 화면으로 이동');
                 return const SocialProfileSettingPage();
               }
