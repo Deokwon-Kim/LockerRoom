@@ -72,7 +72,7 @@ class BadgeProvider extends ChangeNotifier {
     BadgeModel(
       id: 'lucky_seven',
       name: '행운의 7',
-      description: '총점 777점 달성',
+      description: '누적 77안타 달성',
       icon: Icons.casino,
       isLocked: true,
     ),
@@ -132,10 +132,24 @@ class BadgeProvider extends ChangeNotifier {
       isLocked: true,
     ),
     BadgeModel(
+      id: 'monthly_batting_king',
+      name: '월간 타격왕',
+      description: '월간 시즌 규정타석(30타수+)\n최종 타율 1위 달성',
+      icon: Icons.workspace_premium,
+      isLocked: true,
+    ),
+    BadgeModel(
       id: 'top3_club',
       name: '명예의 전당 입성',
       description: '어느 한 시즌이라도\n 최종 3위 이내 달성',
       icon: Icons.workspace_premium,
+      isLocked: true,
+    ),
+    BadgeModel(
+      id: 'team_champion',
+      name: '우승 구단 팬',
+      description: '응원 구단이 시즌\n합산 타율 1위 달성',
+      icon: Icons.flag_rounded,
       isLocked: true,
     ),
 
@@ -164,7 +178,7 @@ class BadgeProvider extends ChangeNotifier {
     BadgeModel(
       id: 'minor_skip',
       name: '역전의 명수',
-      description: '한 세트 200점 이상 득점',
+      description: '한 경기 10안타 이상 달성',
       icon: Icons.trending_up,
       isLocked: true,
     ),
@@ -284,6 +298,9 @@ class BadgeProvider extends ChangeNotifier {
       if (_isLocked('season_mvp')) {
         await unlockBadge('season_mvp');
       }
+      if (_isLocked('monthly_batting_king')) {
+        await unlockBadge('monthly_batting_king');
+      }
     }
     if (rank <= 3) {
       if (_isLocked('top3_club')) {
@@ -302,16 +319,8 @@ class BadgeProvider extends ChangeNotifier {
         .doc(user.uid)
         .get();
 
-    // 유저의 현재 총 누적 점수 가져오기
-    int currentTotalScore = 0;
-    try {
-      currentTotalScore = userDoc.data()?['totalQuizScore'] ?? 0;
-    } catch (e) {
-      print('총점 조회 실패: $e');
-    }
-
-    // [조건 1] 첫 안타 (0점 초과시)
-    if (result.score > 0) {
+    // [조건 1] 첫 안타 (1안타 이상 달성 시)
+    if (result.hits > 0 || result.correctAnswers > 0) {
       if (_isLocked('first_hit')) {
         await unlockBadge('first_hit');
         newBadges.add('첫 안타');
@@ -390,9 +399,9 @@ class BadgeProvider extends ChangeNotifier {
 
     int newStreak = 0;
 
-    // 이번 퀴즈에서 오답이 없었는지 확인
-    if (result.score == 100) {
-      newStreak = currentStreak + result.totalQuestions;
+    // 이번 퀴즈에서 오답이 없었는지 확인 (전 타석 안타)
+    if (result.atBats > 0 && result.hits == result.atBats) {
+      newStreak = currentStreak + result.hits;
     } else {
       // 하나라도 틀렸으면 스트릭 초기화
       newStreak = 0;
@@ -411,8 +420,10 @@ class BadgeProvider extends ChangeNotifier {
       }
     }
 
-    // [조건 3] 누적점수 777점이면 '행운의 7'
-    if (currentTotalScore >= 777) {
+    // [조건 3] 누적 77안타 달성 시 '행운의 7'
+    final int currentHitsTotal =
+        (userDoc.data()?['totalCorrectAnswers'] as int? ?? 0) + result.hits;
+    if (currentHitsTotal >= 77) {
       if (_isLocked('lucky_seven')) {
         await unlockBadge('lucky_seven');
         newBadges.add('행운의 7');
@@ -484,14 +495,8 @@ class BadgeProvider extends ChangeNotifier {
       print('폭주 기관차 체크 실패: $e');
     }
 
-    // [조건 11] 역전의 명수: 0점에서 한 번에 MINOR(200점) 이상 달성 (NEW)
-    // [주의] Race Condition 대응:
-    //   - Cloud Function이 아직 실행되지 않은 경우: currentTotalScore == 0
-    //   - Cloud Function이 이미 totalQuizScore를 업데이트한 경우:
-    //     currentTotalScore == result.score (이전 누적 점수 0 + 이번 점수)
-    final preQuizScore = currentTotalScore - result.score;
-    final wasZeroBeforeQuiz = currentTotalScore == 0 || preQuizScore <= 0;
-    if (wasZeroBeforeQuiz && result.score >= 200) {
+    // [조건 11] 역전의 명수: 한 경기 10안타 이상 달성
+    if (result.hits >= 10) {
       if (_isLocked('minor_skip')) {
         await unlockBadge('minor_skip');
         newBadges.add('역전의 명수');
@@ -547,9 +552,9 @@ class BadgeProvider extends ChangeNotifier {
       currentStreak = userDoc.data()?['consecutiveCorrectCount'] ?? 0;
     } catch (_) {}
 
-    // 이번 퀴즈에서 오답이 없었는지 확인
-    if (result.score == 100) {
-      newStreak = currentStreak + result.totalQuestions;
+    // 이번 퀴즈에서 오답이 없었는지 확인 (전 타석 안타)
+    if (result.atBats > 0 && result.hits == result.atBats) {
+      newStreak = currentStreak + result.hits;
     } else {
       // 하나라도 틀렸으면 스트릭 초기화
       newStreak = 0;
@@ -813,8 +818,8 @@ class BadgeProvider extends ChangeNotifier {
         await unlockBadge('perfect_game');
         print('퍼펙트 게임 뱃지 소급 지급');
       }
-      // 6. 총점 체크 -> 행운의 7
-      if (totalScore >= 777 && _isLocked('lucky_seven')) {
+      // 6. 누적 안타 체크 -> 행운의 7
+      if (totalCorrect >= 77 && _isLocked('lucky_seven')) {
         await unlockBadge('lucky_seven');
         print('행운의 7 뱃지 소급 지급');
       }
@@ -890,6 +895,12 @@ class BadgeProvider extends ChangeNotifier {
       }
     } catch (e) {
       print('공유 카운트 증가 실패: $e');
+    }
+  }
+
+  Future<void> unlockTeamChampionBadge() async {
+    if (_isLocked('team_champion')) {
+      await unlockBadge('team_champion');
     }
   }
 }

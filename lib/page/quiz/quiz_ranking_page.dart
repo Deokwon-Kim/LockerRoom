@@ -3,13 +3,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/ranking_team_model.dart';
-import 'package:lockerroom/model/ranking_user_model.dart';
-
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/utils/quiz_season_utils.dart';
 import 'package:lockerroom/utils/quiz_tier_utils.dart';
 import 'package:lockerroom/page/quiz/quiz_hall_of_fame_page.dart';
+import 'package:lockerroom/widgets/team_champion_badges.dart';
 import 'package:provider/provider.dart';
 
 class QuizRankingPage extends StatefulWidget {
@@ -34,9 +33,9 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
   @override
   void initState() {
     super.initState();
-    // 페이지 로드 시 순위 가져오기
+    // 페이지 로드 시 최신 순위 강제 가져오기
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<QuizRankingProvider>().fetchRankings();
+      context.read<QuizRankingProvider>().fetchRankings(true);
     });
   }
 
@@ -224,18 +223,18 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
       length: 2,
       child: Scaffold(
         backgroundColor: isDarkMode
-            ? const Color(0xFF0F172A)
-            : Colors.grey[100],
+            ? const Color(0xFF090D16)
+            : const Color(0xFFF9FAFC),
         appBar: AppBar(
           scrolledUnderElevation: 0,
           backgroundColor: isDarkMode
-              ? const Color(0xFF0F172A)
-              : Colors.grey[100],
+              ? const Color(0xFF090D16)
+              : const Color(0xFFF9FAFC),
           leading: IconButton(
             icon: Icon(
               Icons.arrow_back_ios_new,
               size: 20,
-              color: isDarkMode ? Colors.white : Colors.black87,
+              color: isDarkMode ? Colors.white : const Color(0xFF141B2D),
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -245,9 +244,9 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
                 '퀴즈 랭킹',
                 style: TextStyle(
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w900,
                   fontFamily: 'kbo',
-                  color: isDarkMode ? Colors.white : Colors.black87,
+                  color: isDarkMode ? Colors.white : const Color(0xFF141B2D),
                 ),
               ),
               const SizedBox(width: 8),
@@ -262,18 +261,18 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
                     onTap: () => _showCategoryBottomSheet(context, qrp),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                        horizontal: 11,
+                        vertical: 5,
                       ),
                       decoration: BoxDecoration(
                         color: isDarkMode
-                            ? Colors.white.withOpacity(0.1)
+                            ? Colors.white.withValues(alpha: 0.08)
                             : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(999),
                         border: Border.all(
                           color: isDarkMode
                               ? Colors.white12
-                              : Colors.grey.shade300,
+                              : const Color(0xFFE2E8F0),
                         ),
                       ),
                       child: Row(
@@ -285,13 +284,18 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
                               fontFamily: 'kbo',
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
-                              color: isDarkMode ? Colors.white : BLACK,
+                              color: isDarkMode
+                                  ? Colors.white
+                                  : const Color(0xFF141B2D),
                             ),
                           ),
+                          const SizedBox(width: 2),
                           Icon(
-                            Icons.arrow_drop_down,
-                            color: isDarkMode ? Colors.white : BLACK,
-                            size: 20,
+                            Icons.keyboard_arrow_down_rounded,
+                            color: isDarkMode
+                                ? Colors.white70
+                                : const Color(0xFF647189),
+                            size: 18,
                           ),
                         ],
                       ),
@@ -313,12 +317,14 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
                     builder: (context) => const QuizHallOfFamePage(),
                   ),
                 ).then((_) {
-                  context.read<QuizRankingProvider>().setAllTimeMode(false);
+                  if (mounted) {
+                    context.read<QuizRankingProvider>().setAllTimeMode(false);
+                  }
                 });
               },
               child: Container(
-                height: 40,
-                width: 40,
+                height: 36,
+                width: 36,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Colors.amber.shade300, Colors.amber.shade600],
@@ -328,21 +334,21 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.amber.withOpacity(0.4),
-                      blurRadius: 12,
-                      spreadRadius: 2,
+                      color: Colors.amber.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
                 child: const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.military_tech, color: Colors.white, size: 15),
+                    Icon(Icons.military_tech, color: Colors.white, size: 14),
                     Text(
                       'HALL',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 8,
+                        fontSize: 7.5,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -356,55 +362,55 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
                 context.read<QuizRankingProvider>().fetchRankings(true);
               },
               icon: Icon(
-                Icons.refresh,
-                color: isDarkMode ? Colors.white70 : Colors.black54,
+                Icons.refresh_rounded,
+                color: isDarkMode ? Colors.white70 : const Color(0xFF647189),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
           ],
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(60),
+            preferredSize: const Size.fromHeight(54),
             child: Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              height: 48,
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              height: 44,
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: isDarkMode
-                    ? Colors.white.withOpacity(0.05)
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : const Color(0xFFEEF0F3),
+                borderRadius: BorderRadius.circular(14),
               ),
               child: TabBar(
-                padding: const EdgeInsets.all(4),
-                labelColor: Colors.white,
+                labelColor: isDarkMode ? Colors.white : const Color(0xFF141B2D),
                 labelStyle: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13.5,
                   fontFamily: 'kbo',
                 ),
                 unselectedLabelColor: isDarkMode
-                    ? Colors.white38
-                    : Colors.grey.shade600,
+                    ? Colors.white54
+                    : const Color(0xFF647189),
                 unselectedLabelStyle: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13.5,
                   fontFamily: 'kbo',
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 indicator: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: teamProvider.selectedTeam?.color ?? BUTTON,
+                  borderRadius: BorderRadius.circular(10),
+                  color: isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF141B2D).withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 dividerColor: Colors.transparent,
                 tabs: const [
-                  Tab(text: '개인 랭킹'),
-                  Tab(text: '팀 랭킹'),
+                  Tab(text: '개인 순위'),
+                  Tab(text: '구단 대항전'),
                 ],
               ),
             ),
@@ -488,11 +494,9 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
       );
     }
 
-    final topThree = qrp.rankings.take(3).toList();
-    final restRankings = qrp.rankings.skip(3).toList();
-    final myRanking = currentUserId != null
-        ? qrp.getMyRanking(currentUserId)
-        : null;
+    final battingList = qrp.battingKingRankings;
+    final battingTopThree = battingList.take(3).toList();
+    final battingRest = battingList.skip(3).toList();
 
     return RefreshIndicator(
       color: RED_DANGER_TEXT_50,
@@ -501,40 +505,292 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           children: [
-            // 내 순위 표시 (상단 고정 - 프리미엄 효과)
-            if (myRanking != null)
-              TweenAnimationBuilder(
-                duration: const Duration(milliseconds: 800),
-                tween: Tween<double>(begin: 0, end: 1),
-                builder: (context, value, child) {
-                  return Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 20 * (1 - value)),
-                      child: _buildMyRankingCard(myRanking),
-                    ),
-                  );
-                },
-              ),
-
-            // Top 3 포디움 (애니메이션 탑재)
-            if (topThree.length >= 3)
-              _buildModernPodium(topThree)
-            else
-              _buildIncompletedPodium(topThree),
-
-            const SizedBox(height: 10),
-
-            // 4위 이하 순위 (프리미엄 리스트)
-            if (restRankings.isNotEmpty)
-              _buildPremiumRankingList(
-                restRankings,
-                currentUserId,
-                topThree.length,
-              ),
-
+            if (battingList.isEmpty)
+              Container(
+                height: 360,
+                alignment: Alignment.center,
+                child: const Text('아직 타격 기록이 없습니다.'),
+              )
+            else ...[
+              if (battingTopThree.length >= 3)
+                _buildBattingKingPodium(battingTopThree)
+              else
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: battingTopThree
+                        .map((e) => _buildBattingKingListItem(e, currentUserId))
+                        .toList(),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              if (battingRest.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: battingRest
+                        .map((e) => _buildBattingKingListItem(e, currentUserId))
+                        .toList(),
+                  ),
+                ),
+            ],
             const SizedBox(height: 40),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBattingKingPodium(List<BattingKingEntry> topThree) {
+    final first = topThree[0];
+    final second = topThree[1];
+    final third = topThree[2];
+    final qrp = context.read<QuizRankingProvider>();
+    final teamColor =
+        context.read<TeamProvider>().selectedTeam?.color ??
+        const Color(0xFF0D0C28);
+    final c1 = Color.lerp(teamColor, const Color(0xFF0B1020), 0.78)!;
+    final c2 = Color.lerp(teamColor, const Color(0xFF141B2D), 0.62)!;
+
+    Widget buildSlot(
+      BattingKingEntry entry,
+      Color ringColor,
+      double barHeight, {
+      bool isFirst = false,
+    }) {
+      final isDefending = qrp.isDefendingKingUser(entry.userId);
+      return _buildPodiumHeroSlot(
+        rank: entry.rank,
+        name: entry.name,
+        sub: entry.teamName ?? '${entry.totalHits}/${entry.totalAtBats}타수',
+        score: entry.formattedBattingAverage,
+        badgeWidget: isDefending
+            ? BattingKingTitlePill(
+                label: qrp.defendingKingTitle ?? '타격왕',
+                fontSize: 8.5,
+              )
+            : null,
+        tierWidget: Text(
+          entry.isQualifiedForBattingKing
+              ? '${entry.totalHits}/${entry.totalAtBats}타수'
+              : '미달 ${entry.totalAtBats}/30',
+          style: TextStyle(
+            fontSize: 9.5,
+            fontWeight: FontWeight.w800,
+            color: Colors.white.withValues(alpha: 0.9),
+          ),
+        ),
+        imageUrl: entry.profileUrl,
+        ringColor: ringColor,
+        barHeight: barHeight,
+        isFirst: isFirst,
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      padding: const EdgeInsets.fromLTRB(12, 18, 12, 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [c1, c2],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: c1.withValues(alpha: 0.22),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            flex: 10,
+            child: buildSlot(second, const Color(0xFFCBD5E1), 48),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 12,
+            child: buildSlot(first, const Color(0xFFF5C451), 64, isFirst: true),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 10,
+            child: buildSlot(third, const Color(0xFFD97742), 36),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBattingKingListItem(
+    BattingKingEntry entry,
+    String? currentUserId,
+  ) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final isMe = currentUserId != null && entry.userId == currentUserId;
+    final qrp = context.read<QuizRankingProvider>();
+    final teamProvider = context.read<TeamProvider>();
+    final teamColor =
+        (entry.teamName != null
+            ? teamProvider.findTeamByName(entry.teamName!)?.color
+            : null) ??
+        teamProvider.selectedTeam?.color ??
+        BUTTON;
+    final isDefending = qrp.isDefendingKingUser(entry.userId);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF151E32) : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isMe
+              ? teamColor.withValues(alpha: 0.45)
+              : (isDarkMode ? Colors.white10 : const Color(0xFFEEF0F3)),
+          width: isMe ? 1.4 : 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF141B2D).withValues(alpha: 0.045),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              if (isMe) Container(width: 4.5, color: teamColor),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 13,
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 42,
+                        child: Text(
+                          '${entry.rank}위',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'kbo',
+                            color: isMe
+                                ? (isDarkMode ? Colors.white : teamColor)
+                                : (isDarkMode
+                                      ? Colors.white54
+                                      : const Color(0xFF647189)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  entry.name,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: isDarkMode
+                                        ? Colors.white
+                                        : const Color(0xFF141B2D),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                if (isDefending)
+                                  BattingKingTitlePill(
+                                    label: qrp.defendingKingTitle ?? '타격왕',
+                                    fontSize: 9,
+                                  ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: entry.isQualifiedForBattingKing
+                                        ? const Color(
+                                            0xFF34D399,
+                                          ).withValues(alpha: 0.16)
+                                        : (isDarkMode
+                                              ? Colors.white10
+                                              : const Color(0xFFEEF0F3)),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    entry.isQualifiedForBattingKing
+                                        ? '규정타석 달성'
+                                        : '규정 미달 (${entry.totalAtBats}/30)',
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: entry.isQualifiedForBattingKing
+                                          ? const Color(0xFF059669)
+                                          : (isDarkMode
+                                                ? Colors.white60
+                                                : const Color(0xFF647189)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              entry.teamName != null
+                                  ? '${entry.teamName} · ${entry.totalAtBats}타수 ${entry.totalHits}안타'
+                                  : '${entry.totalAtBats}타수 ${entry.totalHits}안타',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDarkMode
+                                    ? Colors.white54
+                                    : const Color(0xFF647189),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        entry.formattedBattingAverage,
+                        style: TextStyle(
+                          color: isMe
+                              ? const Color(0xFFFF5B37)
+                              : (entry.isQualifiedForBattingKing
+                                    ? (isDarkMode
+                                          ? WHITE
+                                          : const Color(0xFF141B2D))
+                                    : (isDarkMode
+                                          ? Colors.white54
+                                          : const Color(0xFF647189))),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'kbo',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -571,29 +827,30 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           children: [
-            // 내 팀 순위 표시
-            if (myTeamRanking != null)
+            // Top 3 포디움 히어로 (팀)
+            if (topThree.length >= 3)
+              _buildTeamPodium(topThree)
+            else
+              _buildIncompletedTeamPodium(topThree),
+
+            // 내 팀 순위 하이라이트 카드 (포디움 밖 4위 이하일 때만 표시)
+            if (myTeamRanking != null &&
+                (topThree.length < 3 || myTeamRanking.rank > 3))
               TweenAnimationBuilder(
-                duration: const Duration(milliseconds: 800),
+                duration: const Duration(milliseconds: 500),
                 tween: Tween<double>(begin: 0, end: 1),
                 builder: (context, value, child) {
                   return Opacity(
                     opacity: value,
                     child: Transform.translate(
-                      offset: Offset(0, 20 * (1 - value)),
+                      offset: Offset(0, 12 * (1 - value)),
                       child: _buildMyTeamRankingCard(myTeamRanking),
                     ),
                   );
                 },
               ),
 
-            // Top 3 포디움 (팀)
-            if (topThree.length >= 3)
-              _buildTeamPodium(topThree)
-            else
-              _buildIncompletedTeamPodium(topThree),
-
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
             // 4위 이하 팀 순위
             if (restRankings.isNotEmpty)
@@ -608,701 +865,384 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
 
   // 내 팀 순위 카드
   Widget _buildMyTeamRankingCard(RankingTeamModel myTeam) {
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
     final teamModel = context.read<TeamProvider>().findTeamByName(
       myTeam.teamName,
     );
+    final teamColor = teamModel?.color ?? const Color(0xFF0D0C28);
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-      padding: const EdgeInsets.all(1),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            teamModel?.color ?? Colors.blue,
-            Colors.white.withOpacity(0.5),
-            teamModel?.color ?? Colors.blue,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: isDarkMode ? const Color(0xFF151E32) : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDarkMode ? Colors.white10 : const Color(0xFFEEF0F3),
         ),
-        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: (teamModel?.color ?? Colors.blue).withOpacity(0.3),
-            blurRadius: 15,
+            color: const Color(0xFF141B2D).withValues(alpha: 0.05),
+            blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
-          borderRadius: BorderRadius.circular(19),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white,
-                backgroundImage: teamModel?.logoPath != null
-                    ? AssetImage(teamModel!.logoPath)
-                    : null,
-              ),
-            ),
-            const SizedBox(width: 15),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '나의 팀 순위',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  teamModel?.name ?? myTeam.teamName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${myTeam.rank}위',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'kbo',
-                  ),
-                ),
-                Text(
-                  '${myTeam.totalScore} pts',
-                  style: TextStyle(
-                    color: WHITE,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 내 순위 카드
-  Widget _buildMyRankingCard(RankingUserModel myRanking) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 20, 16, 10),
-      padding: const EdgeInsets.all(1),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Colors.blue, Colors.purple, Colors.blue],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
-          borderRadius: BorderRadius.circular(19),
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Consumer<QuizRankingProvider>(
-                    builder: (context, qrp, _) => Image.asset(
-                      QuizTierUtils.getTierEmblem(
-                        qrp.getOverallTier(myRanking.userId),
-                      ),
-                      width: 28,
-                      height: 28,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 15),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '나의 랭킹 현황',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      myRanking.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                Consumer<QuizRankingProvider>(
-                  builder: (context, qrp, _) {
-                    final overallScore = qrp.getOverallScore(myRanking.userId);
-                    final displayScore = overallScore > 0
-                        ? overallScore
-                        : myRanking.score;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${myRanking.rank}위',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'kbo',
-                          ),
-                        ),
-                        Text(
-                          '$displayScore pts',
-                          style: const TextStyle(
-                            color: Colors.blueAccent,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Consumer<QuizRankingProvider>(
-              builder: (context, qrp, _) {
-                final overallScore = qrp.getOverallScore(myRanking.userId);
-                // 캐시가 아직 없으면 현재 카드 점수를 fallback으로 사용
-                final scoreForBar = overallScore > 0
-                    ? overallScore
-                    : myRanking.score;
-                return _buildTierProgressBar(context, scoreForBar);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTierProgressBar(BuildContext context, int score) {
-    final progressInfo = QuizTierUtils.getTierProgress(score);
-    final themeColor =
-        context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${progressInfo.currentTier} 등급',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: QuizTierUtils.getTierColor(progressInfo.currentTier),
-              ),
-            ),
-            if (progressInfo.currentTier != 'LEGEND')
-              Text(
-                progressInfo.remainingScore > 0
-                    ? '다음 등급까지 ${progressInfo.remainingScore}P'
-                    : '최대 등급 달성! 🔥',
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: Colors.white54,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-          ],
-        ),
-        if (progressInfo.currentTier != 'LEGEND') const SizedBox(height: 6),
-        if (progressInfo.currentTier != 'LEGEND')
-          Stack(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: IntrinsicHeight(
+          child: Row(
             children: [
-              Container(
-                width: double.infinity,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0, end: progressInfo.progress),
-                duration: const Duration(milliseconds: 1000),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, child) {
-                  return FractionallySizedBox(
-                    widthFactor: value.clamp(0.01, 1.0),
-                    child: Container(
-                      height: 4,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [themeColor, themeColor.withOpacity(0.6)],
-                        ),
-                        borderRadius: BorderRadius.circular(2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: themeColor.withOpacity(0.4),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-      ],
-    );
-  }
-
-  // --- Ultra Modern Podium ---
-
-  Widget _buildModernPodium(List<RankingUserModel> topThree) {
-    final first = topThree.firstWhere((user) => user.rank == 1);
-    final second = topThree.firstWhere((user) => user.rank == 2);
-    final third = topThree.firstWhere((user) => user.rank == 3);
-
-    return Transform.translate(
-      offset: Offset(0, -50),
-      child: Container(
-        height: 500,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // 2등 바
-                Expanded(
-                  child: _buildAnimatedPodiumBar(second, 180, [
-                    const Color(0xFF9E9E9E),
-                    const Color(0xFF616161),
-                  ], 2),
-                ),
-                const SizedBox(width: 8),
-                // 1등 바
-                Expanded(
-                  child: _buildAnimatedPodiumBar(
-                    first,
-                    240,
-                    [const Color(0xFFFFC107), const Color(0xFFB8860B)],
-                    1,
-                    isMain: true,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // 3등 바
-                Expanded(
-                  child: _buildAnimatedPodiumBar(third, 160, [
-                    const Color(0xFF8D6E63),
-                    const Color(0xFF5D4037),
-                  ], 3),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAnimatedPodiumBar(
-    RankingUserModel user,
-    double targetHeight,
-    List<Color> colors,
-    int rank, {
-    bool isMain = false,
-  }) {
-    final isDarkMode =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
-    return TweenAnimationBuilder(
-      duration: Duration(milliseconds: 1000 + (rank * 200)),
-      curve: Curves.elasticOut,
-      tween: Tween<double>(begin: 0, end: targetHeight),
-      builder: (context, height, child) {
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            // 프로필 & 이름 (상단 배치)
-            Column(
-              children: [
-                CircleAvatar(
-                  radius: isMain ? 32 : 26,
-                  backgroundColor: colors[0],
-                  child: CircleAvatar(
-                    radius: isMain ? 29 : 23,
-                    backgroundImage: user.profileUrl != null
-                        ? NetworkImage(user.profileUrl!)
-                        : null,
-                    backgroundColor: Colors.grey.shade100,
-                    child: user.profileUrl == null
-                        ? Icon(
-                            Icons.person,
-                            size: isMain ? 25 : 20,
-                            color: Colors.grey.shade400,
-                          )
-                        : null,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      user.name,
-                      style: TextStyle(
-                        fontSize: isMain ? 13 : 11,
-                        fontWeight: FontWeight.bold,
-                        color: isDarkMode
-                            ? Colors.white
-                            : const Color(0xFF1E293B),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(width: 4),
-                    Image.asset(
-                      QuizTierUtils.getTierEmblem(
-                        context.read<QuizRankingProvider>().getOverallTier(
-                          user.userId,
-                        ),
-                      ),
-                      width: isMain ? 22 : 18,
-                      height: isMain ? 22 : 18,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                // 점수 버블 (사진처럼 상단에)
-                Container(
+              Container(width: 4.5, color: teamColor),
+              Expanded(
+                child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
+                    horizontal: 14,
+                    vertical: 13,
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey.shade300),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 42,
+                        child: Text(
+                          '${myTeam.rank}위',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'kbo',
+                            color: isDarkMode ? Colors.white : teamColor,
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
-                  child: Text(
-                    '${user.score}P',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      color: isDarkMode
-                          ? const Color(0xFF1E293B)
-                          : Colors.grey.shade700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // 완벽하게 정렬된 3D 아이소메트릭 블록
-            CustomPaint(
-              size: Size(double.infinity, height + 40),
-              painter: _Iso3DBlockPainter(
-                baseColor: colors[0],
-                sideColor: colors[1],
-                height: height,
-                rank: rank,
-              ),
-              child: SizedBox(
-                height: height + 40,
-                width: double.infinity,
-                child: Stack(
-                  children: [
-                    Center(
-                      child: SingleChildScrollView(
-                        physics: const NeverScrollableScrollPhysics(),
+                      const SizedBox(width: 10),
+                      CircleAvatar(
+                        radius: 17,
+                        backgroundColor: Colors.white,
+                        backgroundImage: teamModel?.logoPath != null
+                            ? AssetImage(teamModel!.logoPath)
+                            : null,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
                         child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const SizedBox(height: 15),
-                            Icon(
-                              rank == 1
-                                  ? Icons.emoji_events
-                                  : Icons.military_tech,
-                              color: Colors.white.withOpacity(0.9),
-                              size: isMain ? 32 : 24,
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    teamModel?.name ?? myTeam.teamName,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: isDarkMode
+                                          ? Colors.white
+                                          : const Color(0xFF141B2D),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDarkMode
+                                        ? Colors.white10
+                                        : const Color(0xFFEEF0F3),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    'MY TEAM',
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDarkMode
+                                          ? Colors.white70
+                                          : const Color(0xFF141B2D),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '$rank',
+                              '${myTeam.totalAtBats}타수 ${myTeam.totalHits}안타',
                               style: TextStyle(
-                                color: Colors.white,
-                                fontSize: isMain ? 34 : 24,
-                                fontWeight: FontWeight.w900,
-                                fontFamily: 'kbo',
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    offset: const Offset(1, 1),
-                                    blurRadius: 4,
-                                  ),
-                                ],
+                                fontSize: 11,
+                                color: isDarkMode
+                                    ? Colors.white54
+                                    : const Color(0xFF647189),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                      Text(
+                        myTeam.formattedBattingAverage,
+                        style: const TextStyle(
+                          color: Color(0xFFFF5B37),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'kbo',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildPremiumRankingList(
-    List<RankingUserModel> rankings,
-    String? currentUserId,
-    int podiumCount,
-  ) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: rankings.length,
-        itemBuilder: (context, index) {
-          final user = rankings[index];
-          final actualRank = index + podiumCount + 1;
-          return _buildPremiumRankingListItem(
-            user.copyWith(rank: actualRank),
-            currentUserId,
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildPremiumRankingListItem(
-    RankingUserModel user,
-    String? currentUserId,
-  ) {
-    final isDarkMode =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
-    final isMe = currentUserId != null && user.userId == currentUserId;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: isMe
-            ? (isDarkMode ? Colors.blue.withOpacity(0.2) : Colors.blue.shade50)
-            : (isDarkMode ? const Color(0xFF1E293B) : Colors.white),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            ],
           ),
-        ],
-        border: isMe ? Border.all(color: Colors.blue.shade200, width: 2) : null,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          children: [
-            // 순위 (leading 필드 대체)
-            SizedBox(
-              width: 45,
-              child: Center(
-                child: Text(
-                  '${user.rank}',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'kbo',
-                    color: isMe ? Colors.blue : Colors.grey.shade400,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // 유저 정보 (title 필드 대체)
-            Expanded(
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundImage: user.profileUrl != null
-                        ? NetworkImage(user.profileUrl!)
-                        : null,
-                    backgroundColor: Colors.grey.shade200,
-                    child: user.profileUrl == null
-                        ? const Icon(Icons.person, color: Colors.grey)
-                        : null,
-                  ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              user.name,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: isDarkMode ? Colors.white : Colors.black,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-
-                            if (user.teamName != null) ...[
-                              Builder(
-                                builder: (context) {
-                                  final teamProvider = context
-                                      .read<TeamProvider>();
-                                  final teamModel = teamProvider.findTeamByName(
-                                    user.teamName!,
-                                  );
-                                  final teamColor =
-                                      teamModel?.color ?? Colors.grey.shade600;
-
-                                  return Text(
-                                    user.teamName!,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDarkMode
-                                          ? GRAYSCALE_LABEL_500
-                                          : teamColor,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  );
-                                },
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(width: 18),
-                        Transform.translate(
-                          offset: Offset(0, -5),
-                          child: Consumer<QuizRankingProvider>(
-                            builder: (context, qrp, _) => Image.asset(
-                              QuizTierUtils.getTierEmblem(
-                                qrp.getOverallTier(user.userId),
-                              ),
-                              width: 34,
-                              height: 34,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            // 점수 및 변동 (trailing 필드 대체)
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${user.score}P',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                    color: isDarkMode ? WHITE : BLACK,
-                  ),
-                ),
-                _buildRankChangeIndicator(user.rankChange, user.rank),
-              ],
-            ),
-          ],
         ),
       ),
     );
   }
 
-  // 포디움이 완성되지 않은 경우 (개인)
-  Widget _buildIncompletedPodium(List<RankingUserModel> rankings) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      child: Column(
-        children: rankings.map((user) {
-          return _buildPremiumRankingListItem(user, null);
-        }).toList(),
-      ),
+  Widget _buildPodiumHeroSlot({
+    required int rank,
+    required String name,
+    required String sub,
+    required String score,
+    required Widget tierWidget,
+    Widget? badgeWidget,
+    String? imageUrl,
+    String? assetLogoPath,
+    required Color ringColor,
+    required double barHeight,
+    bool isFirst = false,
+  }) {
+    final avatarRadius = isFirst ? 31.0 : 24.0;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isFirst)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 4),
+            child: Text('👑', style: TextStyle(fontSize: 18)),
+          )
+        else
+          const SizedBox(height: 18),
+        Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.bottomCenter,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(2.5),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: ringColor, width: 2.5),
+                boxShadow: isFirst
+                    ? [
+                        BoxShadow(
+                          color: ringColor.withValues(alpha: 0.45),
+                          blurRadius: 14,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: CircleAvatar(
+                radius: avatarRadius,
+                backgroundColor: Colors.white.withValues(alpha: 0.16),
+                backgroundImage: assetLogoPath != null
+                    ? AssetImage(assetLogoPath)
+                    : (imageUrl != null && imageUrl.isNotEmpty
+                              ? NetworkImage(imageUrl)
+                              : null)
+                          as ImageProvider?,
+                child:
+                    (assetLogoPath == null &&
+                        (imageUrl == null || imageUrl.isEmpty))
+                    ? Text(
+                        name.isNotEmpty ? name.characters.first : '?',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: isFirst ? 18 : 14,
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+            Positioned(
+              bottom: -6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF141B2D),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: ringColor, width: 1.2),
+                ),
+                child: Text(
+                  '$rank',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: isFirst ? 13 : 12,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        if (badgeWidget != null) ...[
+          const SizedBox(height: 3),
+          FittedBox(fit: BoxFit.scaleDown, child: badgeWidget),
+        ],
+        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            sub,
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.78),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(height: 3),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            score,
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(
+              color: const Color(0xFFFFD875),
+              fontSize: isFirst ? 15 : 13.5,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'kbo',
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(11),
+            bottom: Radius.circular(5),
+          ),
+          child: Container(
+            width: double.infinity,
+            height: barHeight,
+            decoration: BoxDecoration(
+              gradient: isFirst
+                  ? LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFFFFE082).withValues(alpha: 0.72),
+                        const Color(0xFFD99B16).withValues(alpha: 0.56),
+                        const Color(0xFF8C5B05).withValues(alpha: 0.45),
+                      ],
+                    )
+                  : LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: rank == 2
+                          ? [
+                              const Color(0xFFF1F5F9).withValues(alpha: 0.64),
+                              const Color(0xFF94A3B8).withValues(alpha: 0.48),
+                              const Color(0xFF475569).withValues(alpha: 0.42),
+                            ]
+                          : [
+                              const Color(0xFFFDBA74).withValues(alpha: 0.66),
+                              const Color(0xFFC26A27).withValues(alpha: 0.52),
+                              const Color(0xFF6E330C).withValues(alpha: 0.44),
+                            ],
+                    ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(11),
+                bottom: Radius.circular(5),
+              ),
+              border: Border.all(
+                color: isFirst
+                    ? const Color(0xFFFFECB3).withValues(alpha: 0.9)
+                    : (rank == 2
+                              ? const Color(0xFFE2E8F0)
+                              : const Color(0xFFFED7AA))
+                          .withValues(alpha: 0.75),
+                width: isFirst ? 1.5 : 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isFirst
+                      ? const Color(0xFFFFD875).withValues(alpha: 0.38)
+                      : (rank == 2
+                                ? const Color(0xFFE2E8F0)
+                                : const Color(0xFFEA580C))
+                            .withValues(alpha: 0.22),
+                  blurRadius: isFirst ? 18 : 10,
+                  spreadRadius: isFirst ? 1 : 0,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: isFirst ? 3.0 : 2.0,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isFirst
+                            ? const [
+                                Color(0xFFFFF7D6),
+                                Color(0xFFFFD875),
+                                Color(0xFFFFF7D6),
+                              ]
+                            : [
+                                Colors.white.withValues(alpha: 0.35),
+                                Colors.white.withValues(alpha: 0.85),
+                                Colors.white.withValues(alpha: 0.35),
+                              ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: FittedBox(fit: BoxFit.scaleDown, child: tierWidget),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   // --- Team Ranking Widgets ---
 
+  // Top 3 포디움 (팀)
   Widget _buildTeamPodium(List<RankingTeamModel> topThree) {
     if (topThree.isEmpty) return const SizedBox.shrink();
 
     final first = topThree.firstWhere(
       (t) => t.rank == 1,
       orElse: () => topThree[0],
-    ); // fallback
+    );
     final second = topThree.length > 1
         ? topThree.firstWhere((t) => t.rank == 2, orElse: () => topThree[1])
         : null;
@@ -1310,193 +1250,85 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
         ? topThree.firstWhere((t) => t.rank == 3, orElse: () => topThree[2])
         : null;
 
-    return Transform.translate(
-      offset: const Offset(0, -30),
-      child: Container(
-        height: 500,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (second != null)
-                  Expanded(
-                    child: _buildAnimatedTeamPodiumBar(second, 180, [
-                      const Color(0xFF9E9E9E),
-                      const Color(0xFF616161),
-                    ], 2),
-                  ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildAnimatedTeamPodiumBar(
-                    first,
-                    240,
-                    [const Color(0xFFFFC107), const Color(0xFFB8860B)],
-                    1,
-                    isMain: true,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (third != null)
-                  Expanded(
-                    child: _buildAnimatedTeamPodiumBar(third, 160, [
-                      const Color(0xFF8D6E63),
-                      const Color(0xFF5D4037),
-                    ], 3),
-                  ),
-              ],
-            ),
-          ],
+    final teamColor =
+        context.read<TeamProvider>().selectedTeam?.color ??
+        const Color(0xFF0D0C28);
+    final c1 = Color.lerp(teamColor, const Color(0xFF0B1020), 0.78)!;
+    final c2 = Color.lerp(teamColor, const Color(0xFF141B2D), 0.62)!;
+
+    Widget buildTeamSlot(
+      RankingTeamModel team,
+      int rank,
+      Color ringColor,
+      double barHeight, {
+      bool isFirst = false,
+    }) {
+      final tm = context.read<TeamProvider>().findTeamByName(team.teamName);
+      return _buildPodiumHeroSlot(
+        rank: rank,
+        name: tm?.name ?? team.teamName,
+        sub: '${team.totalAtBats}타수 ${team.totalHits}안타',
+        score: team.formattedBattingAverage,
+        tierWidget: Text(
+          tm?.symplename ?? 'TEAM',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            color: Colors.white.withValues(alpha: 0.9),
+          ),
         ),
+        assetLogoPath: tm?.logoPath,
+        ringColor: ringColor,
+        barHeight: barHeight,
+        isFirst: isFirst,
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      padding: const EdgeInsets.fromLTRB(12, 18, 12, 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [c1, c2],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: c1.withValues(alpha: 0.22),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildAnimatedTeamPodiumBar(
-    RankingTeamModel team,
-    double targetHeight,
-    List<Color> colors,
-    int rank, {
-    bool isMain = false,
-  }) {
-    final isDarkMode =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
-    final teamModel = context.read<TeamProvider>().findTeamByName(
-      team.teamName,
-    );
-
-    return TweenAnimationBuilder(
-      duration: Duration(milliseconds: 1000 + (rank * 200)),
-      curve: Curves.elasticOut,
-      tween: Tween<double>(begin: 0, end: targetHeight),
-      builder: (context, height, child) {
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            // 팀 로고 & 이름
-            Column(
-              children: [
-                CircleAvatar(
-                  radius: isMain ? 35 : 28,
-                  backgroundColor: colors[0],
-                  child: CircleAvatar(
-                    radius: isMain ? 32 : 25,
-                    backgroundColor: Colors.white,
-                    backgroundImage: teamModel?.logoPath != null
-                        ? AssetImage(teamModel!.logoPath)
-                        : null,
-                    child: teamModel?.logoPath == null
-                        ? Icon(
-                            Icons.sports_baseball,
-                            size: isMain ? 25 : 20,
-                            color: Colors.grey.shade400,
-                          )
-                        : null,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  teamModel?.name ?? team.teamName,
-                  style: TextStyle(
-                    fontSize: isMain ? 13 : 11,
-                    fontWeight: FontWeight.bold,
-                    color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                // 점수 버블
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey.shade300),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    '${team.totalScore}P',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      color: isDarkMode
-                          ? const Color(0xFF1E293B)
-                          : Colors.black,
-                    ),
-                  ),
-                ),
-              ],
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (second != null)
+            Expanded(
+              flex: 10,
+              child: buildTeamSlot(second, 2, const Color(0xFFCBD5E1), 48),
             ),
-            const SizedBox(height: 12),
-            // 3D 아이소메트릭 블록
-            CustomPaint(
-              size: Size(double.infinity, height + 40),
-              painter: _Iso3DBlockPainter(
-                baseColor: colors[0],
-                sideColor: colors[1],
-                height: height,
-                rank: rank,
-              ),
-              child: SizedBox(
-                height: height + 40,
-                width: double.infinity,
-                child: Stack(
-                  children: [
-                    Center(
-                      child: SingleChildScrollView(
-                        physics: const NeverScrollableScrollPhysics(),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(height: 15),
-                            Icon(
-                              rank == 1
-                                  ? Icons.emoji_events
-                                  : Icons.military_tech,
-                              color: Colors.white.withOpacity(0.9),
-                              size: isMain ? 32 : 24,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '$rank',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: isMain ? 34 : 24,
-                                fontWeight: FontWeight.w900,
-                                fontFamily: 'kbo',
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.3),
-                                    offset: const Offset(1, 1),
-                                    blurRadius: 4,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 12,
+            child: buildTeamSlot(
+              first,
+              1,
+              const Color(0xFFF5C451),
+              64,
+              isFirst: true,
             ),
-          ],
-        );
-      },
+          ),
+          const SizedBox(width: 8),
+          if (third != null)
+            Expanded(
+              flex: 10,
+              child: buildTeamSlot(third, 3, const Color(0xFFD97742), 36),
+            ),
+        ],
+      ),
     );
   }
 
@@ -1547,93 +1379,109 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
     );
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: isMyTeam
-            ? (teamModel?.color.withOpacity(0.1) ??
+            ? (teamModel?.color.withValues(alpha: 0.08) ??
                   (isDarkMode
-                      ? Colors.blue.withOpacity(0.2)
+                      ? Colors.blue.withValues(alpha: 0.16)
                       : Colors.blue.shade50))
-            : (isDarkMode ? const Color(0xFF1E293B) : Colors.white),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: isMyTeam
-            ? Border.all(
-                color:
-                    teamModel?.color.withOpacity(0.5) ?? Colors.blue.shade200,
-                width: 2,
-              )
-            : null,
+            : (isDarkMode ? const Color(0xFF151E32) : Colors.white),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: isMyTeam
+              ? (teamModel?.color.withValues(alpha: 0.45) ??
+                    Colors.blue.shade200)
+              : (isDarkMode ? Colors.white10 : const Color(0xFFEEF0F3)),
+          width: isMyTeam ? 1.5 : 1.0,
+        ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         child: Row(
           children: [
             // 순위
             SizedBox(
-              width: 45,
+              width: 28,
               child: Center(
                 child: Text(
                   '${team.rank}',
                   style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
                     fontFamily: 'kbo',
                     color: isMyTeam
                         ? (teamModel?.color ?? Colors.blue)
-                        : Colors.grey.shade400,
+                        : (isDarkMode
+                              ? Colors.white54
+                              : const Color(0xFF647189)),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             // 팀 정보
             Expanded(
               child: Row(
                 children: [
                   CircleAvatar(
-                    radius: 22,
+                    radius: 17,
                     backgroundColor: Colors.white,
                     backgroundImage: teamModel?.logoPath != null
                         ? AssetImage(teamModel!.logoPath)
                         : null,
                     child: teamModel?.logoPath == null
-                        ? const Icon(Icons.sports_baseball, color: Colors.grey)
+                        ? const Icon(
+                            Icons.sports_baseball,
+                            size: 18,
+                            color: Colors.grey,
+                          )
                         : null,
                   ),
-                  const SizedBox(width: 15),
+                  const SizedBox(width: 11),
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 3,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              teamModel?.name ?? team.teamName,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13.5,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : const Color(0xFF141B2D),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (context
+                                .read<QuizRankingProvider>()
+                                .isDefendingChampionTeam(team.teamName))
+                              TeamFanTitlePill(
+                                label: '디펜딩 챔피언',
+                                teamColor: teamModel?.color ?? BUTTON,
+                              ),
+                          ],
+                        ),
                         Text(
-                          teamModel?.name ?? team.teamName,
+                          '${team.totalAtBats}타수 ${team.totalHits}안타',
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: isDarkMode ? Colors.white : Colors.black,
+                            fontSize: 11,
+                            color: isDarkMode
+                                ? Colors.white54
+                                : const Color(0xFF647189),
+                            fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (teamModel?.stadium != null)
-                          Text(
-                            teamModel!.stadium,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
                       ],
                     ),
                   ),
@@ -1641,76 +1489,19 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
               ),
             ),
             const SizedBox(width: 10),
-            // 점수 및 변동
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${team.totalScore}P',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                    color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
-                  ),
-                ),
-                _buildRankChangeIndicator(team.rankChange, team.rank),
-              ],
+            // 팀 타율
+            Text(
+              team.formattedBattingAverage,
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+                fontFamily: 'kbo',
+                color: isDarkMode ? Colors.white : const Color(0xFF141B2D),
+              ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildRankChangeIndicator(int scoreDiff, int rank) {
-    // 1위인 경우만 TOP 표시
-    if (rank == 1) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.amber.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          'TOP',
-          style: TextStyle(
-            color: Colors.amber.shade700,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
-    }
-
-    // 2위 이하 - 점수 차이 표시 (0점 차이라도 표시)
-    final displayDiff = scoreDiff.abs();
-
-    // 점수 차이에 따른 색상 결정
-    Color diffColor;
-    if (displayDiff == 0) {
-      diffColor = Colors.grey; // 동점: 회색
-    } else if (displayDiff <= 50) {
-      diffColor = Colors.orange; // 50점 이하: 주황색 (근접)
-    } else if (displayDiff <= 100) {
-      diffColor = Colors.deepOrange; // 100점 이하: 진한 주황색
-    } else {
-      diffColor = Colors.red; // 100점 초과: 빨간색 (큰 차이)
-    }
-
-    return Row(
-      children: [
-        Icon(Icons.remove, color: diffColor, size: 16),
-        Text(
-          '$displayDiff',
-          style: TextStyle(
-            color: diffColor,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
     );
   }
 
@@ -1910,41 +1701,103 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
   }
 
   Widget _buildSeasonTab() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSeasonInfoRow(Icons.calendar_month, '시즌 기간', '전/후반기 운영 (15일 단위)'),
-        _buildSeasonInfoRow(Icons.info_outline, '4월 시즌 예외', '4월은 통합 시즌으로 운영'),
-        _buildSeasonInfoRow(
-          Icons.emoji_events,
-          '랭킹 산정',
-          '해당 반기(또는 시즌) 누적 포인트 합산',
-        ),
-        _buildSeasonInfoRow(Icons.military_tech, '특별 보상', '티어별 특별 전용 뱃지'),
-        _buildSeasonInfoRow(
-          Icons.restart_alt,
-          '시즌 초기화',
-          '매월 1일 및 16일 00:00 초기화 (4월 제외)',
-        ),
-        const Spacer(),
-        _buildTipBox(),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSeasonInfoRow(
+            Icons.calendar_month,
+            '월간 1시즌제',
+            '매월 1일 00:00 ~ 말일 23:59 운영',
+          ),
+          _buildSeasonInfoRow(
+            Icons.emoji_events,
+            '타격왕 선정 기준',
+            '월간 누적 규정타석(30타수+) 최고 타율 1위',
+          ),
+          _buildSeasonInfoRow(
+            Icons.military_tech,
+            '타격왕 칭호 · 보상',
+            '👑 YY.MM 타격왕 칭호 배지 + 명예의 전당 헌액',
+          ),
+          _buildSeasonInfoRow(
+            Icons.style_rounded,
+            '디펜딩 특전',
+            '다음 달 시즌 동안 비디오 판독 찬스 +1회 (총 2회)',
+          ),
+          _buildSeasonInfoRow(
+            Icons.restart_alt,
+            '시즌 초기화',
+            '매월 1일 00:00 새 시즌 시작 & 순위 초기화',
+          ),
+          const SizedBox(height: 12),
+          _buildTipBox(),
+        ],
+      ),
     );
   }
 
   Widget _buildTierTab() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildTierRow('LEGEND', '10,000P ~', const Color(0xFFFFD700)),
-        _buildTierRow('MVP', '5,000P ~', const Color(0xFFB19CD9)),
-        _buildTierRow('ALL-STAR', '2,500P ~', const Color(0xFFFF4D4D)),
-        _buildTierRow('MAJOR', '1,200P ~', const Color(0xFFFFD700)),
-        _buildTierRow('MINOR', '400P ~', const Color(0xFFC0C0C0)),
-        _buildTierRow('PROSPECT', '0P ~', const Color(0xFFCD7F32)),
-        const Spacer(),
-        _buildTipBox(),
-      ],
+    final criteriaList = QuizTierUtils.battingTierCriteria.reversed.toList();
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '2중 승급 기준 (누적 안타 + 시즌 타율)',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: GRAYSCALE_LABEL_600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          ...criteriaList.map((c) {
+            final avgStr = c.minAvg <= 0
+                ? '시작 등급'
+                : '${c.minHits}안타 · .${(c.minAvg * 1000).round().toString().padLeft(3, '0')}+';
+            return _buildTierRow(
+              c.tierName,
+              avgStr,
+              QuizTierUtils.getTierColor(c.tierName),
+            );
+          }),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: GRAYSCALE_LABEL_100),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '🔥 연속 안타(콤보) 보상',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    color: BUTTON,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  '• 3연타: 진루 가속 (2루타 이상)\n• 5연타: 소모된 찬스 카드 1개 재충전\n• 10연타: 홈런 진루 + 동률 시 최대 연속안타 우선',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.45,
+                    color: GRAYSCALE_LABEL_700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildTipBox(),
+        ],
+      ),
     );
   }
 
@@ -2004,7 +1857,7 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              '정답을 빨리 맞힐수록 더 높은 포인트와 콤보 점수를 얻을 수 있습니다!',
+              '3연타 2루타 · 5연타 찬스 카드 충전 · 10연타 홈런! 타격왕 동률 시 최대 연속안타가 우선합니다.',
               style: TextStyle(
                 fontSize: 12,
                 color: GRAYSCALE_LABEL_600,
@@ -2024,26 +1877,28 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
         children: [
           Icon(icon, size: 18, color: GRAYSCALE_LABEL_400),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: GRAYSCALE_LABEL_500,
-                  fontWeight: FontWeight.w600,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: GRAYSCALE_LABEL_500,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              Text(
-                desc,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: GRAYSCALE_LABEL_800,
-                  fontWeight: FontWeight.bold,
+                Text(
+                  desc,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: GRAYSCALE_LABEL_800,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -2065,105 +1920,4 @@ class _QuizRankingPageState extends State<QuizRankingPage> {
         .inDays;
     return diff > 0 ? '시즌 종료까지 D-$diff' : '시즌 종료 임박!';
   }
-}
-
-class _Iso3DBlockPainter extends CustomPainter {
-  final Color baseColor;
-  final Color sideColor;
-  final double height;
-  final int rank;
-
-  _Iso3DBlockPainter({
-    required this.baseColor,
-    required this.sideColor,
-    required this.height,
-    required this.rank,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const double skew = 12.0;
-    const double radius = 12.0;
-    final double w = size.width;
-    final double h = height;
-
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    // ── blockPath: 정면(topPath 연장) + 오른쪽 측면도 full-height ──
-    final blockPath = Path()
-      ..moveTo(radius + skew, 0)
-      ..lineTo(w - radius, 0)
-      // 오른쪽 뒤 모서리 커브 → 뒤쪽 엣지(w) 진입
-      ..quadraticBezierTo(w, 0, w, skew * 0.4)
-      // ★ 뒤쪽 엣지(w)를 h만큼 그대로 내려감 (측면 뒤 엣지)
-      ..lineTo(w, h + skew * 1.6)
-      // 오른쪽 아래: 뒤에서 정면 하단으로 꺾임
-      ..quadraticBezierTo(w, h + skew * 2, w - skew - radius, h + skew * 2)
-      // 바닥 직선
-      ..lineTo(radius, h + skew * 2)
-      // 왼쪽 아래 모서리
-      ..quadraticBezierTo(0, h + skew * 2, 0, h + skew * 2 - radius)
-      // 왼쪽 수직 연장
-      ..lineTo(0, skew * 2)
-      // 왼쪽 위 모서리 (캡)
-      ..quadraticBezierTo(0, skew * 2, skew * 0.5, skew)
-      ..lineTo(skew, 0)
-      ..quadraticBezierTo(skew, 0, radius + skew, 0)
-      ..close();
-
-    // 1. 전체 블록 기본색 (정면색)
-    canvas.drawPath(blockPath, paint..color = baseColor);
-
-    // 2. 윗면 캡 오버레이 (밝게) - blockPath 와 동일한 상단 경로
-    final capPath = Path()
-      ..moveTo(radius + skew, 0)
-      ..lineTo(w - radius, 0)
-      ..quadraticBezierTo(w, 0, w, skew * 0.4) // blockPath 와 동일한 커브
-      ..lineTo(w, skew * 2)
-      ..lineTo(0, skew * 2)
-      ..quadraticBezierTo(0, skew * 2, skew * 0.5, skew)
-      ..lineTo(skew, 0)
-      ..quadraticBezierTo(skew, 0, radius + skew, 0)
-      ..close();
-
-    canvas.save();
-    canvas.clipPath(blockPath);
-    canvas.drawPath(
-      capPath,
-      paint..color = Color.lerp(baseColor, Colors.white, 0.38)!,
-    );
-    canvas.restore();
-
-    // 3. 오른쪽 측면 오버레이 (sideColor) - 뒤쪽 엣지(x=w) 전체 높이
-    final sideFacePath = Path()
-      ..moveTo(w - skew, skew * 2) // 정면 top-right
-      ..quadraticBezierTo(w, 0, w, skew * 0.4) // 뒤쪽 top-right
-      ..lineTo(w, h + skew * 1.6) // 뒤쪽 bottom-right
-      ..quadraticBezierTo(w, h + skew * 2, w - skew - radius, h + skew * 2)
-      ..lineTo(w - skew, h + skew * 2) // 정면 bottom-right
-      ..close();
-
-    canvas.save();
-    canvas.clipPath(blockPath);
-    canvas.drawPath(sideFacePath, paint..color = sideColor);
-    canvas.restore();
-
-    // 3. 대각선 광택
-    canvas.save();
-    canvas.clipPath(blockPath);
-    canvas.drawPath(
-      Path()
-        ..moveTo(0, h * 0.45 + skew * 2)
-        ..lineTo(w - skew, skew * 2)
-        ..lineTo(w - skew, h * 0.25 + skew * 2)
-        ..lineTo(0, h * 0.65 + skew * 2)
-        ..close(),
-      Paint()..color = Colors.white.withOpacity(0.12),
-    );
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _Iso3DBlockPainter oldDelegate) =>
-      oldDelegate.height != height || oldDelegate.baseColor != baseColor;
 }

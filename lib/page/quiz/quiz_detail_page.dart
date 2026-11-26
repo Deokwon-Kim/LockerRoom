@@ -142,7 +142,7 @@ class QuizDetailPage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${result.score}점',
+            result.formattedBattingAverage,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 48,
@@ -158,7 +158,7 @@ class QuizDetailPage extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              '${result.correctAnswers} / ${result.totalQuestions} 정답',
+              '${result.atBats}타수 ${result.hits}안타',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -234,8 +234,9 @@ class QuizDetailPage extends StatelessWidget {
     );
   }
 
-  // 점수 내역 상세 리스트
+  // 타격 기록 상세 리스트
   Widget _buildScoreBreakdown(Color teamColor) {
+    final box = result.boxScore;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -247,7 +248,7 @@ class QuizDetailPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '점수 획득 내역',
+            '타격 기록 상세',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -256,32 +257,34 @@ class QuizDetailPage extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _buildBreakdownItem(
-            '기본 점수',
-            result.baseScore,
-            Icons.check_circle_outline,
+            '안타 / 타수',
+            '${result.hits}안타 / ${result.atBats}타수',
+            Icons.sports_baseball_outlined,
             Colors.blue,
           ),
           _buildDivider(),
           _buildBreakdownItem(
-            '난이도 보너스',
-            result.difficultyBonus,
-            Icons.stars_outlined,
-            Colors.purple,
-          ),
-          _buildDivider(),
-          _buildBreakdownItem(
-            '콤보 보너스',
-            result.comboBonus,
+            '최대 연속 안타',
+            '${box?.maxCombo ?? result.hits}연타',
             Icons.auto_awesome,
             Colors.orange,
           ),
-          _buildDivider(),
-          _buildBreakdownItem(
-            '스피드 보너스',
-            result.speedBonus,
-            Icons.bolt,
-            Colors.green,
-          ),
+          if (box != null) ...[
+            _buildDivider(),
+            _buildBreakdownItem(
+              '홈런 / 총 득점',
+              '${box.homeRuns} HR · ${box.runs} R',
+              Icons.stars_outlined,
+              Colors.purple,
+            ),
+            _buildDivider(),
+            _buildBreakdownItem(
+              '장타율 (SLG)',
+              box.formattedSlg,
+              Icons.bolt,
+              Colors.green,
+            ),
+          ],
           const SizedBox(height: 10),
         ],
       ),
@@ -290,7 +293,7 @@ class QuizDetailPage extends StatelessWidget {
 
   Widget _buildBreakdownItem(
     String label,
-    int score,
+    String valueText,
     IconData icon,
     Color color,
   ) {
@@ -306,11 +309,11 @@ class QuizDetailPage extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            '+$score P',
+            valueText,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: score > 0 ? color : GRAYSCALE_LABEL_300,
+              color: color,
               fontFamily: 'kbo',
             ),
           ),

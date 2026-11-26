@@ -12,6 +12,7 @@ import 'package:lockerroom/model/quiz_result_model.dart';
 import 'package:lockerroom/page/quiz/quiz_play_page.dart';
 import 'package:lockerroom/main.dart';
 import 'package:lockerroom/provider/badge_provider.dart';
+import 'package:lockerroom/provider/quiz_provider.dart';
 import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
@@ -45,6 +46,7 @@ class _QuizResultPageState extends State<QuizResultPage>
   // 애니메이션용 상태
   int _animatingScore = 0;
   String _scorePhaseLabel = "";
+  String _scoreUnitSuffix = "안타";
   bool _showFinalGrade = false;
   double _scoreScale = 1.0;
   bool _isImpactActive = false;
@@ -136,93 +138,110 @@ class _QuizResultPageState extends State<QuizResultPage>
     });
   }
 
-  // 점수 애니메이션 시퀀스 (보너스 개별 노출 -> 최종 합계)
+  // 타격 기록 애니메이션 시퀀스 (안타 -> 연속 안타 -> 홈런 -> 득점 -> 최종 기록)
   Future<void> _startScoreAnimation() async {
-    await Future.delayed(Duration(milliseconds: 800));
+    await Future.delayed(Duration(milliseconds: 650));
 
-    // 1. 기본 점수 팡!
+    final int hits = widget.result.boxScore?.hits ?? widget.result.hits;
+    final int maxCombo = widget.result.boxScore?.maxCombo ?? widget.result.hits;
+    final int homeRuns = widget.result.boxScore?.homeRuns ?? 0;
+    final int runs = widget.result.boxScore?.runs ?? 0;
+
+    // 1. 오늘의 안타
     if (!mounted) return;
     setState(() {
       _isImpactActive = true;
-      _scoreScale = 1.4;
-      _animatingScore = widget.result.baseScore;
-      _scorePhaseLabel = "기본 점수";
+      _scoreScale = 1.35;
+      _animatingScore = hits;
+      _scorePhaseLabel = "오늘의 안타";
+      _scoreUnitSuffix = "안타";
     });
     await Future.delayed(Duration(milliseconds: 500));
+    if (!mounted) return;
     setState(() {
       _isImpactActive = false;
       _scoreScale = 1.0;
     });
 
-    // 2. 난이도 보너스 팡!
-    if (widget.result.difficultyBonus > 0) {
-      await Future.delayed(Duration(milliseconds: 1000));
-      if (!mounted) return;
-      setState(() {
-        _animatingScore = 0; // 초기화 후 다시 카운트업
-      });
-      await Future.delayed(Duration(milliseconds: 100));
-      setState(() {
-        _isImpactActive = true;
-        _scoreScale = 1.4;
-        _animatingScore = widget.result.difficultyBonus;
-        _scorePhaseLabel = "난이도 보너스";
-      });
-      await Future.delayed(Duration(milliseconds: 500));
-      setState(() {
-        _isImpactActive = false;
-        _scoreScale = 1.0;
-      });
-    }
-
-    // 3. 콤보 보너스 팡!
-    if (widget.result.comboBonus > 0) {
-      await Future.delayed(Duration(milliseconds: 1000));
+    // 2. 최대 연속 안타 (2연타 이상일 때)
+    if (maxCombo >= 2) {
+      await Future.delayed(Duration(milliseconds: 850));
       if (!mounted) return;
       setState(() {
         _animatingScore = 0;
       });
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(Duration(milliseconds: 80));
+      if (!mounted) return;
       setState(() {
         _isImpactActive = true;
-        _scoreScale = 1.4;
-        _animatingScore = widget.result.comboBonus;
-        _scorePhaseLabel = "콤보 보너스";
+        _scoreScale = 1.35;
+        _animatingScore = maxCombo;
+        _scorePhaseLabel = "최대 연속 안타";
+        _scoreUnitSuffix = "연타";
       });
       await Future.delayed(Duration(milliseconds: 500));
+      if (!mounted) return;
       setState(() {
         _isImpactActive = false;
         _scoreScale = 1.0;
       });
     }
 
-    // 4. 스피드 보너스 팡!
-    if (widget.result.speedBonus > 0) {
-      await Future.delayed(Duration(milliseconds: 1000));
+    // 3. 홈런 (스피드 정답 1개 이상일 때)
+    if (homeRuns > 0) {
+      await Future.delayed(Duration(milliseconds: 850));
       if (!mounted) return;
       setState(() {
         _animatingScore = 0;
       });
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(Duration(milliseconds: 80));
+      if (!mounted) return;
       setState(() {
         _isImpactActive = true;
-        _scoreScale = 1.4;
-        _animatingScore = widget.result.speedBonus;
-        _scorePhaseLabel = "스피드 보너스";
+        _scoreScale = 1.35;
+        _animatingScore = homeRuns;
+        _scorePhaseLabel = "스피드 홈런";
+        _scoreUnitSuffix = "홈런";
       });
       await Future.delayed(Duration(milliseconds: 500));
+      if (!mounted) return;
       setState(() {
         _isImpactActive = false;
         _scoreScale = 1.0;
       });
     }
 
-    // 5. 최종 결과 확정 (페이드로 최종 점수 등장)
-    await Future.delayed(Duration(milliseconds: 1200));
+    // 4. 오늘의 득점 (득점이 1 이상일 때)
+    if (runs > 0) {
+      await Future.delayed(Duration(milliseconds: 850));
+      if (!mounted) return;
+      setState(() {
+        _animatingScore = 0;
+      });
+      await Future.delayed(Duration(milliseconds: 80));
+      if (!mounted) return;
+      setState(() {
+        _isImpactActive = true;
+        _scoreScale = 1.35;
+        _animatingScore = runs;
+        _scorePhaseLabel = "오늘의 득점";
+        _scoreUnitSuffix = "득점";
+      });
+      await Future.delayed(Duration(milliseconds: 500));
+      if (!mounted) return;
+      setState(() {
+        _isImpactActive = false;
+        _scoreScale = 1.0;
+      });
+    }
+
+    // 5. 최종 타격 성적 카드 등장
+    await Future.delayed(Duration(milliseconds: 900));
     if (!mounted) return;
     setState(() {
-      _animatingScore = widget.result.score; // 최종 합계
-      _scorePhaseLabel = "최종 점수";
+      _animatingScore = hits;
+      _scorePhaseLabel = "타격 기록 확정";
+      _scoreUnitSuffix = "안타";
       _showFinalGrade = true;
     });
   }
@@ -336,6 +355,10 @@ class _QuizResultPageState extends State<QuizResultPage>
                             children: [
                               // _buildMascotFeedback(team),
                               // SizedBox(height: 24),
+                              if (widget.result.boxScore != null) ...[
+                                _buildBoxScoreCard(isDarkMode),
+                                const SizedBox(height: 20),
+                              ],
                               _buildPerformanceReport(),
                               SizedBox(height: 24),
                               QuizRankingWidget(
@@ -471,9 +494,9 @@ class _QuizResultPageState extends State<QuizResultPage>
                             colors: [WHITE, Color(0xffffd700), WHITE],
                           ).createShader(bounds),
                           child: Text(
-                            '+${value.round()}',
+                            '+${value.round()}$_scoreUnitSuffix',
                             style: TextStyle(
-                              fontSize: 100,
+                              fontSize: 64,
                               fontWeight: FontWeight.bold,
                               fontFamily: 'kbo',
                               color: WHITE,
@@ -519,69 +542,139 @@ class _QuizResultPageState extends State<QuizResultPage>
   }
 
   Widget _buildScoreHero() {
+    final teamColor =
+        context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
+    final teamGradEnd =
+        Color.lerp(teamColor, const Color(0xFF242C5E), 0.45) ?? teamColor;
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final rankProvider = context.watch<QuizRankingProvider>();
+    final seasonAvgText = currentUserId != null
+        ? rankProvider.getFormattedSeasonBattingAverage(currentUserId)
+        : widget.result.formattedBattingAverage;
+    final seasonAb = currentUserId != null
+        ? rankProvider.getTotalAtBats(currentUserId)
+        : widget.result.atBats;
+    final seasonHits = currentUserId != null
+        ? rankProvider.getTotalHits(currentUserId)
+        : widget.result.hits;
+    final badgeTitle =
+        widget.result.boxScore?.title ?? _getScoreMessage(widget.result.grade);
+
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: _getGradeGradient(widget.result.grade),
+          colors: [teamColor, teamGradEnd],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
-            color: _getScoreColor(widget.result.grade).withOpacity(0.3),
+            color: teamColor.withValues(alpha: 0.28),
             blurRadius: 20,
-            offset: Offset(0, 10),
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '🏆 $badgeTitle',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: WHITE,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.24),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '최대 ${widget.result.boxScore?.maxCombo ?? widget.result.hits}연속 안타',
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFFFFD875),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Text(
-            widget.result.grade,
-            style: TextStyle(
-              fontSize: 80,
-              fontWeight: FontWeight.bold,
+            widget.result.formattedBattingAverage,
+            style: const TextStyle(
+              fontSize: 58,
+              fontWeight: FontWeight.w900,
               fontFamily: 'kbo',
               color: WHITE,
-              shadows: [
-                Shadow(
-                  blurRadius: 20,
-                  color: Colors.black.withOpacity(0.2),
-                  offset: Offset(0, 5),
+              height: 1.0,
+              letterSpacing: -1.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '오늘 타격 성적 · ${widget.result.atBats}타수 ${widget.result.hits}안타 (${widget.result.grade}등급)',
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              color: WHITE.withValues(alpha: 0.88),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '시즌 누적 타율 $seasonAvgText',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    color: WHITE,
+                  ),
+                ),
+                Text(
+                  '${seasonAb}타수 ${seasonHits}안타',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF34D399),
+                  ),
                 ),
               ],
-            ),
-          ),
-
-          Text(
-            '${widget.result.score}점',
-            style: TextStyle(
-              fontSize: 48,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'kbo',
-              color: WHITE.withOpacity(0.95),
-              letterSpacing: 2,
-            ),
-          ),
-          SizedBox(height: 10),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            decoration: BoxDecoration(
-              color: WHITE.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              _getScoreMessage(widget.result.grade),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: WHITE,
-                fontFamily: 'kbo',
-                letterSpacing: 0.5,
-              ),
             ),
           ),
         ],
@@ -725,75 +818,28 @@ class _QuizResultPageState extends State<QuizResultPage>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '점수 상세 내역',
+                '타격 상세 내역',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: isDarkMode ? GRAYSCALE_LABEL_400 : GRAYSCALE_LABEL_600,
                 ),
               ),
-              // 600번 라인 부근의 Tooltip 부분을 아래와 같이 보강합니다.
               Tooltip(
                 triggerMode: TooltipTriggerMode.tap,
-                showDuration: const Duration(seconds: 4), // 4초 동안 보여줌
+                showDuration: const Duration(seconds: 4),
                 waitDuration: Duration.zero,
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.symmetric(horizontal: 24),
-                richMessage: TextSpan(
-                  text: '점수 산정 기준 안내\n',
-                  style: const TextStyle(
+                richMessage: const TextSpan(
+                  text: '타격 기록 산정 안내\n',
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
                   children: [
-                    const TextSpan(
-                      text: '\n[일반 점수]\n',
-                      style: TextStyle(
-                        color: Colors.orangeAccent,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const TextSpan(
-                      text:
-                          '• 기본 점수: 정답당 10점\n• 난이도: 어려움(+10) / 중간(+5)\n• 콤보: 3/5/10연속 정답 시 추가 보너스\n',
-                      style: TextStyle(
-                        fontWeight: FontWeight.normal,
-                        height: 1.5,
-                      ),
-                    ),
-                    const TextSpan(
-                      text: '\n[⚡️ 스피드 보너스]\n',
-                      style: TextStyle(
-                        color: Colors.greenAccent,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const TextSpan(
-                      text: '문제가 화면에 나타난 순간부터 정답을 클릭할 때까지의 시간을 측정합니다.\n',
-                      style: TextStyle(
-                        fontWeight: FontWeight.normal,
-                        fontSize: 11,
-                        color: Colors.white70,
-                      ),
-                    ),
-                    const TextSpan(
-                      text:
-                          '• 5초 이내 정답: +10점 (초광속!)\n• 10초 이내 정답: +5점 (나이스 스피드!)\n',
-                      style: TextStyle(
-                        fontWeight: FontWeight.normal,
-                        height: 1.5,
-                      ),
-                    ),
-                    const TextSpan(
-                      text: '\n[🏅 등급 기준 (정답률)]\n',
-                      style: TextStyle(
-                        color: Colors.lightBlueAccent,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const TextSpan(
-                      text:
-                          '• S: 100%  • A: 90%↑  • B: 80%↑\n• C: 70%↑  • D: 70% 미만',
+                    TextSpan(
+                      text: '\n• 타율: 안타 ÷ 타수 (대타 기용 패스 문제는 타수 제외)\n• 장타: 3초 이내 스피드 정답 또는 어려움 난이도 시 2루타·홈런\n• 최대 연속 안타: 아웃 없이 이어진 연속 안타 수',
                       style: TextStyle(
                         fontWeight: FontWeight.normal,
                         height: 1.5,
@@ -801,7 +847,6 @@ class _QuizResultPageState extends State<QuizResultPage>
                     ),
                   ],
                 ),
-
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Icon(
@@ -815,33 +860,32 @@ class _QuizResultPageState extends State<QuizResultPage>
               ),
             ],
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
 
           _buildScoreBreakdownRow(
-            '기본 점수',
-            '${widget.result.baseScore}',
-            Colors.black87,
+            '안타 / 타수',
+            '${widget.result.hits}안타 / ${widget.result.atBats}타수',
+            isDarkMode ? WHITE : Colors.black87,
           ),
-          if (widget.result.difficultyBonus > 0)
+          _buildScoreBreakdownRow(
+            '최대 연속 안타',
+            '${widget.result.boxScore?.maxCombo ?? widget.result.hits}연타',
+            ORANGE_PRIMARY_600,
+          ),
+          if (widget.result.boxScore != null) ...[
             _buildScoreBreakdownRow(
-              '난이도 보너스',
-              '+${widget.result.difficultyBonus}',
+              '홈런 / 총 득점',
+              '${widget.result.boxScore!.homeRuns} HR · ${widget.result.boxScore!.runs} R',
               BLUE_SECONDARY_600,
             ),
-          if (widget.result.comboBonus > 0)
             _buildScoreBreakdownRow(
-              '콤보 보너스',
-              '+${widget.result.comboBonus}',
-              ORANGE_PRIMARY_600,
-            ),
-          if (widget.result.speedBonus > 0)
-            _buildScoreBreakdownRow(
-              '스피드 보너스',
-              '+${widget.result.speedBonus}',
+              '장타율 (SLG)',
+              widget.result.boxScore!.formattedSlg,
               GREEN_SECONDARY_700,
             ),
+          ],
 
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -852,7 +896,7 @@ class _QuizResultPageState extends State<QuizResultPage>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'TOTAL SCORE',
+                  'BATTING AVG',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
@@ -862,10 +906,11 @@ class _QuizResultPageState extends State<QuizResultPage>
                   ),
                 ),
                 Text(
-                  '${widget.result.score}',
+                  widget.result.formattedBattingAverage,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
+                    fontFamily: 'kbo',
                     color: isDarkMode ? WHITE : GRAYSCALE_LABEL_900,
                   ),
                 ),
@@ -1109,7 +1154,205 @@ class _QuizResultPageState extends State<QuizResultPage>
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => QuizPlayPage(category: widget.result.category),
+        builder: (context) => QuizPlayPage(
+          category: widget.result.category,
+          mode: widget.result.mode == 'threeOut'
+              ? QuizMode.threeOut
+              : QuizMode.normal,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBoxScoreCard(bool isDarkMode) {
+    final box = widget.result.boxScore!;
+    final isSurvival = widget.result.mode == 'threeOut';
+    final cardBg = isDarkMode ? const Color(0xFF0E1525) : WHITE;
+    final borderCol = isDarkMode
+        ? Colors.white.withValues(alpha: 0.12)
+        : GRAYSCALE_LABEL_200;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: borderCol),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.35 : 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '오늘의 타격 기록지 (Box Score)',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: 'kbo',
+                        color: isDarkMode ? WHITE : GRAYSCALE_LABEL_900,
+                      ),
+                    ),
+                    if (isSurvival) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        '3아웃 서바이벌 · ${box.inningsReached}회 경기 종료',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: isDarkMode
+                              ? Colors.white60
+                              : GRAYSCALE_LABEL_600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFF5C451), Color(0xFFFF8A3D)],
+                  ),
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFF5C451).withValues(alpha: 0.28),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  '🏆 ${box.title}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF090D16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _buildBentoStatTile(
+                  label: '타율 (AVG)',
+                  value: box.formattedAvg,
+                  sub: '${box.atBats}타수 ${box.hits}안타',
+                  valueColor: const Color(0xFFF5C451),
+                  isDarkMode: isDarkMode,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildBentoStatTile(
+                  label: '홈런 / 안타',
+                  value: '${box.homeRuns} HR / ${box.hits} H',
+                  sub: '장타율 ${box.formattedSlg}',
+                  valueColor: const Color(0xFF34D399),
+                  isDarkMode: isDarkMode,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _buildBentoStatTile(
+                  label: '총 득점 / 타점',
+                  value: '${box.runs} R / ${box.rbi} RBI',
+                  sub: '클러치 ${box.clutchHits}회',
+                  valueColor: isDarkMode ? WHITE : GRAYSCALE_LABEL_900,
+                  isDarkMode: isDarkMode,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildBentoStatTile(
+                  label: '최대 연속 안타',
+                  value: '${box.maxCombo}연타',
+                  sub: '${box.inningsReached}이닝 도달',
+                  valueColor: const Color(0xFF38BDF8),
+                  isDarkMode: isDarkMode,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBentoStatTile({
+    required String label,
+    required String value,
+    required String sub,
+    required Color valueColor,
+    required bool isDarkMode,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? Colors.white.withValues(alpha: 0.045)
+            : GRAYSCALE_LABEL_50,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: isDarkMode
+              ? Colors.white.withValues(alpha: 0.1)
+              : GRAYSCALE_LABEL_200,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: isDarkMode ? Colors.white60 : GRAYSCALE_LABEL_600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'kbo',
+              color: valueColor,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            sub,
+            style: TextStyle(
+              fontSize: 10,
+              color: isDarkMode ? Colors.white54 : GRAYSCALE_LABEL_500,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1254,7 +1497,7 @@ class _QuizResultPageState extends State<QuizResultPage>
 
       uploadProvider.setImages([tempFile]);
       uploadProvider.setInitialCaption(
-        'ILU ${widget.result.category} 퀴즈 ${widget.result.score}점 달성! 🎉\n\n#야구퀴즈 #야빠 #ILU #${widget.result.category}',
+        'ILU ${widget.result.category} 퀴즈 타율 ${widget.result.formattedBattingAverage} (${widget.result.atBats}타수 ${widget.result.hits}안타) 달성! 🎉\n\n#야구퀴즈 #야빠 #ILU #${widget.result.category}',
       );
 
       // 공유 카운트 증가
@@ -1306,7 +1549,7 @@ class _QuizResultPageState extends State<QuizResultPage>
     await Share.shareXFiles(
       [XFile(imagePath)],
       text:
-          'ILU ${widget.result.category} 퀴즈 ${widget.result.score}점 달성! 🎉\n\n#야구퀴즈 #야빠 #ILU #${widget.result.category}',
+          'ILU ${widget.result.category} 퀴즈 타율 ${widget.result.formattedBattingAverage} (${widget.result.atBats}타수 ${widget.result.hits}안타) 달성! 🎉\n\n#야구퀴즈 #야빠 #ILU #${widget.result.category}',
       sharePositionOrigin: sharePositionOrigin,
     );
 
@@ -1330,21 +1573,6 @@ class _QuizResultPageState extends State<QuizResultPage>
     );
   }
 
-  List<Color> _getGradeGradient(String grade) {
-    switch (grade) {
-      case 'S':
-        return [Color(0xffffd700), Color(0xffffa500)]; // Gold
-      case 'A':
-        return [Color(0xff4a90e2), Color(0xff357abd)]; // blue
-      case 'B':
-        return [Color(0xff2ecc71), Color(0xff27ae60)]; // Green
-      case 'C':
-        return [Color(0xffffa500), Color(0xffff8c00)]; // Orange
-      default:
-        return [Color(0xffe73c3c), Color(0xffc0392b)]; // Red
-    }
-  }
-
   String _getScoreMessage(String grade) {
     switch (grade) {
       case 'S':
@@ -1357,21 +1585,6 @@ class _QuizResultPageState extends State<QuizResultPage>
         return '잘했어요! 조금만 더 공부하면 완벽!';
       default:
         return '다시 도전해보세요! 화이팅! 💪';
-    }
-  }
-
-  Color _getScoreColor(String grade) {
-    switch (grade) {
-      case 'S':
-        return Color(0xFFFFD700);
-      case 'A':
-        return BLUE_SECONDARY_600;
-      case 'B':
-        return GREEN_SUCCESS_TEXT_50;
-      case 'C':
-        return ORANGE_PRIMARY_500;
-      default:
-        return RED_DANGER_TEXT_50;
     }
   }
 }

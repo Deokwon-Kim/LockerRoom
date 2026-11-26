@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:lockerroom/utils/quiz_season_utils.dart';
+import 'package:lockerroom/utils/quiz_tier_utils.dart';
 
 class SeasonResultOverlay extends StatefulWidget {
   final String seasonLabel;
   final int totalScore;
   final String finalRank;
   final VoidCallback onDismiss;
+  final double? seasonAvg;
+  final int? totalHits;
+  final int? totalAtBats;
+  final String? seasonId;
+  final int? rankNum;
 
   const SeasonResultOverlay({
     super.key,
@@ -14,6 +20,11 @@ class SeasonResultOverlay extends StatefulWidget {
     required this.totalScore,
     required this.finalRank,
     required this.onDismiss,
+    this.seasonAvg,
+    this.totalHits,
+    this.totalAtBats,
+    this.seasonId,
+    this.rankNum,
   });
 
   @override
@@ -131,8 +142,29 @@ class _SeasonResultOverlayState extends State<SeasonResultOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final tier = QuizSeasonUtils.getTier(widget.totalScore);
-    final tierColor = _getTierColor(tier);
+    final bool hasBattingStats = widget.seasonAvg != null;
+    final String tier = hasBattingStats
+        ? QuizTierUtils.getBattingTierProgress(
+            widget.totalHits ?? 0,
+            widget.seasonAvg!,
+          ).currentTier
+        : QuizSeasonUtils.getTier(widget.totalScore);
+    final Color tierColor = hasBattingStats
+        ? QuizTierUtils.getTierColor(tier)
+        : _getTierColor(tier);
+    final String shortCode = widget.seasonId != null
+        ? QuizSeasonUtils.getSeasonShortCode(widget.seasonId!)
+        : '';
+    final String? runnerUpBadge = widget.rankNum == 2
+        ? '🥈 ${shortCode.isNotEmpty ? '$shortCode ' : ''}실버 슬러거'
+        : (widget.rankNum == 3
+              ? '🥉 ${shortCode.isNotEmpty ? '$shortCode ' : ''}브론즈 배터'
+              : null);
+    final String formattedAvg = hasBattingStats
+        ? ((widget.seasonAvg! * 1000).round() >= 1000
+              ? '1.000'
+              : '.${(widget.seasonAvg! * 1000).round().clamp(0, 999).toString().padLeft(3, '0')}')
+        : widget.totalScore.toString();
 
     return Material(
       color: Colors.transparent,
@@ -268,6 +300,31 @@ class _SeasonResultOverlayState extends State<SeasonResultOverlay>
                                     letterSpacing: 1,
                                   ),
                                 ),
+                                if (runnerUpBadge != null) ...[
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: tierColor.withOpacity(0.18),
+                                      borderRadius: BorderRadius.circular(999),
+                                      border: Border.all(
+                                        color: tierColor.withOpacity(0.6),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      runnerUpBadge,
+                                      style: const TextStyle(
+                                        fontFamily: 'kbo',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -293,9 +350,11 @@ class _SeasonResultOverlayState extends State<SeasonResultOverlay>
                                     ),
                                     const SizedBox(width: 16),
                                     _buildResultCard(
-                                      title: '시즌 점수',
-                                      value: widget.totalScore.toString(),
-                                      suffix: ' PTS',
+                                      title: hasBattingStats
+                                          ? '시즌 타율 (${widget.totalAtBats ?? 0}타수 ${widget.totalHits ?? 0}안타)'
+                                          : '시즌 점수',
+                                      value: formattedAvg,
+                                      suffix: hasBattingStats ? null : ' PTS',
                                       icon: Icons.emoji_events_rounded,
                                       color: tierColor,
                                     ),

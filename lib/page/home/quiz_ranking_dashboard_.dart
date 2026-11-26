@@ -56,21 +56,28 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
       builder: (context, rankProvider, teamProvider, _) {
         final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-        final top3Individuals = rankProvider.rankings.take(3).toList();
+        final top3Batting = rankProvider.battingKingRankings.take(3).toList();
         final myIndividualRanking = currentUserId != null
             ? rankProvider.getMyRanking(currentUserId)
             : null;
+        final mySeasonAvg = currentUserId != null
+            ? rankProvider.getFormattedSeasonBattingAverage(currentUserId)
+            : '.000';
 
         return Container(
           width: double.infinity,
-          height: 132,
+          height: 136,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.12),
+              width: 1,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -78,15 +85,31 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
             borderRadius: BorderRadius.circular(22),
             child: Stack(
               children: [
-                // 배경 그라데이션 (모던 다크 슬레이트)
+                // 배경 그라데이션 (Apple Sports 다크 네이비 + 메쉬 글로우)
                 Positioned.fill(
                   child: Container(
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Color(0xFF16181D), Color(0xFF282C35)],
+                        colors: [
+                          const Color(0xFF090D16),
+                          const Color(0xFF131C31),
+                          widget.selectedTeam.color.withValues(alpha: 0.35),
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: -30,
+                  top: -30,
+                  child: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: goldColor.withValues(alpha: 0.10),
                     ),
                   ),
                 ),
@@ -168,12 +191,12 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
                                             ),
                                           ),
                                           child: const Text(
-                                            'BEST FAN CHALLENGE',
+                                            'NEW · 3아웃 서바이벌',
                                             style: TextStyle(
-                                              color: Color(0xFF16181D),
-                                              fontSize: 9,
+                                              color: Color(0xFF090D16),
+                                              fontSize: 9.5,
                                               fontWeight: FontWeight.w900,
-                                              letterSpacing: 1.0,
+                                              letterSpacing: 0.4,
                                             ),
                                           ),
                                         ),
@@ -222,8 +245,9 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
                             context,
                             goldColor,
                             rankProvider,
-                            top3Individuals,
+                            top3Batting,
                             myIndividualRanking,
+                            mySeasonAvg,
                           ),
                         ],
                       ),
@@ -265,8 +289,9 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
     BuildContext context,
     Color goldColor,
     QuizRankingProvider rankProvider,
-    List<RankingUserModel> top3Individuals,
+    List<BattingKingEntry> top3Batting,
     RankingUserModel? myIndividualRanking,
+    String mySeasonAvg,
   ) {
     return GestureDetector(
       onTap: () => Navigator.of(
@@ -314,8 +339,8 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
                   const SizedBox(height: 2),
                   Text(
                     myIndividualRanking != null
-                        ? '내 순위: ${myIndividualRanking.rank}위 (${myIndividualRanking.score}점)'
-                        : '지금 도전하고 랭킹을 올려보세요!',
+                        ? '내 순위: ${myIndividualRanking.rank}위 (타율 $mySeasonAvg)'
+                        : '지금 도전하고 타율을 올려보세요!',
                     style: const TextStyle(fontSize: 11, color: WHITE),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -324,7 +349,7 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
               ),
             ),
             const SizedBox(width: 8),
-            if (rankProvider.isLoading && top3Individuals.isEmpty)
+            if (rankProvider.isLoading && top3Batting.isEmpty)
               SizedBox(
                 width: 60,
                 child: Center(
@@ -338,34 +363,34 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
                   ),
                 ),
               )
-            else if (top3Individuals.isNotEmpty)
+            else if (top3Batting.isNotEmpty)
               Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  if (top3Individuals.length > 1)
+                  if (top3Batting.length > 1)
                     _buildCompactTopItem(
-                      top3Individuals[1].name,
-                      top3Individuals[1].score,
+                      top3Batting[1].name,
+                      top3Batting[1].formattedBattingAverage,
                       2,
-                      top3Individuals[1].profileUrl,
+                      top3Batting[1].profileUrl,
                     ),
-                  if (top3Individuals.isNotEmpty) ...[
+                  if (top3Batting.isNotEmpty) ...[
                     const SizedBox(width: 4),
                     _buildCompactTopItem(
-                      top3Individuals[0].name,
-                      top3Individuals[0].score,
+                      top3Batting[0].name,
+                      top3Batting[0].formattedBattingAverage,
                       1,
-                      top3Individuals[0].profileUrl,
+                      top3Batting[0].profileUrl,
                     ),
                   ],
-                  if (top3Individuals.length > 2) ...[
+                  if (top3Batting.length > 2) ...[
                     const SizedBox(width: 4),
                     _buildCompactTopItem(
-                      top3Individuals[2].name,
-                      top3Individuals[2].score,
+                      top3Batting[2].name,
+                      top3Batting[2].formattedBattingAverage,
                       3,
-                      top3Individuals[2].profileUrl,
+                      top3Batting[2].profileUrl,
                     ),
                   ],
                 ],
@@ -382,7 +407,7 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
 
   Widget _buildCompactTopItem(
     String name,
-    int score,
+    String valueLabel,
     int rank,
     String? profileUrl,
   ) {
@@ -459,7 +484,7 @@ class QuizRankingDashboardState extends State<QuizRankingDashboard> {
           ),
         ),
         Text(
-          '$score점',
+          valueLabel,
           style: const TextStyle(fontSize: 8, color: Colors.white70),
         ),
       ],

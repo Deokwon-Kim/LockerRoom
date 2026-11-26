@@ -10,7 +10,6 @@ import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/utils/quiz_season_utils.dart';
 import 'package:lockerroom/utils/quiz_tier_utils.dart';
-import 'package:lockerroom/widgets/champion_overlay.dart';
 import 'package:lockerroom/provider/badge_provider.dart';
 import 'package:lockerroom/widgets/season_result_overlay.dart';
 import 'package:lockerroom/widgets/season_start_overlay.dart';
@@ -66,7 +65,6 @@ class _QuizStartPageState extends State<QuizStartPage> {
       }
     });
   }
-
 
   Future<void> _checkAndShowSeasonResultOverlay() async {
     final prefs = await SharedPreferences.getInstance();
@@ -125,10 +123,6 @@ class _QuizStartPageState extends State<QuizStartPage> {
         ? rankProvider.getMyRanking(currentUserId)
         : null;
 
-    // [QA 보강] 랭킹 데이터에 사진이 없으면 현재 로그인 유저의 사진을 폴백으로 사용
-    final currentUserPhotoUrl = FirebaseAuth.instance.currentUser?.photoURL;
-    final fallbackAvatarUrl = myRanking?.profileUrl ?? currentUserPhotoUrl;
-
     final myTeamRanking = selectedTeamName != null
         ? rankProvider.getMyTeamRanking(selectedTeamName)
         : null;
@@ -177,88 +171,6 @@ class _QuizStartPageState extends State<QuizStartPage> {
             seasonLabel: prevSeasonLabel,
             totalScore: myRanking.score,
             finalRank: '${myRanking.rank}위',
-            onDismiss: () => Navigator.of(context, rootNavigator: true).pop(),
-          );
-        },
-      );
-    }
-
-    // 2. 개인 챔피언 오버레이 (1위일 때만)
-    if (isIndividualChampion && mounted && myRanking != null) {
-      // 트로피 자동 수집 (영구 저장)
-      if (currentUserId != null) {
-        rankProvider.saveTrophy(
-          QuizTrophyModel(
-            id: '',
-            userId: currentUserId,
-            seasonId: prevSeasonId,
-            seasonLabel: prevSeasonLabel,
-            userName: myRanking.name,
-            teamName: selectedTeamName,
-            teamLogoUrl: teamProvider.selectedTeam?.logoPath,
-            score: myRanking.score,
-            type: TrophyType.individual,
-            earnedAt: DateTime.now(),
-          ),
-        );
-      }
-
-      await showGeneralDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        barrierColor: Colors.black.withOpacity(0.95),
-        transitionDuration: const Duration(milliseconds: 400),
-        useRootNavigator: true,
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return ChampionOverlay(
-            winnerName: myRanking.name,
-            teamName: selectedTeamName,
-            totalScore: myRanking.score,
-            currentRank: '1위',
-            seasonLabel: prevSeasonLabel,
-            avatarUrl: fallbackAvatarUrl,
-            teamLogoUrl: teamProvider.selectedTeam?.logoPath,
-            type: ChampionType.individual,
-            onDismiss: () => Navigator.of(context, rootNavigator: true).pop(),
-          );
-        },
-      );
-    }
-
-    // 3. 팀 우승 오버레이 (구단 1위일 때만)
-    if (isTeamChampion && mounted && myTeamRanking != null) {
-      if (currentUserId != null) {
-        rankProvider.saveTrophy(
-          QuizTrophyModel(
-            id: '',
-            userId: currentUserId,
-            seasonId: prevSeasonId,
-            seasonLabel: prevSeasonLabel,
-            userName: myRanking?.name ?? '익명 팬',
-            teamName: selectedTeamName ?? '내 팀',
-            teamLogoUrl: teamProvider.selectedTeam?.logoPath,
-            score: myTeamRanking.totalScore,
-            type: TrophyType.team,
-            earnedAt: DateTime.now(),
-          ),
-        );
-      }
-
-      await showGeneralDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        barrierColor: Colors.black.withOpacity(0.95),
-        transitionDuration: const Duration(milliseconds: 400),
-        useRootNavigator: true,
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return ChampionOverlay(
-            winnerName: selectedTeamName ?? '내 팀',
-            teamName: selectedTeamName,
-            totalScore: myTeamRanking.totalScore,
-            currentRank: '1위',
-            seasonLabel: prevSeasonLabel,
-            teamLogoUrl: teamProvider.selectedTeam?.logoPath,
-            type: ChampionType.team,
             onDismiss: () => Navigator.of(context, rootNavigator: true).pop(),
           );
         },
@@ -359,48 +271,45 @@ class _QuizStartPageState extends State<QuizStartPage> {
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                   ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final category = _getCategories()[index];
-                      return _QuizCategoryCard(
-                        title: category['title'] as String,
-                        category: category['category'] as String,
-                        gradientColors: category['colors'] as List<Color>,
-                        icon: category['icon'] as IconData?,
-                        onTap: () {
-                          // 응원가 카테고리일 경우 별도 선택 페이지로 이동
-                          if (category['category'] == '응원가') {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const CheerSongCategoryPage(),
-                              ),
-                            );
-                            return;
-                          }
-
-                          // 그 외 다이얼로그 띄우기 -> 도전 -> 페이지 이동
-                          showDialog(
-                            context: context,
-                            builder: (context) => TeamBattleDialog(
-                              onStart: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => QuizPlayPage(
-                                      category: category['category'] as String,
-                                    ),
-                                  ),
-                                );
-                              },
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final category = _getCategories()[index];
+                    return _QuizCategoryCard(
+                      title: category['title'] as String,
+                      category: category['category'] as String,
+                      gradientColors: category['colors'] as List<Color>,
+                      icon: category['icon'] as IconData?,
+                      onTap: () {
+                        // 응원가 카테고리일 경우 별도 선택 페이지로 이동
+                        if (category['category'] == '응원가') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const CheerSongCategoryPage(),
                             ),
                           );
-                        },
-                      );
-                    },
-                    childCount: _getCategories().length,
-                  ),
+                          return;
+                        }
+
+                        // 그 외 다이얼로그 띄우기 -> 도전 -> 페이지 이동
+                        showDialog(
+                          context: context,
+                          builder: (context) => TeamBattleDialog(
+                            onStart: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => QuizPlayPage(
+                                    category: category['category'] as String,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  }, childCount: _getCategories().length),
                 ),
               ),
             ],
@@ -414,77 +323,80 @@ class _QuizStartPageState extends State<QuizStartPage> {
     final seasonLabel = QuizSeasonUtils.getSeasonLabel(
       QuizSeasonUtils.getCurrentSeasonId(),
     );
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '야구 없인 못 살아?',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'kbo',
-            height: 1.2,
-          ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF0E1525) : WHITE,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDarkMode
+              ? Colors.white.withValues(alpha: 0.09)
+              : GRAYSCALE_LABEL_200,
         ),
-        const SizedBox(height: 4),
-        const Text(
-          '그럼 풀어봐~',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'kbo',
-            height: 1.2,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.3 : 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            // 시즌 진행 중 배지
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.orange.shade400, Colors.orange.shade600],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.orange.withOpacity(0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.stars, color: Colors.white, size: 14),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$seasonLabel 진행 중! 🔥',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'kbo',
-                    ),
-                  ),
-                ],
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5C451).withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: const Color(0xFFF5C451).withValues(alpha: 0.4),
               ),
             ),
-          ],
-        ),
-      ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.stars_rounded,
+                  color: Color(0xFFF5C451),
+                  size: 14,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  '$seasonLabel · LIVE',
+                  style: const TextStyle(
+                    color: Color(0xFFF5C451),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'kbo',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '야구 없인 못 살아?\n그럼 풀어봐~',
+            style: TextStyle(
+              fontSize: 25,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'kbo',
+              height: 1.25,
+              letterSpacing: -0.4,
+              color: isDarkMode ? WHITE : BLACK,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildMyTierCard(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final teamColor =
-        context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
 
     return Consumer<QuizRankingProvider>(
       builder: (context, qrp, child) {
@@ -500,14 +412,17 @@ class _QuizStartPageState extends State<QuizStartPage> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: const Color(0xFF0E1525),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: tierColor.withOpacity(0.4), width: 1),
+            border: Border.all(
+              color: tierColor.withValues(alpha: 0.42),
+              width: 1.2,
+            ),
             boxShadow: [
               BoxShadow(
-                color: tierColor.withOpacity(0.15),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                color: tierColor.withValues(alpha: 0.14),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -692,21 +607,19 @@ class _QuizCategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = gradientColors.first;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: gradientColors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: const Color(0xFF0E1525),
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: accent.withValues(alpha: 0.35), width: 1.2),
           boxShadow: [
             BoxShadow(
-              color: gradientColors[0].withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
+              color: accent.withValues(alpha: 0.14),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -714,40 +627,51 @@ class _QuizCategoryCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           child: Stack(
             children: [
-              // 1. Watermark Icon (Large & Rotated)
-              if (icon != null)
-                Positioned(
-                  right: -20,
-                  bottom: -20,
-                  child: Transform.rotate(
-                    angle: -0.2, // Slight rotation
-                    child: Icon(
-                      icon,
-                      size: 100, // Large size
-                      color: Colors.white.withOpacity(0.15),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        accent.withValues(alpha: 0.22),
+                        Colors.transparent,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
                 ),
-
-              // 2. Content
+              ),
+              if (icon != null)
+                Positioned(
+                  right: -18,
+                  bottom: -18,
+                  child: Transform.rotate(
+                    angle: -0.2,
+                    child: Icon(
+                      icon,
+                      size: 92,
+                      color: accent.withValues(alpha: 0.14),
+                    ),
+                  ),
+                ),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(15),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Top Icon (Small)
                     if (icon != null)
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
+                          color: accent.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: accent.withValues(alpha: 0.35),
+                          ),
                         ),
-                        child: Icon(icon, color: Colors.white, size: 20),
+                        child: Icon(icon, color: Colors.white, size: 19),
                       ),
-
-                    // Title & Action
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -757,17 +681,17 @@ class _QuizCategoryCard extends StatelessWidget {
                             title,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 16.5,
+                              fontWeight: FontWeight.w800,
                               fontFamily: 'kbo',
                               height: 1.2,
                             ),
                           ),
                         ),
-                        const Icon(
-                          Icons.arrow_circle_right_rounded,
-                          color: Colors.white,
-                          size: 24,
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          color: Colors.white.withValues(alpha: 0.75),
+                          size: 15,
                         ),
                       ],
                     ),

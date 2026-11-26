@@ -1,14 +1,13 @@
 import 'dart:math';
 import 'package:lockerroom/model/quiz_result_model.dart';
-import 'package:lockerroom/utils/quiz_tier_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum MissionType {
   playCount, // 퀴즈 참여 횟수
-  totalCorrect, // 누적 정답 개수
-  totalScore, // 누적 점수
-  perfectGame, // 만점(10/10) 달성 횟수
-  highscoreGame, // 한 판에서 특정 점수 이상 달성
+  totalCorrect, // 누적 안타 개수
+  totalScore, // 연속 안타(연타) 달성
+  perfectGame, // 홈런(스피드 정답) 달성
+  highscoreGame, // 한 경기 타율 .700 이상 달성
 }
 
 class QuizMission {
@@ -18,6 +17,7 @@ class QuizMission {
   final int targetValue;
   final int currentValue;
   final int rewardPts;
+  final String rewardLabel;
   final bool isClaimed;
 
   QuizMission({
@@ -27,6 +27,7 @@ class QuizMission {
     required this.targetValue,
     required this.currentValue,
     required this.rewardPts,
+    this.rewardLabel = '보너스 +1안타',
     required this.isClaimed,
   });
 
@@ -51,18 +52,19 @@ class QuizMissionUtils {
           result.completedAt.day == now.day;
     }).toList();
 
-    // 현재 플레이어의 티어 기반으로 난이도 설정 (0: PROSPECT ~ 5: LEGEND)
+    // 현재 플레이어의 누적 경험치 기반으로 난이도 설정
     int difficultyLevel = 0;
-    if (userTotalScore >= 10000)
-      difficultyLevel = 5; // LEGEND
-    else if (userTotalScore >= 5000)
-      difficultyLevel = 4; // MVP
-    else if (userTotalScore >= 2500)
-      difficultyLevel = 3; // ALL-STAR
-    else if (userTotalScore >= 1200)
-      difficultyLevel = 2; // MAJOR
-    else if (userTotalScore >= 400)
-      difficultyLevel = 1; // MINOR
+    if (userTotalScore >= 10000) {
+      difficultyLevel = 5;
+    } else if (userTotalScore >= 5000) {
+      difficultyLevel = 4;
+    } else if (userTotalScore >= 2500) {
+      difficultyLevel = 3;
+    } else if (userTotalScore >= 1200) {
+      difficultyLevel = 2;
+    } else if (userTotalScore >= 400) {
+      difficultyLevel = 1;
+    }
 
     // 1. 오늘의 미션 3개 랜덤 선정 (사용자별/날짜별 고유 시드)
     final random = Random(userId.hashCode ^ dateKey.hashCode);
@@ -82,93 +84,83 @@ class QuizMissionUtils {
         case MissionType.playCount:
           typeSuffix = 'play';
           target =
-              prefs.getInt('${userId}_target_play_$dateKey') ??
+              prefs.getInt('v2_${userId}_target_play_$dateKey') ??
               (1 + (difficultyLevel / 2).floor());
-          reward =
-              prefs.getInt('${userId}_target_play_${dateKey}_reward') ??
-              (30 + (difficultyLevel * 10));
+          reward = 30 + (difficultyLevel * 10);
           current = todayHistory.length;
-          title = '퀴즈 $target회 참여하기';
+          title = '오늘 퀴즈 $target경기 완주하기';
           break;
 
         case MissionType.totalCorrect:
           typeSuffix = 'correct';
           target =
-              prefs.getInt('${userId}_target_correct_$dateKey') ??
-              (5 + (difficultyLevel * 5));
-          reward =
-              prefs.getInt('${userId}_target_correct_${dateKey}_reward') ??
-              (40 + (difficultyLevel * 15));
+              prefs.getInt('v2_${userId}_target_correct_$dateKey') ??
+              (5 + (difficultyLevel * 3));
+          reward = 40 + (difficultyLevel * 15);
           current = todayHistory.fold(
             0,
-            (sum, item) => sum + item.correctAnswers,
+            (sum, item) => sum + item.hits,
           );
-          title = '오늘 정답 $target개 맞히기';
+          title = '오늘 안타 $target개 때려내기';
           break;
 
         case MissionType.totalScore:
-          typeSuffix = 'score';
-          // 누적 점수: 티어별 200~1000점 (약 2~5판 분량)
+          typeSuffix = 'streak';
           target =
-              prefs.getInt('${userId}_target_score_$dateKey') ??
-              (200 + (difficultyLevel * 160));
-          reward =
-              prefs.getInt('${userId}_target_score_${dateKey}_reward') ??
-              (50 + (difficultyLevel * 20));
-          current = todayHistory.fold(0, (sum, item) => sum + item.score);
-          title = '오늘 누적 $target점 획득';
+              prefs.getInt('v2_${userId}_target_streak_$dateKey') ??
+              (difficultyLevel >= 3 ? 5 : 3);
+          reward = 50 + (difficultyLevel * 20);
+          current = todayHistory.isEmpty
+              ? 0
+              : todayHistory
+                    .map((e) => e.boxScore?.maxCombo ?? e.hits)
+                    .reduce(max);
+          title = '연속 안타 $target연타+ 달성';
           break;
 
         case MissionType.perfectGame:
-          typeSuffix = 'perfect';
+          typeSuffix = 'homerun';
           target =
-              prefs.getInt('${userId}_target_perfect_$dateKey') ??
-              1; // 만점은 기본 1회
-          reward =
-              prefs.getInt('${userId}_target_perfect_${dateKey}_reward') ??
-              (100 + (difficultyLevel * 30));
-          current = todayHistory
-              .where(
-                (r) =>
-                    r.correctAnswers >= r.totalQuestions &&
-                    r.totalQuestions >= 10,
-              )
-              .length;
-          title = '전체 정답(10/10) $target회 달성';
+              prefs.getInt('v2_${userId}_target_homerun_$dateKey') ?? 1;
+          reward = 80 + (difficultyLevel * 20);
+          current = todayHistory.isEmpty
+              ? 0
+              : todayHistory
+                    .map((e) => e.boxScore?.homeRuns ?? 0)
+                    .reduce(max);
+          title = '홈런(스피드 정답) $target개+ 달성';
           break;
 
         case MissionType.highscoreGame:
-          typeSuffix = 'highscore';
-          // 한 판 최고 점수: 티어별 100~300점 (최대 약 345점 고려)
+          typeSuffix = 'avg700';
           target =
-              prefs.getInt('${userId}_target_highscore_$dateKey') ??
-              (100 + (difficultyLevel * 40));
-          reward =
-              prefs.getInt('${userId}_target_highscore_${dateKey}_reward') ??
-              (80 + (difficultyLevel * 25));
-          // 오늘 기록 중 최고 점수
-          current = todayHistory.isEmpty
-              ? 0
-              : todayHistory.map((e) => e.score).reduce(max);
-          title = '한 판 점수 $target점 이상 달성';
+              prefs.getInt('v2_${userId}_target_avg700_$dateKey') ?? 1;
+          reward = 80 + (difficultyLevel * 25);
+          current = todayHistory.any(
+            (r) => r.atBats > 0 && r.battingAverage >= 0.700,
+          )
+              ? 1
+              : 0;
+          title = '한 경기 타율 .700 이상 달성';
           break;
       }
 
-      missionId = '${userId}_mission_${dateKey}_$typeSuffix';
+      missionId = 'v2_${userId}_mission_${dateKey}_$typeSuffix';
 
       // 처음 생성된 날이면 로컬 저장소에 당일 목표치 캐싱
-      if (!prefs.containsKey('${userId}_target_${typeSuffix}_$dateKey')) {
-        prefs.setInt('${userId}_target_${typeSuffix}_$dateKey', target);
+      if (!prefs.containsKey('v2_${userId}_target_${typeSuffix}_$dateKey')) {
+        prefs.setInt('v2_${userId}_target_${typeSuffix}_$dateKey', target);
         prefs.setInt(
-          '${userId}_target_${typeSuffix}_${dateKey}_reward',
+          'v2_${userId}_target_${typeSuffix}_${dateKey}_reward',
           reward,
         );
       } else {
-        // 캐시된 값이 있으면 그것을 사용 (일관성 유지)
-        target = prefs.getInt('${userId}_target_${typeSuffix}_$dateKey')!;
-        reward = prefs.getInt(
-          '${userId}_target_${typeSuffix}_${dateKey}_reward',
-        )!;
+        target = prefs.getInt('v2_${userId}_target_${typeSuffix}_$dateKey')!;
+        reward =
+            prefs.getInt(
+              'v2_${userId}_target_${typeSuffix}_${dateKey}_reward',
+            ) ??
+            reward;
       }
 
       return QuizMission(
@@ -178,6 +170,7 @@ class QuizMissionUtils {
         targetValue: target,
         currentValue: current,
         rewardPts: reward,
+        rewardLabel: '보너스 +1안타',
         isClaimed: prefs.getBool('${missionId}_claimed') ?? false,
       );
     }).toList();
@@ -192,14 +185,13 @@ class QuizMissionUtils {
     final dateKey =
         '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
 
-    // 사용된 모든 서픽스들
-    final suffixes = ['play', 'correct', 'score', 'perfect', 'highscore'];
+    final suffixes = ['play', 'correct', 'streak', 'homerun', 'avg700'];
 
     for (var suffix in suffixes) {
-      final missionId = '${userId}_mission_${dateKey}_$suffix';
+      final missionId = 'v2_${userId}_mission_${dateKey}_$suffix';
       await prefs.remove('${missionId}_claimed');
-      await prefs.remove('${userId}_target_${suffix}_$dateKey');
-      await prefs.remove('${userId}_target_${suffix}_${dateKey}_reward');
+      await prefs.remove('v2_${userId}_target_${suffix}_$dateKey');
+      await prefs.remove('v2_${userId}_target_${suffix}_${dateKey}_reward');
     }
   }
 }

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/badge_model.dart';
 import 'package:lockerroom/provider/badge_provider.dart';
+import 'package:lockerroom/provider/quiz_ranking_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/widgets/team_champion_badges.dart';
 import 'package:provider/provider.dart';
 
 class MyBadgePage extends StatefulWidget {
@@ -246,7 +248,7 @@ class _MyBadgePageState extends State<MyBadgePage>
                 ),
                 SizedBox(height: 24),
                 Text(
-                  '벳지 목록',
+                  '뱃지 목록',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -287,24 +289,38 @@ class _MyBadgePageState extends State<MyBadgePage>
   ) {
     final isDarkMode =
         MediaQuery.of(context).platformBrightness == Brightness.dark;
+    final devPreview = context
+        .watch<QuizRankingProvider>()
+        .devPreviewChampionRewards;
+    final bool isPreviewUnlocked =
+        devPreview &&
+        (badge.id == 'team_champion' ||
+            badge.id == 'monthly_batting_king' ||
+            badge.id == 'season_mvp');
+    final bool effectiveLocked = badge.isLocked && !isPreviewUnlocked;
+
     // 프리미엄 디자인 대상 체크 (시즌 MVP 및 Top 3)
     final bool isElite = badge.id == 'season_mvp' || badge.id == 'top3_club';
-    final bool showPremium = isElite && !badge.isLocked; // 획득했을 때만 프리미엄 연출
+    final bool showPremium = isElite && !effectiveLocked; // 획득했을 때만 프리미엄 연출
 
     final bool isMVP = badge.id == 'season_mvp';
     final bool isTop3 = badge.id == 'top3_club';
+    final bool isTeamChamp = badge.id == 'team_champion';
+    final bool isTeamChampUnlocked = isTeamChamp && !effectiveLocked;
 
     // 디자인 테마 설정
     Color glowColor = teamColor ?? Colors.amber;
     List<Color> borderGradient = [Colors.transparent, Colors.transparent];
-    Color badgeBgColor = badge.isLocked
+    Color badgeBgColor = effectiveLocked
         ? (isDarkMode ? const Color(0xFF1B2436) : Colors.grey[200]!)
-        : (isDarkMode ? const Color(0xFF1E293B) : Colors.white);
+        : (isTeamChampUnlocked
+              ? const Color(0xFF101526)
+              : (isDarkMode ? const Color(0xFF1E293B) : Colors.white));
 
-    if (showPremium) {
-      if (isMVP) {
-        glowColor = const Color(0xFFFFD700); // GOLD
-        borderGradient = [const Color(0xFFFFD700), const Color(0xFFFFA500)];
+    if (showPremium || isTeamChampUnlocked) {
+      if (isMVP || isTeamChampUnlocked) {
+        glowColor = const Color(0xFFD4AF37); // CHAMPAGNE GOLD
+        borderGradient = [const Color(0xFFFFF3C4), const Color(0xFFD4AF37)];
       } else if (isTop3) {
         glowColor = const Color(0xFFB19CD9); // SILVER/VIOLET
         borderGradient = [const Color(0xFFB19CD9), const Color(0xFFE6E6FA)];
@@ -315,12 +331,12 @@ class _MyBadgePageState extends State<MyBadgePage>
       decoration: BoxDecoration(
         color: badgeBgColor,
         borderRadius: BorderRadius.circular(12),
-        border: showPremium
-            ? Border.all(color: borderGradient[0].withOpacity(0.6), width: 2)
-            : (badge.isLocked
+        border: (showPremium || isTeamChampUnlocked)
+            ? Border.all(color: borderGradient[1], width: 1.6)
+            : (effectiveLocked
                   ? null
                   : Border.all(color: glowColor.withOpacity(0.4), width: 1.5)),
-        boxShadow: badge.isLocked
+        boxShadow: effectiveLocked
             ? []
             : [
                 BoxShadow(
@@ -357,33 +373,39 @@ class _MyBadgePageState extends State<MyBadgePage>
               child: Column(
                 children: [
                   // 아이콘 영역
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: badge.isLocked
-                          ? (isDarkMode
-                                ? Colors.white.withOpacity(0.05)
-                                : Colors.grey[300])
-                          : glowColor.withOpacity(0.1),
-                      boxShadow: badge.isLocked
-                          ? null
-                          : [
-                              BoxShadow(
-                                color: glowColor.withOpacity(0.2),
-                                blurRadius: 15,
-                                spreadRadius: 2,
-                              ),
-                            ],
+                  if (isTeamChamp)
+                    TeamChampionShieldEmblem(
+                      isLocked: effectiveLocked,
+                      size: 48,
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: effectiveLocked
+                            ? (isDarkMode
+                                  ? Colors.white.withOpacity(0.05)
+                                  : Colors.grey[300])
+                            : glowColor.withOpacity(0.1),
+                        boxShadow: effectiveLocked
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: glowColor.withOpacity(0.2),
+                                  blurRadius: 15,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                      ),
+                      child: Icon(
+                        badge.icon,
+                        size: 26,
+                        color: effectiveLocked
+                            ? (isDarkMode ? Colors.white24 : Colors.grey)
+                            : glowColor,
+                      ),
                     ),
-                    child: Icon(
-                      badge.icon,
-                      size: 26,
-                      color: badge.isLocked
-                          ? (isDarkMode ? Colors.white24 : Colors.grey)
-                          : glowColor,
-                    ),
-                  ),
                   const SizedBox(height: 8),
                   // 뱃지 이름
                   Text(
@@ -391,11 +413,17 @@ class _MyBadgePageState extends State<MyBadgePage>
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: showPremium
-                          ? glowColor
-                          : (badge.isLocked
-                                ? (isDarkMode ? Colors.white38 : Colors.grey)
-                                : (isDarkMode ? Colors.white : Colors.black87)),
+                      color: isTeamChampUnlocked
+                          ? const Color(0xFFFFF3C4)
+                          : (showPremium
+                                ? glowColor
+                                : (effectiveLocked
+                                      ? (isDarkMode
+                                            ? Colors.white38
+                                            : Colors.grey)
+                                      : (isDarkMode
+                                            ? Colors.white
+                                            : Colors.black87))),
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 1,

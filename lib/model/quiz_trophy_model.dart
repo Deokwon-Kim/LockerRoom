@@ -14,6 +14,11 @@ class QuizTrophyModel {
   final int? rank; // 순위 정보 추가
   final TrophyType type;
   final DateTime earnedAt;
+  final double? seasonAvg;
+  final int? totalHits;
+  final int? totalAtBats;
+  final int? maxCombo;
+  final String? titleLabel;
 
   QuizTrophyModel({
     required this.id,
@@ -27,6 +32,11 @@ class QuizTrophyModel {
     this.rank,
     required this.type,
     required this.earnedAt,
+    this.seasonAvg,
+    this.totalHits,
+    this.totalAtBats,
+    this.maxCombo,
+    this.titleLabel,
   });
 
   factory QuizTrophyModel.fromFirestore(DocumentSnapshot doc) {
@@ -43,6 +53,11 @@ class QuizTrophyModel {
       rank: data['rank'],
       type: data['type'] == 'team' ? TrophyType.team : TrophyType.individual,
       earnedAt: (data['earnedAt'] as Timestamp).toDate(),
+      seasonAvg: (data['seasonAvg'] as num?)?.toDouble(),
+      totalHits: data['totalHits'] as int?,
+      totalAtBats: data['totalAtBats'] as int?,
+      maxCombo: data['maxCombo'] as int?,
+      titleLabel: data['titleLabel'] as String?,
     );
   }
 
@@ -58,6 +73,11 @@ class QuizTrophyModel {
       'rank': rank,
       'type': type == TrophyType.team ? 'team' : 'individual',
       'earnedAt': Timestamp.fromDate(earnedAt),
+      if (seasonAvg != null) 'seasonAvg': seasonAvg,
+      if (totalHits != null) 'totalHits': totalHits,
+      if (totalAtBats != null) 'totalAtBats': totalAtBats,
+      if (maxCombo != null) 'maxCombo': maxCombo,
+      if (titleLabel != null) 'titleLabel': titleLabel,
     };
   }
 }

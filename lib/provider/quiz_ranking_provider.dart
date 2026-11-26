@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:lockerroom/model/quiz_result_model.dart';
 import 'package:lockerroom/model/ranking_team_model.dart';
 import 'package:lockerroom/model/ranking_user_model.dart';
 import 'package:lockerroom/model/quiz_trophy_model.dart';
@@ -9,7 +10,62 @@ import 'package:lockerroom/utils/quiz_tier_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+class BattingKingEntry {
+  final int rank;
+  final String userId;
+  final String name;
+  final int totalAtBats;
+  final int totalHits;
+  final int totalScore;
+  final double seasonBattingAverage;
+  final String formattedBattingAverage;
+  final bool isQualifiedForBattingKing;
+  final String? teamName;
+  final String? profileUrl;
+  final String tier;
+  final int maxCombo;
+
+  const BattingKingEntry({
+    required this.rank,
+    required this.userId,
+    required this.name,
+    required this.totalAtBats,
+    required this.totalHits,
+    required this.totalScore,
+    required this.seasonBattingAverage,
+    required this.formattedBattingAverage,
+    required this.isQualifiedForBattingKing,
+    this.teamName,
+    this.profileUrl,
+    required this.tier,
+    this.maxCombo = 0,
+  });
+
+  BattingKingEntry copyWith({
+    String? name,
+    String? teamName,
+    String? profileUrl,
+  }) {
+    return BattingKingEntry(
+      rank: rank,
+      userId: userId,
+      name: name ?? this.name,
+      totalAtBats: totalAtBats,
+      totalHits: totalHits,
+      totalScore: totalScore,
+      seasonBattingAverage: seasonBattingAverage,
+      formattedBattingAverage: formattedBattingAverage,
+      isQualifiedForBattingKing: isQualifiedForBattingKing,
+      teamName: teamName ?? this.teamName,
+      profileUrl: profileUrl ?? this.profileUrl,
+      tier: tier,
+      maxCombo: maxCombo,
+    );
+  }
+}
+
 class QuizRankingProvider extends ChangeNotifier {
+  static const int qualifyingAtBats = 30;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   List<RankingUserModel> _rankings = [];
@@ -23,7 +79,7 @@ class QuizRankingProvider extends ChangeNotifier {
   String _selectedSeason = QuizSeasonUtils.getCurrentSeasonId();
   String? _manualSeasonId; // Firebase에서 제어하는 시즌 ID
   bool _isAllTimeMode = false;
-  
+
   // 종합(Overall) 랭킹 별도 저장
   List<RankingUserModel> _overallRankings = [];
   List<RankingTeamModel> _overallTeamRankings = [];
@@ -44,8 +100,10 @@ class QuizRankingProvider extends ChangeNotifier {
   bool get isAllTimeMode => _isAllTimeMode;
 
   // 항상 종합 순위를 반환하는 게터 (결과 화면 등에서 사용)
-  List<RankingUserModel> get overallRankings => _selectedCategory == 'all' ? _rankings : _overallRankings;
-  List<RankingTeamModel> get overallTeamRankings => _selectedCategory == 'all' ? _teamRankings : _overallTeamRankings;
+  List<RankingUserModel> get overallRankings =>
+      _selectedCategory == 'all' ? _rankings : _overallRankings;
+  List<RankingTeamModel> get overallTeamRankings =>
+      _selectedCategory == 'all' ? _teamRankings : _overallTeamRankings;
 
   // userId -> 종합 티어 캐시 (카테고리 필터와 무관하게 항상 종합 점수 기반 티어 유지)
   final Map<String, String> _overallTierCache = {};
@@ -59,6 +117,349 @@ class QuizRankingProvider extends ChangeNotifier {
   // userId -> 종합 순위 캐시
   final Map<String, int> _overallRankCache = {};
   int getOverallRank(String userId) => _overallRankCache[userId] ?? 0;
+
+  // userId -> 시즌 누적 타수/안타 캐시 & 타격왕 랭킹
+  final Map<String, int> _overallAtBatsCache = {};
+  final Map<String, int> _overallHitsCache = {};
+  final Map<String, int> _overallPureHitsCache = {};
+  List<BattingKingEntry> _battingKingRankings = [];
+
+  int getTotalAtBats(String userId) => _overallAtBatsCache[userId] ?? 0;
+  int getTotalHits(String userId) => _overallHitsCache[userId] ?? 0;
+  double getSeasonBattingAverage(String userId) {
+    final ab = getTotalAtBats(userId);
+    final pureHits = _overallPureHitsCache[userId] ?? getTotalHits(userId);
+    return ab > 0 ? (pureHits / ab).clamp(0.0, 1.0) : 0.0;
+  }
+
+  String getFormattedSeasonBattingAverage(String userId) =>
+      QuizResultModel.formatBattingAverage(
+        getSeasonBattingAverage(userId),
+        getTotalAtBats(userId),
+      );
+
+  bool isQualifiedForBattingKing(String userId) =>
+      getTotalAtBats(userId) >= qualifyingAtBats;
+
+  String getBattingTier(String userId) => QuizTierUtils.getTierByBattingStats(
+    getTotalHits(userId),
+    getSeasonBattingAverage(userId),
+  );
+
+  BattingTierProgress getBattingTierProgress(String userId) =>
+      QuizTierUtils.getBattingTierProgress(
+        getTotalHits(userId),
+        getSeasonBattingAverage(userId),
+      );
+
+  List<BattingKingEntry> get battingKingRankings =>
+      List.unmodifiable(_battingKingRankings);
+
+  // 직전 시즌 월간 타격왕 (디펜딩 타격왕) 캐시
+  String? _defendingKingUserId;
+  String? _defendingKingSeasonId;
+  String? _defendingKingTitle;
+  double? _defendingKingAvg;
+  String? _defendingTeamChampionName;
+  int _myBattingKingWinCount = 0;
+
+  // 개발자 계정 전용: 모든 오버레이/뱃지/리본/칭호/트로피 미리보기 ON/OFF
+  static const String devPreviewEmail = 'kdw0032@gmail.com';
+  bool _devPreviewChampionRewards = false;
+  String? _devPreviewTeamName;
+
+  static bool get isDevPreviewAccount =>
+      kDebugMode || FirebaseAuth.instance.currentUser?.email == devPreviewEmail;
+
+  bool get devPreviewChampionRewards =>
+      isDevPreviewAccount && _devPreviewChampionRewards;
+
+  int get myBattingKingWinCount => devPreviewChampionRewards
+      ? (_myBattingKingWinCount > 3 ? _myBattingKingWinCount : 3)
+      : _myBattingKingWinCount;
+
+  void setDevPreviewChampionRewards(bool value, {String? teamName}) {
+    if (!isDevPreviewAccount) return;
+    _devPreviewChampionRewards = value;
+    if (teamName != null && teamName.isNotEmpty) {
+      _devPreviewTeamName = teamName;
+    }
+    notifyListeners();
+  }
+
+  String? get defendingKingUserId => _defendingKingUserId;
+  String? get defendingKingSeasonId =>
+      _defendingKingSeasonId ??
+      (devPreviewChampionRewards ? QuizSeasonUtils.getCurrentSeasonId() : null);
+  String? get defendingKingTitle {
+    final base =
+        _defendingKingTitle ??
+        (devPreviewChampionRewards
+            ? '${QuizSeasonUtils.getSeasonShortMonthLabel(QuizSeasonUtils.getCurrentSeasonId())} 타격왕'
+            : null);
+    if (base == null) return null;
+    if (isDefendingBattingKing && myBattingKingWinCount > 1) {
+      return '$base · 통산 ${myBattingKingWinCount}회';
+    }
+    return base;
+  }
+
+  /// 직전 시즌 1위가 아니더라도 통산 1회 이상 타격왕이면 영구 칭호 유지
+  String? get myDisplayKingTitle {
+    if (isDefendingBattingKing) return defendingKingTitle;
+    if (myBattingKingWinCount > 0) {
+      return '통산 ${myBattingKingWinCount}회 타격왕';
+    }
+    return null;
+  }
+
+  double? get defendingKingAvg => _defendingKingAvg;
+  String? get defendingTeamChampionName =>
+      _defendingTeamChampionName ??
+      (devPreviewChampionRewards ? (_devPreviewTeamName ?? '두산 베어스') : null);
+  String? get defendingTeamChampionTitle {
+    final team = defendingTeamChampionName;
+    final seasonId = defendingKingSeasonId;
+    if (team != null && seasonId != null) {
+      return '${QuizSeasonUtils.getSeasonShortCode(seasonId)} 우승 구단 팬';
+    }
+    return null;
+  }
+
+  bool isDefendingChampionTeam(String? teamName) {
+    if (teamName == null) return false;
+    if (devPreviewChampionRewards) {
+      return teamName == (_devPreviewTeamName ?? teamName);
+    }
+    return _defendingTeamChampionName == teamName;
+  }
+
+  List<BattingKingEntry> getTeamTopContributors(
+    String teamName, {
+    int limit = 3,
+  }) {
+    final list =
+        _battingKingRankings
+            .where((e) => e.teamName == teamName && e.totalHits > 0)
+            .toList()
+          ..sort((a, b) {
+            final hitsCmp = b.totalHits.compareTo(a.totalHits);
+            if (hitsCmp != 0) return hitsCmp;
+            return b.seasonBattingAverage.compareTo(a.seasonBattingAverage);
+          });
+    return list.take(limit).toList();
+  }
+
+  bool get isDefendingBattingKing {
+    if (devPreviewChampionRewards) return true;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    return uid != null && _defendingKingUserId == uid;
+  }
+
+  bool isDefendingKingUser(String uid) {
+    if (devPreviewChampionRewards &&
+        uid == FirebaseAuth.instance.currentUser?.uid) {
+      return true;
+    }
+    return _defendingKingUserId != null && _defendingKingUserId == uid;
+  }
+
+  /// 월간 타격왕 판정: 규정타석(30타수+) 충족자 우선, 전원 미달 시 10타수+ 최고 타율(없으면 null)
+  BattingKingEntry? getMonthlyBattingKing(List<BattingKingEntry> entries) {
+    if (entries.isEmpty) return null;
+    final qualified = entries
+        .where((e) => e.isQualifiedForBattingKing)
+        .toList();
+    if (qualified.isNotEmpty) return qualified.first;
+    final fallback = entries.where((e) => e.totalAtBats >= 10).toList();
+    return fallback.isNotEmpty ? fallback.first : null;
+  }
+
+  Future<void> loadDefendingBattingKing([bool force = false]) async {
+    final prevSeasonId = QuizSeasonUtils.getPreviousSeasonId();
+    if (prevSeasonId == null) {
+      _defendingKingUserId = null;
+      _defendingKingSeasonId = null;
+      _defendingKingTitle = null;
+      _defendingKingAvg = null;
+      return;
+    }
+    if (!force && _defendingKingSeasonId == prevSeasonId) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedUid = prefs.getString('defending_king_uid_$prevSeasonId');
+      if (!force && cachedUid != null && cachedUid.isNotEmpty) {
+        _defendingKingUserId = cachedUid;
+        _defendingKingSeasonId = prevSeasonId;
+        _defendingKingTitle =
+            '${QuizSeasonUtils.getSeasonShortMonthLabel(prevSeasonId)} 타격왕';
+        _defendingKingAvg = prefs.getDouble('defending_king_avg_$prevSeasonId');
+        notifyListeners();
+        return;
+      }
+
+      final snapshot = await _firestore
+          .collectionGroup(FirestoreConstants.quizResultsSub)
+          .where('seasonId', isEqualTo: prevSeasonId)
+          .limit(2000)
+          .get();
+
+      final Map<String, Map<String, int>> stats = {};
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final uid = data['userId'] as String? ?? '';
+        final category = data['category'] as String? ?? '';
+        if (uid.isEmpty || category == '일일미션 보상') continue;
+
+        final boxMap = data['boxScore'] is Map<String, dynamic>
+            ? data['boxScore'] as Map<String, dynamic>
+            : null;
+        final ab =
+            data['atBats'] as int? ??
+            boxMap?['atBats'] as int? ??
+            data['totalQuestions'] as int? ??
+            0;
+        final h =
+            data['hits'] as int? ??
+            boxMap?['hits'] as int? ??
+            data['correctAnswers'] as int? ??
+            0;
+        final combo = boxMap?['maxCombo'] as int? ?? 0;
+
+        stats.putIfAbsent(uid, () => {'ab': 0, 'h': 0, 'combo': 0});
+        stats[uid]!['ab'] = stats[uid]!['ab']! + ab;
+        stats[uid]!['h'] = stats[uid]!['h']! + h;
+        if (combo > stats[uid]!['combo']!) stats[uid]!['combo'] = combo;
+      }
+
+      final entries =
+          stats.entries.where((e) => e.value['ab']! > 0).map((e) {
+            final ab = e.value['ab']!;
+            final h = e.value['h']!;
+            final avg = h / ab;
+            return BattingKingEntry(
+              rank: 0,
+              userId: e.key,
+              name: '',
+              totalAtBats: ab,
+              totalHits: h,
+              totalScore: 0,
+              seasonBattingAverage: avg,
+              formattedBattingAverage: QuizResultModel.formatBattingAverage(
+                avg,
+                ab,
+              ),
+              isQualifiedForBattingKing: ab >= qualifyingAtBats,
+              tier: QuizTierUtils.getTierByBattingStats(h, avg),
+              maxCombo: e.value['combo']!,
+            );
+          }).toList()..sort((a, b) {
+            if (a.isQualifiedForBattingKing != b.isQualifiedForBattingKing) {
+              return b.isQualifiedForBattingKing ? 1 : -1;
+            }
+            final avgCmp = b.seasonBattingAverage.compareTo(
+              a.seasonBattingAverage,
+            );
+            if (avgCmp != 0) return avgCmp;
+            final comboCmp = b.maxCombo.compareTo(a.maxCombo);
+            if (comboCmp != 0) return comboCmp;
+            return b.totalHits.compareTo(a.totalHits);
+          });
+
+      final king = getMonthlyBattingKing(entries);
+      _defendingKingSeasonId = prevSeasonId;
+
+      // 내 통산 타격왕 우승 횟수 집계
+      final currentUid = FirebaseAuth.instance.currentUser?.uid;
+      if (currentUid != null) {
+        try {
+          final trophySnap = await _firestore
+              .collection('users')
+              .doc(currentUid)
+              .collection('trophies')
+              .get();
+          int winCount = 0;
+          for (final doc in trophySnap.docs) {
+            final d = doc.data();
+            final type = d['type'] as String? ?? '';
+            final rank = d['rank'] as int? ?? 0;
+            final titleLabel = d['titleLabel'] as String? ?? '';
+            if (type == 'individual' &&
+                (rank == 1 || titleLabel.contains('타격왕'))) {
+              winCount++;
+            }
+          }
+          _myBattingKingWinCount = winCount;
+        } catch (_) {}
+      }
+
+      // 직전 시즌 구단 챔피언 집계 (최소 100타수+ 우선, 없으면 최고 타율 구단)
+      final Map<String, Map<String, int>> teamStats = {};
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final tName = data['teamName'] as String? ?? '';
+        final cat = data['category'] as String? ?? '';
+        if (tName.isEmpty || cat == '일일미션 보상') continue;
+        final boxMap = data['boxScore'] is Map<String, dynamic>
+            ? data['boxScore'] as Map<String, dynamic>
+            : null;
+        final ab =
+            data['atBats'] as int? ??
+            boxMap?['atBats'] as int? ??
+            data['totalQuestions'] as int? ??
+            0;
+        final h =
+            data['hits'] as int? ??
+            boxMap?['hits'] as int? ??
+            data['correctAnswers'] as int? ??
+            0;
+        teamStats.putIfAbsent(tName, () => {'ab': 0, 'h': 0});
+        teamStats[tName]!['ab'] = teamStats[tName]!['ab']! + ab;
+        teamStats[tName]!['h'] = teamStats[tName]!['h']! + h;
+      }
+      if (teamStats.isNotEmpty) {
+        final sortedTeams =
+            teamStats.entries.where((e) => e.value['ab']! > 0).toList()
+              ..sort((a, b) {
+                final aQual = a.value['ab']! >= 100;
+                final bQual = b.value['ab']! >= 100;
+                if (aQual != bQual) return bQual ? 1 : -1;
+                final aAvg = a.value['h']! / a.value['ab']!;
+                final bAvg = b.value['h']! / b.value['ab']!;
+                final avgCmp = bAvg.compareTo(aAvg);
+                if (avgCmp != 0) return avgCmp;
+                return b.value['h']!.compareTo(a.value['h']!);
+              });
+        if (sortedTeams.isNotEmpty) {
+          _defendingTeamChampionName = sortedTeams.first.key;
+          await prefs.setString(
+            'defending_team_champ_$prevSeasonId',
+            _defendingTeamChampionName!,
+          );
+        }
+      }
+
+      if (king != null) {
+        _defendingKingUserId = king.userId;
+        _defendingKingTitle =
+            '${QuizSeasonUtils.getSeasonShortMonthLabel(prevSeasonId)} 타격왕';
+        _defendingKingAvg = king.seasonBattingAverage;
+        await prefs.setString('defending_king_uid_$prevSeasonId', king.userId);
+        await prefs.setDouble(
+          'defending_king_avg_$prevSeasonId',
+          king.seasonBattingAverage,
+        );
+      } else {
+        _defendingKingUserId = null;
+        _defendingKingTitle = null;
+        _defendingKingAvg = null;
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('디펜딩 타격왕 조회 실패: $e');
+    }
+  }
 
   // 로컬에 내 정보만 별도로 긴급 저장 (깜빡임 방지용, 시즌별 고유 키)
   Future<void> _saveMyOverallToLocal(
@@ -100,12 +501,15 @@ class QuizRankingProvider extends ChangeNotifier {
       }
 
       // 시즌별 고유 키로 로드
-      final savedScore =
-          prefs.getInt('overall_quiz_score_${targetSeason}_$currentUid');
-      final savedTier =
-          prefs.getString('overall_quiz_tier_${targetSeason}_$currentUid');
-      final savedRank =
-          prefs.getInt('overall_quiz_rank_${targetSeason}_$currentUid');
+      final savedScore = prefs.getInt(
+        'overall_quiz_score_${targetSeason}_$currentUid',
+      );
+      final savedTier = prefs.getString(
+        'overall_quiz_tier_${targetSeason}_$currentUid',
+      );
+      final savedRank = prefs.getInt(
+        'overall_quiz_rank_${targetSeason}_$currentUid',
+      );
 
       if (savedScore != null || savedTier != null) {
         _overallScoreCache[currentUid] = savedScore ?? 0;
@@ -142,6 +546,9 @@ class QuizRankingProvider extends ChangeNotifier {
     _overallTierCache.clear();
     _overallScoreCache.clear();
     _overallRankCache.clear(); // 시즌 변경 시 순위 캐시 초기화
+    _overallAtBatsCache.clear();
+    _overallHitsCache.clear();
+    _battingKingRankings = [];
 
     // 내 정보만이라도 즉시 로컬에서 복구 (해당 시즌 기록 없으면 PROSPECT / 0P로 초기화)
     await loadMyOverallFromLocal(seasonId);
@@ -204,12 +611,26 @@ class QuizRankingProvider extends ChangeNotifier {
             .orderBy('score', descending: true)
             .orderBy('completedAt', descending: true)
             .limit(1000); // 종합 순위용으로 1000명 정도면 충분
-        
+
         final allSnapshot = await allQuery.get();
         final Map<String, Map<String, dynamic>> allUserStats = {};
         final Map<String, int> allTeamScores = {
-          '두산베어스': 0, '삼성라이온즈': 0, '롯데자이언츠': 0, '기아타이거즈': 0, 'LG트윈스': 0,
-          'SSG랜더스': 0, '한화이글스': 0, '키움히어로즈': 0, 'NC다이노스': 0, 'KT위즈': 0,
+          '두산베어스': 0,
+          '삼성라이온즈': 0,
+          '롯데자이언츠': 0,
+          '기아타이거즈': 0,
+          'LG트윈스': 0,
+          'SSG랜더스': 0,
+          '한화이글스': 0,
+          '키움히어로즈': 0,
+          'NC다이노스': 0,
+          'KT위즈': 0,
+        };
+        final Map<String, int> allTeamAtBats = {
+          for (final t in allTeamScores.keys) t: 0,
+        };
+        final Map<String, int> allTeamHits = {
+          for (final t in allTeamScores.keys) t: 0,
         };
 
         for (var doc in allSnapshot.docs) {
@@ -217,28 +638,71 @@ class QuizRankingProvider extends ChangeNotifier {
           final uid = data['userId'] as String? ?? '';
           if (uid.isEmpty) continue;
 
-          final score = (data['score'] ?? 0) as int;
+          final rawScore = (data['score'] ?? 0) as int;
+          final mode = data['mode'] as String? ?? 'normal';
+          final score = mode == 'threeOut' && rawScore > 150 ? 150 : rawScore;
+          final category = data['category'] as String? ?? '';
           final team = data['teamName'] as String?;
           final nick = data['userNickName'] as String? ?? '익명';
           final at = data['completedAt'] as Timestamp? ?? Timestamp.now();
+          final boxMap = data['boxScore'] is Map<String, dynamic>
+              ? data['boxScore'] as Map<String, dynamic>
+              : null;
+          final docAtBats = category == '일일미션 보상'
+              ? 0
+              : (data['atBats'] as int? ??
+                    boxMap?['atBats'] as int? ??
+                    data['totalQuestions'] as int? ??
+                    0);
+          final docPureHits = category == '일일미션 보상'
+              ? 0
+              : (data['hits'] as int? ??
+                    boxMap?['hits'] as int? ??
+                    data['correctAnswers'] as int? ??
+                    0);
+          final docHits = category == '일일미션 보상'
+              ? (data['hits'] as int? ?? boxMap?['hits'] as int? ?? 1)
+              : docPureHits;
 
           if (!allUserStats.containsKey(uid)) {
             allUserStats[uid] = {
               'totalScore': 0,
+              'totalAtBats': 0,
+              'totalHits': 0,
+              'pureHits': 0,
+              'maxCombo': 0,
               'completedAt': at,
               'userNickName': nick,
               'teamName': team,
             };
           }
-          allUserStats[uid]!['totalScore'] = (allUserStats[uid]!['totalScore'] as int) + score;
-          
+          final docCombo = boxMap?['maxCombo'] as int? ?? 0;
+          final prevCombo = allUserStats[uid]!['maxCombo'] as int;
+          if (docCombo > prevCombo) {
+            allUserStats[uid]!['maxCombo'] = docCombo;
+          }
+          allUserStats[uid]!['totalScore'] =
+              (allUserStats[uid]!['totalScore'] as int) + score;
+          allUserStats[uid]!['totalAtBats'] =
+              (allUserStats[uid]!['totalAtBats'] as int) + docAtBats;
+          allUserStats[uid]!['totalHits'] =
+              (allUserStats[uid]!['totalHits'] as int) + docHits;
+          allUserStats[uid]!['pureHits'] =
+              (allUserStats[uid]!['pureHits'] as int) + docPureHits;
+
           if (team != null && allTeamScores.containsKey(team)) {
             allTeamScores[team] = (allTeamScores[team] ?? 0) + score;
+            allTeamAtBats[team] = (allTeamAtBats[team] ?? 0) + docAtBats;
+            allTeamHits[team] = (allTeamHits[team] ?? 0) + docHits;
           }
         }
 
         final sortedAllUsers = allUserStats.entries.toList()
-          ..sort((a, b) => (b.value['totalScore'] as int).compareTo(a.value['totalScore'] as int));
+          ..sort(
+            (a, b) => (b.value['totalScore'] as int).compareTo(
+              a.value['totalScore'] as int,
+            ),
+          );
 
         _overallRankings = sortedAllUsers.asMap().entries.map((entry) {
           final idx = entry.key;
@@ -256,22 +720,115 @@ class QuizRankingProvider extends ChangeNotifier {
           );
         }).toList();
 
-        _overallTeamRankings = allTeamScores.entries.map((e) => RankingTeamModel(
-          rank: 0,
-          teamName: e.key,
-          totalScore: e.value,
-          rankChange: 0,
-        )).toList()..sort((a, b) => b.totalScore.compareTo(a.totalScore));
-        
-        for(int i=0; i<_overallTeamRankings.length; i++) {
-          _overallTeamRankings[i] = _overallTeamRankings[i].copyWith(rank: i+1);
+        // 타격왕 랭킹 빌드 (규정타석 30타수+ 우선 → 타율 내림차순 → 최대 연속 안타 → 안타 → 점수 순)
+        _overallAtBatsCache.clear();
+        _overallHitsCache.clear();
+        _overallPureHitsCache.clear();
+        final battingList = allUserStats.entries.where((e) {
+          return (e.value['totalAtBats'] as int) > 0 ||
+              (e.value['totalHits'] as int) > 0;
+        }).toList();
+
+        battingList.sort((a, b) {
+          final aAb = a.value['totalAtBats'] as int;
+          final bAb = b.value['totalAtBats'] as int;
+          final aQual = aAb >= qualifyingAtBats;
+          final bQual = bAb >= qualifyingAtBats;
+          if (aQual != bQual) return bQual ? 1 : -1;
+
+          final aPureHits = a.value['pureHits'] as int;
+          final bPureHits = b.value['pureHits'] as int;
+          final aAvg = aAb > 0 ? aPureHits / aAb : 0.0;
+          final bAvg = bAb > 0 ? bPureHits / bAb : 0.0;
+          final avgCmp = bAvg.compareTo(aAvg);
+          if (avgCmp != 0) return avgCmp;
+
+          final comboCmp = (b.value['maxCombo'] as int).compareTo(
+            a.value['maxCombo'] as int,
+          );
+          if (comboCmp != 0) return comboCmp;
+
+          final aHits = a.value['totalHits'] as int;
+          final bHits = b.value['totalHits'] as int;
+          final hitsCmp = bHits.compareTo(aHits);
+          if (hitsCmp != 0) return hitsCmp;
+
+          return (b.value['totalScore'] as int).compareTo(
+            a.value['totalScore'] as int,
+          );
+        });
+
+        _battingKingRankings = battingList.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final uid = entry.value.key;
+          final val = entry.value.value;
+          final ab = val['totalAtBats'] as int;
+          final h = val['totalHits'] as int;
+          final pureH = val['pureHits'] as int;
+          final sc = val['totalScore'] as int;
+          final mc = val['maxCombo'] as int;
+          final avg = ab > 0 ? pureH / ab : 0.0;
+          final battingTier = QuizTierUtils.getTierByBattingStats(h, avg);
+
+          _overallAtBatsCache[uid] = ab;
+          _overallHitsCache[uid] = h;
+          _overallPureHitsCache[uid] = pureH;
+          _overallTierCache[uid] = battingTier;
+
+          return BattingKingEntry(
+            rank: idx + 1,
+            userId: uid,
+            name: val['userNickName'] as String,
+            totalAtBats: ab,
+            totalHits: h,
+            totalScore: sc,
+            seasonBattingAverage: avg,
+            formattedBattingAverage: QuizResultModel.formatBattingAverage(
+              avg,
+              ab,
+            ),
+            isQualifiedForBattingKing: ab >= qualifyingAtBats,
+            teamName: val['teamName'] as String?,
+            tier: battingTier,
+            maxCombo: mc,
+          );
+        }).toList();
+
+        _overallTeamRankings =
+            allTeamScores.entries
+                .map(
+                  (e) => RankingTeamModel(
+                    rank: 0,
+                    teamName: e.key,
+                    totalScore: e.value,
+                    rankChange: 0,
+                    totalAtBats: allTeamAtBats[e.key] ?? 0,
+                    totalHits: allTeamHits[e.key] ?? 0,
+                  ),
+                )
+                .toList()
+              ..sort((a, b) {
+                final avgCmp = b.battingAverage.compareTo(a.battingAverage);
+                if (avgCmp != 0) return avgCmp;
+                final hitsCmp = b.totalHits.compareTo(a.totalHits);
+                if (hitsCmp != 0) return hitsCmp;
+                return b.totalScore.compareTo(a.totalScore);
+              });
+
+        for (int i = 0; i < _overallTeamRankings.length; i++) {
+          _overallTeamRankings[i] = _overallTeamRankings[i].copyWith(
+            rank: i + 1,
+          );
         }
 
         // 캐시 업데이트
         final currentUid = FirebaseAuth.instance.currentUser?.uid;
         bool foundCurrentUid = false;
         for (var user in _overallRankings) {
-          _overallTierCache[user.userId] = user.tier;
+          final effectiveTier = _overallAtBatsCache.containsKey(user.userId)
+              ? getBattingTier(user.userId)
+              : user.tier;
+          _overallTierCache[user.userId] = effectiveTier;
           _overallScoreCache[user.userId] = user.score;
           _overallRankCache[user.userId] = user.rank;
           if (user.userId == currentUid) {
@@ -279,7 +836,7 @@ class QuizRankingProvider extends ChangeNotifier {
             _saveMyOverallToLocal(
               user.userId,
               user.score,
-              user.tier,
+              effectiveTier,
               user.rank,
               _selectedSeason,
             );
@@ -313,6 +870,12 @@ class QuizRankingProvider extends ChangeNotifier {
         'NC다이노스': 100,
         'KT위즈': 100,
       };
+      final Map<String, int> teamAtBats = {
+        for (final t in teamTotalScores.keys) t: 0,
+      };
+      final Map<String, int> teamHits = {
+        for (final t in teamTotalScores.keys) t: 0,
+      };
 
       final DateTime teamSeasonStartDate = DateTime(2026, 2, 6, 17, 0, 0);
 
@@ -328,7 +891,9 @@ class QuizRankingProvider extends ChangeNotifier {
           // 제외 대상 유저 스킵
           if (EXCLUDED_USER_IDS.contains(userId)) continue;
 
-          final score = data['score'] as int;
+          final rawScore = data['score'] as int;
+          final mode = data['mode'] as String? ?? 'normal';
+          final score = mode == 'threeOut' && rawScore > 150 ? 150 : rawScore;
           final completedAt = data['completedAt'] as Timestamp;
           final seasonId = data['seasonId'] as String? ?? 'legacy';
           String userNickName = data['userNickName'] as String? ?? '';
@@ -358,9 +923,28 @@ class QuizRankingProvider extends ChangeNotifier {
 
           // 팀 점수는 기존 방식 그대로 집계
           if (completedAt.toDate().isAfter(teamSeasonStartDate)) {
+            final category = data['category'] as String? ?? '';
+            final boxMap = data['boxScore'] is Map<String, dynamic>
+                ? data['boxScore'] as Map<String, dynamic>
+                : null;
+            final docAb = category == '일일미션 보상'
+                ? 0
+                : (data['atBats'] as int? ??
+                      boxMap?['atBats'] as int? ??
+                      data['totalQuestions'] as int? ??
+                      0);
+            final docH = category == '일일미션 보상'
+                ? 0
+                : (data['hits'] as int? ??
+                      boxMap?['hits'] as int? ??
+                      data['correctAnswers'] as int? ??
+                      0);
+
             if (teamName != null && teamName.isNotEmpty) {
               teamTotalScores[teamName] =
                   (teamTotalScores[teamName] ?? 0) + score;
+              teamAtBats[teamName] = (teamAtBats[teamName] ?? 0) + docAb;
+              teamHits[teamName] = (teamHits[teamName] ?? 0) + docH;
             } else {
               userTotalScores[userId]!['legacyTeamScore'] =
                   (userTotalScores[userId]!['legacyTeamScore'] as int? ?? 0) +
@@ -402,7 +986,9 @@ class QuizRankingProvider extends ChangeNotifier {
         for (var doc in snapshot.docs) {
           final data = doc.data() as Map<String, dynamic>;
           final userId = data['userId'] as String;
-          final score = data['score'] as int;
+          final rawScore = data['score'] as int;
+          final mode = data['mode'] as String? ?? 'normal';
+          final score = mode == 'threeOut' && rawScore > 150 ? 150 : rawScore;
           final completedAt = data['completedAt'] as Timestamp;
           String userNickName = data['userNickName'] as String? ?? '';
           if (userNickName.isEmpty) userNickName = '익명';
@@ -426,9 +1012,28 @@ class QuizRankingProvider extends ChangeNotifier {
           }
 
           if (completedAt.toDate().isAfter(teamSeasonStartDate)) {
+            final category = data['category'] as String? ?? '';
+            final boxMap = data['boxScore'] is Map<String, dynamic>
+                ? data['boxScore'] as Map<String, dynamic>
+                : null;
+            final docAb = category == '일일미션 보상'
+                ? 0
+                : (data['atBats'] as int? ??
+                      boxMap?['atBats'] as int? ??
+                      data['totalQuestions'] as int? ??
+                      0);
+            final docH = category == '일일미션 보상'
+                ? 0
+                : (data['hits'] as int? ??
+                      boxMap?['hits'] as int? ??
+                      data['correctAnswers'] as int? ??
+                      0);
+
             if (teamName != null && teamName.isNotEmpty) {
               teamTotalScores[teamName] =
                   (teamTotalScores[teamName] ?? 0) + score;
+              teamAtBats[teamName] = (teamAtBats[teamName] ?? 0) + docAb;
+              teamHits[teamName] = (teamHits[teamName] ?? 0) + docH;
             } else {
               userTotalScores[userId]!['legacyTeamScore'] =
                   (userTotalScores[userId]!['legacyTeamScore'] as int? ?? 0) +
@@ -571,6 +1176,42 @@ class QuizRankingProvider extends ChangeNotifier {
         _overallRankings = List.from(_rankings);
       }
 
+      // 타격왕 랭킹(포디움 포함)에 유저 프로필 사진/최신 닉네임 매핑
+      if (_battingKingRankings.isNotEmpty) {
+        final rankUserMap = {for (final r in _rankings) r.userId: r};
+        final List<BattingKingEntry> enriched = [];
+        for (int i = 0; i < _battingKingRankings.length; i++) {
+          var entry = _battingKingRankings[i];
+          final matched = rankUserMap[entry.userId];
+          if (matched != null) {
+            entry = entry.copyWith(
+              name: matched.name,
+              teamName: matched.teamName,
+              profileUrl: matched.profileUrl,
+            );
+          } else if (i < 10 &&
+              (entry.profileUrl == null || entry.profileUrl!.isEmpty)) {
+            try {
+              final userDoc = await _firestore
+                  .collection('users')
+                  .doc(entry.userId)
+                  .get();
+              final userData = userDoc.data();
+              if (userData != null) {
+                final nick = userData['userNickName'] as String?;
+                entry = entry.copyWith(
+                  name: (nick != null && nick.isNotEmpty) ? nick : entry.name,
+                  teamName: userData['team'] as String? ?? entry.teamName,
+                  profileUrl: userData['profileImage'] as String?,
+                );
+              }
+            } catch (_) {}
+          }
+          enriched.add(entry);
+        }
+        _battingKingRankings = enriched;
+      }
+
       final List<RankingTeamModel> tempTeamRankings =
           teamTotalScores.entries
               .map(
@@ -579,10 +1220,18 @@ class QuizRankingProvider extends ChangeNotifier {
                   teamName: e.key,
                   totalScore: e.value,
                   rankChange: 0,
+                  totalAtBats: teamAtBats[e.key] ?? 0,
+                  totalHits: teamHits[e.key] ?? 0,
                 ),
               )
               .toList()
-            ..sort((a, b) => b.totalScore.compareTo(a.totalScore));
+            ..sort((a, b) {
+              final avgCmp = b.battingAverage.compareTo(a.battingAverage);
+              if (avgCmp != 0) return avgCmp;
+              final hitsCmp = b.totalHits.compareTo(a.totalHits);
+              if (hitsCmp != 0) return hitsCmp;
+              return b.totalScore.compareTo(a.totalScore);
+            });
 
       _teamRankings = tempTeamRankings.asMap().entries.map((entry) {
         final index = entry.key;
@@ -599,6 +1248,7 @@ class QuizRankingProvider extends ChangeNotifier {
 
       _isLoading = false;
       notifyListeners();
+      loadDefendingBattingKing();
     } catch (e) {
       _errorMessage = '순위를 불러오는데 실패했습니다: $e';
       _isLoading = false;
@@ -627,7 +1277,9 @@ class QuizRankingProvider extends ChangeNotifier {
   // 내 팀 종합 순위 찾기
   RankingTeamModel? getMyOverallTeamRanking(String teamName) {
     try {
-      return overallTeamRankings.firstWhere((team) => team.teamName == teamName);
+      return overallTeamRankings.firstWhere(
+        (team) => team.teamName == teamName,
+      );
     } catch (e) {
       return null;
     }
@@ -669,11 +1321,25 @@ class QuizRankingProvider extends ChangeNotifier {
       final Map<String, Map<String, Map<String, dynamic>>> seasonData = {};
 
       for (final doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data();
         final userId = data['userId'] as String;
         if (excludedUserIds.contains(userId)) continue;
 
-        final score = data['score'] as int;
+        final score = data['score'] as int? ?? 0;
+        final boxMap = data['boxScore'] as Map<String, dynamic>?;
+        final is3Out = data['isThreeOutMode'] == true;
+        final atBats = is3Out
+            ? (boxMap?['atBats'] as int? ?? data['atBats'] as int? ?? 0)
+            : (data['atBats'] as int? ??
+                  boxMap?['atBats'] as int? ??
+                  data['totalQuestions'] as int? ??
+                  0);
+        final hits = is3Out
+            ? (boxMap?['hits'] as int? ?? data['hits'] as int? ?? 0)
+            : (data['hits'] as int? ??
+                  boxMap?['hits'] as int? ??
+                  data['correctCount'] as int? ??
+                  0);
         final completedAt = data['completedAt'] as Timestamp;
         final seasonId = data['seasonId'] as String? ?? 'legacy';
         String userNickName = data['userNickName'] as String? ?? '';
@@ -685,6 +1351,8 @@ class QuizRankingProvider extends ChangeNotifier {
         if (!seasonData[seasonId]!.containsKey(userId)) {
           seasonData[seasonId]![userId] = {
             'totalScore': score,
+            'totalAtBats': atBats,
+            'totalHits': hits,
             'completedAt': completedAt,
             'userNickName': userNickName,
             'teamName': teamName,
@@ -692,6 +1360,10 @@ class QuizRankingProvider extends ChangeNotifier {
         } else {
           seasonData[seasonId]![userId]!['totalScore'] =
               (seasonData[seasonId]![userId]!['totalScore'] as int) + score;
+          seasonData[seasonId]![userId]!['totalAtBats'] =
+              (seasonData[seasonId]![userId]!['totalAtBats'] as int) + atBats;
+          seasonData[seasonId]![userId]!['totalHits'] =
+              (seasonData[seasonId]![userId]!['totalHits'] as int) + hits;
           final currentAt =
               seasonData[seasonId]![userId]!['completedAt'] as Timestamp;
           if (completedAt.compareTo(currentAt) > 0) {
@@ -706,14 +1378,32 @@ class QuizRankingProvider extends ChangeNotifier {
       for (final seasonEntry in seasonData.entries) {
         final seasonId = seasonEntry.key;
         final userScores = seasonEntry.value;
+        final bool isBattingSeason =
+            seasonId != 'legacy' && seasonId.compareTo('2026_12') >= 0;
 
-        // 점수 내림차순 정렬
+        // 2026_12 시즌부터는 규정타석(30타수+) 우선 + 타율 내림차순, 이전 시즌은 점수 내림차순
         final sorted = userScores.entries.toList()
-          ..sort(
-            (a, b) => (b.value['totalScore'] as int).compareTo(
+          ..sort((a, b) {
+            if (isBattingSeason) {
+              final aAb = a.value['totalAtBats'] as int;
+              final bAb = b.value['totalAtBats'] as int;
+              final aQual = aAb >= 30;
+              final bQual = bAb >= 30;
+              if (aQual != bQual) return bQual ? 1 : -1;
+
+              final aHits = a.value['totalHits'] as int;
+              final bHits = b.value['totalHits'] as int;
+              final aAvg = aAb > 0 ? aHits / aAb : 0.0;
+              final bAvg = bAb > 0 ? bHits / bAb : 0.0;
+              final avgCmp = bAvg.compareTo(aAvg);
+              if (avgCmp != 0) return avgCmp;
+              final hitsCmp = bHits.compareTo(aHits);
+              if (hitsCmp != 0) return hitsCmp;
+            }
+            return (b.value['totalScore'] as int).compareTo(
               a.value['totalScore'] as int,
-            ),
-          );
+            );
+          });
 
         // 2026-04 초과 시즌 → Top 3, 이하 시즌 → 전체
         final bool isRestricted = seasonId.compareTo(_lastOpenSeason) > 0;
@@ -725,6 +1415,15 @@ class QuizRankingProvider extends ChangeNotifier {
           final userId = sorted[i].key;
           final scoreData = sorted[i].value;
           String? teamName = scoreData['teamName'];
+          final int totalScore = scoreData['totalScore'] as int;
+          final int totalAtBats = scoreData['totalAtBats'] as int;
+          final int totalHits = scoreData['totalHits'] as int;
+          final double seasonAvg = totalAtBats > 0
+              ? totalHits / totalAtBats
+              : 0.0;
+          final String tier = isBattingSeason
+              ? QuizTierUtils.getTierByBattingStats(totalHits, seasonAvg)
+              : QuizTierUtils.getTierName(totalScore);
 
           try {
             final userDoc = await _firestore
@@ -743,12 +1442,15 @@ class QuizRankingProvider extends ChangeNotifier {
                 rank: i + 1,
                 userId: userId,
                 name: latestNick,
-                score: scoreData['totalScore'],
+                score: totalScore,
                 rankChange: 0,
                 profileUrl: userData?['profileImage'],
                 completedAt: (scoreData['completedAt'] as Timestamp).toDate(),
                 teamName: teamName,
-                tier: QuizTierUtils.getTierName(scoreData['totalScore'] as int),
+                tier: tier,
+                seasonAvg: isBattingSeason ? seasonAvg : null,
+                totalHits: isBattingSeason ? totalHits : null,
+                totalAtBats: isBattingSeason ? totalAtBats : null,
               ),
             );
           } catch (_) {
@@ -757,12 +1459,15 @@ class QuizRankingProvider extends ChangeNotifier {
                 rank: i + 1,
                 userId: userId,
                 name: scoreData['userNickName'] ?? '익명',
-                score: scoreData['totalScore'],
+                score: totalScore,
                 rankChange: 0,
                 profileUrl: null,
                 completedAt: (scoreData['completedAt'] as Timestamp).toDate(),
                 teamName: teamName,
-                tier: QuizTierUtils.getTierName(scoreData['totalScore'] as int),
+                tier: tier,
+                seasonAvg: isBattingSeason ? seasonAvg : null,
+                totalHits: isBattingSeason ? totalHits : null,
+                totalAtBats: isBattingSeason ? totalAtBats : null,
               ),
             );
           }

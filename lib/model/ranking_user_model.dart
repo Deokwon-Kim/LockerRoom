@@ -9,6 +9,9 @@ class RankingUserModel {
 
   final String? teamName;
   final String tier;
+  final double? seasonAvg;
+  final int? totalHits;
+  final int? totalAtBats;
 
   RankingUserModel({
     required this.rank,
@@ -20,6 +23,9 @@ class RankingUserModel {
     required this.completedAt,
     this.teamName,
     required this.tier,
+    this.seasonAvg,
+    this.totalHits,
+    this.totalAtBats,
   });
 
   RankingUserModel copyWith({
@@ -32,6 +38,9 @@ class RankingUserModel {
     DateTime? completedAt,
     String? teamName,
     String? tier,
+    double? seasonAvg,
+    int? totalHits,
+    int? totalAtBats,
   }) {
     return RankingUserModel(
       rank: rank ?? this.rank,
@@ -43,6 +52,9 @@ class RankingUserModel {
       completedAt: completedAt ?? this.completedAt,
       teamName: teamName ?? this.teamName,
       tier: tier ?? this.tier,
+      seasonAvg: seasonAvg ?? this.seasonAvg,
+      totalHits: totalHits ?? this.totalHits,
+      totalAtBats: totalAtBats ?? this.totalAtBats,
     );
   }
 }

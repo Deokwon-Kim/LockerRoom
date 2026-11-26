@@ -1,6 +1,128 @@
 import 'package:flutter/material.dart';
 
+class BattingTierCriteria {
+  final String tierName;
+  final int minHits;
+  final double minAvg;
+
+  const BattingTierCriteria({
+    required this.tierName,
+    required this.minHits,
+    required this.minAvg,
+  });
+}
+
+class BattingTierProgress {
+  final String currentTier;
+  final String nextTier;
+  final int currentHits;
+  final double currentAvg;
+  final int requiredHits;
+  final double requiredAvg;
+  final int remainingHits;
+  final bool isAvgMet;
+  final double progress;
+
+  const BattingTierProgress({
+    required this.currentTier,
+    required this.nextTier,
+    required this.currentHits,
+    required this.currentAvg,
+    required this.requiredHits,
+    required this.requiredAvg,
+    required this.remainingHits,
+    required this.isAvgMet,
+    required this.progress,
+  });
+
+  String get statusMessage {
+    if (nextTier.isEmpty) return '최고 티어 LEGEND 달성!';
+    final avgStr = requiredAvg >= 1.0
+        ? '1.000'
+        : '.${(requiredAvg * 1000).round().toString().padLeft(3, '0')}';
+    if (remainingHits > 0 && !isAvgMet) {
+      return '$nextTier까지 $remainingHits안타 · 타율 $avgStr 필요';
+    }
+    if (remainingHits > 0) {
+      return '$nextTier까지 $remainingHits안타 남음 (타율 충족 ✓)';
+    }
+    return '타율 $avgStr 달성 시 $nextTier 승급';
+  }
+}
+
 class QuizTierUtils {
+  static const List<BattingTierCriteria> battingTierCriteria = [
+    BattingTierCriteria(tierName: 'PROSPECT', minHits: 0, minAvg: 0.0),
+    BattingTierCriteria(tierName: 'MINOR', minHits: 15, minAvg: 0.400),
+    BattingTierCriteria(tierName: 'MAJOR', minHits: 40, minAvg: 0.500),
+    BattingTierCriteria(tierName: 'ALL-STAR', minHits: 80, minAvg: 0.600),
+    BattingTierCriteria(tierName: 'MVP', minHits: 150, minAvg: 0.700),
+    BattingTierCriteria(tierName: 'LEGEND', minHits: 250, minAvg: 0.800),
+  ];
+
+  static String getTierByBattingStats(int totalHits, double battingAvg) {
+    for (int i = battingTierCriteria.length - 1; i >= 0; i--) {
+      final c = battingTierCriteria[i];
+      if (totalHits >= c.minHits && battingAvg >= c.minAvg) {
+        return c.tierName;
+      }
+    }
+    return 'PROSPECT';
+  }
+
+  static BattingTierProgress getBattingTierProgress(
+    int totalHits,
+    double battingAvg,
+  ) {
+    int currentIdx = 0;
+    for (int i = battingTierCriteria.length - 1; i >= 0; i--) {
+      final c = battingTierCriteria[i];
+      if (totalHits >= c.minHits && battingAvg >= c.minAvg) {
+        currentIdx = i;
+        break;
+      }
+    }
+
+    final current = battingTierCriteria[currentIdx];
+    if (currentIdx >= battingTierCriteria.length - 1) {
+      return BattingTierProgress(
+        currentTier: current.tierName,
+        nextTier: '',
+        currentHits: totalHits,
+        currentAvg: battingAvg,
+        requiredHits: current.minHits,
+        requiredAvg: current.minAvg,
+        remainingHits: 0,
+        isAvgMet: true,
+        progress: 1.0,
+      );
+    }
+
+    final next = battingTierCriteria[currentIdx + 1];
+    final remainingHits = (next.minHits - totalHits).clamp(0, next.minHits);
+    final isAvgMet = battingAvg >= next.minAvg;
+    final hitRatio = next.minHits > current.minHits
+        ? ((totalHits - current.minHits) / (next.minHits - current.minHits))
+              .clamp(0.0, 1.0)
+        : 1.0;
+    final avgRatio = next.minAvg > 0
+        ? (battingAvg / next.minAvg).clamp(0.0, 1.0)
+        : 1.0;
+    final progress = (hitRatio * 0.6 + avgRatio * 0.4).clamp(0.0, 1.0);
+
+    return BattingTierProgress(
+      currentTier: current.tierName,
+      nextTier: next.tierName,
+      currentHits: totalHits,
+      currentAvg: battingAvg,
+      requiredHits: next.minHits,
+      requiredAvg: next.minAvg,
+      remainingHits: remainingHits,
+      isAvgMet: isAvgMet,
+      progress: progress,
+    );
+  }
+
   static String getTierName(int score) {
     if (score >= 10000) return 'LEGEND';
     if (score >= 5000) return 'MVP';

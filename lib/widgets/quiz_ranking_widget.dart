@@ -33,6 +33,7 @@ class _RankingItem {
   final bool isMe;
   final Color? color; // for team color or user icon color
   final String? tier;
+  final String battingAvgText;
   final DateTime completedAt;
 
   _RankingItem({
@@ -45,6 +46,7 @@ class _RankingItem {
     required this.isMe,
     this.color,
     this.tier,
+    this.battingAvgText = '.000',
     required this.completedAt,
   });
 }
@@ -132,6 +134,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
             isMe: isMe,
             color: Colors.blueAccent,
             tier: u.tier,
+            battingAvgText: provider.getFormattedSeasonBattingAverage(u.userId),
             completedAt: u.completedAt,
           );
         }).toList();
@@ -195,6 +198,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
             rank: 0,
             isMe: isMe,
             color: isMe ? myTeam.color : Colors.grey,
+            battingAvgText: t.formattedBattingAverage,
             completedAt: DateTime(2000), // 팀은 시간 정렬 의미 없음
           );
         }).toList();
@@ -548,14 +552,15 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
               duration: const Duration(milliseconds: 800),
               builder: (context, value, child) {
                 return Text(
-                  '$value점',
+                  item.battingAvgText,
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'kbo',
                     color: item.isMe
                         ? Colors.white
                         : (isDarkMode
                               ? GRAYSCALE_LABEL_400
-                              : GRAYSCALE_LABEL_500),
+                              : GRAYSCALE_LABEL_600),
                     fontSize: 13,
                   ),
                 );
@@ -625,7 +630,9 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
               iconColor: Colors.blueAccent,
               label: '개인 종합 순위',
               rank: myOverallRank > 0 ? myOverallRank : null,
-              score: myOverallScore,
+              valueLabel: currentUserId != null
+                  ? '타율 ${provider.getFormattedSeasonBattingAverage(currentUserId)}'
+                  : '.000',
               emptyText: '기록 없음',
             ),
             const Padding(
@@ -638,7 +645,9 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
               logoPath: myTeam?.logoPath, // 팀 로고 추가
               label: myTeam != null ? '${myTeam.name} 순위' : '팀 순위',
               rank: myTeamRanking?.rank,
-              score: myTeamRanking?.totalScore,
+              valueLabel: myTeamRanking != null
+                  ? '타율 ${myTeamRanking.formattedBattingAverage}'
+                  : '.000',
               emptyText: myTeam == null ? '팀 선택 필요' : '기록 없음',
             ),
           ],
@@ -763,7 +772,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
     required Color iconColor,
     required String label,
     required int? rank,
-    required int? score,
+    required String valueLabel,
     required String emptyText,
     String? logoPath,
   }) {
@@ -815,7 +824,7 @@ class _QuizRankingWidgetState extends State<QuizRankingWidget> {
                 ),
               ),
               Text(
-                '${score ?? 0}점',
+                valueLabel,
                 style: TextStyle(
                   fontSize: 12,
                   color: isDarkMode ? GRAYSCALE_LABEL_400 : GRAYSCALE_LABEL_500,
