@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/model/notification_model.dart';
 import 'package:toastification/toastification.dart';
 import 'package:lockerroom/services/navigation_service.dart';
+import 'package:lockerroom/services/notification_service.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/model/meetup_model.dart';
@@ -19,6 +20,7 @@ class NotificationProvider extends ChangeNotifier {
   bool isLoading = true;
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
   final Map<String, String> _userNameCache = {};
+  final Map<String, Map<String, dynamic>> _rawNotificationData = {};
 
   void listen(String userId) {
     _sub?.cancel();
@@ -37,6 +39,7 @@ class NotificationProvider extends ChangeNotifier {
               final next = snap.docs
                   .map((d) {
                     try {
+                      _rawNotificationData[d.id] = d.data();
                       return AppNotification.fromDoc(d);
                     } catch (e) {
                       return null;
@@ -254,6 +257,22 @@ class NotificationProvider extends ChangeNotifier {
         type = ToastificationType.info;
         icon = Icons.comment;
         break;
+      case 'seatViewComment':
+        title = '좌석 시야 댓글';
+        description = userNickName != '알 수 없음'
+            ? '$userNickName님이 회원님의 좌석 시야에 댓글을 남겼습니다'
+            : '회원님의 좌석 시야에 새 댓글이 달렸습니다';
+        type = ToastificationType.info;
+        icon = Icons.comment;
+        break;
+      case 'attendanceComment':
+        title = '직관기록 댓글';
+        description = userNickName != '알 수 없음'
+            ? '$userNickName님이 회원님의 직관기록에 댓글을 남겼습니다'
+            : '회원님의 직관기록에 새 댓글이 달렸습니다';
+        type = ToastificationType.info;
+        icon = Icons.comment;
+        break;
       case 'meetup_request':
         title = '모임 참여 신청';
         description = userNickName != '알 수 없음'
@@ -281,6 +300,19 @@ class NotificationProvider extends ChangeNotifier {
             : '모임에 새로운 참여자가 들어왔습니다';
         type = ToastificationType.success;
         icon = Icons.person_add_alt_1;
+        break;
+      case 'team_news':
+        final raw = _rawNotificationData[notification.id];
+        final teamSymple = (raw?['teamSymple'] as String?)?.trim();
+        title = (teamSymple != null && teamSymple.isNotEmpty)
+            ? '[$teamSymple] 주요뉴스 속보'
+            : '구단 주요뉴스 속보';
+        description =
+            (raw?['articleTitle'] as String?) ??
+            notification.preview ??
+            '새로운 FA·트레이드·방출 소식이 도착했습니다';
+        type = ToastificationType.info;
+        icon = Icons.newspaper_rounded;
         break;
       default:
         title = '새 알림';
@@ -417,6 +449,11 @@ class NotificationProvider extends ChangeNotifier {
           autoCloseDuration: Duration(seconds: 2),
           title: Text('오류가 발생했습니다'),
         );
+      }
+    } else if (n.type == 'team_news') {
+      final raw = _rawNotificationData[n.id];
+      if (raw != null) {
+        await NotificationService().handleTeamNewsData(raw);
       }
     } else if (n.type == 'meetup_request' ||
         n.type == 'meetup_approved' ||

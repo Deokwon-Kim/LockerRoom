@@ -21,58 +21,111 @@ class IntutionRecordProvider extends ChangeNotifier {
   final TextEditingController ticketPriceController = TextEditingController();
   final TextEditingController seatController = TextEditingController();
   final TextEditingController foodCostController = TextEditingController();
+  final TextEditingController goodsCostController = TextEditingController();
 
   final List<String> _foodItems = [];
   final Map<String, int> _foodPrices = {};
+  final List<String> _goodsItems = [];
+  final Map<String, int> _goodsPrices = {};
   bool _shareSeatView = true;
+  bool _shareToFeed = false;
 
   List<String> get foodItems => List.unmodifiable(_foodItems);
   Map<String, int> get foodPrices => Map.unmodifiable(_foodPrices);
+  List<String> get goodsItems => List.unmodifiable(_goodsItems);
+  Map<String, int> get goodsPrices => Map.unmodifiable(_goodsPrices);
   bool get shareSeatView => _shareSeatView;
+  bool get shareToFeed => _shareToFeed;
 
   void setShareSeatView(bool value) {
     _shareSeatView = value;
     notifyListeners();
   }
 
-  void toggleFoodItem(String item) {
-    if (_foodItems.contains(item)) {
-      _foodItems.remove(item);
-      _foodPrices.remove(item);
-      _syncFoodCostFromItems();
+  void setShareToFeed(bool value) {
+    _shareToFeed = value;
+    notifyListeners();
+  }
+
+  void toggleFoodItem(String item) =>
+      _toggleCostItem(_foodItems, _foodPrices, foodCostController, item);
+
+  void addFoodItem(String item) => _addCostItem(_foodItems, item);
+
+  void setFoodItemPrice(String item, int price) => _setCostItemPrice(
+    _foodItems,
+    _foodPrices,
+    foodCostController,
+    item,
+    price,
+  );
+
+  void toggleGoodsItem(String item) =>
+      _toggleCostItem(_goodsItems, _goodsPrices, goodsCostController, item);
+
+  void addGoodsItem(String item) => _addCostItem(_goodsItems, item);
+
+  void setGoodsItemPrice(String item, int price) => _setCostItemPrice(
+    _goodsItems,
+    _goodsPrices,
+    goodsCostController,
+    item,
+    price,
+  );
+
+  void _toggleCostItem(
+    List<String> items,
+    Map<String, int> prices,
+    TextEditingController controller,
+    String item,
+  ) {
+    if (items.contains(item)) {
+      items.remove(item);
+      prices.remove(item);
+      _syncCostFromItems(items, prices, controller);
     } else {
-      _foodItems.add(item);
+      items.add(item);
     }
     notifyListeners();
   }
 
-  void addFoodItem(String item) {
+  void _addCostItem(List<String> items, String item) {
     final trimmed = item.trim();
-    if (trimmed.isNotEmpty && !_foodItems.contains(trimmed)) {
-      _foodItems.add(trimmed);
+    if (trimmed.isNotEmpty && !items.contains(trimmed)) {
+      items.add(trimmed);
       notifyListeners();
     }
   }
 
-  void setFoodItemPrice(String item, int price) {
+  void _setCostItemPrice(
+    List<String> items,
+    Map<String, int> prices,
+    TextEditingController controller,
+    String item,
+    int price,
+  ) {
     if (price > 0) {
-      _foodPrices[item] = price;
+      prices[item] = price;
     } else {
-      _foodPrices.remove(item);
+      prices.remove(item);
     }
-    _syncFoodCostFromItems();
+    _syncCostFromItems(items, prices, controller);
     notifyListeners();
   }
 
-  void _syncFoodCostFromItems() {
-    if (_foodPrices.isEmpty) {
-      if (_foodItems.isNotEmpty) {
-        foodCostController.text = '';
+  void _syncCostFromItems(
+    List<String> items,
+    Map<String, int> prices,
+    TextEditingController controller,
+  ) {
+    if (prices.isEmpty) {
+      if (items.isNotEmpty) {
+        controller.text = '';
       }
       return;
     }
-    final total = _foodPrices.values.fold<int>(0, (sum, v) => sum + v);
-    foodCostController.text = total > 0 ? '$total' : '';
+    final total = prices.values.fold<int>(0, (acc, v) => acc + v);
+    controller.text = total > 0 ? '$total' : '';
   }
 
   bool _isLoading = false;
@@ -126,6 +179,7 @@ class IntutionRecordProvider extends ChangeNotifier {
     ticketPriceController.dispose();
     seatController.dispose();
     foodCostController.dispose();
+    goodsCostController.dispose();
     super.dispose();
   }
 
@@ -596,6 +650,11 @@ class IntutionRecordProvider extends ChangeNotifier {
             0,
         foodItems: List<String>.from(_foodItems),
         foodPrices: Map<String, int>.from(_foodPrices),
+        goodsCost:
+            int.tryParse(goodsCostController.text.replaceAll(',', '').trim()) ??
+            0,
+        goodsItems: List<String>.from(_goodsItems),
+        goodsPrices: Map<String, int>.from(_goodsPrices),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -632,6 +691,11 @@ class IntutionRecordProvider extends ChangeNotifier {
             .add(seatView.toMap());
       }
 
+      // 피드 공유 토글이 켜져 있으면 posts 컬렉션에도 직관 인증 글 등록
+      if (_shareToFeed) {
+        await shareAttendanceToFeed(attendance);
+      }
+
       _saveProgress = 100;
       _saveStatusText = '저장 완료!';
       notifyListeners();
@@ -648,6 +712,10 @@ class IntutionRecordProvider extends ChangeNotifier {
       foodCostController.clear();
       _foodItems.clear();
       _foodPrices.clear();
+      goodsCostController.clear();
+      _goodsItems.clear();
+      _goodsPrices.clear();
+      _shareToFeed = false;
       _selectedImage = null;
       _images = [];
       notifyListeners();
@@ -660,6 +728,65 @@ class IntutionRecordProvider extends ChangeNotifier {
       _saveProgress = 0;
       _saveStatusText = '';
       notifyListeners();
+    }
+  }
+
+  /// 직관기록을 피드(`posts` 컬렉션)에 직관 인증 글로 공유
+  Future<bool> shareAttendanceToFeed(AttendanceModel attendance) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return false;
+
+      String userNickName = user.displayName ?? '야구팬';
+      String userName = '';
+      try {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        final uData = userDoc.data();
+        if (uData != null) {
+          final nick = (uData['userNickName'] ?? uData['nickName'] ?? '')
+              .toString()
+              .trim();
+          if (nick.isNotEmpty) userNickName = nick;
+          userName = (uData['name'] ?? '').toString().trim();
+        }
+      } catch (_) {}
+
+      final String resultLabel = attendance.myScore > attendance.opponentScore
+          ? '승리'
+          : (attendance.myScore < attendance.opponentScore ? '패배' : '무승부');
+      final memoText = attendance.memo?.trim() ?? '';
+      final postText = memoText.isNotEmpty
+          ? memoText
+          : '${attendance.stadium} 직관 ${attendance.myScore}:${attendance.opponentScore} $resultLabel 기록! ⚾';
+
+      await FirebaseFirestore.instance.collection('posts').add({
+        'userId': user.uid,
+        'userNickName': userNickName,
+        'name': userName,
+        'text': postText,
+        'mediaUrls': attendance.imageUrls,
+        'meetupId': null,
+        'attendanceSummary': {
+          'gameId': attendance.gameId,
+          'ownerId': user.uid,
+          'myTeam': attendance.myTeam,
+          'oppTeam': attendance.oppTeam,
+          'myScore': attendance.myScore,
+          'opponentScore': attendance.opponentScore,
+          'stadium': attendance.stadium,
+          'date': attendance.date,
+          'seat': attendance.seat,
+        },
+        'likesCount': 0,
+        'likedBy': <String>[],
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -750,8 +877,12 @@ class IntutionRecordProvider extends ChangeNotifier {
     int? newFoodCost,
     List<String>? newFoodItems,
     Map<String, int>? newFoodPrices,
+    int? newGoodsCost,
+    List<String>? newGoodsItems,
+    Map<String, int>? newGoodsPrices,
     List<File>? newImages,
     List<String>? oldImageUrls,
+    bool? newIsPublic,
   }) async {
     _saving = true;
     _saveProgress = 0;
@@ -849,8 +980,24 @@ class IntutionRecordProvider extends ChangeNotifier {
         updateData['foodPrices'] = newFoodPrices;
       }
 
+      if (newGoodsCost != null) {
+        updateData['goodsCost'] = newGoodsCost;
+      }
+
+      if (newGoodsItems != null) {
+        updateData['goodsItems'] = newGoodsItems;
+      }
+
+      if (newGoodsPrices != null) {
+        updateData['goodsPrices'] = newGoodsPrices;
+      }
+
       if (imageUrls.isNotEmpty) {
         updateData['imageUrls'] = imageUrls;
+      }
+
+      if (newIsPublic != null) {
+        updateData['isPublic'] = newIsPublic;
       }
 
       await FirebaseFirestore.instance

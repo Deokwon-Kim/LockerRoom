@@ -14,6 +14,7 @@ class PostModel {
   final String userName;
   final List<String> likedBy;
   final String? meetupId;
+  final Map<String, dynamic>? attendanceSummary;
 
   PostModel({
     required this.id,
@@ -29,6 +30,7 @@ class PostModel {
     required this.userName,
     required this.likedBy,
     this.meetupId,
+    this.attendanceSummary,
   });
 
   factory PostModel.fromDoc(DocumentSnapshot doc) {
@@ -39,6 +41,13 @@ class PostModel {
     if (data['mediaInfo'] != null) {
       mediaInfo = List<Map<String, dynamic>>.from(
         data['mediaInfo'].map((item) => Map<String, dynamic>.from(item)),
+      );
+    }
+
+    Map<String, dynamic>? attendanceSummary;
+    if (data['attendanceSummary'] is Map) {
+      attendanceSummary = Map<String, dynamic>.from(
+        data['attendanceSummary'] as Map,
       );
     }
 
@@ -60,6 +69,7 @@ class PostModel {
       userName: data['name'] ?? '',
       likedBy: List<String>.from(data['likedBy'] ?? const []),
       meetupId: data['meetupId'],
+      attendanceSummary: attendanceSummary,
     );
   }
 
@@ -74,6 +84,7 @@ class PostModel {
     String? userName,
     List<String>? likedBy,
     String? meetupId,
+    Map<String, dynamic>? attendanceSummary,
   }) {
     return PostModel(
       id: id, // id, userId, createdAt 등 필수 변경 불가 필드는 그대로
@@ -89,6 +100,7 @@ class PostModel {
       userName: userName ?? this.userName,
       likedBy: likedBy ?? this.likedBy,
       meetupId: meetupId ?? this.meetupId,
+      attendanceSummary: attendanceSummary ?? this.attendanceSummary,
     );
   }
 
@@ -106,6 +118,7 @@ class PostModel {
       'userName': userName,
       'likedBy': likedBy,
       'meetupId': meetupId,
+      if (attendanceSummary != null) 'attendanceSummary': attendanceSummary,
     };
   }
 }

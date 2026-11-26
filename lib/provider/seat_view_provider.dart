@@ -14,10 +14,16 @@ class SeatViewProvider extends ChangeNotifier {
   List<SeatViewModel> _posts = [];
   bool _isLoading = true;
   bool _isUploading = false;
+  int _uploadProgress = 0;
+  String _uploadStatusText = '';
+  String? _lastError;
 
   List<SeatViewModel> get posts => List.unmodifiable(_posts);
   bool get isLoading => _isLoading;
   bool get isUploading => _isUploading;
+  int get uploadProgress => _uploadProgress;
+  String get uploadStatusText => _uploadStatusText;
+  String? get lastError => _lastError;
 
   void subscribe() {
     if (_sub != null) return;
@@ -56,6 +62,9 @@ class SeatViewProvider extends ChangeNotifier {
     if (user == null || images.isEmpty) return false;
 
     _isUploading = true;
+    _uploadProgress = 5;
+    _uploadStatusText = '사진 업로드 준비 중...';
+    _lastError = null;
     notifyListeners();
 
     try {
@@ -63,14 +72,48 @@ class SeatViewProvider extends ChangeNotifier {
       final List<String> uploadedUrls = [];
 
       for (int i = 0; i < images.length; i++) {
+        _uploadStatusText = '사진 업로드 중... (${i + 1}/${images.length})';
+        notifyListeners();
+
+        final file = images[i];
+        final rawName = file.path.split('/').last;
+        final lower = rawName.toLowerCase();
+        final ext = lower.endsWith('.png')
+            ? 'png'
+            : (lower.endsWith('.heic') ? 'heic' : 'jpg');
+        final contentType = ext == 'png'
+            ? 'image/png'
+            : (ext == 'heic' ? 'image/heic' : 'image/jpeg');
+
         final ref = FirebaseStorage.instance
             .ref()
             .child('seat_views')
             .child(user.uid)
-            .child('${docRef.id}_$i.jpg');
-        await ref.putFile(images[i]);
+            .child('${docRef.id}_$i.$ext');
+        final metadata = SettableMetadata(contentType: contentType);
+
+        try {
+          final task = ref.putFile(file, metadata);
+          task.snapshotEvents.listen((snap) {
+            if (snap.totalBytes > 0) {
+              final ratio = snap.bytesTransferred / snap.totalBytes;
+              final base = (i / images.length) * 85;
+              final span = (1 / images.length) * 85;
+              _uploadProgress = (base + ratio * span).round().clamp(5, 90);
+              notifyListeners();
+            }
+          });
+          await task;
+        } catch (_) {
+          final bytes = await file.readAsBytes();
+          await ref.putData(bytes, metadata);
+        }
         uploadedUrls.add(await ref.getDownloadURL());
       }
+
+      _uploadProgress = 95;
+      _uploadStatusText = '좌석 시야 게시글 저장 중...';
+      notifyListeners();
 
       final post = SeatViewModel(
         id: docRef.id,
@@ -89,11 +132,18 @@ class SeatViewProvider extends ChangeNotifier {
       );
 
       await docRef.set(post.toMap());
+      _uploadProgress = 100;
+      _uploadStatusText = '업로드 완료!';
+      notifyListeners();
       return true;
-    } catch (_) {
+    } catch (e) {
+      _lastError = e.toString();
+      debugPrint('SeatView createPost error: $e');
       return false;
     } finally {
       _isUploading = false;
+      _uploadProgress = 0;
+      _uploadStatusText = '';
       notifyListeners();
     }
   }
@@ -143,6 +193,91 @@ class SeatViewProvider extends ChangeNotifier {
       await ref.update({
         'likedBy': FieldValue.arrayUnion([uid]),
       });
+    }
+  }
+
+  Future<bool> updatePost({
+    required SeatViewModel original,
+    required String stadium,
+    required String zone,
+    required String seatText,
+    required String review,
+    required List<String> tags,
+    required List<String> keptImageUrls,
+    required List<File> newImages,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.uid != original.userId) return false;
+    if (keptImageUrls.isEmpty && newImages.isEmpty) return false;
+
+    _isUploading = true;
+    _uploadProgress = 5;
+    _uploadStatusText = '수정 내용 반영 중...';
+    _lastError = null;
+    notifyListeners();
+
+    try {
+      final List<String> finalUrls = [...keptImageUrls];
+      final ts = DateTime.now().millisecondsSinceEpoch;
+
+      for (int i = 0; i < newImages.length; i++) {
+        _uploadStatusText = '새 사진 업로드 중... (${i + 1}/${newImages.length})';
+        notifyListeners();
+
+        final file = newImages[i];
+        final rawName = file.path.split('/').last;
+        final lower = rawName.toLowerCase();
+        final ext = lower.endsWith('.png')
+            ? 'png'
+            : (lower.endsWith('.heic') ? 'heic' : 'jpg');
+        final contentType = ext == 'png'
+            ? 'image/png'
+            : (ext == 'heic' ? 'image/heic' : 'image/jpeg');
+
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('seat_views')
+            .child(user.uid)
+            .child('${original.id}_edit_${ts}_$i.$ext');
+        final metadata = SettableMetadata(contentType: contentType);
+
+        try {
+          await ref.putFile(file, metadata);
+        } catch (_) {
+          final bytes = await file.readAsBytes();
+          await ref.putData(bytes, metadata);
+        }
+        finalUrls.add(await ref.getDownloadURL());
+      }
+
+      _uploadProgress = 95;
+      _uploadStatusText = '저장 중...';
+      notifyListeners();
+
+      await _firestore.collection('seat_views').doc(original.id).update({
+        'stadium': SeatViewModel.normalizeStadium(stadium),
+        'zone': zone,
+        'seatText': seatText.trim(),
+        'blockNumber': SeatViewModel.extractBlock(seatText),
+        'imageUrls': finalUrls,
+        'review': review.trim(),
+        'tags': tags,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      _uploadProgress = 100;
+      _uploadStatusText = '수정 완료!';
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _lastError = e.toString();
+      debugPrint('SeatView updatePost error: $e');
+      return false;
+    } finally {
+      _isUploading = false;
+      _uploadProgress = 0;
+      _uploadStatusText = '';
+      notifyListeners();
     }
   }
 

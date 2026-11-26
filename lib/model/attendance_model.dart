@@ -22,6 +22,11 @@ class AttendanceModel {
   final int? foodCost;
   final List<String> foodItems;
   final Map<String, int> foodPrices;
+  final int? goodsCost;
+  final List<String> goodsItems;
+  final Map<String, int> goodsPrices;
+  final bool isPublic;
+  final int commentsCount;
 
   AttendanceModel({
     required this.gameId,
@@ -45,6 +50,11 @@ class AttendanceModel {
     this.foodCost,
     this.foodItems = const [],
     this.foodPrices = const {},
+    this.goodsCost,
+    this.goodsItems = const [],
+    this.goodsPrices = const {},
+    this.isPublic = true,
+    this.commentsCount = 0,
   });
 
   // Firestore DocumentSnapshot에서 모델로 변환
@@ -92,6 +102,24 @@ class AttendanceModel {
       });
     }
 
+    final int? goodsCost = data['goodsCost'] is int
+        ? data['goodsCost'] as int
+        : int.tryParse('${data['goodsCost']}');
+
+    final List<String> goodsItems = data['goodsItems'] is List
+        ? List<String>.from(data['goodsItems'])
+        : const [];
+
+    final Map<String, int> goodsPrices = {};
+    if (data['goodsPrices'] is Map) {
+      (data['goodsPrices'] as Map).forEach((k, v) {
+        final parsed = v is int ? v : int.tryParse('$v') ?? 0;
+        if (parsed > 0) {
+          goodsPrices[k.toString()] = parsed;
+        }
+      });
+    }
+
     return AttendanceModel(
       gameId: data['gameId'] ?? '',
       season: data['season'] ?? 0,
@@ -118,6 +146,13 @@ class AttendanceModel {
       foodCost: foodCost,
       foodItems: foodItems,
       foodPrices: foodPrices,
+      goodsCost: goodsCost,
+      goodsItems: goodsItems,
+      goodsPrices: goodsPrices,
+      isPublic: data['isPublic'] is bool ? data['isPublic'] as bool : true,
+      commentsCount: data['commentsCount'] is int
+          ? data['commentsCount'] as int
+          : int.tryParse('${data['commentsCount']}') ?? 0,
     );
   }
 
@@ -190,6 +225,11 @@ class AttendanceModel {
       if (foodCost != null) 'foodCost': foodCost,
       if (foodItems.isNotEmpty) 'foodItems': foodItems,
       if (foodPrices.isNotEmpty) 'foodPrices': foodPrices,
+      if (goodsCost != null) 'goodsCost': goodsCost,
+      if (goodsItems.isNotEmpty) 'goodsItems': goodsItems,
+      if (goodsPrices.isNotEmpty) 'goodsPrices': goodsPrices,
+      'isPublic': isPublic,
+      'commentsCount': commentsCount,
     };
   }
 
@@ -216,6 +256,11 @@ class AttendanceModel {
     int? foodCost,
     List<String>? foodItems,
     Map<String, int>? foodPrices,
+    int? goodsCost,
+    List<String>? goodsItems,
+    Map<String, int>? goodsPrices,
+    bool? isPublic,
+    int? commentsCount,
   }) {
     return AttendanceModel(
       gameId: gameId ?? this.gameId,
@@ -239,6 +284,11 @@ class AttendanceModel {
       foodCost: foodCost ?? this.foodCost,
       foodItems: foodItems ?? this.foodItems,
       foodPrices: foodPrices ?? this.foodPrices,
+      goodsCost: goodsCost ?? this.goodsCost,
+      goodsItems: goodsItems ?? this.goodsItems,
+      goodsPrices: goodsPrices ?? this.goodsPrices,
+      isPublic: isPublic ?? this.isPublic,
+      commentsCount: commentsCount ?? this.commentsCount,
     );
   }
 }

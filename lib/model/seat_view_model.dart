@@ -62,7 +62,9 @@ class SeatViewModel {
   final String review;
   final List<String> tags;
   final List<String> likedBy;
+  final int commentsCount;
   final DateTime createdAt;
+  final DateTime? updatedAt;
 
   const SeatViewModel({
     required this.id,
@@ -77,7 +79,9 @@ class SeatViewModel {
     required this.review,
     this.tags = const [],
     this.likedBy = const [],
+    this.commentsCount = 0,
     required this.createdAt,
+    this.updatedAt,
   });
 
   int get likeCount => likedBy.length;
@@ -101,9 +105,15 @@ class SeatViewModel {
       likedBy: data['likedBy'] is List
           ? List<String>.from(data['likedBy'])
           : const [],
+      commentsCount: data['commentsCount'] is int
+          ? data['commentsCount'] as int
+          : int.tryParse('${data['commentsCount']}') ?? 0,
       createdAt: data['createdAt'] is Timestamp
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      updatedAt: data['updatedAt'] is Timestamp
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : null,
     );
   }
 
@@ -119,7 +129,9 @@ class SeatViewModel {
     'review': review,
     'tags': tags,
     'likedBy': likedBy,
+    'commentsCount': commentsCount,
     'createdAt': Timestamp.fromDate(createdAt),
+    if (updatedAt != null) 'updatedAt': Timestamp.fromDate(updatedAt!),
   };
 
   /// 좌석 문자열에서 구역(포수뒤/1루/3루/외야/기타) 자동 추정

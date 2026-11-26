@@ -3,11 +3,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/seat_view_model.dart';
+import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/seat_view/seat_view_upload_page.dart';
+import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/seat_view_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/user_provider.dart';
+import 'package:lockerroom/widgets/ilu_share_card.dart';
 import 'package:provider/provider.dart';
+import 'package:toastification/toastification.dart';
 
 class SeatViewFeedPage extends StatefulWidget {
   final String? initialStadium;
@@ -22,6 +28,7 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
   String _selectedStadium = '전체 구장';
   String _selectedZone = '전체';
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _stadiumScrollController = ScrollController();
   String _query = '';
 
   @override
@@ -33,12 +40,30 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<SeatViewProvider>().subscribe();
+      _scrollToSelectedStadium();
     });
+  }
+
+  void _scrollToSelectedStadium() {
+    if (!_stadiumScrollController.hasClients) return;
+    final stadiumFilters = ['전체 구장', ...kSeatViewStadiums];
+    final index = stadiumFilters.indexOf(_selectedStadium);
+    if (index <= 0) return;
+    final screenWidth = MediaQuery.of(context).size.width;
+    const itemExtent = 56.0 + 10.0;
+    final targetOffset = (16.0 + index * itemExtent + 28.0 - screenWidth / 2)
+        .clamp(0.0, _stadiumScrollController.position.maxScrollExtent);
+    _stadiumScrollController.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _stadiumScrollController.dispose();
     super.dispose();
   }
 
@@ -107,6 +132,7 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
           SizedBox(
             height: 80,
             child: ListView.separated(
+              controller: _stadiumScrollController,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               scrollDirection: Axis.horizontal,
               itemCount: stadiumFilters.length,
@@ -466,7 +492,7 @@ class _SeatViewPostCardState extends State<_SeatViewPostCard> {
                         ),
                       ),
                       Text(
-                        '${post.stadium} · ${_timeAgo(post.createdAt)}',
+                        '${post.stadium} · ${_timeAgo(post.createdAt)}${post.updatedAt != null ? ' · 수정됨' : ''}',
                         style: const TextStyle(
                           fontSize: 11,
                           color: GRAYSCALE_LABEL_500,
@@ -494,15 +520,50 @@ class _SeatViewPostCardState extends State<_SeatViewPostCard> {
                   ),
                 ),
                 if (isOwner)
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () =>
-                        context.read<SeatViewProvider>().deletePost(post.id),
+                  PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
                     icon: const Icon(
-                      Icons.delete_outline_rounded,
-                      size: 18,
-                      color: GRAYSCALE_LABEL_400,
+                      Icons.more_horiz_rounded,
+                      size: 20,
+                      color: GRAYSCALE_LABEL_500,
                     ),
+                    color: WHITE,
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                SeatViewUploadPage(editingPost: post),
+                          ),
+                        );
+                      } else if (value == 'delete') {
+                        await showDialog<void>(
+                          context: context,
+                          builder: (_) => ConfirmationDialog(
+                            title: '좌석 시야 삭제',
+                            content: '이 좌석 시야 게시글을 삭제하시겠습니까?',
+                            cancelText: '취소',
+                            confirmText: '삭제',
+                            onConfirm: () {
+                              context.read<SeatViewProvider>().deletePost(
+                                post.id,
+                              );
+                            },
+                          ),
+                        );
+                      }
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'edit', child: Text('수정하기')),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Text(
+                          '삭제하기',
+                          style: TextStyle(color: RED_DANGER_TEXT_50),
+                        ),
+                      ),
+                    ],
                   ),
               ],
             ),
@@ -664,9 +725,565 @@ class _SeatViewPostCardState extends State<_SeatViewPostCard> {
                         ],
                       ),
                     ),
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: () => _showCommentSheet(context, post),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            CupertinoIcons.chat_bubble,
+                            size: 17,
+                            color: GRAYSCALE_LABEL_500,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            '댓글 ${post.commentsCount}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: GRAYSCALE_LABEL_600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => _sharePost(context, post),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            CupertinoIcons.share,
+                            size: 16,
+                            color: GRAYSCALE_LABEL_600,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            '공유',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: GRAYSCALE_LABEL_600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _sharePost(BuildContext context, SeatViewModel post) {
+    showIluWatermarkShareSheet(
+      context: context,
+      watermarkSubtitle: '${post.stadium} · ${post.seatText}',
+      shareText: '${post.stadium} ${post.seatText} 직관 시야 공유! ⚾\n#ILU #직관시야',
+      shareContent: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (post.imageUrls.isNotEmpty)
+            CachedNetworkImage(
+              imageUrl: post.imageUrls.first,
+              height: 220,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: ACCENT_CORAL.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        post.zone,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: ACCENT_CORAL,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        post.stadium,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: GRAYSCALE_LABEL_600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  post.seatText,
+                  style: const TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                    color: GRAYSCALE_LABEL_950,
+                  ),
+                ),
+                if (post.review.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    post.review,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: GRAYSCALE_LABEL_700,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCommentSheet(BuildContext context, SeatViewModel post) {
+    final commentProvider = context.read<CommentProvider>();
+    commentProvider.subscribeSeatViewComments(post.id);
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: WHITE,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => _SeatViewCommentSheet(post: post),
+    ).whenComplete(() {
+      commentProvider.cancelSeatViewSubscription(post.id);
+    });
+  }
+}
+
+class _SeatViewCommentSheet extends StatefulWidget {
+  final SeatViewModel post;
+  const _SeatViewCommentSheet({required this.post});
+
+  @override
+  State<_SeatViewCommentSheet> createState() => _SeatViewCommentSheetState();
+}
+
+class _SeatViewCommentSheetState extends State<_SeatViewCommentSheet> {
+  final TextEditingController _controller = TextEditingController();
+  String? _replyParentId;
+  String? _replyToUserName;
+  String? _replyToUserId;
+  bool _replyIsToReply = false;
+  bool _isSending = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitComment() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty || _isSending) return;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    setState(() => _isSending = true);
+    try {
+      final up = context.read<UserProvider>();
+      final finalText =
+          (_replyIsToReply &&
+              _replyToUserName != null &&
+              !text.startsWith('@$_replyToUserName'))
+          ? '@$_replyToUserName $text'
+          : text;
+      final comment = CommentModel(
+        id: '',
+        postId: widget.post.id,
+        userId: currentUser.uid,
+        userName: up.nickname ?? currentUser.displayName ?? '야구팬',
+        text: finalText,
+        reComments: _replyParentId ?? '',
+        createdAt: DateTime.now(),
+      );
+      await context.read<CommentProvider>().addSeatViewCommentAndNotify(
+        postId: widget.post.id,
+        comment: comment,
+        currentUserId: currentUser.uid,
+        postOwnerId: widget.post.userId,
+        parentCommentOwnerId: _replyToUserId,
+      );
+      if (!mounted) return;
+      _controller.clear();
+      setState(() {
+        _replyParentId = null;
+        _replyToUserName = null;
+        _replyToUserId = null;
+        _replyIsToReply = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      toastification.show(
+        context: context,
+        type: ToastificationType.error,
+        autoCloseDuration: const Duration(seconds: 2),
+        title: const Text('댓글 등록에 실패했습니다'),
+      );
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    final allComments = context.watch<CommentProvider>().getSeatViewComments(
+      widget.post.id,
+    );
+    final parents = allComments.where((c) => c.reComments.isEmpty).toList();
+    final Map<String, List<CommentModel>> repliesMap = {};
+    for (final c in allComments.where((c) => c.reComments.isNotEmpty)) {
+      repliesMap.putIfAbsent(c.reComments, () => []).add(c);
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.65,
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: GRAYSCALE_LABEL_200,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '댓글 ${allComments.length}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: GRAYSCALE_LABEL_950,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    widget.post.seatText,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: GRAYSCALE_LABEL_500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, color: GRAYSCALE_LABEL_100),
+            Expanded(
+              child: allComments.isEmpty
+                  ? const Center(
+                      child: Text(
+                        '첫 댓글을 남겨보세요!',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          color: GRAYSCALE_LABEL_500,
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      itemCount: parents.length,
+                      itemBuilder: (_, idx) {
+                        final parent = parents[idx];
+                        final replies = repliesMap[parent.id] ?? const [];
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildCommentTile(
+                              parent,
+                              currentUid: currentUid,
+                              isReply: false,
+                            ),
+                            ...replies.map(
+                              (r) => Padding(
+                                padding: const EdgeInsets.only(left: 24),
+                                child: _buildCommentTile(
+                                  r,
+                                  currentUid: currentUid,
+                                  isReply: true,
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+            ),
+            if (_replyToUserName != null)
+              Container(
+                width: double.infinity,
+                color: BACKGROUND_COLOR,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      '$_replyToUserName님에게 답글 작성 중',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: BUTTON,
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => setState(() {
+                        _replyParentId = null;
+                        _replyToUserName = null;
+                        _replyToUserId = null;
+                        _replyIsToReply = false;
+                      }),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: GRAYSCALE_LABEL_500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        cursorColor: BUTTON,
+                        decoration: InputDecoration(
+                          hintText: '좌석 시야에 대한 댓글을 입력하세요',
+                          filled: true,
+                          fillColor: BACKGROUND_COLOR,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: _isSending ? null : _submitComment,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BUTTON,
+                        foregroundColor: WHITE,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                      ),
+                      child: const Text(
+                        '등록',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCommentTile(
+    CommentModel c, {
+    required String? currentUid,
+    required bool isReply,
+  }) {
+    final canDelete =
+        currentUid != null &&
+        (c.userId == currentUid || widget.post.userId == currentUid);
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: isReply ? 4 : 6),
+      padding: isReply
+          ? const EdgeInsets.fromLTRB(10, 8, 10, 8)
+          : EdgeInsets.zero,
+      decoration: isReply
+          ? BoxDecoration(
+              color: BACKGROUND_COLOR,
+              borderRadius: BorderRadius.circular(10),
+              border: const Border(
+                left: BorderSide(color: GRAYSCALE_LABEL_300, width: 2.5),
+              ),
+            )
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (isReply) ...[
+                const Icon(
+                  Icons.subdirectory_arrow_right_rounded,
+                  size: 15,
+                  color: GRAYSCALE_LABEL_400,
+                ),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                c.userName,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: GRAYSCALE_LABEL_950,
+                ),
+              ),
+              if (c.userId == widget.post.userId) ...[
+                const SizedBox(width: 5),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: BUTTON.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    '작성자',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: BUTTON,
+                    ),
+                  ),
+                ),
+              ],
+              const Spacer(),
+              GestureDetector(
+                onTap: () => setState(() {
+                  _replyParentId = isReply ? c.reComments : c.id;
+                  _replyToUserName = c.userName;
+                  _replyToUserId = c.userId;
+                  _replyIsToReply = isReply;
+                }),
+                child: const Text(
+                  '답글',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: GRAYSCALE_LABEL_500,
+                  ),
+                ),
+              ),
+              if (canDelete) ...[
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () =>
+                      context.read<CommentProvider>().deleteSeatViewComment(
+                        postId: widget.post.id,
+                        commentId: c.id,
+                      ),
+                  child: const Text(
+                    '삭제',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: RED_DANGER_TEXT_50,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 3),
+          _buildMentionText(c.text, BUTTON),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMentionText(String text, Color mentionColor) {
+    final match = RegExp(r'^(@\S+)\s+(.*)$', dotAll: true).firstMatch(text);
+    if (match == null) {
+      return Text(
+        text,
+        style: const TextStyle(
+          fontSize: 13,
+          color: GRAYSCALE_LABEL_800,
+          height: 1.4,
+        ),
+      );
+    }
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '${match.group(1)} ',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: mentionColor,
+              height: 1.4,
+            ),
+          ),
+          TextSpan(
+            text: match.group(2),
+            style: const TextStyle(
+              fontSize: 13,
+              color: GRAYSCALE_LABEL_800,
+              height: 1.4,
             ),
           ),
         ],

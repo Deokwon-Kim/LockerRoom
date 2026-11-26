@@ -12,6 +12,10 @@ class AppNotification {
   final String? preview;
   final String? meetupId;
   final int? fromUserBirthYear;
+  final String? articleUrl;
+  final String? articleTitle;
+  final String? teamSymple;
+  final String? newsSubType;
 
   AppNotification({
     required this.id,
@@ -25,6 +29,10 @@ class AppNotification {
     this.preview,
     this.meetupId,
     this.fromUserBirthYear,
+    this.articleUrl,
+    this.articleTitle,
+    this.teamSymple,
+    this.newsSubType,
   });
 
   factory AppNotification.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -45,6 +53,10 @@ class AppNotification {
       fromUserBirthYear: data['fromUserBirthYear'] == null
           ? null
           : (data['fromUserBirthYear'] as num).toInt(),
+      articleUrl: data['articleUrl'] as String?,
+      articleTitle: data['articleTitle'] as String?,
+      teamSymple: data['teamSymple'] as String?,
+      newsSubType: data['newsSubType'] as String?,
     );
   }
 }

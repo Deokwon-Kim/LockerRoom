@@ -8,6 +8,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/main.dart';
 import 'package:lockerroom/page/intution_record/intuition_recap_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_detail_page.dart';
+import 'package:lockerroom/page/intution_record/intution_record_upload_page.dart';
 import 'package:lockerroom/page/quiz/quiz_result_page.dart';
 import 'package:lockerroom/provider/intution_record_list_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -43,6 +44,23 @@ class _WinRatePageState extends State<WinRatePage> {
         backgroundColor: BACKGROUND_COLOR,
         elevation: 0,
         scrolledUnderElevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const IntutionRecordUploadPage(),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.add_rounded,
+              size: 28,
+              color: GRAYSCALE_LABEL_900,
+            ),
+          ),
+        ],
         title: Row(
           children: [
             Text(

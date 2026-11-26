@@ -9,9 +9,19 @@ class CommentProvider with ChangeNotifier {
   final _marketCommentsCollection = FirebaseFirestore.instance.collection(
     'marketComments',
   );
+  final _seatViewCommentsCollection = FirebaseFirestore.instance.collection(
+    'seat_view_comments',
+  );
+  final _attendanceCommentsCollection = FirebaseFirestore.instance.collection(
+    'attendance_comments',
+  );
 
   final Map<String, List<CommentModel>> _postComments = {};
   final Map<String, StreamSubscription> _subs = {};
+  final Map<String, List<CommentModel>> _seatViewComments = {};
+  final Map<String, StreamSubscription> _seatViewSubs = {};
+  final Map<String, List<CommentModel>> _attendanceComments = {};
+  final Map<String, StreamSubscription> _attendanceSubs = {};
 
   Set<String> _blockedUserIds = <String>{};
   Set<String> _blockedByUserIds = <String>{};
@@ -341,6 +351,241 @@ class CommentProvider with ChangeNotifier {
     for (var sub in _subs.values) {
       sub.cancel();
     }
+    for (var sub in _marketSubs.values) {
+      sub.cancel();
+    }
+    for (var sub in _seatViewSubs.values) {
+      sub.cancel();
+    }
+    for (var sub in _attendanceSubs.values) {
+      sub.cancel();
+    }
     super.dispose();
+  }
+
+  // ====== 좌석 시야 댓글 ======
+  List<CommentModel> getSeatViewComments(String postId) {
+    final comments = _seatViewComments[postId] ?? [];
+    return comments
+        .where(
+          (c) =>
+              !_blockedUserIds.contains(c.userId) &&
+              !_blockedByUserIds.contains(c.userId),
+        )
+        .toList();
+  }
+
+  void subscribeSeatViewComments(String postId) {
+    _seatViewSubs[postId]?.cancel();
+    _seatViewSubs[postId] = _seatViewCommentsCollection
+        .where('postId', isEqualTo: postId)
+        .snapshots()
+        .listen(
+          (snap) {
+            final list = snap.docs
+                .map((doc) => CommentModel.fromDoc(doc))
+                .toList()
+              ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            _seatViewComments[postId] = list;
+            notifyListeners();
+          },
+          onError: (e) {
+            debugPrint('좌석시야 댓글 구독 에러: $e');
+          },
+        );
+  }
+
+  void cancelSeatViewSubscription(String postId) {
+    _seatViewSubs[postId]?.cancel();
+    _seatViewSubs.remove(postId);
+  }
+
+  Future<void> addSeatViewCommentAndNotify({
+    required String postId,
+    required CommentModel comment,
+    required String currentUserId,
+    required String postOwnerId,
+    String? parentCommentOwnerId,
+  }) async {
+    final commentRef = await _seatViewCommentsCollection.add({
+      ...comment.toMap(),
+      'postId': postId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    final current = List<CommentModel>.from(_seatViewComments[postId] ?? []);
+    if (!current.any((c) => c.id == commentRef.id)) {
+      current.add(
+        CommentModel(
+          id: commentRef.id,
+          postId: postId,
+          userId: comment.userId,
+          userName: comment.userName,
+          text: comment.text,
+          reComments: comment.reComments,
+          createdAt: DateTime.now(),
+        ),
+      );
+      _seatViewComments[postId] = current;
+      notifyListeners();
+    }
+
+    await FirebaseFirestore.instance
+        .collection('seat_views')
+        .doc(postId)
+        .update({'commentsCount': FieldValue.increment(1)});
+
+    final targetUserId = (parentCommentOwnerId?.isNotEmpty ?? false)
+        ? parentCommentOwnerId!
+        : postOwnerId;
+
+    if (targetUserId == currentUserId || targetUserId.isEmpty) return;
+
+    final preview = comment.text.length > 40
+        ? '${comment.text.substring(0, 40)}...'
+        : comment.text;
+
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'seatViewComment',
+      'postId': postId,
+      'commentId': commentRef.id,
+      'fromUserId': currentUserId,
+      'toUserId': targetUserId,
+      'preview': preview,
+      'createdAt': FieldValue.serverTimestamp(),
+      'isRead': false,
+    });
+  }
+
+  Future<void> deleteSeatViewComment({
+    required String postId,
+    required String commentId,
+  }) async {
+    await _seatViewCommentsCollection.doc(commentId).delete();
+    await FirebaseFirestore.instance
+        .collection('seat_views')
+        .doc(postId)
+        .update({'commentsCount': FieldValue.increment(-1)});
+  }
+
+  // ====== 직관기록 댓글 ======
+  String attendancePostKey(String ownerUserId, String gameId) =>
+      '${ownerUserId}_$gameId';
+
+  List<CommentModel> getAttendanceComments(String ownerUserId, String gameId) {
+    final key = attendancePostKey(ownerUserId, gameId);
+    final comments = _attendanceComments[key] ?? [];
+    return comments
+        .where(
+          (c) =>
+              !_blockedUserIds.contains(c.userId) &&
+              !_blockedByUserIds.contains(c.userId),
+        )
+        .toList();
+  }
+
+  void subscribeAttendanceComments(String ownerUserId, String gameId) {
+    final key = attendancePostKey(ownerUserId, gameId);
+    _attendanceSubs[key]?.cancel();
+    _attendanceSubs[key] = _attendanceCommentsCollection
+        .where('postId', isEqualTo: key)
+        .snapshots()
+        .listen(
+          (snap) {
+            final list = snap.docs
+                .map((doc) => CommentModel.fromDoc(doc))
+                .toList()
+              ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            _attendanceComments[key] = list;
+            notifyListeners();
+          },
+          onError: (e) {
+            debugPrint('직관기록 댓글 구독 에러: $e');
+          },
+        );
+  }
+
+  void cancelAttendanceSubscription(String ownerUserId, String gameId) {
+    final key = attendancePostKey(ownerUserId, gameId);
+    _attendanceSubs[key]?.cancel();
+    _attendanceSubs.remove(key);
+  }
+
+  Future<void> addAttendanceCommentAndNotify({
+    required String ownerUserId,
+    required String gameId,
+    required CommentModel comment,
+    required String currentUserId,
+    String? parentCommentOwnerId,
+  }) async {
+    final key = attendancePostKey(ownerUserId, gameId);
+    final commentRef = await _attendanceCommentsCollection.add({
+      ...comment.toMap(),
+      'postId': key,
+      'attendanceOwnerId': ownerUserId,
+      'gameId': gameId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    final current = List<CommentModel>.from(_attendanceComments[key] ?? []);
+    if (!current.any((c) => c.id == commentRef.id)) {
+      current.add(
+        CommentModel(
+          id: commentRef.id,
+          postId: key,
+          userId: comment.userId,
+          userName: comment.userName,
+          text: comment.text,
+          reComments: comment.reComments,
+          createdAt: DateTime.now(),
+        ),
+      );
+      _attendanceComments[key] = current;
+      notifyListeners();
+    }
+
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(ownerUserId)
+        .collection('attendances')
+        .doc(gameId)
+        .update({'commentsCount': FieldValue.increment(1)});
+
+    final targetUserId = (parentCommentOwnerId?.isNotEmpty ?? false)
+        ? parentCommentOwnerId!
+        : ownerUserId;
+
+    if (targetUserId == currentUserId || targetUserId.isEmpty) return;
+
+    final preview = comment.text.length > 40
+        ? '${comment.text.substring(0, 40)}...'
+        : comment.text;
+
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'type': 'attendanceComment',
+      'postId': key,
+      'ownerUserId': ownerUserId,
+      'gameId': gameId,
+      'commentId': commentRef.id,
+      'fromUserId': currentUserId,
+      'toUserId': targetUserId,
+      'preview': preview,
+      'createdAt': FieldValue.serverTimestamp(),
+      'isRead': false,
+    });
+  }
+
+  Future<void> deleteAttendanceComment({
+    required String ownerUserId,
+    required String gameId,
+    required String commentId,
+  }) async {
+    await _attendanceCommentsCollection.doc(commentId).delete();
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(ownerUserId)
+        .collection('attendances')
+        .doc(gameId)
+        .update({'commentsCount': FieldValue.increment(-1)});
   }
 }

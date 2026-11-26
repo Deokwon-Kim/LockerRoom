@@ -27,6 +27,9 @@ class TicketScanProvider extends ChangeNotifier {
   final _koreanRecognizer = TextRecognizer(
     script: TextRecognitionScript.korean,
   );
+  final _japaneseRecognizer = TextRecognizer(
+    script: TextRecognitionScript.japanese,
+  );
   final _latinRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
   final ScheduleService _scheduleService = ScheduleService();
   final ImagePicker _picker = ImagePicker();
@@ -190,10 +193,11 @@ class TicketScanProvider extends ChangeNotifier {
       notifyListeners();
 
       String koText = '';
+      String jaText = '';
       String latinText = '';
 
       if (Platform.isIOS) {
-        // iOS: Apple 네이티브 Vision Framework (ko-KR + en-US 고정밀 한국어/영문 동시 인식)
+        // iOS: Apple 네이티브 Vision Framework (ko-KR + ja-JP + en-US 고정밀 동시 인식)
         try {
           debugPrint('[TicketScan] iOS Apple Vision OCR 시작');
           final visionText = await _visionOcrChannel.invokeMethod<String>(
@@ -212,14 +216,29 @@ class TicketScanProvider extends ChangeNotifier {
       if (koText.trim().isEmpty) {
         final inputImage = InputImage.fromFile(_scannedImageFile!);
         debugPrint('[TicketScan] ML Kit OCR 텍스트 인식 시작');
-        final koResult = await _koreanRecognizer.processImage(inputImage);
-        final latinResult = await _latinRecognizer.processImage(inputImage);
-        koText = koResult.text;
-        latinText = latinResult.text;
+        try {
+          final koResult = await _koreanRecognizer.processImage(inputImage);
+          koText = koResult.text;
+        } catch (e) {
+          debugPrint('[TicketScan] ML Kit 한국어 인식 실패: $e');
+        }
+        try {
+          final jaResult = await _japaneseRecognizer.processImage(inputImage);
+          jaText = jaResult.text;
+        } catch (e) {
+          debugPrint('[TicketScan] ML Kit 일본어 인식 실패: $e');
+        }
+        try {
+          final latinResult = await _latinRecognizer.processImage(inputImage);
+          latinText = latinResult.text;
+        } catch (e) {
+          debugPrint('[TicketScan] ML Kit 라틴 인식 실패: $e');
+        }
         debugPrint(
-          '[TicketScan] ML Kit OCR 완료 (한국어: ${koText.length}자, 라틴: ${latinText.length}자)',
+          '[TicketScan] ML Kit OCR 완료 (한국어: ${koText.length}자, 일본어: ${jaText.length}자, 라틴: ${latinText.length}자)',
         );
         debugPrint('[TicketScan] 한국어 텍스트:\n$koText');
+        debugPrint('[TicketScan] 일본어 텍스트:\n$jaText');
         debugPrint('[TicketScan] 라틴 텍스트:\n$latinText');
       }
 
@@ -228,6 +247,7 @@ class TicketScanProvider extends ChangeNotifier {
       notifyListeners();
       _parsedResult = TicketParserService.parseEnsemble(
         koreanText: koText,
+        japaneseText: jaText.isNotEmpty ? jaText : null,
         latinText: latinText.isNotEmpty ? latinText : null,
       );
       debugPrint(
@@ -466,6 +486,7 @@ class TicketScanProvider extends ChangeNotifier {
   @override
   void dispose() {
     _koreanRecognizer.close();
+    _japaneseRecognizer.close();
     _latinRecognizer.close();
     seatController.dispose();
     priceController.dispose();

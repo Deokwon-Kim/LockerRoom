@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_link_previewer/flutter_link_previewer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/attendance_model.dart';
 import 'package:lockerroom/model/market_post_model.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/model/team_model.dart';
@@ -13,6 +14,7 @@ import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_edit_page.dart';
 import 'package:lockerroom/page/follow/follow_list_page.dart';
+import 'package:lockerroom/page/intution_record/intution_record_detail_page.dart';
 import 'package:lockerroom/page/myPage/quiz_trophy_page.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
@@ -98,7 +100,7 @@ class _FeedMypageState extends State<FeedMypage> {
         final activeTeamColor = targetTeamModel?.color ?? myTeamColor;
 
         return DefaultTabController(
-          length: 2,
+          length: 3,
           child: Scaffold(
             backgroundColor: BACKGROUND_COLOR,
             appBar: AppBar(
@@ -621,6 +623,7 @@ class _FeedMypageState extends State<FeedMypage> {
                       ),
                       tabs: const [
                         Tab(text: '게시글'),
+                        Tab(text: '직관기록'),
                         Tab(text: '트로피'),
                       ],
                     ),
@@ -635,6 +638,10 @@ class _FeedMypageState extends State<FeedMypage> {
                       UserPostsTab(
                         targetUserId: widget.targetUserId,
                         postUserId: widget.post.userId,
+                        isOwner: isOwner,
+                      ),
+                      _UserAttendancesTab(
+                        targetUserId: widget.targetUserId,
                         isOwner: isOwner,
                       ),
                       QuizTrophyPage(userId: widget.targetUserId),
@@ -2576,6 +2583,177 @@ class UserMarketPostsTab extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _UserAttendancesTab extends StatelessWidget {
+  final String targetUserId;
+  final bool isOwner;
+
+  const _UserAttendancesTab({
+    required this.targetUserId,
+    required this.isOwner,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(targetUserId)
+          .collection('attendances')
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final docs = snapshot.data?.docs ?? const [];
+        final records = docs
+            .map((d) => AttendanceModel.fromDoc(d))
+            .where((a) => isOwner || a.isPublic)
+            .toList();
+
+        if (records.isEmpty) {
+          return const Center(
+            child: Text(
+              '공개된 직관기록이 없습니다',
+              style: TextStyle(fontSize: 14, color: GRAYSCALE_LABEL_500),
+            ),
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          itemCount: records.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          itemBuilder: (context, idx) {
+            final item = records[idx];
+            final isWin = item.myScore > item.opponentScore;
+            final isDraw = item.myScore == item.opponentScore;
+            final badgeText = isWin ? 'WIN' : (isDraw ? 'DRAW' : 'LOSE');
+            final badgeColor = isWin
+                ? const Color(0xFF10B981)
+                : (isDraw ? GRAYSCALE_LABEL_500 : RED_DANGER_TEXT_50);
+
+            return InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => IntutionRecordDetailPage(
+                      gameId: item.gameId,
+                      ownerUserId: targetUserId,
+                      attendanceModel: item,
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: WHITE,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: GRAYSCALE_LABEL_200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            badgeText,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: badgeColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${item.date} · ${item.stadium}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: GRAYSCALE_LABEL_500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (item.commentsCount > 0)
+                          Row(
+                            children: [
+                              const Icon(
+                                CupertinoIcons.chat_bubble,
+                                size: 13,
+                                color: GRAYSCALE_LABEL_500,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                '${item.commentsCount}',
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: GRAYSCALE_LABEL_600,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${item.myTeam} ${item.myScore} : ${item.opponentScore} ${item.oppTeam ?? ''}',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: GRAYSCALE_LABEL_950,
+                      ),
+                    ),
+                    if ((item.seat ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '🎫 ${item.seat}',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: BUTTON,
+                        ),
+                      ),
+                    ],
+                    if ((item.memo ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        item.memo!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: GRAYSCALE_LABEL_700,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

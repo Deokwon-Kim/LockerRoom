@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lockerroom/model/schedule_model.dart';
 import 'package:lockerroom/services/schedule_service.dart';
@@ -24,6 +25,7 @@ class ScheduleProvider with ChangeNotifier {
   final Map<String, ScheduleModel> _scheduleMap = {};
   bool _loaded = false;
   StreamSubscription? _subscription;
+  StreamSubscription<User?>? _authSubscription;
 
   // 필터 상태 저장 (실시간 업데이트 시 재가공을 위해 필요)
   DateTime? _lastFilterMonth;
@@ -121,7 +123,19 @@ class ScheduleProvider with ChangeNotifier {
       // 에러가 나더라도 Firestore 리스너 시도는 하게 둠
     }
 
-    // 2. Firestore 실시간 리스너 연결
+    // 2. 로그인 상태에 따라 Firestore 실시간 리스너 연결 (비로그인 시 permission-denied 방지)
+    _authSubscription?.cancel();
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        _subscribeToFirestoreGames();
+      } else {
+        _subscription?.cancel();
+        _subscription = null;
+      }
+    });
+  }
+
+  void _subscribeToFirestoreGames() {
     _subscription?.cancel();
     _subscription = FirebaseFirestore.instance
         .collection('games')
@@ -156,6 +170,7 @@ class ScheduleProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     _subscription?.cancel();
     super.dispose();
   }

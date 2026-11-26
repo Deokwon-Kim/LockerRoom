@@ -5,6 +5,7 @@ import 'package:flutter_link_previewer/flutter_link_previewer.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/post_model.dart';
+import 'package:lockerroom/widgets/attendance_feed_card.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_edit_page.dart';
@@ -618,6 +619,12 @@ class _PostWidgetState extends State<PostWidget> {
                   color: GRAYSCALE_LABEL_900,
                 ),
               ),
+            ],
+
+            // 직관기록 인증 첨부 카드
+            if (widget.post.attendanceSummary != null) ...[
+              const SizedBox(height: 12),
+              AttendanceFeedCard(summary: widget.post.attendanceSummary!),
             ],
 
             // 2. 직관모임 첨부 카드 (티켓 스타일)

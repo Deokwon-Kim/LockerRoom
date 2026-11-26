@@ -5,13 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/attendance_model.dart';
+import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/schedule_model.dart';
 import 'package:lockerroom/page/intution_record/_ticket_stub_tile.dart';
 import 'package:lockerroom/page/intution_record/ticker_camera_scan_page.dart';
+import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/intution_record_provider.dart';
 import 'package:lockerroom/provider/schdule_Provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/ticket_scan_provider.dart';
+import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
 import 'package:lockerroom/widgets/stadium_receipt_card.dart';
 import 'package:provider/provider.dart';
@@ -20,10 +23,12 @@ import 'package:toastification/toastification.dart';
 class IntutionRecordDetailPage extends StatefulWidget {
   final AttendanceModel? attendanceModel;
   final String gameId;
+  final String? ownerUserId;
   const IntutionRecordDetailPage({
     super.key,
     required this.gameId,
     this.attendanceModel,
+    this.ownerUserId,
   });
 
   @override
@@ -36,13 +41,23 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
   late final PageController _existingImagesPageController;
   final ValueNotifier<int> _currentImageIndex = ValueNotifier<int>(0);
   bool _isEditing = false;
+
+  String get _targetOwnerId =>
+      widget.ownerUserId ?? FirebaseAuth.instance.currentUser?.uid ?? '';
+
+  bool get _isOwner {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUid == null) return false;
+    return widget.ownerUserId == null || widget.ownerUserId == currentUid;
+  }
+
   Future<AttendanceModel?> _loadAttendance() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return null;
+    final targetUid = _targetOwnerId;
+    if (targetUid.isEmpty) return null;
 
     final doc = await FirebaseFirestore.instance
         .collection('users')
-        .doc(user.uid)
+        .doc(targetUid)
         .collection('attendances')
         .doc(widget.gameId)
         .get();
@@ -104,11 +119,22 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
   late final TextEditingController _seatController;
   late final TextEditingController _ticketPriceController;
   late final TextEditingController _foodCostController;
+  late final TextEditingController _goodsCostController;
   List<String> _foodItems = [];
   Map<String, int> _foodPrices = {};
+  List<String> _goodsItems = [];
+  Map<String, int> _goodsPrices = {};
   late final Future<AttendanceModel?> _attendanceFuture;
   bool _controllersInitialized = false;
   AttendanceModel? _loadedAttendance;
+  bool _isPublic = true;
+  late final CommentProvider _commentProvider;
+  final TextEditingController _commentController = TextEditingController();
+  String? _replyParentId;
+  String? _replyToUserName;
+  String? _replyToUserId;
+  bool _replyIsToReply = false;
+  bool _isSendingComment = false;
 
   @override
   void initState() {
@@ -116,6 +142,13 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
     _newImagesPageController = PageController();
     _existingImagesPageController = PageController();
     _attendanceFuture = _loadAttendance();
+    _commentProvider = context.read<CommentProvider>();
+    if (_targetOwnerId.isNotEmpty) {
+      _commentProvider.subscribeAttendanceComments(
+        _targetOwnerId,
+        widget.gameId,
+      );
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<IntutionRecordProvider>().resetState();
     });
@@ -150,16 +183,35 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
     _foodPrices = Map<String, int>.from(
       widget.attendanceModel?.foodPrices ?? {},
     );
+    _goodsCostController = TextEditingController(
+      text:
+          (widget.attendanceModel?.goodsCost != null &&
+              widget.attendanceModel!.goodsCost! > 0)
+          ? widget.attendanceModel!.goodsCost.toString()
+          : '',
+    );
+    _goodsItems = List<String>.from(widget.attendanceModel?.goodsItems ?? []);
+    _goodsPrices = Map<String, int>.from(
+      widget.attendanceModel?.goodsPrices ?? {},
+    );
   }
 
   @override
   void dispose() {
+    if (_targetOwnerId.isNotEmpty) {
+      _commentProvider.cancelAttendanceSubscription(
+        _targetOwnerId,
+        widget.gameId,
+      );
+    }
+    _commentController.dispose();
     _myTeamScore.dispose();
     _oppTeamScore.dispose();
     _memoController.dispose();
     _seatController.dispose();
     _ticketPriceController.dispose();
     _foodCostController.dispose();
+    _goodsCostController.dispose();
     _newImagesPageController.dispose();
     _existingImagesPageController.dispose();
     _currentImageIndex.dispose();
@@ -183,6 +235,13 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
           : '';
       _foodItems = List<String>.from(attendance.foodItems);
       _foodPrices = Map<String, int>.from(attendance.foodPrices);
+      _goodsCostController.text =
+          (attendance.goodsCost != null && attendance.goodsCost! > 0)
+          ? attendance.goodsCost.toString()
+          : '';
+      _goodsItems = List<String>.from(attendance.goodsItems);
+      _goodsPrices = Map<String, int>.from(attendance.goodsPrices);
+      _isPublic = attendance.isPublic;
       _controllersInitialized = true;
     }
     _loadedAttendance = attendance;
@@ -314,6 +373,8 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
         0;
     final parsedFoodCost =
         int.tryParse(_foodCostController.text.replaceAll(',', '').trim()) ?? 0;
+    final parsedGoodsCost =
+        int.tryParse(_goodsCostController.text.replaceAll(',', '').trim()) ?? 0;
 
     final success = await irp.updateRecord(
       gameId: widget.gameId,
@@ -325,8 +386,12 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
       newFoodCost: parsedFoodCost,
       newFoodItems: _foodItems,
       newFoodPrices: _foodPrices,
+      newGoodsCost: parsedGoodsCost,
+      newGoodsItems: _goodsItems,
+      newGoodsPrices: _goodsPrices,
       newImages: irp.image.isNotEmpty ? irp.image : null,
       oldImageUrls: _loadedAttendance?.imageUrls,
+      newIsPublic: _isPublic,
     );
 
     if (!mounted) return;
@@ -350,11 +415,101 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
     }
   }
 
+  Future<void> _confirmAndShareToFeed(AttendanceModel attendance) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: WHITE,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          '피드에 직관 인증 공유',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+        ),
+        content: const Text(
+          '이 직관기록(스코어·구장·사진)을 피드에 공유할까요?\n다른 팬들과 댓글로 소통할 수 있습니다.',
+          style: TextStyle(fontSize: 13.5, color: GRAYSCALE_LABEL_700),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(
+              '취소',
+              style: TextStyle(color: GRAYSCALE_LABEL_600),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: BUTTON,
+              foregroundColor: WHITE,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('공유하기'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final ok = await context
+        .read<IntutionRecordProvider>()
+        .shareAttendanceToFeed(attendance);
+    if (!mounted) return;
+    toastification.show(
+      context: context,
+      alignment: Alignment.bottomCenter,
+      type: ok ? ToastificationType.success : ToastificationType.error,
+      autoCloseDuration: const Duration(seconds: 2),
+      title: Text(ok ? '피드에 직관 인증을 공유했어요!' : '피드 공유에 실패했습니다'),
+    );
+  }
+
   Widget _buildMagazineView(
     BuildContext context,
     AttendanceModel attendance,
     TeamProvider teamProvider,
   ) {
+    if (!_isOwner && !attendance.isPublic) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.lock_outline_rounded,
+                size: 44,
+                color: GRAYSCALE_LABEL_400,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '비공개 직관기록입니다',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: GRAYSCALE_LABEL_900,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                '작성자가 공개로 설정한 직관기록만 열람할 수 있습니다.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: GRAYSCALE_LABEL_500),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('돌아가기'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final accentColor = teamProvider.selectedTeam?.color ?? BUTTON;
     final myTeamModel = teamProvider.findTeamByName(attendance.myTeam);
     final myTeamLogo = _logoForTeam(teamProvider, attendance.myTeam);
@@ -472,62 +627,96 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                           ),
                         ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () => _confirmAndDelete(attendance),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 7,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.45),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Icon(
-                                Icons.delete_outline_rounded,
-                                size: 17,
-                                color: Color(0xFFFF8A80),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => setState(() => _isEditing = true),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 7,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.45),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.edit_outlined,
-                                    size: 14,
-                                    color: WHITE,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    '수정',
-                                    style: TextStyle(
+                      if (_isOwner)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap: () => _confirmAndShareToFeed(attendance),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.campaign_outlined,
+                                      size: 15,
                                       color: WHITE,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
                                     ),
-                                  ),
-                                ],
+                                    SizedBox(width: 4),
+                                    Text(
+                                      '피드 공유',
+                                      style: TextStyle(
+                                        color: WHITE,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => _confirmAndDelete(attendance),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Icon(
+                                  Icons.delete_outline_rounded,
+                                  size: 17,
+                                  color: Color(0xFFFF8A80),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => setState(() => _isEditing = true),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.edit_outlined,
+                                      size: 14,
+                                      color: WHITE,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      '수정',
+                                      style: TextStyle(
+                                        color: WHITE,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -822,6 +1011,40 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                             ],
                           ),
                         ],
+                        if (attendance.goodsItems.isNotEmpty ||
+                            (attendance.goodsCost ?? 0) > 0) ...[
+                          const Divider(height: 20, color: GRAYSCALE_LABEL_100),
+                          Row(
+                            children: [
+                              const SizedBox(
+                                width: 68,
+                                child: Text(
+                                  '유니폼·굿즈',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: GRAYSCALE_LABEL_500,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  [
+                                    if (attendance.goodsItems.isNotEmpty)
+                                      attendance.goodsItems.join('·'),
+                                    if ((attendance.goodsCost ?? 0) > 0)
+                                      _formatPrice(attendance.goodsCost!),
+                                  ].join(' · '),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: GRAYSCALE_LABEL_950,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -886,9 +1109,388 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+                  _buildAttendanceCommentsSection(
+                    context,
+                    attendance,
+                    accentColor,
+                  ),
+                  const SizedBox(height: 28),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitAttendanceComment() async {
+    final text = _commentController.text.trim();
+    if (text.isEmpty || _isSendingComment || _targetOwnerId.isEmpty) return;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    setState(() => _isSendingComment = true);
+    try {
+      final up = context.read<UserProvider>();
+      final finalText =
+          (_replyIsToReply &&
+              _replyToUserName != null &&
+              !text.startsWith('@$_replyToUserName'))
+          ? '@$_replyToUserName $text'
+          : text;
+      final comment = CommentModel(
+        id: '',
+        postId: _commentProvider.attendancePostKey(
+          _targetOwnerId,
+          widget.gameId,
+        ),
+        userId: currentUser.uid,
+        userName: up.nickname ?? currentUser.displayName ?? '야구팬',
+        text: finalText,
+        reComments: _replyParentId ?? '',
+        createdAt: DateTime.now(),
+      );
+      await _commentProvider.addAttendanceCommentAndNotify(
+        ownerUserId: _targetOwnerId,
+        gameId: widget.gameId,
+        comment: comment,
+        currentUserId: currentUser.uid,
+        parentCommentOwnerId: _replyToUserId,
+      );
+      if (!mounted) return;
+      _commentController.clear();
+      setState(() {
+        _replyParentId = null;
+        _replyToUserName = null;
+        _replyToUserId = null;
+        _replyIsToReply = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      toastification.show(
+        context: context,
+        type: ToastificationType.error,
+        autoCloseDuration: const Duration(seconds: 2),
+        title: const Text('댓글 등록에 실패했습니다'),
+      );
+    } finally {
+      if (mounted) setState(() => _isSendingComment = false);
+    }
+  }
+
+  Widget _buildAttendanceCommentsSection(
+    BuildContext context,
+    AttendanceModel attendance,
+    Color accentColor,
+  ) {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    final comments = _targetOwnerId.isEmpty
+        ? const <CommentModel>[]
+        : context.watch<CommentProvider>().getAttendanceComments(
+            _targetOwnerId,
+            widget.gameId,
+          );
+    final parents = comments.where((c) => c.reComments.isEmpty).toList();
+    final Map<String, List<CommentModel>> repliesMap = {};
+    for (final c in comments.where((c) => c.reComments.isNotEmpty)) {
+      repliesMap.putIfAbsent(c.reComments, () => []).add(c);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: WHITE,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: GRAYSCALE_LABEL_200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '💬 댓글 ${comments.length}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: GRAYSCALE_LABEL_950,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                attendance.isPublic ? '전체 공개' : '비공개',
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: GRAYSCALE_LABEL_500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (comments.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                '첫 댓글로 직관 이야기를 나눠보세요!',
+                style: TextStyle(fontSize: 13, color: GRAYSCALE_LABEL_500),
+              ),
+            )
+          else
+            ...parents.map((parent) {
+              final replies = repliesMap[parent.id] ?? const [];
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildAttendanceCommentItem(
+                    parent,
+                    currentUid: currentUid,
+                    accentColor: accentColor,
+                    isReply: false,
+                  ),
+                  ...replies.map(
+                    (r) => Padding(
+                      padding: const EdgeInsets.only(left: 22),
+                      child: _buildAttendanceCommentItem(
+                        r,
+                        currentUid: currentUid,
+                        accentColor: accentColor,
+                        isReply: true,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }),
+          if (_replyToUserName != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: BACKGROUND_COLOR,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    '$_replyToUserName님에게 답글 작성 중',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: accentColor,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => setState(() {
+                      _replyParentId = null;
+                      _replyToUserName = null;
+                      _replyToUserId = null;
+                      _replyIsToReply = false;
+                    }),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: GRAYSCALE_LABEL_500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _commentController,
+                  cursorColor: accentColor,
+                  decoration: InputDecoration(
+                    hintText: _isOwner
+                        ? '댓글 또는 답글을 입력하세요'
+                        : '이 직관기록에 댓글을 남겨보세요',
+                    filled: true,
+                    fillColor: BACKGROUND_COLOR,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _isSendingComment ? null : _submitAttendanceComment,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentColor,
+                  foregroundColor: WHITE,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                ),
+                child: const Text(
+                  '등록',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAttendanceCommentItem(
+    CommentModel c, {
+    required String? currentUid,
+    required Color accentColor,
+    required bool isReply,
+  }) {
+    final canDelete =
+        currentUid != null &&
+        (c.userId == currentUid || _targetOwnerId == currentUid);
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: isReply ? 4 : 6),
+      padding: isReply
+          ? const EdgeInsets.fromLTRB(10, 8, 10, 8)
+          : EdgeInsets.zero,
+      decoration: isReply
+          ? BoxDecoration(
+              color: BACKGROUND_COLOR,
+              borderRadius: BorderRadius.circular(10),
+              border: const Border(
+                left: BorderSide(color: GRAYSCALE_LABEL_300, width: 2.5),
+              ),
+            )
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (isReply) ...[
+                const Icon(
+                  Icons.subdirectory_arrow_right_rounded,
+                  size: 15,
+                  color: GRAYSCALE_LABEL_400,
+                ),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                c.userName,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: GRAYSCALE_LABEL_950,
+                ),
+              ),
+              if (c.userId == _targetOwnerId) ...[
+                const SizedBox(width: 5),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '작성자',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: accentColor,
+                    ),
+                  ),
+                ),
+              ],
+              const Spacer(),
+              GestureDetector(
+                onTap: () => setState(() {
+                  _replyParentId = isReply ? c.reComments : c.id;
+                  _replyToUserName = c.userName;
+                  _replyToUserId = c.userId;
+                  _replyIsToReply = isReply;
+                }),
+                child: const Text(
+                  '답글',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: GRAYSCALE_LABEL_500,
+                  ),
+                ),
+              ),
+              if (canDelete) ...[
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () => _commentProvider.deleteAttendanceComment(
+                    ownerUserId: _targetOwnerId,
+                    gameId: widget.gameId,
+                    commentId: c.id,
+                  ),
+                  child: const Text(
+                    '삭제',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: RED_DANGER_TEXT_50,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 3),
+          _buildMentionText(c.text, accentColor),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMentionText(String text, Color mentionColor) {
+    final match = RegExp(r'^(@\S+)\s+(.*)$', dotAll: true).firstMatch(text);
+    if (match == null) {
+      return Text(
+        text,
+        style: const TextStyle(
+          fontSize: 13,
+          color: GRAYSCALE_LABEL_800,
+          height: 1.4,
+        ),
+      );
+    }
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '${match.group(1)} ',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: mentionColor,
+              height: 1.4,
+            ),
+          ),
+          TextSpan(
+            text: match.group(2),
+            style: const TextStyle(
+              fontSize: 13,
+              color: GRAYSCALE_LABEL_800,
+              height: 1.4,
             ),
           ),
         ],
@@ -1831,6 +2433,62 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                             costController: _foodCostController,
                           ),
                           const SizedBox(height: 20),
+                          _buildSectionTitle(
+                            '유니폼 · 굿즈 · 포토카드',
+                            isOptional: true,
+                          ),
+                          const SizedBox(height: 10),
+                          StadiumFoodSelector(
+                            selectedItems: _goodsItems,
+                            itemPrices: _goodsPrices,
+                            tags: kStadiumGoodsTags,
+                            defaultEmoji: '🛍️',
+                            totalLabel: '유니폼 · 굿즈 합계',
+                            hintText: '위 칩을 누르거나 총 굿즈 금액 입력 (예: 139000)',
+                            prefixIcon: Icons.shopping_bag_outlined,
+                            onToggleItem: (item) {
+                              setState(() {
+                                if (_goodsItems.contains(item)) {
+                                  _goodsItems.remove(item);
+                                  _goodsPrices.remove(item);
+                                  final total = _goodsPrices.values.fold<int>(
+                                    0,
+                                    (sum, v) => sum + v,
+                                  );
+                                  _goodsCostController.text = total > 0
+                                      ? '$total'
+                                      : '';
+                                } else {
+                                  _goodsItems.add(item);
+                                }
+                              });
+                            },
+                            onAddCustomItem: (item) {
+                              setState(() {
+                                if (!_goodsItems.contains(item)) {
+                                  _goodsItems.add(item);
+                                }
+                              });
+                            },
+                            onItemPriceChanged: (item, price) {
+                              setState(() {
+                                if (price > 0) {
+                                  _goodsPrices[item] = price;
+                                } else {
+                                  _goodsPrices.remove(item);
+                                }
+                                final total = _goodsPrices.values.fold<int>(
+                                  0,
+                                  (sum, v) => sum + v,
+                                );
+                                _goodsCostController.text = total > 0
+                                    ? '$total'
+                                    : '';
+                              });
+                            },
+                            costController: _goodsCostController,
+                          ),
+                          const SizedBox(height: 20),
                           _buildSectionTitle('메모', isOptional: true),
                           const SizedBox(height: 10),
                           TextField(
@@ -1843,6 +2501,34 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                             style: const TextStyle(fontSize: 15, height: 1.5),
                             decoration: _buildInputDecoration(
                               hintText: '오늘 경기에서 기억에 남는 순간을 기록해보세요',
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: WHITE,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: GRAYSCALE_LABEL_200),
+                            ),
+                            child: SwitchListTile(
+                              value: _isPublic,
+                              activeThumbColor: accentColor,
+                              title: const Text(
+                                '다른 팬에게 공개 · 댓글 허용',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: GRAYSCALE_LABEL_950,
+                                ),
+                              ),
+                              subtitle: const Text(
+                                '끄면 나만 볼 수 있는 비공개 직관기록이 됩니다',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                              onChanged: (v) => setState(() => _isPublic = v),
                             ),
                           ),
                         ],

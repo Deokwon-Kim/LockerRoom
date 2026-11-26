@@ -8,9 +8,13 @@ import 'package:lockerroom/model/market_post_model.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/afterMarket/after_market_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
+import 'package:lockerroom/page/intution_record/intution_record_detail_page.dart';
 import 'package:lockerroom/page/meetup/meetup_detail_page.dart';
 import 'package:lockerroom/page/myPage/user_detail_page.dart';
 import 'package:lockerroom/model/meetup_model.dart';
+import 'package:lockerroom/model/team_news_model.dart';
+import 'package:lockerroom/page/news/team_news_detail_page.dart';
+import 'package:lockerroom/page/seat_view/seat_view_feed_page.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -111,7 +115,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       return FutureBuilder<
                         DocumentSnapshot<Map<String, dynamic>>?
                       >(
-                        future: n.fromUserId.isEmpty
+                        future:
+                            (n.fromUserId.isEmpty || n.fromUserId == 'system')
                             ? Future.value(null)
                             : FirebaseFirestore.instance
                                   .collection('users')
@@ -123,6 +128,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           final commentLike = n.type == 'commentLike';
                           final isComment = n.type == 'comment';
                           final isMarketComment = n.type == 'marketComment';
+                          final isSeatViewComment = n.type == 'seatViewComment';
+                          final isAttendanceComment =
+                              n.type == 'attendanceComment';
+                          final isTeamNews = n.type == 'team_news';
                           final isReport = n.type == 'report';
                           final isCommentReport =
                               n.type == 'coment_report' ||
@@ -146,6 +155,26 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
                           final tile = GestureDetector(
                             onTap: () async {
+                              if (isTeamNews &&
+                                  n.articleUrl != null &&
+                                  n.articleUrl!.isNotEmpty) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        TeamNewsDetailPage.fromUrl(
+                                          url: n.articleUrl!,
+                                          title:
+                                              n.articleTitle ??
+                                              n.preview ??
+                                              n.userNickName,
+                                          source: '야구 뉴스',
+                                          category: NewsCategory.transfer,
+                                        ),
+                                  ),
+                                );
+                                return;
+                              }
                               // 알림 타입에 따라 다른 페이지로 이동
                               if (n.postId != null && n.postId!.isNotEmpty) {
                                 if (isFeedLike || isComment) {
@@ -186,6 +215,29 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       alignment: Alignment.bottomCenter,
                                       autoCloseDuration: Duration(seconds: 2),
                                       title: Text('오류가 발생했습니다'),
+                                    );
+                                  }
+                                } else if (isSeatViewComment) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SeatViewFeedPage(),
+                                    ),
+                                  );
+                                } else if (isAttendanceComment) {
+                                  final parts = n.postId!.split('_');
+                                  if (parts.length >= 2) {
+                                    final ownerUid = parts.first;
+                                    final gameId = parts.sublist(1).join('_');
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            IntutionRecordDetailPage(
+                                              gameId: gameId,
+                                              ownerUserId: ownerUid,
+                                            ),
+                                      ),
                                     );
                                   }
                                 } else if (isMarketComment) {
@@ -232,6 +284,29 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       alignment: Alignment.bottomCenter,
                                       autoCloseDuration: Duration(seconds: 2),
                                       title: Text('오류가 발생했습니다'),
+                                    );
+                                  }
+                                } else if (isSeatViewComment) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SeatViewFeedPage(),
+                                    ),
+                                  );
+                                } else if (isAttendanceComment) {
+                                  final parts = n.postId!.split('_');
+                                  if (parts.length >= 2) {
+                                    final ownerUid = parts.first;
+                                    final gameId = parts.sublist(1).join('_');
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            IntutionRecordDetailPage(
+                                              gameId: gameId,
+                                              ownerUserId: ownerUid,
+                                            ),
+                                      ),
                                     );
                                   }
                                 }
@@ -340,43 +415,121 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               }
                             },
                             child: Padding(
-                              padding: const EdgeInsets.only(left: 10.0),
+                              padding: isTeamNews
+                                  ? const EdgeInsets.fromLTRB(14, 12, 16, 12)
+                                  : const EdgeInsets.only(
+                                      left: 10.0,
+                                      right: 12.0,
+                                    ),
                               child: Row(
+                                crossAxisAlignment: isTeamNews
+                                    ? CrossAxisAlignment.start
+                                    : CrossAxisAlignment.center,
                                 children: [
                                   CircleAvatar(
                                     radius: 20,
-                                    backgroundColor: GRAYSCALE_LABEL_300,
-                                    backgroundImage: imageUrl.isNotEmpty
-                                        ? CachedNetworkImageProvider(imageUrl)
-                                        : null,
-                                    child: imageUrl.isEmpty
-                                        ? const Icon(
-                                            Icons.person,
-                                            color: GRAYSCALE_LABEL_500,
-                                            size: 20,
-                                          )
-                                        : null,
+                                    backgroundColor: isTeamNews
+                                        ? Colors.white
+                                        : GRAYSCALE_LABEL_300,
+                                    backgroundImage: isTeamNews
+                                        ? (context
+                                                      .read<TeamProvider>()
+                                                      .findTeamByName(
+                                                        n.teamSymple ?? '',
+                                                      )
+                                                      ?.logoPath !=
+                                                  null
+                                              ? AssetImage(
+                                                  context
+                                                      .read<TeamProvider>()
+                                                      .findTeamByName(
+                                                        n.teamSymple ?? '',
+                                                      )!
+                                                      .logoPath,
+                                                )
+                                              : null)
+                                        : (imageUrl.isNotEmpty
+                                              ? CachedNetworkImageProvider(
+                                                  imageUrl,
+                                                )
+                                              : null),
+                                    child: isTeamNews
+                                        ? (context
+                                                      .read<TeamProvider>()
+                                                      .findTeamByName(
+                                                        n.teamSymple ?? '',
+                                                      )
+                                                      ?.logoPath ==
+                                                  null
+                                              ? const Icon(
+                                                  Icons.newspaper_rounded,
+                                                  color: GRAYSCALE_LABEL_600,
+                                                  size: 20,
+                                                )
+                                              : null)
+                                        : (imageUrl.isEmpty
+                                              ? const Icon(
+                                                  Icons.person,
+                                                  color: GRAYSCALE_LABEL_500,
+                                                  size: 20,
+                                                )
+                                              : null),
                                   ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => UserDetailPage(
-                                            userId: n.fromUserId,
+                                  if (isTeamNews) ...[
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            name,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w800,
+                                              color: GRAYSCALE_LABEL_700,
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    },
-                                    child: Text(
-                                      name,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        color: BLACK,
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            n.preview ??
+                                                n.articleTitle ??
+                                                '구단 속보가 도착했습니다.',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 13.5,
+                                              height: 1.35,
+                                              fontWeight: FontWeight.w600,
+                                              color: BLACK,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ),
+                                  ] else ...[
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                UserDetailPage(
+                                                  userId: n.fromUserId,
+                                                ),
+                                          ),
+                                        );
+                                      },
+                                      child: Text(
+                                        name,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: BLACK,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                   if (isFollow) ...[
                                     Transform.translate(
                                       offset: Offset(-10, 0),
@@ -414,6 +567,22 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       offset: Offset(-10, 0),
                                       child: Text(
                                         '님이 회원님의 게시글의 댓글을 남겼습니다.',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                    ),
+                                  ] else if (isSeatViewComment) ...[
+                                    Transform.translate(
+                                      offset: Offset(-10, 0),
+                                      child: Text(
+                                        '님이 좌석 시야에 댓글을 남겼습니다.',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                    ),
+                                  ] else if (isAttendanceComment) ...[
+                                    Transform.translate(
+                                      offset: Offset(-10, 0),
+                                      child: Text(
+                                        '님이 직관기록에 댓글을 남겼습니다.',
                                         style: TextStyle(fontSize: 14),
                                       ),
                                     ),

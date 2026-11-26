@@ -8,32 +8,78 @@ import 'package:toastification/toastification.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lockerroom/model/scanned_ticket_data.dart';
+import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/widgets/stadium_receipt_card.dart';
 
 class IntutionRecordUploadPage extends StatefulWidget {
   final ScannedTicketData? initialScanData;
-  const IntutionRecordUploadPage({super.key, this.initialScanData});
+  final bool navigateToListOnSave;
+  const IntutionRecordUploadPage({
+    super.key,
+    this.initialScanData,
+    this.navigateToListOnSave = false,
+  });
 
   @override
   State<IntutionRecordUploadPage> createState() =>
       _IntutionRecordUploadPageState();
 }
 
-class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
+class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   DateTime? selectedDate;
   bool _isTeamSelectorExpanded = false;
   final PageController _pageController = PageController();
+  final ScrollController _scrollController = ScrollController();
+  late final AnimationController _hintBounceController;
+  late final Animation<Offset> _hintBounceOffset;
+  bool _showScrollHint = true;
   int _currentImageIndex = 0;
 
   @override
   void initState() {
     super.initState();
     selectedDate = widget.initialScanData?.gameDate ?? DateTime.now();
+    _hintBounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..repeat(reverse: true);
+    _hintBounceOffset =
+        Tween<Offset>(begin: Offset.zero, end: const Offset(0, -0.18)).animate(
+          CurvedAnimation(
+            parent: _hintBounceController,
+            curve: Curves.easeInOut,
+          ),
+        );
+    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onScroll());
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    final nearBottom =
+        pos.maxScrollExtent <= 40 || pos.pixels >= pos.maxScrollExtent - 140;
+    if (_showScrollHint == nearBottom && mounted) {
+      setState(() => _showScrollHint = !nearBottom);
+    }
+  }
+
+  void _scrollToShareSection() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _hintBounceController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -275,7 +321,17 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                             }
 
                             if (!mounted) return;
-                            Navigator.pop(context);
+                            if (ok && widget.navigateToListOnSave) {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const IntutionRecordListPage(),
+                                ),
+                              );
+                            } else {
+                              Navigator.pop(context);
+                            }
 
                             toastification.show(
                               context: context,
@@ -320,7 +376,8 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                   child: Form(
                     key: _formKey,
                     child: ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 76),
                       children: [
                         _buildSectionTitle('경기 날짜'),
                         const SizedBox(height: 10),
@@ -995,6 +1052,23 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                           costController: intutionProvider.foodCostController,
                         ),
                         const SizedBox(height: 22),
+                        _buildSectionTitle('유니폼 · 굿즈 · 포토카드', isOptional: true),
+                        const SizedBox(height: 10),
+                        StadiumFoodSelector(
+                          selectedItems: intutionProvider.goodsItems,
+                          itemPrices: intutionProvider.goodsPrices,
+                          onToggleItem: intutionProvider.toggleGoodsItem,
+                          onAddCustomItem: intutionProvider.addGoodsItem,
+                          onItemPriceChanged:
+                              intutionProvider.setGoodsItemPrice,
+                          costController: intutionProvider.goodsCostController,
+                          tags: kStadiumGoodsTags,
+                          defaultEmoji: '🛍️',
+                          totalLabel: '유니폼 · 굿즈 합계',
+                          hintText: '위 칩을 누르거나 총 굿즈 금액 입력 (예: 139000)',
+                          prefixIcon: Icons.shopping_bag_outlined,
+                        ),
+                        const SizedBox(height: 22),
                         _buildSectionTitle('메모', isOptional: true),
                         const SizedBox(height: 10),
                         TextField(
@@ -1041,10 +1115,102 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage> {
                             onChanged: intutionProvider.setShareSeatView,
                           ),
                         ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: WHITE,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: intutionProvider.shareToFeed
+                                  ? accentColor
+                                  : GRAYSCALE_LABEL_200,
+                            ),
+                          ),
+                          child: SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            activeThumbColor: accentColor,
+                            title: const Text(
+                              '📢 피드에도 직관 인증 올리기',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: GRAYSCALE_LABEL_950,
+                              ),
+                            ),
+                            subtitle: const Text(
+                              '경기 스코어·구장 카드와 함께 피드에 공유되어 댓글 소통이 가능해요',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: GRAYSCALE_LABEL_500,
+                              ),
+                            ),
+                            value: intutionProvider.shareToFeed,
+                            onChanged: intutionProvider.setShareToFeed,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
+                if (!intutionProvider.saving)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 18,
+                    child: IgnorePointer(
+                      ignoring: !_showScrollHint,
+                      child: AnimatedOpacity(
+                        opacity: _showScrollHint ? 1 : 0,
+                        duration: const Duration(milliseconds: 220),
+                        child: Center(
+                          child: SlideTransition(
+                            position: _hintBounceOffset,
+                            child: GestureDetector(
+                              onTap: _scrollToShareSection,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 15,
+                                  vertical: 9,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: GRAYSCALE_LABEL_950.withValues(
+                                    alpha: 0.9,
+                                  ),
+                                  borderRadius: BorderRadius.circular(999),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.22,
+                                      ),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '👇 아래에 공유 설정이 있어요',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                        color: WHITE,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 if (intutionProvider.saving)
                   Container(
                     color: Colors.black.withOpacity(0.4),

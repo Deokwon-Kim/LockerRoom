@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/attendance_model.dart';
 import 'package:lockerroom/model/team_model.dart';
+import 'package:lockerroom/provider/team_provider.dart';
+import 'package:provider/provider.dart';
 
 class TicketStubTile extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -42,16 +44,6 @@ class TicketStubTile extends StatelessWidget {
     return dateStr;
   }
 
-  String _shortStadium(String? stadium) {
-    if (stadium == null || stadium.isEmpty) return '';
-    return stadium
-        .replaceAll('야구장', '')
-        .replaceAll('구장', '')
-        .replaceAll('파크', '')
-        .replaceAll('돔', '돔')
-        .trim();
-  }
-
   String _formatPrice(dynamic raw) {
     if (raw == null) return '-';
     final numVal = raw is int ? raw : int.tryParse(raw.toString());
@@ -78,7 +70,9 @@ class TicketStubTile extends StatelessWidget {
     final serialText = 'NO.${ticketNumber.toString().padLeft(3, '0')}';
     final seat = (data['seat'] ?? '').toString().trim();
     final memo = (data['memo'] ?? '').toString().trim();
-    final stadium = _shortStadium(data['stadium']?.toString());
+    final stadium = context.read<TeamProvider>().sympleStadiumName(
+      data['stadium']?.toString(),
+    );
     final date = _shortDate(data['date']?.toString());
     final time = (data['time'] ?? attendance.time).toString().trim();
     final dateWithTime = time.isNotEmpty ? '$date · $time' : date;
@@ -743,10 +737,7 @@ Future<bool> showDeleteAttendanceConfirmDialog(BuildContext context) async {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
-          child: const Text(
-            '취소',
-            style: TextStyle(color: GRAYSCALE_LABEL_600),
-          ),
+          child: const Text('취소', style: TextStyle(color: GRAYSCALE_LABEL_600)),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(ctx, true),
@@ -758,7 +749,10 @@ Future<bool> showDeleteAttendanceConfirmDialog(BuildContext context) async {
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          child: const Text('삭제', style: TextStyle(fontWeight: FontWeight.w700)),
+          child: const Text(
+            '삭제',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
         ),
       ],
     ),

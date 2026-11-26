@@ -18,7 +18,6 @@ class AnalysisPage extends StatefulWidget {
 class _AnalysisPageState extends State<AnalysisPage> {
   String _selectedCategory = '좌석별';
   final List<String> _categories = ['좌석별', '지출분석', '상대별', '구장별', '요일별', '홈/원정'];
-  final NumberFormat _currencyFormat = NumberFormat('#,###');
 
   void _showYearPicker(BuildContext context, IntutionRecordListProvider irp) {
     final years = irp.availableYears;
@@ -137,7 +136,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
 
           return Column(
             children: [
-              _buildSummaryHeader(records, teamColor),
+              _buildSeasonMiniStrip(records, lp.selectedYear, teamColor),
               _buildCategoryTabBar(teamColor),
               Expanded(child: _buildCurrentView(records, teamColor)),
             ],
@@ -240,40 +239,20 @@ class _AnalysisPageState extends State<AnalysisPage> {
     return b.total.compareTo(a.total);
   }
 
-  Widget _buildSummaryHeader(
+  Widget _buildSeasonMiniStrip(
     List<Map<String, dynamic>> records,
+    int? selectedYear,
     Color teamColor,
   ) {
-    int total = records.length;
+    final int total = records.length;
     int wins = 0;
     int losses = 0;
     int draws = 0;
-    int totalSpent = 0;
-    final Map<String, _Stats> seatGradeStats = {};
-    final Map<String, String> seatGradeLabels = {};
 
     for (final r in records) {
-      final my = _parseScore(r['myScore']) ?? 0;
-      final opp = _parseScore(r['opponentScore']) ?? 0;
-      final rawSeat = (r['seat'] as String?)?.trim();
-
-      if (rawSeat != null && rawSeat.isNotEmpty) {
-        final grade = extractSeatGrade(rawSeat);
-        if (grade.isNotEmpty) {
-          final key = normalizeSeatGradeKey(grade);
-          seatGradeLabels.putIfAbsent(key, () => grade);
-          final st = seatGradeStats.putIfAbsent(key, () => _Stats());
-          st.total++;
-          if (my > opp) {
-            st.wins++;
-          } else if (my < opp) {
-            st.losses++;
-          } else {
-            st.draws++;
-          }
-        }
-      }
-
+      final my = _parseScore(r['myScore']);
+      final opp = _parseScore(r['opponentScore']);
+      if (my == null || opp == null) continue;
       if (my > opp) {
         wins++;
       } else if (my < opp) {
@@ -281,123 +260,52 @@ class _AnalysisPageState extends State<AnalysisPage> {
       } else {
         draws++;
       }
-
-      final price = r['ticketPrice'] is int
-          ? r['ticketPrice'] as int
-          : int.tryParse('${r['ticketPrice']}') ?? 0;
-      totalSpent += price;
     }
 
     final winRate = total > 0 ? (wins / total * 100).toStringAsFixed(0) : '0';
-    String bestSeat = '-';
-    _Stats? bestSeatStat;
-
-    final winningSeats = seatGradeStats.entries
-        .where((e) => isBestSeatCandidate(e.value))
-        .toList();
-    if (winningSeats.isNotEmpty) {
-      winningSeats.sort((a, b) => compareSeatStats(a.value, b.value));
-      final bestKey = winningSeats.first.key;
-      bestSeat = seatGradeLabels[bestKey] ?? bestKey;
-      bestSeatStat = winningSeats.first.value;
-    }
+    final seasonTitle = selectedYear != null ? '$selectedYear 직관 ' : '통산 직관 ';
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: WHITE,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: BLACK.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: GRAYSCALE_LABEL_200),
       ),
-      child: Column(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Expanded(child: _buildKpiItem('총 직관', '$total경기', teamColor)),
-              Expanded(
-                child: _buildKpiItem(
-                  '총 승·무·패',
-                  '$wins승 $draws무 $losses패',
-                  teamColor,
-                ),
-              ),
-              Expanded(child: _buildKpiItem('직관 승률', '$winRate%', teamColor)),
-              Expanded(
-                child: _buildKpiItem(
-                  '총 티켓비용',
-                  totalSpent > 0
-                      ? '${_currencyFormat.format(totalSpent)}원'
-                      : '-',
-                  teamColor,
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 20),
-          Row(
-            children: [
-              const Icon(Icons.stars, color: Colors.amber, size: 18),
-              const SizedBox(width: 6),
-              const Text(
-                '나의 승리 명당 좌석: ',
-                style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_600),
-              ),
-              Expanded(
-                child: Text(
-                  bestSeat,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: teamColor,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                bestSeatStat != null
-                    ? '${bestSeatStat.wins}승 ${bestSeatStat.draws}무 ${bestSeatStat.losses}패'
-                    : '-',
+          Expanded(
+            child: Text.rich(
+              TextSpan(
                 style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: GRAYSCALE_LABEL_500,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: GRAYSCALE_LABEL_700,
                 ),
+                children: [
+                  TextSpan(text: '🏟️ $seasonTitle'),
+                  TextSpan(
+                    text: '$total경기',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: GRAYSCALE_LABEL_950,
+                    ),
+                  ),
+                  TextSpan(text: ' · $wins승 $draws무 $losses패'),
+                ],
               ),
-            ],
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildKpiItem(String title, String value, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Column(
-        children: [
+          const SizedBox(width: 8),
           Text(
-            title,
-            style: const TextStyle(fontSize: 11, color: GRAYSCALE_LABEL_500),
-          ),
-          const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              style: GoogleFonts.bebasNeue(
-                fontSize: 21,
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
+            '승률 $winRate%',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              color: teamColor,
             ),
           ),
         ],
@@ -557,18 +465,47 @@ class _SeatAnalysisState extends State<_SeatAnalysis> {
     final sorted = seatStats.entries.toList()
       ..sort((a, b) => _AnalysisPageState.compareSeatStats(a.value, b.value));
 
+    final topEntry = sorted.first;
+    final topLabel = seatLabels[topEntry.key] ?? topEntry.key;
+    final topStats = topEntry.value;
+    final topHasBest = _AnalysisPageState.isBestSeatCandidate(topStats);
+    final topWinRate = topStats.total > 0
+        ? (topStats.wins / topStats.total * 100).toStringAsFixed(0)
+        : '0';
+
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: sorted.length,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      itemCount: sorted.length + 1,
       itemBuilder: (context, index) {
-        final entry = sorted[index];
+        if (index == 0) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _AnalysisHeroCard(
+                teamColor: widget.teamColor,
+                eyebrow: topHasBest ? '🏆 내 승리 명당 좌석 1위' : '🪑 가장 자주 찾은 좌석',
+                title: topLabel,
+                subtitle:
+                    '${topStats.total}경기 ${topStats.wins}승 ${topStats.draws}무 ${topStats.losses}패',
+                badgeLabel: '승률',
+                badgeValue: '$topWinRate%',
+              ),
+              _AnalysisSectionHeader(
+                title: '좌석 등급별 승률',
+                trailing: '총 ${sorted.length}개 등급',
+              ),
+            ],
+          );
+        }
+
+        final entry = sorted[index - 1];
         final key = entry.key;
         final stats = entry.value;
         final label = seatLabels[key] ?? key;
         final details = List<_SeatDetailItem>.from(seatDetails[key] ?? [])
           ..sort((a, b) => b.date.compareTo(a.date));
         final isBest =
-            index == 0 && _AnalysisPageState.isBestSeatCandidate(stats);
+            index == 1 && _AnalysisPageState.isBestSeatCandidate(stats);
         final winRate = stats.total > 0
             ? (stats.wins / stats.total * 100)
             : 0.0;
@@ -856,7 +793,10 @@ class _CostAnalysis extends StatelessWidget {
       final foodCost = r['foodCost'] is int
           ? r['foodCost'] as int
           : int.tryParse('${r['foodCost']}') ?? 0;
-      final gameTotal = ticketPrice + foodCost;
+      final goodsCost = r['goodsCost'] is int
+          ? r['goodsCost'] as int
+          : int.tryParse('${r['goodsCost']}') ?? 0;
+      final gameTotal = ticketPrice + foodCost + goodsCost;
       if (gameTotal > 0) {
         totalCost += gameTotal;
         costRecordCount++;
@@ -889,76 +829,26 @@ class _CostAnalysis extends StatelessWidget {
     final sortedStadiums = stadiumCost.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
+    final seasonLabel = selectedYear != null ? '$selectedYear년' : '통산';
+
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
       children: [
+        _AnalysisHeroCard(
+          teamColor: teamColor,
+          eyebrow: '💸 $seasonLabel 직관 총 투자금',
+          title: '${format.format(totalCost)}원',
+          subtitle: '티켓 + 먹거리 + 유니폼·굿즈 · 경기당 평균 ${format.format(avgCost)}원',
+          badgeLabel: '1승당 가성비',
+          badgeValue: winCount > 0 ? '${format.format(costPerWin)}원' : '첫 승 대기',
+        ),
         StadiumReceiptCard(
           records: records,
           selectedYear: selectedYear,
           wins: winCount,
           losses: lossCount,
         ),
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: _buildMetricBox(
-                '총 지출액',
-                '${format.format(totalCost)}원',
-                teamColor,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildMetricBox(
-                '경기당 평균',
-                '${format.format(avgCost)}원',
-                GRAYSCALE_LABEL_600,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: WHITE,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: GRAYSCALE_LABEL_300),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.military_tech, color: Colors.orange, size: 28),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '1승을 보기 위해 쓴 비용 (가성비 지수)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: GRAYSCALE_LABEL_600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      winCount > 0
-                          ? '평균 ${format.format(costPerWin)}원'
-                          : '아직 직관 승리가 없습니다 😭',
-                      style: GoogleFonts.bebasNeue(
-                        fontSize: 22,
-                        color: BLACK,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         const Text(
           '🏟️ 구장별 지출 랭킹',
           style: TextStyle(
@@ -1017,39 +907,42 @@ class _CostAnalysis extends StatelessWidget {
       ],
     );
   }
-
-  Widget _buildMetricBox(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: WHITE,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: GoogleFonts.bebasNeue(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // -----------------------------------------------------------------------------
-// [기존 뷰 비주얼 개선] 상대별 / 구장별 / 요일별 / 홈원정
+// [리뉴얼 뷰] 상대별 / 구장별 / 요일별 / 홈원정 + 공용 히어로/섹션 위젯
 // -----------------------------------------------------------------------------
+/// 최소 2경기 이상 치른 항목 중 최고/최저 승률(평균) 항목을 우선 선정하고,
+/// 2경기 이상인 항목이 없으면 전체 중 선정한다.
+MapEntry<String, _Stats>? _pickWinRateExtreme(
+  Map<String, _Stats> statsMap, {
+  required bool highest,
+  String? excludeKey,
+}) {
+  final played = statsMap.entries
+      .where((e) => e.value.total > 0 && e.key != excludeKey)
+      .toList();
+  if (played.isEmpty) return null;
+
+  final multiGame = played.where((e) => e.value.total >= 2).toList();
+  final candidates = multiGame.isNotEmpty ? multiGame : played;
+
+  candidates.sort((a, b) {
+    final rateCmp = highest
+        ? b.value.winRate.compareTo(a.value.winRate)
+        : a.value.winRate.compareTo(b.value.winRate);
+    if (rateCmp != 0) return rateCmp;
+
+    final countCmp = highest
+        ? b.value.wins.compareTo(a.value.wins)
+        : b.value.losses.compareTo(a.value.losses);
+    if (countCmp != 0) return countCmp;
+
+    return b.value.total.compareTo(a.value.total);
+  });
+  return candidates.first;
+}
+
 class _OpponentAnalysis extends StatelessWidget {
   final List<Map<String, dynamic>> records;
   final Color teamColor;
@@ -1062,35 +955,63 @@ class _OpponentAnalysis extends StatelessWidget {
       final opp = r['oppTeam'] ?? '기타';
       final my = _AnalysisPageState._parseScore(r['myScore']);
       final oppScore = _AnalysisPageState._parseScore(r['opponentScore']);
-      statsMap.putIfAbsent(opp, () => _Stats());
-      statsMap[opp]!.total++;
-      if (my != null && oppScore != null) {
-        if (my > oppScore)
-          statsMap[opp]!.wins++;
-        else if (my < oppScore)
-          statsMap[opp]!.losses++;
-        else
-          statsMap[opp]!.draws++;
-      }
+      statsMap.putIfAbsent(opp, () => _Stats()).addResult(my, oppScore);
     }
     final sorted = statsMap.entries.toList()
       ..sort((a, b) => b.value.total.compareTo(a.value.total));
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: sorted.length,
-      itemBuilder: (context, i) {
-        final e = sorted[i];
-        final winRate = e.value.total > 0
-            ? (e.value.wins / e.value.total * 100)
-            : 0.0;
-        return _ModernStatCard(
-          title: e.key,
-          stats: e.value,
-          winRate: winRate,
-          teamColor: teamColor,
-        );
-      },
+    final best = _pickWinRateExtreme(statsMap, highest: true);
+    final worst = _pickWinRateExtreme(
+      statsMap,
+      highest: false,
+      excludeKey: best?.key,
+    );
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      children: [
+        if (best != null) ...[
+          Row(
+            children: [
+              Expanded(
+                child: _AnalysisMiniHeroCard(
+                  eyebrow: '🔥 최강 상대',
+                  title: best.key,
+                  subText:
+                      '${best.value.total}전 ${best.value.wins}승 ${best.value.losses}패 (${best.value.winRate.toStringAsFixed(0)}%)',
+                  accentColor: teamColor,
+                ),
+              ),
+              if (worst != null) ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _AnalysisMiniHeroCard(
+                    eyebrow: '🧊 주의 상대',
+                    title: worst.key,
+                    subText:
+                        '${worst.value.total}전 ${worst.value.wins}승 ${worst.value.losses}패 (${worst.value.winRate.toStringAsFixed(0)}%)',
+                    accentColor: ACCENT_CORAL,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 4),
+        ],
+        _AnalysisSectionHeader(
+          title: '상대 팀별 전적',
+          trailing: '${sorted.length}개 팀',
+        ),
+        ...sorted.map((e) {
+          return _ModernStatCard(
+            title: e.key,
+            badgeText: best != null && e.key == best.key ? '강세' : null,
+            stats: e.value,
+            winRate: e.value.winRate,
+            teamColor: teamColor,
+          );
+        }),
+      ],
     );
   }
 }
@@ -1107,35 +1028,40 @@ class _StadiumAnalysis extends StatelessWidget {
       final stadium = r['stadium'] ?? '기타 구장';
       final my = _AnalysisPageState._parseScore(r['myScore']);
       final opp = _AnalysisPageState._parseScore(r['opponentScore']);
-      statsMap.putIfAbsent(stadium, () => _Stats());
-      statsMap[stadium]!.total++;
-      if (my != null && opp != null) {
-        if (my > opp)
-          statsMap[stadium]!.wins++;
-        else if (my < opp)
-          statsMap[stadium]!.losses++;
-        else
-          statsMap[stadium]!.draws++;
-      }
+      statsMap.putIfAbsent(stadium, () => _Stats()).addResult(my, opp);
     }
     final sorted = statsMap.entries.toList()
       ..sort((a, b) => b.value.total.compareTo(a.value.total));
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: sorted.length,
-      itemBuilder: (context, i) {
-        final e = sorted[i];
-        final winRate = e.value.total > 0
-            ? (e.value.wins / e.value.total * 100)
-            : 0.0;
-        return _ModernStatCard(
-          title: e.key,
-          stats: e.value,
-          winRate: winRate,
-          teamColor: teamColor,
-        );
-      },
+    final best = _pickWinRateExtreme(statsMap, highest: true);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      children: [
+        if (best != null)
+          _AnalysisHeroCard(
+            teamColor: teamColor,
+            eyebrow: '🏟️ 최고 승률 구장',
+            title: best.key,
+            subtitle:
+                '${best.value.total}경기 ${best.value.wins}승 ${best.value.draws}무 ${best.value.losses}패',
+            badgeLabel: '승률',
+            badgeValue: '${best.value.winRate.toStringAsFixed(0)}%',
+          ),
+        _AnalysisSectionHeader(
+          title: '구장별 전적',
+          trailing: '방문 ${sorted.length}개 구장',
+        ),
+        ...sorted.map((e) {
+          return _ModernStatCard(
+            title: e.key,
+            badgeText: best != null && e.key == best.key ? '최고 승률' : null,
+            stats: e.value,
+            winRate: e.value.winRate,
+            teamColor: teamColor,
+          );
+        }),
+      ],
     );
   }
 }
@@ -1159,34 +1085,37 @@ class _DayOfWeekAnalysis extends StatelessWidget {
 
       final my = _AnalysisPageState._parseScore(r['myScore']);
       final opp = _AnalysisPageState._parseScore(r['opponentScore']);
-      statsMap[dayName]!.total++;
-      if (my != null && opp != null) {
-        if (my > opp)
-          statsMap[dayName]!.wins++;
-        else if (my < opp)
-          statsMap[dayName]!.losses++;
-        else
-          statsMap[dayName]!.draws++;
-      }
+      statsMap[dayName]!.addResult(my, opp);
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: days.length,
-      itemBuilder: (context, i) {
-        final d = days[i];
-        final stats = statsMap[d]!;
-        final winRate = stats.total > 0
-            ? (stats.wins / stats.total * 100)
-            : 0.0;
-        return _ModernStatCard(
-          title: d,
-          stats: stats,
-          winRate: winRate,
-          teamColor: teamColor,
-          showEmpty: true,
-        );
-      },
+    final bestDay = _pickWinRateExtreme(statsMap, highest: true);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      children: [
+        if (bestDay != null)
+          _AnalysisHeroCard(
+            teamColor: teamColor,
+            eyebrow: '📅 내 직관 승리 요일',
+            title: '${bestDay.key} 직관',
+            subtitle:
+                '${bestDay.value.total}경기 ${bestDay.value.wins}승 ${bestDay.value.draws}무 ${bestDay.value.losses}패',
+            badgeLabel: '승률',
+            badgeValue: '${bestDay.value.winRate.toStringAsFixed(0)}%',
+          ),
+        const _AnalysisSectionHeader(title: '요일별 승률', trailing: '화~일'),
+        ...days.map((d) {
+          final stats = statsMap[d]!;
+          return _ModernStatCard(
+            title: d,
+            badgeText: bestDay != null && d == bestDay.key ? '승리 요일' : null,
+            stats: stats,
+            winRate: stats.winRate,
+            teamColor: teamColor,
+            showEmpty: true,
+          );
+        }),
+      ],
     );
   }
 }
@@ -1205,35 +1134,385 @@ class _HomeAwayAnalysis extends StatelessWidget {
       final key = isHome ? '홈 경기' : '원정 경기';
       final my = _AnalysisPageState._parseScore(r['myScore']);
       final opp = _AnalysisPageState._parseScore(r['opponentScore']);
-      statsMap[key]!.total++;
-      if (my != null && opp != null) {
-        if (my > opp)
-          statsMap[key]!.wins++;
-        else if (my < opp)
-          statsMap[key]!.losses++;
-        else
-          statsMap[key]!.draws++;
-      }
+      statsMap[key]!.addResult(my, opp);
     }
 
+    final homeStats = statsMap['홈 경기']!;
+    final awayStats = statsMap['원정 경기']!;
     final keys = ['홈 경기', '원정 경기'];
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 2,
-      itemBuilder: (context, i) {
-        final k = keys[i];
-        final stats = statsMap[k]!;
-        final winRate = stats.total > 0
-            ? (stats.wins / stats.total * 100)
-            : 0.0;
-        return _ModernStatCard(
-          title: k,
-          stats: stats,
-          winRate: winRate,
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      children: [
+        _HomeAwayComparisonCard(
+          homeStats: homeStats,
+          awayStats: awayStats,
           teamColor: teamColor,
-          showEmpty: true,
-        );
-      },
+        ),
+        const _AnalysisSectionHeader(title: '홈 · 원정 상세 전적'),
+        ...keys.map((k) {
+          final stats = statsMap[k]!;
+          String? badge;
+          if (homeStats.total > 0 && awayStats.total > 0) {
+            if (k == '홈 경기' && homeStats.winRate > awayStats.winRate) {
+              badge = '홈 강세';
+            } else if (k == '원정 경기' && awayStats.winRate > homeStats.winRate) {
+              badge = '원정 강세';
+            }
+          }
+          return _ModernStatCard(
+            title: k,
+            badgeText: badge,
+            stats: stats,
+            winRate: stats.winRate,
+            teamColor: teamColor,
+            showEmpty: true,
+          );
+        }),
+      ],
+    );
+  }
+}
+
+class _AnalysisHeroCard extends StatelessWidget {
+  final Color teamColor;
+  final String eyebrow;
+  final String title;
+  final String subtitle;
+  final String badgeLabel;
+  final String badgeValue;
+
+  const _AnalysisHeroCard({
+    required this.teamColor,
+    required this.eyebrow,
+    required this.title,
+    required this.subtitle,
+    required this.badgeLabel,
+    required this.badgeValue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final lighter = Color.lerp(teamColor, WHITE, 0.14) ?? teamColor;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [teamColor, lighter],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: teamColor.withValues(alpha: 0.22),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            eyebrow,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: WHITE.withValues(alpha: 0.88),
+            ),
+          ),
+          const SizedBox(height: 5),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: WHITE,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: WHITE.withValues(alpha: 0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 11,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: WHITE.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: WHITE.withValues(alpha: 0.28)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      badgeLabel,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: WHITE.withValues(alpha: 0.88),
+                      ),
+                    ),
+                    Text(
+                      badgeValue,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: WHITE,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnalysisMiniHeroCard extends StatelessWidget {
+  final String eyebrow;
+  final String title;
+  final String subText;
+  final Color accentColor;
+
+  const _AnalysisMiniHeroCard({
+    required this.eyebrow,
+    required this.title,
+    required this.subText,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: WHITE,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: GRAYSCALE_LABEL_200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            eyebrow,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: GRAYSCALE_LABEL_500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              color: GRAYSCALE_LABEL_950,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            subText,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: accentColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnalysisSectionHeader extends StatelessWidget {
+  final String title;
+  final String? trailing;
+
+  const _AnalysisSectionHeader({required this.title, this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w800,
+              color: GRAYSCALE_LABEL_800,
+            ),
+          ),
+          if (trailing != null)
+            Text(
+              trailing!,
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: GRAYSCALE_LABEL_500,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeAwayComparisonCard extends StatelessWidget {
+  final _Stats homeStats;
+  final _Stats awayStats;
+  final Color teamColor;
+
+  const _HomeAwayComparisonCard({
+    required this.homeStats,
+    required this.awayStats,
+    required this.teamColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final homeRate = homeStats.winRate;
+    final awayRate = awayStats.winRate;
+    final totalRate = homeRate + awayRate;
+    final int homeFlex = totalRate > 0 ? homeRate.round().clamp(1, 99) : 50;
+    final int awayFlex = totalRate > 0 ? awayRate.round().clamp(1, 99) : 50;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: WHITE,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: GRAYSCALE_LABEL_200),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '🏠 홈 vs ✈️ 원정 승률 맞대결',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w800,
+                  color: GRAYSCALE_LABEL_950,
+                ),
+              ),
+              Text(
+                '총 ${homeStats.total + awayStats.total}경기',
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: GRAYSCALE_LABEL_500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '홈 경기 (${homeStats.total}전)',
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: GRAYSCALE_LABEL_500,
+                    ),
+                  ),
+                  Text(
+                    '${homeRate.toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w900,
+                      color: teamColor,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '원정 경기 (${awayStats.total}전)',
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: GRAYSCALE_LABEL_500,
+                    ),
+                  ),
+                  Text(
+                    '${awayRate.toStringAsFixed(0)}%',
+                    style: const TextStyle(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w900,
+                      color: ACCENT_CORAL,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: SizedBox(
+              height: 10,
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: homeFlex,
+                    child: Container(color: teamColor),
+                  ),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    flex: awayFlex,
+                    child: Container(color: ACCENT_CORAL),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1246,6 +1525,20 @@ class _Stats {
   int wins = 0;
   int losses = 0;
   int draws = 0;
+
+  double get winRate => total > 0 ? (wins / total * 100) : 0.0;
+
+  void addResult(int? my, int? opp) {
+    total++;
+    if (my == null || opp == null) return;
+    if (my > opp) {
+      wins++;
+    } else if (my < opp) {
+      losses++;
+    } else {
+      draws++;
+    }
+  }
 }
 
 class _ModernStatCard extends StatelessWidget {

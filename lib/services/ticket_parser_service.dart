@@ -2,31 +2,84 @@ import 'package:lockerroom/model/ticket_scan_result_model.dart';
 
 class TicketParserService {
   static const Map<String, List<String>> teamAliases = {
-    '한화': ['한화', '이글스', 'EAGLES', '한화이글스', 'HANWHA'],
-    'KIA': ['KIA', '기아', '타이거즈', 'TIGERS', '기아타이거즈'],
-    '기아': ['기아', 'KIA', '타이거즈', 'TIGERS', '기아타이거즈'],
-    'LG': ['LG', '엘지', '트윈스', 'TWINS', '엘지트윈스'],
-    '삼성': ['삼성', '라이온즈', 'LIONS', '삼성라이온즈', 'SAMSUNG'],
-    '두산': ['두산', '베어스', 'BEARS', '두산베어스', 'DOOSAN', '투산'],
-    'KT': ['KT', '케이티', '위즈', 'WIZ', '케이티위즈'],
-    'SSG': ['SSG', '랜더스', 'LANDERS', '쓱', 'SK', '와이번스', 'WYVERNS', '에스에스지'],
-    'SK': ['SK', '와이번스', 'WYVERNS', 'SSG', '랜더스'],
-    '롯데': ['롯데', '자이언츠', 'GIANTS', '롯데자이언츠', 'LOTTE'],
-    'NC': ['NC', '엔씨', '다이노스', 'DINOS', '엔씨다이노스'],
-    '키움': ['키움', '히어로즈', 'HEROES', '키움히어로즈', '넥센', 'NEXEN', 'KIWOOM'],
+    '한화': ['한화', '이글스', 'EAGLES', '한화이글스', 'HANWHA', 'ハンファ', 'イーグルス'],
+    'KIA': ['KIA', '기아', '타이거즈', 'TIGERS', '기아타이거즈', 'キア', '起亜', 'タイガース'],
+    '기아': ['기아', 'KIA', '타이거즈', 'TIGERS', '기아타이거즈', 'キア', '起亜', 'タイガース'],
+    'LG': ['LG', '엘지', '트윈스', 'TWINS', '엘지트윈스', 'ツインズ'],
+    '삼성': ['삼성', '라이온즈', 'LIONS', '삼성라이온즈', 'SAMSUNG', 'サムスン', '三星', 'ライオンズ'],
+    '두산': ['두산', '베어스', 'BEARS', '두산베어스', 'DOOSAN', '투산', '斗山', 'ベアーズ'],
+    'KT': ['KT', '케이티', '위즈', 'WIZ', '케이티위즈', 'ウィズ'],
+    'SSG': ['SSG', '랜더스', 'LANDERS', '쓱', 'SK', '와이번스', 'WYVERNS', '에스에스지', 'ランダース'],
+    'SK': ['SK', '와이번스', 'WYVERNS', 'SSG', '랜더스', 'ランダース'],
+    '롯데': ['롯데', '자이언츠', 'GIANTS', '롯데자이언츠', 'LOTTE', 'ロッテ', 'ジャイアンツ'],
+    'NC': ['NC', '엔씨', '다이노스', 'DINOS', '엔씨다이노스', 'ダイノス'],
+    '키움': ['키움', '히어로즈', 'HEROES', '키움히어로즈', '넥센', 'NEXEN', 'KIWOOM', 'キウム', 'ヒーローズ'],
     '넥센': ['넥센', 'NEXEN', '키움', 'KIWOOM', '히어로즈', 'HEROES'],
+    '대한민국': ['대한민국', '한국', 'KOREA', 'TEAM KOREA', '韓国', '大韓民国', 'KOR代表'],
+    '일본': ['일본', 'JAPAN', '侍ジャパン', 'SAMURAI JAPAN'],
+    '대만': ['대만', 'TAIWAN', 'CHINESE TAIPEI', '台湾', 'チャイニーズ・タイペイ', 'チャイニーズタイペイ'],
+    '호주': ['호주', 'AUSTRALIA', 'オーストラリア', '豪州'],
+    '체코': ['체코', 'CZECH', 'CZECHIA', 'チェコ'],
+    '미국': ['미국', 'USA', 'AMERICA', 'アメリカ', '米国'],
+    '중국': ['중국', 'CHINA'],
+    '도미니카': ['도미니카', 'DOMINICA', 'DOMINICAN', 'ドミニカ'],
+    '쿠바': ['쿠바', 'CUBA', 'キューバ'],
+    '네덜란드': ['네덜란드', 'NETHERLANDS', 'オランダ'],
+    '캐나다': ['캐나다', 'CANADA', 'カナダ'],
+    '멕시코': ['멕시코', 'MEXICO', 'メキシコ'],
+    '베네수엘라': ['베네수엘라', 'VENEZUELA', 'ベネズエラ'],
+    '이스라엘': ['이스라엘', 'ISRAEL', 'イスラエル'],
   };
 
+  /// 전각 숫자/기호 및 일본어 연호 등을 반각 표준으로 정규화
+  static String _normalizeWidthAndEra(String input) {
+    final buf = StringBuffer();
+    for (final code in input.runes) {
+      if (code >= 0xFF10 && code <= 0xFF19) {
+        // ０-９ -> 0-9
+        buf.writeCharCode(code - 0xFF10 + 0x30);
+      } else if (code >= 0xFF21 && code <= 0xFF3A) {
+        // Ａ-Ｚ -> A-Z
+        buf.writeCharCode(code - 0xFF21 + 0x41);
+      } else if (code >= 0xFF41 && code <= 0xFF5A) {
+        // ａ-ｚ -> a-z
+        buf.writeCharCode(code - 0xFF41 + 0x61);
+      } else if (code == 0x3000) {
+        buf.write(' ');
+      } else if (code == 0xFF1A) {
+        buf.write(':');
+      } else if (code == 0xFF0C) {
+        buf.write(',');
+      } else if (code == 0xFF0E) {
+        buf.write('.');
+      } else if (code == 0xFF0F) {
+        buf.write('/');
+      } else if (code == 0xFFE5) {
+        buf.write('¥');
+      } else {
+        buf.writeCharCode(code);
+      }
+    }
+    var out = buf.toString();
+    // 일본 레이와 연호(예: 令和8年 -> 2026年) 변환
+    out = out.replaceAllMapped(
+      RegExp(r'令和\s*(\d{1,2})\s*年'),
+      (m) => '${2018 + int.parse(m.group(1)!)}年',
+    );
+    return out;
+  }
+
   static TicketScanResultModel parse(String text) {
+    final normalizedText = _normalizeWidthAndEra(text);
     // 파싱 시작 전 예매번호 전처리 제거
-    final cleanText = _removeReservationNumbers(text);
+    final cleanText = _removeReservationNumbers(normalizedText);
 
     final gameDate = _extractDate(cleanText);
     final gameTime = _extractTime(cleanText);
     final detectedTeams = _extractTeams(cleanText);
-    // 가격과 좌석은 '결제', '입장', '예매', '게이트' 등이 같은 줄에 포함될 수 있으므로 원본 텍스트에서 전용 필터로 추출
-    final ticketPrice = _extractPrice(text);
-    final seatType = _extractSeat(text);
+    // 가격과 좌석은 '결제', '입장', '예매', '게이트' 등이 같은 줄에 포함될 수 있으므로 정규화된 원본 텍스트에서 전용 필터로 추출
+    final ticketPrice = _extractPrice(normalizedText);
+    final seatType = _extractSeat(normalizedText);
 
     return TicketScanResultModel(
       gameDate: gameDate,
@@ -38,31 +91,43 @@ class TicketParserService {
     );
   }
 
-  /// 한국어 OCR 결과와 라틴 OCR 결과를 지능적으로 결합하여 파싱
+  /// 한국어·일본어·라틴 OCR 결과를 지능적으로 결합하여 파싱
   static TicketScanResultModel parseEnsemble({
     required String koreanText,
+    String? japaneseText,
     String? latinText,
   }) {
-    // 1차: 한국어 모델 결과 파싱 (한글 구단명, 날짜 한글형식, 좌석명 등에서 가장 신뢰도 높음)
     final koResult = parse(koreanText);
-    if (latinText == null || latinText.trim().isEmpty) {
+    final jaResult = (japaneseText != null && japaneseText.trim().isNotEmpty)
+        ? parse(japaneseText)
+        : null;
+    final latinResult = (latinText != null && latinText.trim().isNotEmpty)
+        ? parse(latinText)
+        : null;
+
+    if (jaResult == null && latinResult == null) {
       return koResult;
     }
 
-    // 2차: 라틴 모델 결과 파싱 (영문 구단명, 디지털 숫자/기호에서 보완)
-    final latinResult = parse(latinText);
+    final mergedDate =
+        koResult.gameDate ?? jaResult?.gameDate ?? latinResult?.gameDate;
+    final mergedTime =
+        koResult.gameTime ?? jaResult?.gameTime ?? latinResult?.gameTime;
+    final mergedTeams = {
+      ...koResult.detectedTeams,
+      if (jaResult != null) ...jaResult.detectedTeams,
+      if (latinResult != null) ...latinResult.detectedTeams,
+    }.toList();
+    final mergedPrice =
+        koResult.ticketPrice ?? jaResult?.ticketPrice ?? latinResult?.ticketPrice;
+    final mergedSeat =
+        koResult.seatType ?? jaResult?.seatType ?? latinResult?.seatType;
 
-    // 날짜: 한글 결과 우선, 없으면 라틴 결과
-    final mergedDate = koResult.gameDate ?? latinResult.gameDate;
-    // 시간: 한글 결과 우선, 없으면 라틴 결과
-    final mergedTime = koResult.gameTime ?? latinResult.gameTime;
-    // 팀: 양쪽에서 찾은 팀 합집합
-    final mergedTeams =
-        {...koResult.detectedTeams, ...latinResult.detectedTeams}.toList();
-    // 가격: 한글 결과 우선, 없으면 라틴 결과
-    final mergedPrice = koResult.ticketPrice ?? latinResult.ticketPrice;
-    // 좌석: 한국어 결과 우선 (라틴은 한글 좌석명이 깨짐), 없으면 라틴 결과
-    final mergedSeat = koResult.seatType ?? latinResult.seatType;
+    final rawParts = [
+      koreanText,
+      if (japaneseText != null && japaneseText.trim().isNotEmpty) japaneseText,
+      if (latinText != null && latinText.trim().isNotEmpty) latinText,
+    ];
 
     return TicketScanResultModel(
       gameDate: mergedDate,
@@ -70,16 +135,21 @@ class TicketParserService {
       detectedTeams: mergedTeams,
       ticketPrice: mergedPrice,
       seatType: mergedSeat,
-      rawText: '$koreanText\n---\n$latinText',
+      rawText: rawParts.join('\n---\n'),
     );
   }
 
   // 예매번호 및 영수증 인쇄/발권/입장 시간 등 경기 시간 외 불필요 라인 제거
   static String _removeReservationNumbers(String text) {
-    // 1) "예매", "예약", "발매", "판매", "인쇄", "발권", "입장", "개문", "취소마감" 등 경기 시작 시간과 무관한 영수증/안내 라인 전체 삭제
+    // 0) 일본 티켓 개장 시간("17:00 開場")만 부분 제거하여 같은 줄의 "19:00 開始"는 보존
     var result = text.replaceAll(
+      RegExp(r'\d{1,2}[:;]\d{2}\s*開場|開場\s*\d{1,2}[:;]\d{2}'),
+      '',
+    );
+    // 1) "예매", "예약", "발매", "판매", "인쇄", "발권", "입장", "개문", "취소마감" 등 경기 시작 시간과 무관한 영수증/안내/주최 라인 삭제
+    result = result.replaceAll(
       RegExp(
-        r'.*(?:예매|예약|티켓\s*번호|발권|바코드|QR코드|인쇄|출력|입장|관람\s*입장|개문|게이트|취소\s*마감|결제|발매|판매).*',
+        r'.*(?:예매|예약|티켓\s*번호|발권|바코드|QR코드|인쇄|출력|입장|관람\s*입장|개문|게이트|취소\s*마감|결제|발매|판매|発券|予約|申込|受付|購入|支払|決済|引換|再発行|バーコード|払戻|主催[:：]|共催[:：]|特別協賛[:：]).*',
         caseSensitive: false,
       ),
       '',
@@ -97,9 +167,9 @@ class TicketParserService {
 
   // 1. 날짜 추출 (2010년부터 지원, 다단계 정밀 매칭)
   static DateTime? _extractDate(String text) {
-    // 1순위: 4자리 연도 한글 (2010~2039) e.g., "2026년 09월 10일", "2010년 4월 3일"
+    // 1순위: 4자리 연도 한·일 (2010~2039) e.g., "2026년 09월 10일", "2026年3月5日"
     final matchKo4 = RegExp(
-      r'(?:^|[^\d])(20[1-3]\d)\s*년\s*(1[0-2]|0?[1-9])\s*월\s*(3[01]|[12]\d|0?[1-9])\s*일?',
+      r'(?:^|[^\d])(20[1-3]\d)\s*[년年]\s*(1[0-2]|0?[1-9])\s*[월月]\s*(3[01]|[12]\d|0?[1-9])\s*[일日]?',
     ).firstMatch(text);
     if (matchKo4 != null) {
       final y = int.parse(matchKo4.group(1)!);
@@ -119,9 +189,9 @@ class TicketParserService {
       return DateTime(y, m, d);
     }
 
-    // 3순위: 2자리 연도 한글 (10~39년 -> 2010~2039) e.g., "10년 4월 3일", "26년 9월 10일"
+    // 3순위: 2자리 연도 한·일 (10~39년 -> 2010~2039) e.g., "10년 4월 3일", "26年3月5日"
     final matchKo2 = RegExp(
-      r'(?:^|[^\d])([1-3]\d)\s*년\s*(1[0-2]|0?[1-9])\s*월\s*(3[01]|[12]\d|0?[1-9])\s*일?',
+      r'(?:^|[^\d])([1-3]\d)\s*[년年]\s*(1[0-2]|0?[1-9])\s*[월月]\s*(3[01]|[12]\d|0?[1-9])\s*[일日]?',
     ).firstMatch(text);
     if (matchKo2 != null) {
       final y = 2000 + int.parse(matchKo2.group(1)!);
@@ -141,9 +211,9 @@ class TicketParserService {
       return DateTime(y, m, d);
     }
 
-    // 5순위: 월/일 한글 형식 (예: "9월 10일", "09월 10일")
+    // 5순위: 월/일 한·일 형식 (예: "9월 10일", "3月5日")
     final matchKoNoYear = RegExp(
-      r'(?:^|[^\d])(1[0-2]|0?[1-9])\s*월\s*(3[01]|[12]\d|0?[1-9])\s*일',
+      r'(?:^|[^\d])(1[0-2]|0?[1-9])\s*[월月]\s*(3[01]|[12]\d|0?[1-9])\s*[일日]',
     ).firstMatch(text);
     if (matchKoNoYear != null) {
       final m = int.parse(matchKoNoYear.group(1)!);
@@ -168,9 +238,23 @@ class TicketParserService {
   static String? _extractTime(String text) {
     // 단일 문자열 구간에서 시간 파싱
     String? parseTimeFragment(String fragment) {
-      // 1) 오전/오후/AM/PM 접두사: "오후 6시30분", "오후 6시 30분", "오후 6:30", "오후 6시", "PM 6:30", "오후6시" 등
+      // 0) 일본/한국 티켓 경기 시작 키워드가 직접 붙은 시간 최우선 ("19:00 開始", "19:00開始", "19時 開始")
+      final regexStartKw = RegExp(
+        r'(\d{1,2})\s*[:;시時]\s*(\d{2})?\s*[분分]?\s*(?:試合開始|開始|プレイボール)',
+      );
+      final matchStartKw = regexStartKw.firstMatch(fragment);
+      if (matchStartKw != null) {
+        int h = int.parse(matchStartKw.group(1)!);
+        final minute = int.tryParse(matchStartKw.group(2) ?? '0') ?? 0;
+        if (h >= 1 && h <= 7) h += 12;
+        if (h >= 0 && h <= 23 && minute >= 0 && minute <= 59) {
+          return '${h.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+        }
+      }
+
+      // 1) 오전/오후/午前/午後/AM/PM 접두사
       final regexAmPmPre = RegExp(
-        r'(오전|오후|AM|PM)\s*(\d{1,2})\s*(?:[:;]\s*(\d{1,2})|시\s*(?:(\d{1,2})\s*분?)?|분)',
+        r'(오전|오후|午前|午後|AM|PM)\s*(\d{1,2})\s*(?:[:;]\s*(\d{1,2})|[시時]\s*(?:(\d{1,2})\s*[분分]?)?|[분分])',
         caseSensitive: false,
       );
       final matchAmPmPre = regexAmPmPre.firstMatch(fragment);
@@ -179,7 +263,7 @@ class TicketParserService {
         int h = int.parse(matchAmPmPre.group(2)!);
         final minuteStr = matchAmPmPre.group(3) ?? matchAmPmPre.group(4) ?? '0';
         final minute = int.tryParse(minuteStr) ?? 0;
-        final isPm = period == '오후' || period == 'PM';
+        final isPm = period == '오후' || period == '午後' || period == 'PM';
         if (isPm && h < 12) {
           h += 12;
         } else if (!isPm && h == 12) {
@@ -190,9 +274,9 @@ class TicketParserService {
         }
       }
 
-      // 2) 오전/오후/AM/PM 접미사: "6:30 PM", "6:30PM", "6시 30분 PM", "6시 PM"
+      // 2) 오전/오후/午前/午後/AM/PM 접미사
       final regexAmPmPost = RegExp(
-        r'(\d{1,2})\s*(?:[:;]\s*(\d{1,2})|시\s*(?:(\d{1,2})\s*분?)?)\s*(오전|오후|AM|PM)',
+        r'(\d{1,2})\s*(?:[:;]\s*(\d{1,2})|[시時]\s*(?:(\d{1,2})\s*[분分]?)?)\s*(오전|오후|午前|午後|AM|PM)',
         caseSensitive: false,
       );
       final matchAmPmPost = regexAmPmPost.firstMatch(fragment);
@@ -202,7 +286,7 @@ class TicketParserService {
             matchAmPmPost.group(2) ?? matchAmPmPost.group(3) ?? '0';
         final minute = int.tryParse(minuteStr) ?? 0;
         final period = matchAmPmPost.group(4)!.toUpperCase();
-        final isPm = period == '오후' || period == 'PM';
+        final isPm = period == '오후' || period == '午後' || period == 'PM';
         if (isPm && h < 12) {
           h += 12;
         } else if (!isPm && h == 12) {
@@ -213,9 +297,9 @@ class TicketParserService {
         }
       }
 
-      // 3) '시' 표기 형식 (24시간 또는 야구 경기 1~7시): "18시 30분", "18시30분", "18시", "17시", "14시", "6시 30분"
+      // 3) '시'/'時' 표기 형식 (24시간 또는 야구 경기 1~7시)
       final regexSi = RegExp(
-        r'(?:^|[^\d])(1\d|2[0-3]|0?\d)\s*시(?:\s*(\d{1,2})\s*분?|\s*분)?(?![가-힣])',
+        r'(?:^|[^\d])(1\d|2[0-3]|0?\d)\s*[시時](?:\s*(\d{1,2})\s*[분分]?|\s*[분分])?(?![가-힣])',
       );
       final matchSi = regexSi.firstMatch(fragment);
       if (matchSi != null) {
@@ -270,9 +354,9 @@ class TicketParserService {
 
     final lines = text.split('\n');
 
-    // 1순위: 날짜나 경기 관련 키워드가 포함된 라인(예: "2026년 09월 10일 18시 30분", "일시 18:30")에서 시간 우선 탐색
+    // 1순위: 날짜나 경기 관련 키워드가 포함된 라인에서 시간 우선 탐색
     for (final line in lines) {
-      if (RegExp(r'(?:경기\s*일시|경기\s*시간|일시|GAME|\d{2,4}\s*년|\d{2,4}[.\-\/]\d{1,2})')
+      if (RegExp(r'(?:경기\s*일시|경기\s*시간|일시|試合開始|開始|プレイボール|GAME|\d{2,4}\s*[년年]|\d{2,4}[.\-\/]\d{1,2})')
           .hasMatch(line)) {
         final t = parseTimeFragment(line);
         if (t != null) return t;
@@ -311,18 +395,23 @@ class TicketParserService {
       '',
     );
 
-    // 1순위: 금액/가격/합계/결제 키워드나 통화 기호(원, ₩)가 붙은 경우 (콤마 또는 도트 구분자 모두 허용)
+    // 1순위: 금액/가격/합계/결제 키워드나 통화 기호(원, ₩, 円, ¥)가 붙은 경우
     final priorityRegex = RegExp(
-      r'(?:금액|결제|가격|티켓|입장권|합계|일반|성인)\s*[:：]?\s*[₩￦\\]?\s*([1-9]\d{0,2}(?:[,.]\d{3})+|[1-9]\d{3,5})\s*(?:원|KRW)?|[₩￦\\]\s*([1-9]\d{0,2}(?:[,.]\d{3})+|[1-9]\d{3,5})|([1-9]\d{0,2}(?:[,.]\d{3})+|[1-9]\d{3,5})\s*(?:원|KRW)',
+      r'(?:금액|결제|가격|티켓|입장권|합계|일반|성인|料金|価格|金額|合計|小計|おとな|大人)\s*[:：]?\s*[₩￦\\¥]?\s*([1-9]\d{0,2}(?:[,.]\d{3})+|[1-9]\d{2,5})\s*(?:원|KRW|円|JPY)?|[₩￦\\¥]\s*([1-9]\d{0,2}(?:[,.]\d{3})+|[1-9]\d{2,5})|([1-9]\d{0,2}(?:[,.]\d{3})+|[1-9]\d{2,5})\s*(?:원|KRW|円|JPY)',
       caseSensitive: false,
     );
     final priorityMatches = priorityRegex.allMatches(priceText);
     for (final match in priorityMatches) {
+      final fullMatch = match.group(0) ?? '';
+      final isJpy = fullMatch.contains('円') ||
+          fullMatch.contains('¥') ||
+          fullMatch.toUpperCase().contains('JPY');
+      final minPrice = isJpy ? 500 : 5000;
       final rawStr = match.group(1) ?? match.group(2) ?? match.group(3);
       final numStr = rawStr?.replaceAll(RegExp(r'[,.]'), '');
       if (numStr != null) {
         final price = int.tryParse(numStr);
-        if (price != null && price >= 5000 && price <= 300000) {
+        if (price != null && price >= minPrice && price <= 300000) {
           return price;
         }
       }
@@ -346,24 +435,24 @@ class TicketParserService {
   // 5. 좌석명 추출 (스캔한 텍스트 그대로: 등급명 + 블럭/구역/열/번 결합, OCR 오타 보정 포함)
   static String? _extractSeat(String text) {
     final noiseRegex = RegExp(
-      r'예매\s*번호|예약\s*번호|티켓\s*번호|발권\s*번호|바코드|QR코드|발매처|인쇄일|한함|카드|제외|홈페이지|무통장|입금|주차|유의사항|취소|환불|문의|할인',
+      r'예매\s*번호|예약\s*번호|티켓\s*번호|발권\s*번호|바코드|QR코드|발매처|인쇄일|한함|카드|제외|홈페이지|무통장|입금|주차|유의사항|취소|환불|문의|할인|発券|予約|申込|受付|購入|支払|決済|払戻|再発行|注意事項|ご注意|手数料|税込',
       caseSensitive: false,
     );
     final dateOrMatchupRegex = RegExp(
-      r'\d{2,4}\s*년|\d{1,2}\s*월\s*\d{1,2}\s*일|\d{1,2}\s*시\s*\d{0,2}\s*분?|\d{2}:\d{2}|\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}|\bvs\b|원\s*$',
+      r'\d{2,4}\s*[년年]|\d{1,2}\s*[월月]\s*\d{1,2}\s*[일日]|\d{1,2}\s*[시時]\s*\d{0,2}\s*[분分]?|\d{2}:\d{2}|\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}|\bvs\b|(?:원|円)\s*$',
       caseSensitive: false,
     );
     final teamOnlyRegex = RegExp(
-      r'^(?:두산|키움|LG|SSG|KT|NC|KIA|기아|롯데|삼성|한화|SK|넥센|베어스|히어로즈|트윈스|랜더스|위즈|다이노스|타이거즈|자이언츠|라이온즈|이글스|일반|성인|청소년|어린이)$',
+      r'^(?:두산|키움|LG|SSG|KT|NC|KIA|기아|롯데|삼성|한화|SK|넥센|베어스|히어로즈|트윈스|랜더스|위즈|다이노스|타이거즈|자이언츠|라이온즈|이글스|일반|성인|청소년|어린이|おとな|大人|こども|小人)$',
       caseSensitive: false,
     );
     final gradeRegex = RegExp(
-      r'(?:[13]루(?:측|쪽)?|중앙|내야|외야|[1-5]층)|(?:석|존|클럽|테이블|탁자|그린|스카이|라운지|박스|데크|캠핑|패밀리|VIP|익사이팅|네이비|오렌지|레드|블루|옐로우|버건디|지정|자유|응원|프리미엄|테라스|홈런|커플|로얄|다이아|몬스터|바베큐|피크닉|잔디)',
+      r'(?:[13]루(?:측|쪽)?|[13一三]塁(?:側)?|중앙|내야|외야|内野|外野|バックネット|レフト|ライト|[1-5][층階])|(?:석|존|클럽|테이블|탁자|그린|스카이|라운지|박스|데크|캠핑|패밀리|VIP|익사이팅|네이비|오렌지|레드|블루|옐로우|버건디|지정|자유|응원|프리미엄|테라스|홈런|커플|로얄|다이아|몬스터|바베큐|피크닉|잔디|指定席|自由席|指定|自由|エキサイト|プレミアム|スイート|バルコニー|スカイ|SS席|S席|A席|B席|C席|席)',
       caseSensitive: false,
     );
-    // '3열'이 '3일', '3얼', '3엘'로 오인식된 경우도 좌석 상세 라인으로 포착
+    // '3열'이 '3일', '3얼', '3엘'로 오인식된 경우도 좌석 상세 라인으로 포착 (+ 일본어 ゲート/通路/ブロック/列/番/段)
     final detailRegex = RegExp(
-      r'(?:\d+|[A-Za-z])\s*(?:블록|블럭|블력|불럭|볼럭|블랙|구역|구억|구여|섹션|열|얼|엘|일|번|빈|변)',
+      r'(?:\d+|[A-Za-z])\s*(?:블록|블럭|블력|불럭|볼럭|블랙|구역|구억|구여|섹션|열|얼|엘|일|번|빈|변|ゲート|通路|ブロック|列|番|段)',
     );
     final prefixLabelRegex = RegExp(r'^(?:좌석\s*(?:정보|번호|등급)?\s*[:：]\s*)');
 
@@ -396,11 +485,10 @@ class TicketParserService {
 
     // 좌석 등급 줄을 찾았다면 인접한 줄(다음 1~2줄 우선, 없으면 이전 1줄)에서 블럭/구역/열/번 상세 정보를 찾아 결합
     if (gradeLine != null) {
-      String? detailLine;
+      final collectedDetails = <String>[];
       final candidateIndices = <int>[
         if (gradeIdx + 1 < lines.length) gradeIdx + 1,
         if (gradeIdx + 2 < lines.length) gradeIdx + 2,
-        if (gradeIdx - 1 >= 0) gradeIdx - 1,
       ];
       for (final idx in candidateIndices) {
         final neighbor = lines[idx];
@@ -408,13 +496,20 @@ class TicketParserService {
             dateOrMatchupRegex.hasMatch(neighbor)) {
           continue;
         }
-        if (detailRegex.hasMatch(neighbor)) {
-          detailLine = neighbor;
-          break;
+        if (detailRegex.hasMatch(neighbor) || gradeRegex.hasMatch(neighbor)) {
+          collectedDetails.add(neighbor);
         }
       }
-      if (detailLine != null) {
-        return _normalizeSeatText('$gradeLine $detailLine');
+      if (collectedDetails.isEmpty && gradeIdx - 1 >= 0) {
+        final prev = lines[gradeIdx - 1];
+        if (!noiseRegex.hasMatch(prev) &&
+            !dateOrMatchupRegex.hasMatch(prev) &&
+            detailRegex.hasMatch(prev)) {
+          collectedDetails.add(prev);
+        }
+      }
+      if (collectedDetails.isNotEmpty) {
+        return _normalizeSeatText('$gradeLine ${collectedDetails.join(' ')}');
       }
       return _normalizeSeatText(gradeLine);
     }

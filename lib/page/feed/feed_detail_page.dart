@@ -7,6 +7,7 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/post_model.dart';
+import 'package:lockerroom/widgets/attendance_feed_card.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_edit_page.dart';
 import 'package:lockerroom/page/feed/feed_mypage.dart';
@@ -301,6 +302,12 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     const SizedBox(height: 8),
                     // 본문
                     Text(_currentPost.text),
+                    if (_currentPost.attendanceSummary != null) ...[
+                      const SizedBox(height: 10),
+                      AttendanceFeedCard(
+                        summary: _currentPost.attendanceSummary!,
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     if (widget.post.meetupId != null) ...[
                       FutureBuilder<MeetupModel?>(

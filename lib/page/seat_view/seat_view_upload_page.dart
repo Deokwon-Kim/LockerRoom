@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lockerroom/const/color.dart';
@@ -11,8 +12,13 @@ import 'package:toastification/toastification.dart';
 
 class SeatViewUploadPage extends StatefulWidget {
   final String? initialStadium;
+  final SeatViewModel? editingPost;
 
-  const SeatViewUploadPage({super.key, this.initialStadium});
+  const SeatViewUploadPage({
+    super.key,
+    this.initialStadium,
+    this.editingPost,
+  });
 
   @override
   State<SeatViewUploadPage> createState() => _SeatViewUploadPageState();
@@ -24,14 +30,27 @@ class _SeatViewUploadPageState extends State<SeatViewUploadPage> {
   final TextEditingController _seatController = TextEditingController();
   final TextEditingController _reviewController = TextEditingController();
   final List<String> _selectedTags = [];
+  final List<String> _existingImageUrls = [];
   final List<File> _images = [];
+
+  bool get _isEditing => widget.editingPost != null;
 
   @override
   void initState() {
     super.initState();
-    _selectedStadium = widget.initialStadium != null
-        ? SeatViewModel.normalizeStadium(widget.initialStadium!)
-        : kSeatViewStadiums.first;
+    final editing = widget.editingPost;
+    if (editing != null) {
+      _selectedStadium = SeatViewModel.normalizeStadium(editing.stadium);
+      _selectedZone = editing.zone;
+      _seatController.text = editing.seatText;
+      _reviewController.text = editing.review;
+      _selectedTags.addAll(editing.tags);
+      _existingImageUrls.addAll(editing.imageUrls);
+    } else {
+      _selectedStadium = widget.initialStadium != null
+          ? SeatViewModel.normalizeStadium(widget.initialStadium!)
+          : kSeatViewStadiums.first;
+    }
   }
 
   @override
@@ -167,7 +186,7 @@ class _SeatViewUploadPageState extends State<SeatViewUploadPage> {
       if (!mounted || picked.isEmpty) return;
       setState(() {
         for (final x in picked) {
-          if (_images.length < 5) {
+          if (_existingImageUrls.length + _images.length < 5) {
             _images.add(File(x.path));
           }
         }
@@ -193,7 +212,7 @@ class _SeatViewUploadPageState extends State<SeatViewUploadPage> {
       );
       return;
     }
-    if (_images.isEmpty) {
+    if (_existingImageUrls.isEmpty && _images.isEmpty) {
       toastification.show(
         context: context,
         type: ToastificationType.warning,
@@ -204,16 +223,28 @@ class _SeatViewUploadPageState extends State<SeatViewUploadPage> {
     }
 
     final up = context.read<UserProvider>();
-    final ok = await context.read<SeatViewProvider>().createPost(
-      stadium: _selectedStadium,
-      zone: _selectedZone,
-      seatText: _seatController.text,
-      review: _reviewController.text,
-      tags: _selectedTags,
-      images: _images,
-      userNickName: up.nickname ?? up.currentUser?.displayName,
-      userProfileImage: up.currentUser?.photoURL,
-    );
+    final seatViewProvider = context.read<SeatViewProvider>();
+    final ok = _isEditing
+        ? await seatViewProvider.updatePost(
+            original: widget.editingPost!,
+            stadium: _selectedStadium,
+            zone: _selectedZone,
+            seatText: _seatController.text,
+            review: _reviewController.text,
+            tags: _selectedTags,
+            keptImageUrls: _existingImageUrls,
+            newImages: _images,
+          )
+        : await seatViewProvider.createPost(
+            stadium: _selectedStadium,
+            zone: _selectedZone,
+            seatText: _seatController.text,
+            review: _reviewController.text,
+            tags: _selectedTags,
+            images: _images,
+            userNickName: up.nickname ?? up.currentUser?.displayName,
+            userProfileImage: up.currentUser?.photoURL,
+          );
 
     if (!mounted) return;
     if (ok) {
@@ -221,7 +252,7 @@ class _SeatViewUploadPageState extends State<SeatViewUploadPage> {
         context: context,
         type: ToastificationType.success,
         autoCloseDuration: const Duration(seconds: 2),
-        title: const Text('좌석 시야가 공유되었습니다!'),
+        title: Text(_isEditing ? '좌석 시야가 수정되었습니다!' : '좌석 시야가 공유되었습니다!'),
       );
       Navigator.pop(context);
     } else {
@@ -229,14 +260,17 @@ class _SeatViewUploadPageState extends State<SeatViewUploadPage> {
         context: context,
         type: ToastificationType.error,
         autoCloseDuration: const Duration(seconds: 2),
-        title: const Text('업로드 중 오류가 발생했습니다'),
+        title: Text(_isEditing ? '수정 중 오류가 발생했습니다' : '업로드 중 오류가 발생했습니다'),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isUploading = context.watch<SeatViewProvider>().isUploading;
+    final seatViewProvider = context.watch<SeatViewProvider>();
+    final isUploading = seatViewProvider.isUploading;
+    final uploadProgress = seatViewProvider.uploadProgress;
+    final uploadStatusText = seatViewProvider.uploadStatusText;
     final uploadZones = kSeatViewZones.where((z) => z != '전체').toList();
 
     return Scaffold(
@@ -245,9 +279,9 @@ class _SeatViewUploadPageState extends State<SeatViewUploadPage> {
         backgroundColor: BACKGROUND_COLOR,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: const Text(
-          '좌석 시야 올리기',
-          style: TextStyle(
+        title: Text(
+          _isEditing ? '좌석 시야 수정' : '좌석 시야 올리기',
+          style: const TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w800,
             color: GRAYSCALE_LABEL_950,
@@ -465,6 +499,46 @@ class _SeatViewUploadPageState extends State<SeatViewUploadPage> {
                           ),
                         ),
                       ),
+                      ..._existingImageUrls.asMap().entries.map((entry) {
+                        return Stack(
+                          children: [
+                            Container(
+                              width: 96,
+                              height: 96,
+                              margin: const EdgeInsets.only(right: 10),
+                              clipBehavior: Clip.hardEdge,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: CachedNetworkImage(
+                                imageUrl: entry.value,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: 4,
+                              right: 14,
+                              child: GestureDetector(
+                                onTap: () => setState(
+                                  () => _existingImageUrls.removeAt(entry.key),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close_rounded,
+                                    size: 14,
+                                    color: WHITE,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
                       ..._images.asMap().entries.map((entry) {
                         return Stack(
                           children: [
@@ -604,9 +678,9 @@ class _SeatViewUploadPageState extends State<SeatViewUploadPage> {
                           color: WHITE,
                         ),
                       )
-                    : const Text(
-                        '좌석 시야 공유하기',
-                        style: TextStyle(
+                    : Text(
+                        _isEditing ? '수정 완료' : '좌석 시야 공유하기',
+                        style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
                         ),
@@ -614,6 +688,72 @@ class _SeatViewUploadPageState extends State<SeatViewUploadPage> {
               ),
             ),
           ),
+          if (isUploading)
+            Container(
+              color: Colors.black.withValues(alpha: 0.45),
+              child: Center(
+                child: Container(
+                  width: 240,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 24,
+                  ),
+                  decoration: BoxDecoration(
+                    color: WHITE,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 12,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: 64,
+                            height: 64,
+                            child: CircularProgressIndicator(
+                              value: uploadProgress > 0
+                                  ? uploadProgress / 100
+                                  : null,
+                              strokeWidth: 5,
+                              color: ACCENT_CORAL,
+                              backgroundColor: GRAYSCALE_LABEL_100,
+                            ),
+                          ),
+                          Text(
+                            '$uploadProgress%',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: GRAYSCALE_LABEL_950,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        uploadStatusText.isNotEmpty
+                            ? uploadStatusText
+                            : '사진 업로드 중...',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: GRAYSCALE_LABEL_900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
