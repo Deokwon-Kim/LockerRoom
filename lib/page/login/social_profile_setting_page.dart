@@ -117,7 +117,7 @@ class _SocialProfileSettingPageState extends State<SocialProfileSettingPage> {
 
       await userDoc.set({
         'userNickName': _nickNameController.text,
-        'name': nameToSave,
+        if (nameToSave.isNotEmpty) 'name': nameToSave,
         'isProfileCompleted': true,
       }, SetOptions(merge: true));
 
@@ -296,9 +296,7 @@ class _SocialProfileSettingPageState extends State<SocialProfileSettingPage> {
     final hasError =
         !isValid && !focusNode.hasFocus && controller.text.isNotEmpty;
     final showErrorText =
-        errorText != null &&
-        errorText.isNotEmpty &&
-        controller.text.isNotEmpty;
+        errorText != null && errorText.isNotEmpty && controller.text.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,10 +329,7 @@ class _SocialProfileSettingPageState extends State<SocialProfileSettingPage> {
                 }
               },
           onChanged: onChanged,
-          style: const TextStyle(
-            fontSize: 15,
-            color: GRAYSCALE_LABEL_950,
-          ),
+          style: const TextStyle(fontSize: 15, color: GRAYSCALE_LABEL_950),
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: const TextStyle(
@@ -368,10 +363,7 @@ class _SocialProfileSettingPageState extends State<SocialProfileSettingPage> {
         ),
         if (statusWidget != null) ...[
           const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: statusWidget,
-          ),
+          Padding(padding: const EdgeInsets.only(left: 4), child: statusWidget),
         ] else if (showErrorText) ...[
           const SizedBox(height: 6),
           Padding(

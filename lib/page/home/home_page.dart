@@ -125,8 +125,8 @@ class _HomePageState extends State<HomePage> {
           _maybeFetchVideos(teamProvider.selectedTeam!);
         }
         final statusBarHeight = MediaQuery.of(context).padding.top;
-        const headerContentHeight = 84.0;
-        const overlapHeight = 24.0;
+        const headerContentHeight = 64.0;
+        const overlapHeight = 20.0;
         final totalHeaderHeight =
             statusBarHeight + headerContentHeight + overlapHeight;
 
@@ -140,29 +140,106 @@ class _HomePageState extends State<HomePage> {
             backgroundColor: BACKGROUND_COLOR,
             body: Stack(
               children: [
-                // 1. 상단 팀 헤더 이미지 (배경 + 다크 그라데이션 오버레이)
+                // 1. 상단 팀 컬러 멀티-스톱 그라데이션 헤더 (메쉬 글로우 + 새틴 광택)
                 Positioned(
                   top: 0,
                   left: 0,
                   right: 0,
                   height: totalHeaderHeight,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.asset(selectedTeam.headers, fit: BoxFit.cover),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.25),
-                              Colors.black.withValues(alpha: 0.55),
+                  child: ClipRect(
+                    child: Builder(
+                      builder: (context) {
+                        final hsl = HSLColor.fromColor(selectedTeam.color);
+                        final topHighlight = hsl
+                            .withLightness(
+                              (hsl.lightness + 0.14).clamp(0.18, 0.48),
+                            )
+                            .withSaturation(
+                              (hsl.saturation + 0.08).clamp(0.15, 0.9),
+                            )
+                            .toColor();
+                        final midTone =
+                            Color.lerp(selectedTeam.color, BUTTON, 0.25) ??
+                            selectedTeam.color;
+                        final deepShadow =
+                            Color.lerp(
+                              selectedTeam.color,
+                              const Color(0xFF0A0F1C),
+                              0.68,
+                            ) ??
+                            const Color(0xFF0A0F1C);
+
+                        return Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              stops: const [0.0, 0.48, 1.0],
+                              colors: [topHighlight, midTone, deepShadow],
+                            ),
+                          ),
+                          child: Stack(
+                            children: [
+                              // 우상단 메인 앰비언트 글로우
+                              Positioned(
+                                top: -55,
+                                right: -30,
+                                child: Container(
+                                  width: 200,
+                                  height: 200,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        WHITE.withValues(alpha: 0.20),
+                                        topHighlight.withValues(alpha: 0.08),
+                                        WHITE.withValues(alpha: 0.0),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // 좌하단 서브 컬러 글로우
+                              Positioned(
+                                bottom: -60,
+                                left: -24,
+                                child: Container(
+                                  width: 170,
+                                  height: 170,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        topHighlight.withValues(alpha: 0.22),
+                                        WHITE.withValues(alpha: 0.0),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // 대각선 새틴 하이라이트 레이어
+                              Positioned.fill(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: const Alignment(-0.8, -1.0),
+                                      end: const Alignment(0.9, 1.0),
+                                      stops: const [0.0, 0.35, 0.52, 1.0],
+                                      colors: [
+                                        WHITE.withValues(alpha: 0.0),
+                                        WHITE.withValues(alpha: 0.08),
+                                        WHITE.withValues(alpha: 0.0),
+                                        Colors.black.withValues(alpha: 0.14),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                      ),
-                    ],
+                        );
+                      },
+                    ),
                   ),
                 ),
 
@@ -315,7 +392,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
 
-                // 3. 앱바 콘텐츠 (로고, 팀명/슬로건, 글래스모피즘 알림 버튼)
+                // 3. 앱바 콘텐츠 (로고 카드, 팀명/구장, 알림 버튼)
                 Positioned(
                   top: statusBarHeight,
                   left: 16,
@@ -324,22 +401,26 @@ class _HomePageState extends State<HomePage> {
                   child: Row(
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
-                        padding: const EdgeInsets.all(6),
+                        width: 42,
+                        height: 42,
+                        padding: const EdgeInsets.all(5),
                         decoration: BoxDecoration(
-                          color: WHITE.withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: WHITE.withValues(alpha: 0.25),
-                          ),
+                          color: WHITE.withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(13),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.16),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Image.asset(
                           selectedTeam.logoPath,
                           fit: BoxFit.contain,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 11),
                       Expanded(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -352,9 +433,9 @@ class _HomePageState extends State<HomePage> {
                                     selectedTeam.name,
                                     style: const TextStyle(
                                       color: WHITE,
-                                      fontSize: 19,
+                                      fontSize: 17.5,
                                       fontWeight: FontWeight.w800,
-                                      letterSpacing: -0.4,
+                                      letterSpacing: -0.5,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -362,18 +443,22 @@ class _HomePageState extends State<HomePage> {
                                 const SizedBox(width: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 7,
+                                    horizontal: 6.5,
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: WHITE.withValues(alpha: 0.22),
+                                    color: WHITE.withValues(alpha: 0.18),
                                     borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: WHITE.withValues(alpha: 0.28),
+                                      width: 0.8,
+                                    ),
                                   ),
                                   child: const Text(
                                     'MY TEAM',
                                     style: TextStyle(
                                       color: WHITE,
-                                      fontSize: 9,
+                                      fontSize: 8.5,
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 0.5,
                                     ),
@@ -381,24 +466,40 @@ class _HomePageState extends State<HomePage> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 3),
-                            Text(
-                              '오늘도 승리의 함성을 함께해요!',
-                              style: TextStyle(
-                                color: WHITE.withValues(alpha: 0.85),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on_rounded,
+                                  size: 12,
+                                  color: WHITE.withValues(alpha: 0.78),
+                                ),
+                                const SizedBox(width: 3),
+                                Flexible(
+                                  child: Text(
+                                    '${selectedTeam.stadium} · 오늘도 승리의 함성을!',
+                                    style: TextStyle(
+                                      color: WHITE.withValues(alpha: 0.84),
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: -0.2,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Consumer<NotificationProvider>(
                         builder: (context, ntp, child) {
                           return badges.Badge(
                             position: badges.BadgePosition.topEnd(
-                              top: -2,
-                              end: -2,
+                              top: -3,
+                              end: -3,
                             ),
                             badgeAnimation: const badges.BadgeAnimation.slide(
                               animationDuration: Duration(milliseconds: 300),
@@ -417,22 +518,22 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ),
                             child: InkWell(
-                              borderRadius: BorderRadius.circular(22),
+                              borderRadius: BorderRadius.circular(12),
                               onTap: () => Navigator.pushNamed(context, '알림센터'),
                               child: Container(
-                                width: 40,
-                                height: 40,
+                                width: 38,
+                                height: 38,
                                 decoration: BoxDecoration(
-                                  color: WHITE.withValues(alpha: 0.16),
-                                  shape: BoxShape.circle,
+                                  color: WHITE.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: WHITE.withValues(alpha: 0.25),
+                                    color: WHITE.withValues(alpha: 0.24),
                                   ),
                                 ),
                                 child: const Icon(
-                                  CupertinoIcons.bell,
+                                  CupertinoIcons.bell_fill,
                                   color: WHITE,
-                                  size: 20,
+                                  size: 18,
                                 ),
                               ),
                             ),
@@ -964,6 +1065,27 @@ class _HomePageState extends State<HomePage> {
                                     color: GRAYSCALE_LABEL_500,
                                   ),
                                 ),
+                                if (activeGame.gameType.trim().isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: teamColor.withValues(alpha: 0.10),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      activeGame.gameType.trim(),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: teamColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ] else if (isPpd) ...[
                                 Text(
                                   'VS',
@@ -1000,6 +1122,27 @@ class _HomePageState extends State<HomePage> {
                                     color: GRAYSCALE_LABEL_500,
                                   ),
                                 ),
+                                if (activeGame.gameType.trim().isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: teamColor.withValues(alpha: 0.10),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      activeGame.gameType.trim(),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: teamColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ] else ...[
                                 Text(
                                   DateFormat(
@@ -1033,6 +1176,27 @@ class _HomePageState extends State<HomePage> {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
+                                if (activeGame.gameType.trim().isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: teamColor.withValues(alpha: 0.10),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      activeGame.gameType.trim(),
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                        color: teamColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ],
                           ),
@@ -2674,7 +2838,9 @@ class _HomePageState extends State<HomePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const IntutionRecordUploadPage(),
+                              builder: (_) => const IntutionRecordUploadPage(
+                                navigateToListOnSave: true,
+                              ),
                             ),
                           );
                         },

@@ -4,26 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/model/team_news_model.dart';
+import 'package:lockerroom/page/news/team_news_detail_page.dart';
 import 'package:lockerroom/page/news/team_news_list_page.dart';
 import 'package:lockerroom/provider/team_news_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-/// 기사 원문을 인앱 브라우저로 열기 (미지원 시 외부 브라우저 폴백)
+/// 기사 원문을 앱 내부 상세 페이지(WebView)로 열기
 Future<void> openNewsArticle(
   BuildContext context,
   TeamNewsModel article,
 ) async {
-  final uri = Uri.tryParse(article.url);
-  if (uri == null) return;
-  try {
-    final launched = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-    if (!launched) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  } catch (_) {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
+  if (article.url.trim().isEmpty) return;
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => TeamNewsDetailPage(article: article),
+    ),
+  );
 }
 
 class NewsCategoryBadge extends StatelessWidget {
@@ -35,28 +32,38 @@ class NewsCategoryBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color fg;
     final Color bg;
+    final Color border;
     switch (category) {
       case NewsCategory.game:
         fg = const Color(0xFF1D4ED8);
-        bg = const Color(0xFFDBEAFE);
+        bg = const Color(0xFFEFF6FF);
+        border = const Color(0xFFBFDBFE);
       case NewsCategory.transfer:
         fg = const Color(0xFFBE123C);
-        bg = const Color(0xFFFFE4E6);
+        bg = const Color(0xFFFFF1F2);
+        border = const Color(0xFFFECDD3);
       case NewsCategory.player:
       case NewsCategory.all:
         fg = const Color(0xFFB45309);
-        bg = const Color(0xFFFEF3C7);
+        bg = const Color(0xFFFFFBEB);
+        border = const Color(0xFFFDE68A);
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: border, width: 0.8),
       ),
       child: Text(
         category.label,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: fg),
+        style: TextStyle(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+          color: fg,
+          height: 1.1,
+        ),
       ),
     );
   }
@@ -127,8 +134,19 @@ class _TeamNewsSectionState extends State<TeamNewsSection> {
             children: [
               Row(
                 children: [
+                  Container(
+                    width: 26,
+                    height: 26,
+                    padding: const EdgeInsets.all(3.5),
+                    decoration: BoxDecoration(
+                      color: teamColor.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Image.asset(team.logoPath, fit: BoxFit.contain),
+                  ),
+                  const SizedBox(width: 8),
                   Text(
-                    '📰 ${team.symplename} 주요뉴스',
+                    '${team.symplename} 주요뉴스',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -139,7 +157,7 @@ class _TeamNewsSectionState extends State<TeamNewsSection> {
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 7,
-                      vertical: 2,
+                      vertical: 2.5,
                     ),
                     decoration: BoxDecoration(
                       color: teamColor,
@@ -148,8 +166,9 @@ class _TeamNewsSectionState extends State<TeamNewsSection> {
                     child: const Text(
                       'LIVE',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 9.5,
                         fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
                         color: WHITE,
                       ),
                     ),
@@ -164,24 +183,34 @@ class _TeamNewsSectionState extends State<TeamNewsSection> {
                         ),
                       );
                     },
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '전체보기',
-                          style: TextStyle(
-                            color: GRAYSCALE_LABEL_500,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: GRAYSCALE_LABEL_50,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '전체보기',
+                            style: TextStyle(
+                              color: GRAYSCALE_LABEL_600,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        SizedBox(width: 2),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          color: GRAYSCALE_LABEL_400,
-                          size: 11,
-                        ),
-                      ],
+                          SizedBox(width: 2),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: GRAYSCALE_LABEL_400,
+                            size: 10,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -310,11 +339,11 @@ class _RollingNewsCardState extends State<_RollingNewsCard> {
       onTap: () => openNewsArticle(context, article),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
         decoration: BoxDecoration(
           color: BACKGROUND_COLOR,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: GRAYSCALE_LABEL_200),
+          border: Border.all(color: GRAYSCALE_LABEL_100),
         ),
         child: ClipRect(
           child: AnimatedSwitcher(
@@ -352,30 +381,41 @@ class _RollingNewsCardState extends State<_RollingNewsCard> {
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 fontSize: 11,
+                                fontWeight: FontWeight.w500,
                                 color: GRAYSCALE_LABEL_500,
                               ),
                             ),
                           ),
-                          Text(
-                            '${_currentIndex + 1}/${widget.articles.length}',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: widget.teamColor,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: widget.teamColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '${_currentIndex + 1}/${widget.articles.length}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: widget.teamColor,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 7),
                       Text(
                         article.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.w700,
                           color: GRAYSCALE_LABEL_950,
-                          height: 1.35,
+                          height: 1.38,
                         ),
                       ),
                     ],

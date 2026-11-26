@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/bottom_tab_bar/bottom_tab_bar.dart';
-import 'package:lockerroom/components/theme_tile.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/team_model.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -106,122 +106,264 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
       orElse: () => selectableTeams[0],
     );
     final otherTeams = selectableTeams.where((t) => t != featuredTeam).toList();
-    final isFeaturedSelected = selectedTeam == featuredTeam;
-    final canSubmit = selectedTeam != null && !_isSaving;
+    final List<TeamModel> dockTeams = [...otherTeams, featuredTeam];
+    final TeamModel displayTeam =
+        selectedTeam ?? (dockTeams.isNotEmpty ? dockTeams.first : featuredTeam);
+    final bool canSubmit = selectedTeam != null && !_isSaving;
 
     return Scaffold(
       backgroundColor: BACKGROUND_COLOR,
-      appBar: widget.isChanging
-          ? AppBar(
-              backgroundColor: BACKGROUND_COLOR,
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  size: 20,
-                  color: GRAYSCALE_LABEL_900,
-                ),
-                onPressed: () => Navigator.pop(context),
-              ),
-            )
-          : null,
       body: SafeArea(
         child: Column(
           children: [
-            SizedBox(height: widget.isChanging ? 4 : 28),
-            const Text(
-              '응원하는 팀을 선택해주세요',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: GRAYSCALE_LABEL_950,
-                letterSpacing: -0.4,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              '선택한 팀의 소식을 가장 먼저 받아보세요',
-              style: TextStyle(
-                fontSize: 14,
-                color: GRAYSCALE_LABEL_600,
-                letterSpacing: -0.2,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: GestureDetector(
-                onTap: () =>
-                    context.read<TeamProvider>().selectTeam(featuredTeam),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  height: 112,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: featuredTeam.color,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isFeaturedSelected
-                          ? const Color(0xFFFFBC02)
-                          : Colors.transparent,
-                      width: 3,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: isFeaturedSelected ? 0.12 : 0.05,
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (widget.isChanging)
+                    Positioned(
+                      left: 4,
+                      top: 0,
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 20,
+                          color: GRAYSCALE_LABEL_900,
                         ),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
+                  const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '응원하는 팀을 선택해주세요',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: GRAYSCALE_LABEL_950,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        '선택한 팀의 소식을 가장 먼저 받아보세요',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: GRAYSCALE_LABEL_600,
+                          letterSpacing: -0.2,
+                        ),
                       ),
                     ],
                   ),
-                  child: Stack(
-                    children: [
-                      Center(
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // 상단 히어로 선택 카드
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      displayTeam.color,
+                      Color.lerp(displayTeam.color, Colors.black, 0.35) ??
+                          displayTeam.color,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: displayTeam.color.withValues(alpha: 0.28),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        selectedTeam != null
+                            ? 'MY TEAM · ${displayTeam.stadium}'
+                            : 'PREVIEW · ${displayTeam.stadium}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: WHITE,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (displayTeam.name == '대한민국')
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.24),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(13),
+                          borderRadius: BorderRadius.circular(14),
                           child: Image.asset(
-                            featuredTeam.logoPath,
-                            width: double.infinity,
+                            displayTeam.logoPath,
+                            width: 136,
+                            height: 88,
                             fit: BoxFit.cover,
                           ),
                         ),
+                      )
+                    else
+                      Image.asset(
+                        displayTeam.logoPath,
+                        width: 92,
+                        height: 92,
+                        fit: BoxFit.contain,
                       ),
-                      if (isFeaturedSelected)
-                        const Positioned(
-                          top: 10,
-                          right: 10,
-                          child: Icon(
-                            Icons.check_circle_rounded,
-                            color: Color(0xFFFFBC02),
-                            size: 24,
-                          ),
-                        ),
-                    ],
-                  ),
+                    const SizedBox(height: 8),
+                    Text(
+                      displayTeam.name,
+                      style: const TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w900,
+                        color: WHITE,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '이 구단의 소식과 직관·퀴즈 테마가 적용됩니다',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: WHITE.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
+            // 하단 4열 원형/카드 아이콘 독 (노스크롤)
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                itemCount: otherTeams.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1,
-                ),
-                itemBuilder: (context, index) {
-                  final team = otherTeams[index];
-                  final isSelected = selectedTeam == team;
-                  return ThemeTile(
-                    teamModel: team,
-                    isSelected: isSelected,
-                    onTap: () => context.read<TeamProvider>().selectTeam(team),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  const int cols = 4;
+                  final int rows = (dockTeams.length / cols).ceil().clamp(1, 6);
+                  const double hPad = 16;
+                  const double crossSpacing = 9;
+                  const double mainSpacing = 9;
+                  const double bottomPad = 6;
+                  final double tileWidth =
+                      (constraints.maxWidth -
+                          hPad * 2 -
+                          crossSpacing * (cols - 1)) /
+                      cols;
+                  final double tileHeight =
+                      ((constraints.maxHeight -
+                                  bottomPad -
+                                  mainSpacing * (rows - 1)) /
+                              rows)
+                          .clamp(58.0, 140.0);
+                  final double ratio = (tileWidth / tileHeight).clamp(0.7, 1.8);
+                  final double iconSize = (tileHeight * 0.56).clamp(32.0, 52.0);
+
+                  return GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(
+                      hPad,
+                      0,
+                      hPad,
+                      bottomPad,
+                    ),
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: dockTeams.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: cols,
+                      crossAxisSpacing: crossSpacing,
+                      mainAxisSpacing: mainSpacing,
+                      childAspectRatio: ratio,
+                    ),
+                    itemBuilder: (context, index) {
+                      final team = dockTeams[index];
+                      final isSelected = selectedTeam == team;
+                      final isKorea = team.name == '대한민국';
+                      return GestureDetector(
+                        onTap: () =>
+                            context.read<TeamProvider>().selectTeam(team),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? team.color.withValues(alpha: 0.08)
+                                : WHITE,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected
+                                  ? team.color
+                                  : GRAYSCALE_LABEL_200,
+                              width: isSelected ? 2.2 : 1.2,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (isKorea)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Image.asset(
+                                    team.logoPath,
+                                    width: iconSize,
+                                    height: iconSize * 0.68,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              else
+                                Image.asset(
+                                  team.logoPath,
+                                  width: iconSize,
+                                  height: iconSize,
+                                  fit: BoxFit.contain,
+                                ),
+                              const SizedBox(height: 4),
+                              Text(
+                                team.symplename,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w700,
+                                  color: isSelected
+                                      ? team.color
+                                      : GRAYSCALE_LABEL_800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -230,18 +372,16 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               decoration: BoxDecoration(
                 color: BACKGROUND_COLOR,
-                border: Border(
-                  top: BorderSide(color: GRAYSCALE_LABEL_100),
-                ),
+                border: Border(top: BorderSide(color: GRAYSCALE_LABEL_100)),
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: canSubmit ? BUTTON : GRAYSCALE_LABEL_300,
+                  color: canSubmit ? selectedTeam.color : GRAYSCALE_LABEL_300,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: canSubmit
                       ? [
                           BoxShadow(
-                            color: BUTTON.withValues(alpha: 0.22),
+                            color: selectedTeam.color.withValues(alpha: 0.24),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -257,7 +397,7 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
                     borderRadius: BorderRadius.circular(14),
                     child: SizedBox(
                       width: double.infinity,
-                      height: 54,
+                      height: 52,
                       child: Center(
                         child: _isSaving
                             ? const SizedBox(
@@ -269,11 +409,13 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
                                 ),
                               )
                             : Text(
-                                widget.isChanging ? '변경하기' : '선택완료',
+                                selectedTeam != null
+                                    ? '${selectedTeam.name} ${widget.isChanging ? '변경하기' : '선택완료'}'
+                                    : '응원하는 팀을 선택해주세요',
                                 style: const TextStyle(
                                   color: WHITE,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.w700,
                                   letterSpacing: -0.2,
                                 ),
                               ),

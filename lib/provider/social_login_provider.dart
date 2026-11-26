@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -6,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' hide User;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class SocialLoginProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -347,34 +352,72 @@ class SocialLoginProvider extends ChangeNotifier {
     }
   }
 
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
+  }
+
+  Future<({OAuthCredential credential, AuthorizationCredentialAppleID appleId})>
+  _getAppleOAuthCredential() async {
+    final rawNonce = _generateNonce();
+    final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+    final appleId = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+      nonce: hashedNonce,
+    );
+
+    final idToken = appleId.identityToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'missing-apple-id-token',
+        message: 'Apple identityToken이 비어 있습니다.',
+      );
+    }
+
+    final credential = OAuthProvider('apple.com').credential(
+      idToken: idToken,
+      rawNonce: rawNonce,
+      accessToken: appleId.authorizationCode,
+    );
+
+    return (credential: credential, appleId: appleId);
+  }
+
   Future<void> signWithApple() async {
     try {
-      final appleProvider = AppleAuthProvider();
-      // 이름 정보를 요청하기 위해 스코프 추가
-      appleProvider.addScope('name');
-      appleProvider.addScope('email');
-
-      final userCredential = await FirebaseAuth.instance.signInWithProvider(
-        appleProvider,
+      final appleResult = await _getAppleOAuthCredential();
+      debugPrint(
+        '[APPLE_LOGIN] got credential: hasIdToken=${appleResult.appleId.identityToken != null}, '
+        'authCodeLen=${appleResult.appleId.authorizationCode.length}',
+      );
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        appleResult.credential,
+      );
+      debugPrint(
+        '[APPLE_LOGIN] signInWithCredential ok: uid=${userCredential.user?.uid}',
       );
 
       _currentUser = userCredential.user;
 
       if (_currentUser != null) {
-        // 애플로부터 받은 이름 정보가 있다면 프로필 업데이트
-        String fullName = '';
-        final profile = userCredential.additionalUserInfo?.profile;
-        debugPrint('Apple Profile Data: $profile');
-        if (profile != null && profile['name'] != null) {
-          // Apple은 firstName=이름(덕원), lastName=성(김) 형태로 전달
-          final String firstName = (profile['name']['firstName'] ?? '').toString().trim();
-          final String lastName = (profile['name']['lastName'] ?? '').toString().trim();
-          // 한국식 순서: 성(lastName) + 이름(firstName)
-          fullName = '$lastName$firstName'.replaceAll(' ', '');
-        }
+        // Apple은 최초 로그인 시에만 givenName / familyName을 전달
+        final firstName = (appleResult.appleId.givenName ?? '').trim();
+        final lastName = (appleResult.appleId.familyName ?? '').trim();
+        String fullName = '$lastName$firstName'.replaceAll(' ', '');
 
-        // profile에서 이름을 못 받았다면 displayName에서 추출 (서양식 → 한국식 변환)
-        if (fullName.isEmpty && _currentUser!.displayName != null && _currentUser!.displayName!.isNotEmpty) {
+        // 최초 이후 재로그인 등으로 이름이 비어있다면 displayName에서 추출 (서양식 → 한국식 변환)
+        if (fullName.isEmpty &&
+            _currentUser!.displayName != null &&
+            _currentUser!.displayName!.isNotEmpty) {
           fullName = _toKoreanNameOrder(_currentUser!.displayName!);
         }
 
@@ -434,11 +477,9 @@ class SocialLoginProvider extends ChangeNotifier {
       } on FirebaseAuthException catch (e) {
         if (e.code == 'requires-recent-login') {
           // 재인증 필요
-          final appleProvider = AppleAuthProvider();
-          final userCredential = await FirebaseAuth.instance.signInWithProvider(
-            appleProvider,
-          );
-          await userCredential.user?.delete();
+          final appleResult = await _getAppleOAuthCredential();
+          await user.reauthenticateWithCredential(appleResult.credential);
+          await user.delete();
         } else {
           rethrow;
         }
