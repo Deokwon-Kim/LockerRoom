@@ -57,6 +57,7 @@ import 'package:lockerroom/provider/schdule_Provider.dart';
 import 'package:lockerroom/provider/social_login_provider.dart';
 import 'package:lockerroom/provider/tab_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/theme_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
 import 'package:lockerroom/provider/video_provider.dart';
@@ -209,12 +210,16 @@ Future<void> main() async {
           ChangeNotifierProvider(create: (context) => QuizRankingProvider()),
           ChangeNotifierProvider(create: (context) => BadgeProvider()),
           ChangeNotifierProvider(create: (context) => MeetupProvider()),
-          ChangeNotifierProvider(create: (_) => ScheduleProvider()..load()),
+          ChangeNotifierProvider(
+            lazy: false,
+            create: (_) => ScheduleProvider()..load(),
+          ),
           ChangeNotifierProvider(create: (context) => TabProvider()),
           ChangeNotifierProvider(create: (context) => ChatProvider()),
           ChangeNotifierProvider(create: (context) => WeatherProvider()),
           ChangeNotifierProvider(create: (context) => TeamNewsProvider()),
           ChangeNotifierProvider(create: (context) => SeatViewProvider()),
+          ChangeNotifierProvider(create: (_) => ThemeProvider()..load()),
         ],
         child: const MyApp(),
       ),
@@ -250,14 +255,12 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = context.watch<ThemeProvider>().themeMode;
     return ToastificationWrapper(
       child: MaterialApp(
-        theme: ThemeData(
-          fontFamily: 'Pretendard',
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          splashFactory: NoSplash.splashFactory,
-        ),
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: themeMode,
         navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
         title: 'Flutter Demo',

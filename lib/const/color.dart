@@ -112,3 +112,97 @@ const RECOMMEND_BACKGROUND = Color(0xFFE4F0FF);
 const FIND_PARK_BACKGROUND = Color(0xFFEAF7EB);
 const MY_RECORD_BACKGROUND = Color(0xFFFEF3F3);
 const STORE_IMAGE_BUTTON = Color(0xFF4B70A6);
+
+// DARK THEME PALETTE
+const DARK_BACKGROUND_COLOR = Color(0xFF0B1020);
+const DARK_CARD_COLOR = Color(0xFF141B2D);
+const DARK_SURFACE_ALT_COLOR = Color(0xFF1E293B);
+const DARK_BORDER_COLOR = Color(0xFF26324A);
+const DARK_TEXT_PRIMARY = Color(0xFFF8FAFC);
+const DARK_TEXT_SECONDARY = Color(0xFF94A3B8);
+
+extension AppThemeColors on BuildContext {
+  bool get isDarkMode => Theme.of(this).brightness == Brightness.dark;
+  String get appLogoAsset => isDarkMode
+      ? 'assets/images/applogo/ilu_app_icon_dark.png'
+      : 'assets/images/applogo/ilu_app_icon.png';
+  Color get bgColor => isDarkMode ? DARK_BACKGROUND_COLOR : BACKGROUND_COLOR;
+  Color get cardColor => isDarkMode ? DARK_CARD_COLOR : WHITE;
+  Color get surfaceAltColor =>
+      isDarkMode ? DARK_SURFACE_ALT_COLOR : GRAYSCALE_LABEL_100;
+  Color get textPrimary => isDarkMode ? DARK_TEXT_PRIMARY : GRAYSCALE_LABEL_950;
+  Color get textSecondary =>
+      isDarkMode ? DARK_TEXT_SECONDARY : GRAYSCALE_LABEL_600;
+  Color get textMuted => isDarkMode ? DARK_TEXT_SECONDARY : GRAYSCALE_LABEL_500;
+  Color get borderColor => isDarkMode ? DARK_BORDER_COLOR : GRAYSCALE_LABEL_200;
+  Color get dividerColor =>
+      isDarkMode ? DARK_BORDER_COLOR : GRAYSCALE_LABEL_100;
+
+  /// 다크모드에서 어두운 구단 컬러(두산, KT, 롯데, 키움 등)가 배경에 묻히지 않도록
+  /// 명도를 보정한 읽기 쉬운 전경색을 반환합니다.
+  Color readableColor(Color color) {
+    if (!isDarkMode) return color;
+    if (color.computeLuminance() < 0.22) {
+      return Color.lerp(color, WHITE, 0.72) ?? DARK_TEXT_PRIMARY;
+    }
+    return color;
+  }
+}
+
+class AppTheme {
+  static ThemeData light() {
+    return ThemeData(
+      brightness: Brightness.light,
+      fontFamily: 'Pretendard',
+      scaffoldBackgroundColor: BACKGROUND_COLOR,
+      cardColor: WHITE,
+      dividerColor: GRAYSCALE_LABEL_100,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      splashFactory: NoSplash.splashFactory,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: BACKGROUND_COLOR,
+        foregroundColor: GRAYSCALE_LABEL_950,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      dialogTheme: const DialogThemeData(backgroundColor: WHITE),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: GRAYSCALE_LABEL_50,
+      ),
+      colorScheme: const ColorScheme.light(
+        primary: BUTTON,
+        secondary: ACCENT_CORAL,
+        surface: WHITE,
+      ),
+    );
+  }
+
+  static ThemeData dark() {
+    return ThemeData(
+      brightness: Brightness.dark,
+      fontFamily: 'Pretendard',
+      scaffoldBackgroundColor: DARK_BACKGROUND_COLOR,
+      cardColor: DARK_CARD_COLOR,
+      dividerColor: DARK_BORDER_COLOR,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      splashFactory: NoSplash.splashFactory,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: DARK_BACKGROUND_COLOR,
+        foregroundColor: DARK_TEXT_PRIMARY,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      dialogTheme: const DialogThemeData(backgroundColor: DARK_CARD_COLOR),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: DARK_CARD_COLOR,
+      ),
+      colorScheme: const ColorScheme.dark(
+        primary: ACCENT_CORAL,
+        secondary: ACCENT_CORAL,
+        surface: DARK_CARD_COLOR,
+      ),
+    );
+  }
+}
