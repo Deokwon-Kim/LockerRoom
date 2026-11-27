@@ -12,6 +12,7 @@ import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/notification_provider.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/provider/theme_provider.dart';
 import 'package:lockerroom/services/navigation_service.dart';
 import 'package:lockerroom/services/kbo_migration_service.dart';
 import 'package:lockerroom/page/admin/admin_game_page.dart';
@@ -33,15 +34,17 @@ class SettingPage extends StatelessWidget {
         ) ??
         false;
 
+    final themeProvider = context.watch<ThemeProvider>();
+
     return Scaffold(
-      backgroundColor: WHITE,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: WHITE,
+        backgroundColor: context.bgColor,
         centerTitle: true,
         title: Text(
           '설정',
           style: TextStyle(
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -54,10 +57,49 @@ class SettingPage extends StatelessWidget {
           child: Column(
             children: [
               Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: context.cardColor,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: context.borderColor),
+                ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    activeThumbColor: ACCENT_CORAL,
+                    title: Text(
+                      '🌙 다크 모드',
+                      style: TextStyle(
+                        color: context.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    subtitle: Text(
+                      themeProvider.isDarkMode
+                          ? '어두운 다크 테마가 적용되어 있어요'
+                          : '밝은 라이트 테마가 적용되어 있어요',
+                      style: TextStyle(
+                        color: context.textSecondary,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    value: themeProvider.isDarkMode,
+                    onChanged: themeProvider.toggleDarkMode,
+                  ),
+                ),
+              ),
+              Container(
                 padding: EdgeInsets.symmetric(vertical: 5),
                 decoration: BoxDecoration(
-                  color: GRAYSCALE_LABEL_50,
+                  color: context.cardColor,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.borderColor),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.only(left: 20.0),
@@ -73,7 +115,7 @@ class SettingPage extends StatelessWidget {
                             Text(
                               '이름 변경',
                               style: TextStyle(
-                                color: GRAYSCALE_LABEL_950,
+                                color: context.textPrimary,
                                 fontSize: 16,
                               ),
                             ),
@@ -83,7 +125,7 @@ class SettingPage extends StatelessWidget {
                               },
                               icon: Icon(
                                 Icons.arrow_forward_ios_rounded,
-                                color: GRAYSCALE_LABEL_950,
+                                color: context.textPrimary,
                                 size: 16,
                               ),
                             ),
@@ -100,7 +142,7 @@ class SettingPage extends StatelessWidget {
                             Text(
                               '닉네임 변경',
                               style: TextStyle(
-                                color: GRAYSCALE_LABEL_950,
+                                color: context.textPrimary,
                                 fontSize: 16,
                               ),
                             ),
@@ -110,7 +152,7 @@ class SettingPage extends StatelessWidget {
                               },
                               icon: Icon(
                                 Icons.arrow_forward_ios_rounded,
-                                color: GRAYSCALE_LABEL_950,
+                                color: context.textPrimary,
                                 size: 16,
                               ),
                             ),
@@ -128,7 +170,7 @@ class SettingPage extends StatelessWidget {
                               Text(
                                 '비밀번호 변경',
                                 style: TextStyle(
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   fontSize: 16,
                                 ),
                               ),
@@ -138,7 +180,7 @@ class SettingPage extends StatelessWidget {
                                 },
                                 icon: Icon(
                                   Icons.arrow_forward_ios_rounded,
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   size: 16,
                                 ),
                               ),
@@ -154,14 +196,16 @@ class SettingPage extends StatelessWidget {
                                   TeamSelectPage(isChanging: true),
                             ),
                           );
-
-                          toastification.show(
-                            context: context,
-                            type: ToastificationType.success,
-                            alignment: Alignment.bottomCenter,
-                            autoCloseDuration: const Duration(seconds: 2),
-                            title: Text('팀이 변경되었습니다: $changed'),
-                          );
+                          if (!context.mounted) return;
+                          if (changed is String && changed.isNotEmpty) {
+                            toastification.show(
+                              context: context,
+                              type: ToastificationType.success,
+                              alignment: Alignment.bottomCenter,
+                              autoCloseDuration: const Duration(seconds: 2),
+                              title: Text('팀이 변경되었습니다: $changed'),
+                            );
+                          }
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -169,33 +213,14 @@ class SettingPage extends StatelessWidget {
                             Text(
                               '응원팀 변경',
                               style: TextStyle(
-                                color: GRAYSCALE_LABEL_950,
+                                color: context.textPrimary,
                                 fontSize: 16,
                               ),
                             ),
-                            IconButton(
-                              onPressed: () async {
-                                final changed = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        TeamSelectPage(isChanging: true),
-                                  ),
-                                );
-
-                                toastification.show(
-                                  context: context,
-                                  type: ToastificationType.success,
-                                  alignment: Alignment.bottomCenter,
-                                  autoCloseDuration: const Duration(seconds: 2),
-                                  title: Text('팀이 변경되었습니다: $changed'),
-                                );
-                              },
-                              icon: Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                color: GRAYSCALE_LABEL_950,
-                                size: 16,
-                              ),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              color: context.textPrimary,
+                              size: 16,
                             ),
                           ],
                         ),
@@ -210,7 +235,7 @@ class SettingPage extends StatelessWidget {
                             Text(
                               '좋아요',
                               style: TextStyle(
-                                color: GRAYSCALE_LABEL_950,
+                                color: context.textPrimary,
                                 fontSize: 16,
                               ),
                             ),
@@ -220,7 +245,7 @@ class SettingPage extends StatelessWidget {
                               },
                               icon: Icon(
                                 Icons.arrow_forward_ios_rounded,
-                                color: GRAYSCALE_LABEL_950,
+                                color: context.textPrimary,
                                 size: 16,
                               ),
                             ),
@@ -235,7 +260,7 @@ class SettingPage extends StatelessWidget {
               Container(
                 padding: EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: GRAYSCALE_LABEL_50,
+                  color: context.cardColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Padding(
@@ -246,7 +271,7 @@ class SettingPage extends StatelessWidget {
                       Text(
                         '전체 알림',
                         style: TextStyle(
-                          color: GRAYSCALE_LABEL_950,
+                          color: context.textPrimary,
                           fontSize: 16,
                         ),
                       ),
@@ -271,7 +296,7 @@ class SettingPage extends StatelessWidget {
               Container(
                 padding: EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: GRAYSCALE_LABEL_50,
+                  color: context.cardColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Padding(
@@ -282,14 +307,14 @@ class SettingPage extends StatelessWidget {
                       Text(
                         '버전',
                         style: TextStyle(
-                          color: GRAYSCALE_LABEL_950,
+                          color: context.textPrimary,
                           fontSize: 16,
                         ),
                       ),
                       Text(
                         '1.4.3',
                         style: TextStyle(
-                          color: GRAYSCALE_LABEL_950,
+                          color: context.textPrimary,
                           fontSize: 16,
                         ),
                       ),
@@ -303,7 +328,7 @@ class SettingPage extends StatelessWidget {
                 child: Container(
                   padding: EdgeInsets.symmetric(vertical: 5),
                   decoration: BoxDecoration(
-                    color: GRAYSCALE_LABEL_50,
+                    color: context.cardColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Padding(
@@ -320,7 +345,7 @@ class SettingPage extends StatelessWidget {
                               Text(
                                 '공지사항',
                                 style: TextStyle(
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   fontSize: 16,
                                 ),
                               ),
@@ -330,7 +355,7 @@ class SettingPage extends StatelessWidget {
                                 },
                                 icon: Icon(
                                   Icons.arrow_forward_ios_rounded,
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   size: 16,
                                 ),
                               ),
@@ -352,7 +377,7 @@ class SettingPage extends StatelessWidget {
                               Text(
                                 '직관기록',
                                 style: TextStyle(
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   fontSize: 16,
                                 ),
                               ),
@@ -368,7 +393,7 @@ class SettingPage extends StatelessWidget {
                                 },
                                 icon: Icon(
                                   Icons.arrow_forward_ios_rounded,
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   size: 16,
                                 ),
                               ),
@@ -385,7 +410,7 @@ class SettingPage extends StatelessWidget {
                               Text(
                                 '고객센터',
                                 style: TextStyle(
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   fontSize: 16,
                                 ),
                               ),
@@ -395,7 +420,7 @@ class SettingPage extends StatelessWidget {
                                 },
                                 icon: Icon(
                                   Icons.arrow_forward_ios_rounded,
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   size: 16,
                                 ),
                               ),
@@ -412,7 +437,7 @@ class SettingPage extends StatelessWidget {
                               Text(
                                 '이용약관',
                                 style: TextStyle(
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   fontSize: 16,
                                 ),
                               ),
@@ -422,7 +447,7 @@ class SettingPage extends StatelessWidget {
                                 },
                                 icon: Icon(
                                   Icons.arrow_forward_ios_rounded,
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   size: 16,
                                 ),
                               ),
@@ -439,7 +464,7 @@ class SettingPage extends StatelessWidget {
                               Text(
                                 '개인정보 처리방침',
                                 style: TextStyle(
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   fontSize: 16,
                                 ),
                               ),
@@ -449,7 +474,7 @@ class SettingPage extends StatelessWidget {
                                 },
                                 icon: Icon(
                                   Icons.arrow_forward_ios_rounded,
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   size: 16,
                                 ),
                               ),
@@ -466,7 +491,7 @@ class SettingPage extends StatelessWidget {
                               Text(
                                 '사용자 차단 목록',
                                 style: TextStyle(
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   fontSize: 16,
                                 ),
                               ),
@@ -476,7 +501,7 @@ class SettingPage extends StatelessWidget {
                                 },
                                 icon: Icon(
                                   Icons.arrow_forward_ios_rounded,
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   size: 16,
                                 ),
                               ),

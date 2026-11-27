@@ -17,9 +17,7 @@ Future<void> openNewsArticle(
   if (article.url.trim().isEmpty) return;
   await Navigator.push(
     context,
-    MaterialPageRoute(
-      builder: (_) => TeamNewsDetailPage(article: article),
-    ),
+    MaterialPageRoute(builder: (_) => TeamNewsDetailPage(article: article)),
   );
 }
 
@@ -118,9 +116,9 @@ class _TeamNewsSectionState extends State<TeamNewsSection> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: WHITE,
+            color: context.cardColor,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: GRAYSCALE_LABEL_100),
+            border: Border.all(color: context.borderColor),
             boxShadow: [
               BoxShadow(
                 color: BLACK.withValues(alpha: 0.04),
@@ -147,10 +145,10 @@ class _TeamNewsSectionState extends State<TeamNewsSection> {
                   const SizedBox(width: 8),
                   Text(
                     '${team.symplename} 주요뉴스',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
-                      color: BLACK,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(width: 6),
@@ -189,24 +187,24 @@ class _TeamNewsSectionState extends State<TeamNewsSection> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: GRAYSCALE_LABEL_50,
+                        color: context.surfaceAltColor,
                         borderRadius: BorderRadius.circular(999),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             '전체보기',
                             style: TextStyle(
-                              color: GRAYSCALE_LABEL_600,
+                              color: context.textSecondary,
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          SizedBox(width: 2),
+                          const SizedBox(width: 2),
                           Icon(
                             Icons.arrow_forward_ios_rounded,
-                            color: GRAYSCALE_LABEL_400,
+                            color: context.textMuted,
                             size: 10,
                           ),
                         ],
@@ -341,9 +339,9 @@ class _RollingNewsCardState extends State<_RollingNewsCard> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
         decoration: BoxDecoration(
-          color: BACKGROUND_COLOR,
+          color: context.surfaceAltColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: GRAYSCALE_LABEL_100),
+          border: Border.all(color: context.borderColor),
         ),
         child: ClipRect(
           child: AnimatedSwitcher(
@@ -379,10 +377,10 @@ class _RollingNewsCardState extends State<_RollingNewsCard> {
                             child: Text(
                               '${article.source} · ${article.relativeTimeText}',
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
-                                color: GRAYSCALE_LABEL_500,
+                                color: context.textMuted,
                               ),
                             ),
                           ),
@@ -392,7 +390,9 @@ class _RollingNewsCardState extends State<_RollingNewsCard> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: widget.teamColor.withValues(alpha: 0.1),
+                              color: context
+                                  .readableColor(widget.teamColor)
+                                  .withValues(alpha: 0.14),
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
@@ -400,7 +400,7 @@ class _RollingNewsCardState extends State<_RollingNewsCard> {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
-                                color: widget.teamColor,
+                                color: context.readableColor(widget.teamColor),
                               ),
                             ),
                           ),
@@ -411,10 +411,10 @@ class _RollingNewsCardState extends State<_RollingNewsCard> {
                         article.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
-                          color: GRAYSCALE_LABEL_950,
+                          color: context.textPrimary,
                           height: 1.38,
                         ),
                       ),
@@ -422,10 +422,10 @@ class _RollingNewsCardState extends State<_RollingNewsCard> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
                   size: 18,
-                  color: GRAYSCALE_LABEL_400,
+                  color: context.textMuted,
                 ),
               ],
             ),

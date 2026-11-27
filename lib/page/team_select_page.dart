@@ -17,6 +17,8 @@ class TeamSelectPage extends StatefulWidget {
 
 class _TeamSelectPageState extends State<TeamSelectPage> {
   bool _isSaving = false;
+  TeamModel? _pendingTeam;
+  bool _initialized = false;
 
   Future<void> _selectTeam(BuildContext context, String teamName) async {
     if (_isSaving) return;
@@ -62,16 +64,15 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
   Widget build(BuildContext context) {
     final teamProvider = Provider.of<TeamProvider>(context).getTeam('team');
     final teamState = context.watch<TeamProvider>();
-    final selectedTeam = teamState.selectedTeam;
-
-    if (widget.isChanging && selectedTeam == null && teamState.team != null) {
-      final initial = teamState.findTeamByName(teamState.team!);
-      if (initial != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          context.read<TeamProvider>().selectTeam(initial);
-        });
-      }
+    if (!_initialized) {
+      _initialized = true;
+      _pendingTeam =
+          teamState.selectedTeam ??
+          (teamState.team != null
+              ? teamState.findTeamByName(teamState.team!)
+              : null);
     }
+    final selectedTeam = _pendingTeam;
 
     final excludedTeamNames = <String>[
       '일본',
@@ -112,7 +113,7 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
     final bool canSubmit = selectedTeam != null && !_isSaving;
 
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -127,15 +128,15 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
                       left: 4,
                       top: 0,
                       child: IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.arrow_back_ios_new_rounded,
                           size: 20,
-                          color: GRAYSCALE_LABEL_900,
+                          color: context.textPrimary,
                         ),
                         onPressed: () => Navigator.pop(context),
                       ),
                     ),
-                  const Column(
+                  Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
@@ -143,16 +144,16 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
-                          color: GRAYSCALE_LABEL_950,
+                          color: context.textPrimary,
                           letterSpacing: -0.4,
                         ),
                       ),
-                      SizedBox(height: 3),
+                      const SizedBox(height: 3),
                       Text(
                         '선택한 팀의 소식을 가장 먼저 받아보세요',
                         style: TextStyle(
                           fontSize: 12.5,
-                          color: GRAYSCALE_LABEL_600,
+                          color: context.textSecondary,
                           letterSpacing: -0.2,
                         ),
                       ),
@@ -308,19 +309,20 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
                       final isSelected = selectedTeam == team;
                       final isKorea = team.name == '대한민국';
                       return GestureDetector(
-                        onTap: () =>
-                            context.read<TeamProvider>().selectTeam(team),
+                        onTap: () => setState(() => _pendingTeam = team),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 160),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? team.color.withValues(alpha: 0.08)
-                                : WHITE,
+                                ? context
+                                      .readableColor(team.color)
+                                      .withValues(alpha: 0.14)
+                                : context.cardColor,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isSelected
-                                  ? team.color
-                                  : GRAYSCALE_LABEL_200,
+                                  ? context.readableColor(team.color)
+                                  : context.borderColor,
                               width: isSelected ? 2.2 : 1.2,
                             ),
                           ),
@@ -355,8 +357,8 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
                                       ? FontWeight.w800
                                       : FontWeight.w700,
                                   color: isSelected
-                                      ? team.color
-                                      : GRAYSCALE_LABEL_800,
+                                      ? context.readableColor(team.color)
+                                      : context.textSecondary,
                                 ),
                               ),
                             ],
@@ -371,12 +373,12 @@ class _TeamSelectPageState extends State<TeamSelectPage> {
             Container(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               decoration: BoxDecoration(
-                color: BACKGROUND_COLOR,
-                border: Border(top: BorderSide(color: GRAYSCALE_LABEL_100)),
+                color: context.bgColor,
+                border: Border(top: BorderSide(color: context.dividerColor)),
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: canSubmit ? selectedTeam.color : GRAYSCALE_LABEL_300,
+                  color: canSubmit ? selectedTeam.color : context.borderColor,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: canSubmit
                       ? [

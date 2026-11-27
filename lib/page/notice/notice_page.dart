@@ -71,18 +71,18 @@ class _NoticePageState extends State<NoticePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: WHITE,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: WHITE,
+        backgroundColor: context.bgColor,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: GRAYSCALE_LABEL_950),
+          icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           "공지사항",
           style: TextStyle(
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),

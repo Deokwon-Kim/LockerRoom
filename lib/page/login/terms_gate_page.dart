@@ -129,7 +129,7 @@ class _TermsGatePageState extends State<TermsGatePage> {
                             ),
                             const SizedBox(width: 12),
                             Image.asset(
-                              'assets/images/applogo/ilu_app_icon.png',
+                              context.appLogoAsset,
                               height: 76,
                               fit: BoxFit.contain,
                             ),

@@ -22,15 +22,16 @@ class CustormerCenterPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final up = context.read<UserProvider>();
     return Scaffold(
-      backgroundColor: WHITE,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: WHITE,
+        backgroundColor: context.bgColor,
+        foregroundColor: context.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
         title: Text(
           '고객센터',
           style: TextStyle(
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -42,7 +43,10 @@ class CustormerCenterPage extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            color: GRAYSCALE_LABEL_50,
+            color: context.cardColor,
+            border: context.isDarkMode
+                ? Border.all(color: context.borderColor)
+                : null,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -174,29 +178,39 @@ Future<String?> _showPasswordDialog(BuildContext context) async {
   return showDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
-      backgroundColor: WHITE,
-      title: Text('비밀번호 확인', style: TextStyle(fontSize: 15)),
+      backgroundColor: context.cardColor,
+      title: Text(
+        '비밀번호 확인',
+        style: TextStyle(fontSize: 15, color: context.textPrimary),
+      ),
       content: TextField(
         autofocus: true,
         controller: controller,
         obscureText: true,
+        style: TextStyle(color: context.textPrimary),
         decoration: InputDecoration(
           labelText: '비밀번호를 입력하세요',
-          labelStyle: TextStyle(color: BUTTON),
+          labelStyle: TextStyle(color: context.readableColor(BUTTON)),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: BUTTON, width: 1.5),
+            borderSide: BorderSide(
+              color: context.readableColor(BUTTON),
+              width: 1.5,
+            ),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: BUTTON, width: 1.5),
+            borderSide: BorderSide(
+              color: context.readableColor(BUTTON),
+              width: 1.5,
+            ),
           ),
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('취소', style: TextStyle(color: Colors.black)),
+          child: Text('취소', style: TextStyle(color: context.textSecondary)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -206,7 +220,7 @@ Future<String?> _showPasswordDialog(BuildContext context) async {
             ),
           ),
           onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-          child: Text('확인', style: TextStyle(color: WHITE)),
+          child: const Text('확인', style: TextStyle(color: WHITE)),
         ),
       ],
     ),
@@ -214,28 +228,36 @@ Future<String?> _showPasswordDialog(BuildContext context) async {
 }
 
 Widget _buildSettingItem({required String text, required VoidCallback onTap}) {
-  return GestureDetector(
-    onTap: onTap,
-    child: Container(
-      width: double.infinity,
-      height: 60,
-      padding: const EdgeInsets.only(left: 20, right: 20),
-      decoration: BoxDecoration(
-        color: GRAYSCALE_LABEL_50,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 16,
-              color: text == '회원탈퇴' ? RED_DANGER_TEXT_50 : GRAYSCALE_LABEL_900,
+  return Builder(
+    builder: (context) => GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 60,
+        padding: const EdgeInsets.only(left: 20, right: 20),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 16,
+                color: text == '회원탈퇴'
+                    ? RED_DANGER_TEXT_50
+                    : context.textPrimary,
+              ),
             ),
-          ),
-          const Icon(Icons.arrow_forward_ios, size: 16),
-        ],
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: context.textSecondary,
+            ),
+          ],
+        ),
       ),
     ),
   );

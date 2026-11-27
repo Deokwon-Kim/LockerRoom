@@ -265,7 +265,7 @@ class _SignupPageState extends State<SignupPage> {
             children: [
               Center(
                 child: Image.asset(
-                  'assets/images/applogo/ilu_app_icon.png',
+                  context.appLogoAsset,
                   height: 92,
                   fit: BoxFit.contain,
                 ),

@@ -66,17 +66,23 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final selectedColor =
         context.watch<TeamProvider>().selectedTeam?.color ?? BUTTON;
 
+    final bodyTextColor = context.isDarkMode ? WHITE : BLACK;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
           '알림',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: bodyTextColor,
+          ),
         ),
-        backgroundColor: BACKGROUND_COLOR,
-        foregroundColor: BLACK,
+        backgroundColor: context.bgColor,
+        foregroundColor: bodyTextColor,
         scrolledUnderElevation: 0,
       ),
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       body: provider.isLoading
           ? Center(child: CircularProgressIndicator(color: selectedColor))
           : provider.notifications.isEmpty
@@ -86,13 +92,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 children: [
                   Icon(
                     Icons.notifications_none,
-                    color: GRAYSCALE_LABEL_400,
+                    color: context.textMuted,
                     size: 40,
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     '새 알림이 없습니다',
-                    style: TextStyle(color: GRAYSCALE_LABEL_500, fontSize: 14),
+                    style: TextStyle(
+                      color: context.textSecondary,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
@@ -430,7 +439,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     radius: 20,
                                     backgroundColor: isTeamNews
                                         ? Colors.white
-                                        : GRAYSCALE_LABEL_300,
+                                        : context.surfaceAltColor,
                                     backgroundImage: isTeamNews
                                         ? (context
                                                       .read<TeamProvider>()
@@ -484,10 +493,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                         children: [
                                           Text(
                                             name,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w800,
-                                              color: GRAYSCALE_LABEL_700,
+                                              color: context.textSecondary,
                                             ),
                                           ),
                                           const SizedBox(height: 4),
@@ -497,11 +506,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                                 '구단 속보가 도착했습니다.',
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 13.5,
                                               height: 1.35,
                                               fontWeight: FontWeight.w600,
-                                              color: BLACK,
+                                              color: bodyTextColor,
                                             ),
                                           ),
                                         ],
@@ -525,74 +534,98 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
-                                          color: BLACK,
+                                          color: bodyTextColor,
                                         ),
                                       ),
                                     ),
                                   ],
                                   if (isFollow) ...[
                                     Transform.translate(
-                                      offset: Offset(-10, 0),
+                                      offset: const Offset(-10, 0),
                                       child: Text(
                                         '님이 회원님을 팔로우하기 시작했습니다.',
-                                        style: TextStyle(fontSize: 14),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: bodyTextColor,
+                                        ),
                                       ),
                                     ),
                                   ] else if (isFeedLike) ...[
                                     Transform.translate(
-                                      offset: Offset(-10, 0),
+                                      offset: const Offset(-10, 0),
                                       child: Text(
                                         '님이 회원님의 게시물을 좋아합니다.',
-                                        style: TextStyle(fontSize: 14),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: bodyTextColor,
+                                        ),
                                       ),
                                     ),
                                   ] else if (isComment) ...[
                                     Transform.translate(
-                                      offset: Offset(-10, 0),
+                                      offset: const Offset(-10, 0),
                                       child: Text(
                                         '님이 회원님의 게시글에 댓글을 남겼습니다.',
-                                        style: TextStyle(fontSize: 14),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: bodyTextColor,
+                                        ),
                                       ),
                                     ),
                                   ] else if (commentLike) ...[
                                     Transform.translate(
-                                      offset: Offset(-10, 0),
+                                      offset: const Offset(-10, 0),
                                       child: Text(
                                         '님이 회원님의 댓글을 좋아합니다.',
-                                        style: TextStyle(fontSize: 14),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: bodyTextColor,
+                                        ),
                                       ),
                                     ),
                                   ] else if (isMarketComment) ...[
                                     Transform.translate(
-                                      offset: Offset(-10, 0),
+                                      offset: const Offset(-10, 0),
                                       child: Text(
                                         '님이 회원님의 게시글의 댓글을 남겼습니다.',
-                                        style: TextStyle(fontSize: 14),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: bodyTextColor,
+                                        ),
                                       ),
                                     ),
                                   ] else if (isSeatViewComment) ...[
                                     Transform.translate(
-                                      offset: Offset(-10, 0),
+                                      offset: const Offset(-10, 0),
                                       child: Text(
                                         '님이 좌석 시야에 댓글을 남겼습니다.',
-                                        style: TextStyle(fontSize: 14),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: bodyTextColor,
+                                        ),
                                       ),
                                     ),
                                   ] else if (isAttendanceComment) ...[
                                     Transform.translate(
-                                      offset: Offset(-10, 0),
+                                      offset: const Offset(-10, 0),
                                       child: Text(
                                         '님이 직관기록에 댓글을 남겼습니다.',
-                                        style: TextStyle(fontSize: 14),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: bodyTextColor,
+                                        ),
                                       ),
                                     ),
                                   ] else if (n.type == 'meetup_request') ...[
                                     Expanded(
                                       child: Transform.translate(
-                                        offset: Offset(-10, 0),
+                                        offset: const Offset(-10, 0),
                                         child: Text(
                                           n.preview ?? '님이 모임 참여를 신청했습니다.',
-                                          style: TextStyle(fontSize: 14),
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: bodyTextColor,
+                                          ),
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 2,
                                         ),
@@ -601,10 +634,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   ] else if (n.type == 'meetup_approved') ...[
                                     Expanded(
                                       child: Transform.translate(
-                                        offset: Offset(-10, 0),
+                                        offset: const Offset(-10, 0),
                                         child: Text(
                                           n.preview ?? '모임 참여가 승인되었습니다!',
-                                          style: TextStyle(fontSize: 14),
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: bodyTextColor,
+                                          ),
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 2,
                                         ),
@@ -613,10 +649,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   ] else if (n.type == 'meetup_rejected') ...[
                                     Expanded(
                                       child: Transform.translate(
-                                        offset: Offset(-10, 0),
+                                        offset: const Offset(-10, 0),
                                         child: Text(
                                           n.preview ?? '모임 참여가 거절되었습니다.',
-                                          style: TextStyle(fontSize: 14),
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: bodyTextColor,
+                                          ),
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 2,
                                         ),
@@ -624,42 +663,57 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     ),
                                   ] else if (n.type == 'meetup_joined') ...[
                                     Transform.translate(
-                                      offset: Offset(-10, 0),
+                                      offset: const Offset(-10, 0),
                                       child: Text(
                                         '님이 모임에 참여했습니다!',
-                                        style: TextStyle(fontSize: 14),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: bodyTextColor,
+                                        ),
                                       ),
                                     ),
                                   ] else if (isMarketPostReport) ...[
                                     Transform.translate(
-                                      offset: Offset(-10, 0),
+                                      offset: const Offset(-10, 0),
                                       child: Text(
                                         '마켓 게시글 신고발생 🚨',
-                                        style: TextStyle(fontSize: 14),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: bodyTextColor,
+                                        ),
                                       ),
                                     ),
                                   ] else if (isReport) ...[
                                     Transform.translate(
-                                      offset: Offset(-10, 0),
+                                      offset: const Offset(-10, 0),
                                       child: Text(
                                         '게시글 신고발생 🚨',
-                                        style: TextStyle(fontSize: 14),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: bodyTextColor,
+                                        ),
                                       ),
                                     ),
                                   ] else if (isMarketCommentReport) ...[
                                     Transform.translate(
-                                      offset: Offset(-10, 0),
+                                      offset: const Offset(-10, 0),
                                       child: Text(
                                         '마켓 댓글 신고발생 🚨',
-                                        style: TextStyle(fontSize: 14),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: bodyTextColor,
+                                        ),
                                       ),
                                     ),
                                   ] else if (isCommentReport) ...[
                                     Transform.translate(
-                                      offset: Offset(-10, 0),
+                                      offset: const Offset(-10, 0),
                                       child: Text(
                                         '피드 댓글 신고발생 🚨',
-                                        style: TextStyle(fontSize: 14),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: bodyTextColor,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -718,7 +772,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                     _formatRelative(createdAt),
                                     style: TextStyle(
                                       fontSize: 17,
-                                      color: BLACK,
+                                      color: bodyTextColor,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),

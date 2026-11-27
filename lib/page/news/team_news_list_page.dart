@@ -105,9 +105,9 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
     final teamColor = activeTeam.color;
 
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: WHITE,
+        backgroundColor: context.cardColor,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -115,10 +115,10 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
         titleSpacing: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
             size: 19,
-            color: GRAYSCALE_LABEL_900,
+            color: context.textPrimary,
           ),
         ),
         title: Row(
@@ -128,7 +128,7 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
               height: 28,
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: teamColor.withValues(alpha: 0.1),
+                color: context.readableColor(teamColor).withValues(alpha: 0.14),
                 shape: BoxShape.circle,
               ),
               child: Image.asset(activeTeam.logoPath, fit: BoxFit.contain),
@@ -136,10 +136,10 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
             const SizedBox(width: 8),
             Text(
               '${activeTeam.symplename} 주요뉴스',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17.5,
                 fontWeight: FontWeight.w800,
-                color: GRAYSCALE_LABEL_950,
+                color: context.textPrimary,
                 letterSpacing: -0.3,
               ),
             ),
@@ -167,7 +167,7 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
             tooltip: '구단 뉴스 알림 설정',
             onPressed: () => _openPushSettingsSheet(context, activeTeam),
             style: IconButton.styleFrom(
-              backgroundColor: GRAYSCALE_LABEL_50,
+              backgroundColor: context.surfaceAltColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -175,7 +175,7 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
             icon: Icon(
               Icons.notifications_active_outlined,
               size: 20,
-              color: teamColor,
+              color: context.readableColor(teamColor),
             ),
           ),
           const SizedBox(width: 6),
@@ -188,15 +188,15 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
                 forceRefresh: true,
               ),
               style: IconButton.styleFrom(
-                backgroundColor: GRAYSCALE_LABEL_50,
+                backgroundColor: context.surfaceAltColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              icon: const Icon(
+              icon: Icon(
                 Icons.refresh_rounded,
                 size: 20,
-                color: GRAYSCALE_LABEL_800,
+                color: context.textPrimary,
               ),
             ),
           ),
@@ -225,13 +225,15 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: WHITE,
+                  color: context.cardColor,
                   borderRadius: const BorderRadius.vertical(
                     bottom: Radius.circular(24),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: BLACK.withValues(alpha: 0.04),
+                      color: BLACK.withValues(
+                        alpha: context.isDarkMode ? 0.25 : 0.04,
+                      ),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -279,21 +281,23 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
                                     padding: const EdgeInsets.all(7),
                                     decoration: BoxDecoration(
                                       color: isSelected
-                                          ? chipColor.withValues(alpha: 0.12)
-                                          : GRAYSCALE_LABEL_50,
+                                          ? context
+                                                .readableColor(chipColor)
+                                                .withValues(alpha: 0.16)
+                                          : context.surfaceAltColor,
                                       shape: BoxShape.circle,
                                       border: Border.all(
                                         color: isSelected
-                                            ? chipColor
-                                            : GRAYSCALE_LABEL_200,
+                                            ? context.readableColor(chipColor)
+                                            : context.borderColor,
                                         width: isSelected ? 2.2 : 1.0,
                                       ),
                                       boxShadow: isSelected
                                           ? [
                                               BoxShadow(
-                                                color: chipColor.withValues(
-                                                  alpha: 0.22,
-                                                ),
+                                                color: context
+                                                    .readableColor(chipColor)
+                                                    .withValues(alpha: 0.22),
                                                 blurRadius: 8,
                                                 offset: const Offset(0, 3),
                                               ),
@@ -315,8 +319,10 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w700,
                                                 color: isSelected
-                                                    ? chipColor
-                                                    : GRAYSCALE_LABEL_700,
+                                                    ? context.readableColor(
+                                                        chipColor,
+                                                      )
+                                                    : context.textSecondary,
                                               ),
                                             ),
                                           ),
@@ -332,8 +338,8 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
                                           ? FontWeight.w800
                                           : FontWeight.w600,
                                       color: isSelected
-                                          ? GRAYSCALE_LABEL_950
-                                          : GRAYSCALE_LABEL_500,
+                                          ? context.textPrimary
+                                          : context.textMuted,
                                       letterSpacing: -0.2,
                                     ),
                                   ),
@@ -351,27 +357,27 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: TextField(
                         controller: _searchController,
-                        cursorColor: teamColor,
-                        style: const TextStyle(
+                        cursorColor: context.readableColor(teamColor),
+                        style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w600,
-                          color: GRAYSCALE_LABEL_950,
+                          color: context.textPrimary,
                         ),
                         onChanged: (val) =>
                             setState(() => _searchQuery = val.trim()),
                         decoration: InputDecoration(
                           hintText: '${activeTeam.symplename} 선수명, 키워드로 뉴스 검색',
-                          hintStyle: const TextStyle(
+                          hintStyle: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: GRAYSCALE_LABEL_400,
+                            color: context.textMuted,
                           ),
                           prefixIcon: Icon(
                             Icons.search_rounded,
                             size: 20,
                             color: _searchQuery.isNotEmpty
-                                ? teamColor
-                                : GRAYSCALE_LABEL_500,
+                                ? context.readableColor(teamColor)
+                                : context.textMuted,
                           ),
                           suffixIcon: _searchQuery.isNotEmpty
                               ? IconButton(
@@ -379,15 +385,15 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
                                     _searchController.clear();
                                     setState(() => _searchQuery = '');
                                   },
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.cancel_rounded,
                                     size: 18,
-                                    color: GRAYSCALE_LABEL_400,
+                                    color: context.textMuted,
                                   ),
                                 )
                               : null,
                           filled: true,
-                          fillColor: GRAYSCALE_LABEL_50,
+                          fillColor: context.surfaceAltColor,
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 14,
@@ -395,14 +401,12 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
-                              color: GRAYSCALE_LABEL_100,
-                            ),
+                            borderSide: BorderSide(color: context.borderColor),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
                             borderSide: BorderSide(
-                              color: teamColor,
+                              color: context.readableColor(teamColor),
                               width: 1.4,
                             ),
                           ),
@@ -436,12 +440,12 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
                               decoration: BoxDecoration(
                                 color: selected
                                     ? teamColor
-                                    : GRAYSCALE_LABEL_50,
+                                    : context.surfaceAltColor,
                                 borderRadius: BorderRadius.circular(999),
                                 border: Border.all(
                                   color: selected
                                       ? teamColor
-                                      : GRAYSCALE_LABEL_200,
+                                      : context.borderColor,
                                 ),
                               ),
                               child: Row(
@@ -454,7 +458,7 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
                                       fontWeight: FontWeight.w700,
                                       color: selected
                                           ? WHITE
-                                          : GRAYSCALE_LABEL_700,
+                                          : context.textSecondary,
                                     ),
                                   ),
                                   if (raw.isNotEmpty) ...[
@@ -467,7 +471,7 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
                                       decoration: BoxDecoration(
                                         color: selected
                                             ? WHITE.withValues(alpha: 0.22)
-                                            : WHITE,
+                                            : context.cardColor,
                                         borderRadius: BorderRadius.circular(
                                           999,
                                         ),
@@ -594,38 +598,39 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
     if (filtered.isEmpty) {
       final hasFilter =
           _selectedCategory != NewsCategory.all || _searchQuery.isNotEmpty;
+      final readableTeam = context.readableColor(teamColor);
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 width: 56,
                 height: 56,
-                decoration: const BoxDecoration(
-                  color: GRAYSCALE_LABEL_100,
+                decoration: BoxDecoration(
+                  color: context.surfaceAltColor,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.newspaper_rounded,
-                  color: GRAYSCALE_LABEL_400,
+                  color: context.textMuted,
                   size: 28,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 '조건에 맞는 기사가 없습니다.',
                 style: TextStyle(
                   fontSize: 14.5,
                   fontWeight: FontWeight.w700,
-                  color: GRAYSCALE_LABEL_700,
+                  color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 '다른 키워드나 카테고리를 선택해 보세요.',
-                style: TextStyle(fontSize: 12.5, color: GRAYSCALE_LABEL_500),
+                style: TextStyle(fontSize: 12.5, color: context.textMuted),
               ),
               if (hasFilter) ...[
                 const SizedBox(height: 14),
@@ -638,8 +643,8 @@ class _TeamNewsListPageState extends State<TeamNewsListPage> {
                     });
                   },
                   style: TextButton.styleFrom(
-                    foregroundColor: teamColor,
-                    backgroundColor: teamColor.withValues(alpha: 0.08),
+                    foregroundColor: readableTeam,
+                    backgroundColor: readableTeam.withValues(alpha: 0.14),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 8,
@@ -738,7 +743,7 @@ class _FeaturedNewsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: WHITE,
+      color: context.cardColor,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -746,19 +751,21 @@ class _FeaturedNewsCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: teamColor.withValues(alpha: 0.25)),
+            border: Border.all(
+              color: context.readableColor(teamColor).withValues(alpha: 0.28),
+            ),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                teamColor.withValues(alpha: 0.07),
-                WHITE,
-                WHITE,
+                context.readableColor(teamColor).withValues(alpha: 0.12),
+                context.cardColor,
+                context.cardColor,
               ],
             ),
             boxShadow: [
               BoxShadow(
-                color: teamColor.withValues(alpha: 0.08),
+                color: BLACK.withValues(alpha: context.isDarkMode ? 0.2 : 0.05),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -805,10 +812,10 @@ class _FeaturedNewsCard extends StatelessWidget {
                   const Spacer(),
                   Text(
                     article.relativeTimeText,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
-                      color: GRAYSCALE_LABEL_500,
+                      color: context.textMuted,
                     ),
                   ),
                 ],
@@ -816,10 +823,10 @@ class _FeaturedNewsCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 article.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16.5,
                   fontWeight: FontWeight.w800,
-                  color: GRAYSCALE_LABEL_950,
+                  color: context.textPrimary,
                   height: 1.42,
                   letterSpacing: -0.3,
                 ),
@@ -827,8 +834,8 @@ class _FeaturedNewsCard extends StatelessWidget {
               const SizedBox(height: 14),
               Container(
                 padding: const EdgeInsets.only(top: 11),
-                decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: GRAYSCALE_LABEL_100)),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: context.dividerColor)),
                 ),
                 child: Row(
                   children: [
@@ -838,7 +845,7 @@ class _FeaturedNewsCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: GRAYSCALE_LABEL_50,
+                        color: context.surfaceAltColor,
                         borderRadius: BorderRadius.circular(7),
                       ),
                       child: Row(
@@ -905,7 +912,7 @@ class _StandardNewsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: WHITE,
+      color: context.cardColor,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
@@ -914,10 +921,12 @@ class _StandardNewsCard extends StatelessWidget {
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: GRAYSCALE_LABEL_100),
+            border: Border.all(color: context.borderColor),
             boxShadow: [
               BoxShadow(
-                color: BLACK.withValues(alpha: 0.025),
+                color: BLACK.withValues(
+                  alpha: context.isDarkMode ? 0.2 : 0.025,
+                ),
                 blurRadius: 10,
                 offset: const Offset(0, 3),
               ),
@@ -933,7 +942,9 @@ class _StandardNewsCard extends StatelessWidget {
                   margin: const EdgeInsets.only(right: 11, top: 1),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: teamColor.withValues(alpha: 0.09),
+                    color: context
+                        .readableColor(teamColor)
+                        .withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(7),
                   ),
                   child: Text(
@@ -941,7 +952,7 @@ class _StandardNewsCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w800,
-                      color: teamColor,
+                      color: context.readableColor(teamColor),
                     ),
                   ),
                 ),
@@ -960,10 +971,10 @@ class _StandardNewsCard extends StatelessWidget {
                         const Spacer(),
                         Text(
                           article.relativeTimeText,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: GRAYSCALE_LABEL_500,
+                            color: context.textMuted,
                           ),
                         ),
                       ],
@@ -971,10 +982,10 @@ class _StandardNewsCard extends StatelessWidget {
                     const SizedBox(height: 9),
                     Text(
                       article.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
-                        color: GRAYSCALE_LABEL_950,
+                        color: context.textPrimary,
                         height: 1.42,
                         letterSpacing: -0.2,
                       ),
@@ -982,10 +993,10 @@ class _StandardNewsCard extends StatelessWidget {
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.feed_outlined,
                           size: 13,
-                          color: GRAYSCALE_LABEL_400,
+                          color: context.textMuted,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
@@ -1195,14 +1206,12 @@ class _TeamNewsPushSettingsSheetState
   @override
   Widget build(BuildContext context) {
     final teamColor = widget.team.color;
-    final topicName =
-        NotificationService.topicNameForTeam(widget.team.symplename) ??
-        'team_news_none';
+    final readableTeam = context.readableColor(teamColor);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: WHITE,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
       ),
       padding: EdgeInsets.fromLTRB(
         20,
@@ -1219,7 +1228,7 @@ class _TeamNewsPushSettingsSheetState
               width: 38,
               height: 4,
               decoration: BoxDecoration(
-                color: GRAYSCALE_LABEL_200,
+                color: context.borderColor,
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
@@ -1232,7 +1241,7 @@ class _TeamNewsPushSettingsSheetState
                 height: 34,
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: teamColor.withValues(alpha: 0.1),
+                  color: readableTeam.withValues(alpha: 0.14),
                   shape: BoxShape.circle,
                 ),
                 child: Image.asset(widget.team.logoPath, fit: BoxFit.contain),
@@ -1243,29 +1252,29 @@ class _TeamNewsPushSettingsSheetState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${widget.team.symplename} 주요뉴스 푸시 설정',
-                      style: const TextStyle(
+                      '${widget.team.symplename} 주요뉴스 알림 설정',
+                      style: TextStyle(
                         fontSize: 16.5,
                         fontWeight: FontWeight.w800,
-                        color: GRAYSCALE_LABEL_950,
+                        color: context.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    const Text(
-                      '응원팀 변경 시 FCM 토픽 구독이 자동 동기화됩니다.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: GRAYSCALE_LABEL_500,
-                      ),
+                    Text(
+                      '응원팀을 변경하면 뉴스 알림 설정도 자동으로 맞춰져요.',
+                      style: TextStyle(fontSize: 12, color: context.textMuted),
                     ),
                   ],
                 ),
               ),
               if (_isSaving)
-                const SizedBox(
+                SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: readableTeam,
+                  ),
                 ),
             ],
           ),
@@ -1278,9 +1287,9 @@ class _TeamNewsPushSettingsSheetState
           else ...[
             _buildToggleTile(
               title: '${widget.team.symplename} 이적·주요뉴스 알림',
-              subtitle: 'FCM Topic: $topicName',
+              subtitle: '중요한 구단 소식과 이적 뉴스를 빠르게 받아보세요',
               value: _isNewsPushEnabled,
-              activeColor: teamColor,
+              activeColor: readableTeam,
               onChanged: (v) {
                 setState(() => _isNewsPushEnabled = v);
                 _saveSettings();
@@ -1291,7 +1300,7 @@ class _TeamNewsPushSettingsSheetState
               title: 'FA 영입 / 재계약 속보',
               subtitle: 'FA 및 재계약 공식 발표 뉴스 우선 알림',
               value: _faEnabled,
-              activeColor: teamColor,
+              activeColor: readableTeam,
               enabled: _isNewsPushEnabled,
               onChanged: (v) {
                 setState(() => _faEnabled = v);
@@ -1301,9 +1310,9 @@ class _TeamNewsPushSettingsSheetState
             const SizedBox(height: 8),
             _buildToggleTile(
               title: '트레이드 / 방출(웨이버)',
-              subtitle: '동일 이슈 중복 발송 방지 쿨다운 적용',
+              subtitle: '같은 소식은 중복 알림 없이 한 번만 보내드려요',
               value: _tradeReleaseEnabled,
-              activeColor: teamColor,
+              activeColor: readableTeam,
               enabled: _isNewsPushEnabled,
               onChanged: (v) {
                 setState(() => _tradeReleaseEnabled = v);
@@ -1313,9 +1322,9 @@ class _TeamNewsPushSettingsSheetState
             const SizedBox(height: 8),
             _buildToggleTile(
               title: '야간 방해금지 시간',
-              subtitle: '22:00 ~ 08:00 무음 처리 (피드에만 적재)',
+              subtitle: '밤 10시 ~ 아침 8시에는 무음으로 조용히 모아둘게요',
               value: _dndEnabled,
-              activeColor: teamColor,
+              activeColor: readableTeam,
               enabled: _isNewsPushEnabled,
               onChanged: (v) {
                 setState(() => _dndEnabled = v);
@@ -1327,16 +1336,16 @@ class _TeamNewsPushSettingsSheetState
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: GRAYSCALE_LABEL_50,
+                color: context.surfaceAltColor,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: GRAYSCALE_LABEL_100),
+                border: Border.all(color: context.borderColor),
               ),
               child: Text(
-                '구독 상태: $topicName [${_isNewsPushEnabled ? "ON" : "OFF"}] · 야간 방해금지 [${_dndEnabled ? "22:00~08:00" : "OFF"}]',
-                style: const TextStyle(
+                '현재 알림: ${widget.team.symplename} 뉴스 ${_isNewsPushEnabled ? "켜짐" : "꺼짐"} · 야간 방해금지 ${_dndEnabled ? "켜짐 (22:00~08:00)" : "꺼짐"}',
+                style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: GRAYSCALE_LABEL_700,
+                  color: context.textSecondary,
                 ),
               ),
             ),
@@ -1359,9 +1368,9 @@ class _TeamNewsPushSettingsSheetState
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: BACKGROUND_COLOR,
+          color: context.surfaceAltColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: GRAYSCALE_LABEL_100),
+          border: Border.all(color: context.borderColor),
         ),
         child: Row(
           children: [
@@ -1371,26 +1380,34 @@ class _TeamNewsPushSettingsSheetState
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
-                      color: GRAYSCALE_LABEL_900,
+                      color: context.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      color: GRAYSCALE_LABEL_500,
-                    ),
+                    style: TextStyle(fontSize: 11.5, color: context.textMuted),
                   ),
                 ],
               ),
             ),
             Switch.adaptive(
               value: value,
-              activeTrackColor: activeColor,
+              activeThumbColor: WHITE,
+              activeTrackColor: context.isDarkMode
+                  ? (widget.team.color.computeLuminance() < 0.22
+                        ? ACCENT_CORAL
+                        : widget.team.color)
+                  : activeColor,
+              inactiveThumbColor: context.isDarkMode
+                  ? DARK_TEXT_SECONDARY
+                  : WHITE,
+              inactiveTrackColor: context.isDarkMode
+                  ? DARK_BORDER_COLOR
+                  : GRAYSCALE_LABEL_200,
               onChanged: enabled ? onChanged : null,
             ),
           ],

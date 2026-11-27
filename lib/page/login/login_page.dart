@@ -155,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 8),
                       Center(
                         child: Image.asset(
-                          'assets/images/applogo/ilu_app_icon.png',
+                          context.appLogoAsset,
                           height: 112,
                           fit: BoxFit.contain,
                         ),

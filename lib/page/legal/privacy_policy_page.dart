@@ -12,14 +12,18 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           '개인정보 처리방침',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: context.textPrimary,
+          ),
         ),
-        backgroundColor: BACKGROUND_COLOR,
-        foregroundColor: Colors.black,
+        backgroundColor: context.bgColor,
+        foregroundColor: context.textPrimary,
         scrolledUnderElevation: 0,
       ),
       body: SingleChildScrollView(
@@ -27,14 +31,18 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '🔒 개인정보 처리방침',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: context.textPrimary,
+              ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '마지막 업데이트: 2026년 2월',
-              style: TextStyle(fontSize: 13, color: Color(0xFF888888)),
+              style: TextStyle(fontSize: 13, color: context.textMuted),
             ),
             const SizedBox(height: 24),
             _buildSection(
@@ -111,19 +119,19 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: context.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
         Text(
           content,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             height: 1.6,
-            color: Color(0xFF333333),
+            color: context.textSecondary,
           ),
         ),
       ],
@@ -136,28 +144,30 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: context.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF8E1),
+            color: context.isDarkMode
+                ? const Color(0xFFFFC107).withValues(alpha: 0.14)
+                : const Color(0xFFFFF8E1),
             borderRadius: BorderRadius.circular(5),
-            border: Border(
-              left: BorderSide(color: const Color(0xFFFFC107), width: 4),
+            border: const Border(
+              left: BorderSide(color: Color(0xFFFFC107), width: 4),
             ),
           ),
           child: Text(
             content,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               height: 1.6,
-              color: Color(0xFF333333),
+              color: context.textPrimary,
             ),
           ),
         ),

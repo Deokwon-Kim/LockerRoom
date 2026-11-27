@@ -77,9 +77,10 @@ class _UserDetailPageState extends State<UserDetailPage> {
         // 차단당했으면 접근 불가 화면 표시
         if (blockedSnapshot.data == true) {
           return Scaffold(
-            backgroundColor: BACKGROUND_COLOR,
+            backgroundColor: context.bgColor,
             appBar: AppBar(
-              backgroundColor: BACKGROUND_COLOR,
+              backgroundColor: context.bgColor,
+              foregroundColor: context.textPrimary,
               title: const Text('프로필'),
             ),
             body: Center(
@@ -88,26 +89,27 @@ class _UserDetailPageState extends State<UserDetailPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.block,
                       size: 64,
-                      color: GRAYSCALE_LABEL_400,
+                      color: context.textMuted,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       '이 프로필에 접근할 수 없습니다',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: context.textPrimary,
                       ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       '사용자가 회원님을 차단했습니다',
                       style: TextStyle(
                         fontSize: 14,
-                        color: GRAYSCALE_LABEL_600,
+                        color: context.textSecondary,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -157,9 +159,10 @@ class _UserDetailPageState extends State<UserDetailPage> {
             return DefaultTabController(
               length: 2,
               child: Scaffold(
-                backgroundColor: BACKGROUND_COLOR,
+                backgroundColor: context.bgColor,
                 appBar: AppBar(
-                  backgroundColor: BACKGROUND_COLOR,
+                  backgroundColor: context.bgColor,
+                  foregroundColor: context.textPrimary,
                   scrolledUnderElevation: 0,
                   centerTitle: false,
                   titleSpacing: 0,
@@ -168,10 +171,10 @@ class _UserDetailPageState extends State<UserDetailPage> {
                       Flexible(
                         child: Text(
                           nickName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
-                            color: GRAYSCALE_LABEL_950,
+                            color: context.textPrimary,
                             letterSpacing: -0.4,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -214,10 +217,10 @@ class _UserDetailPageState extends State<UserDetailPage> {
                       child: Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: WHITE,
+                          color: context.cardColor,
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
+                            color: context.borderColor,
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -244,15 +247,15 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                     ),
                                   ),
                                   child: CircleAvatar(
-                                    backgroundColor: GRAYSCALE_LABEL_100,
+                                    backgroundColor: context.surfaceAltColor,
                                     radius: 38,
                                     backgroundImage: imageUrl.isNotEmpty
                                         ? NetworkImage(imageUrl)
                                         : null,
                                     child: imageUrl.isEmpty
-                                        ? const Icon(
+                                        ? Icon(
                                             Icons.person_rounded,
-                                            color: GRAYSCALE_LABEL_400,
+                                            color: context.textMuted,
                                             size: 36,
                                           )
                                         : null,
@@ -269,10 +272,10 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                           Flexible(
                                             child: Text(
                                               nickName,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 18,
                                                 fontWeight: FontWeight.w800,
-                                                color: GRAYSCALE_LABEL_950,
+                                                color: context.textPrimary,
                                               ),
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -285,7 +288,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                             ),
                                             decoration: BoxDecoration(
                                               color: activeTeamColor.withValues(
-                                                alpha: 0.12,
+                                                alpha: 0.14,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(6),
@@ -297,7 +300,9 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.w800,
-                                                color: activeTeamColor,
+                                                color: context.readableColor(
+                                                  activeTeamColor,
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -310,10 +315,10 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                           if (birthYear != null) '$birthYear년생',
                                           teamModel?.stadium ?? 'ILU 라운지',
                                         ].join(' · '),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
-                                          color: GRAYSCALE_LABEL_500,
+                                          color: context.textSecondary,
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -341,16 +346,18 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                                       vertical: 6,
                                                     ),
                                                 decoration: BoxDecoration(
-                                                  color: GRAYSCALE_LABEL_100,
+                                                  color:
+                                                      context.surfaceAltColor,
                                                   borderRadius:
                                                       BorderRadius.circular(10),
                                                 ),
-                                                child: const Text(
+                                                child: Text(
                                                   '이 사용자가 회원님을 차단했습니다',
                                                   style: TextStyle(
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.w700,
-                                                    color: GRAYSCALE_LABEL_600,
+                                                    color:
+                                                        context.textSecondary,
                                                   ),
                                                 ),
                                               );
@@ -377,7 +384,8 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                                           ),
                                                       decoration: BoxDecoration(
                                                         color: isFollowing
-                                                            ? BACKGROUND_COLOR
+                                                            ? context
+                                                                  .surfaceAltColor
                                                             : activeTeamColor,
                                                         borderRadius:
                                                             BorderRadius.circular(
@@ -385,8 +393,8 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                                             ),
                                                         border: isFollowing
                                                             ? Border.all(
-                                                                color:
-                                                                    GRAYSCALE_LABEL_300,
+                                                                color: context
+                                                                    .borderColor,
                                                               )
                                                             : null,
                                                       ),
@@ -400,7 +408,8 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                                             fontWeight:
                                                                 FontWeight.w800,
                                                             color: isFollowing
-                                                                ? GRAYSCALE_LABEL_800
+                                                                ? context
+                                                                      .textPrimary
                                                                 : WHITE,
                                                           ),
                                                         ),
@@ -420,7 +429,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                                             40,
                                                             0,
                                                           ),
-                                                      color: WHITE,
+                                                      color: context.cardColor,
                                                       shape: RoundedRectangleBorder(
                                                         borderRadius:
                                                             BorderRadius.circular(
@@ -487,24 +496,25 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                                           vertical: 7,
                                                         ),
                                                     decoration: BoxDecoration(
-                                                      color: BACKGROUND_COLOR,
+                                                      color: context
+                                                          .surfaceAltColor,
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                             10,
                                                           ),
                                                       border: Border.all(
                                                         color:
-                                                            GRAYSCALE_LABEL_200,
+                                                            context.borderColor,
                                                       ),
                                                     ),
-                                                    child: const Text(
+                                                    child: Text(
                                                       '더보기',
                                                       style: TextStyle(
                                                         fontSize: 12,
                                                         fontWeight:
                                                             FontWeight.w700,
-                                                        color:
-                                                            GRAYSCALE_LABEL_700,
+                                                        color: context
+                                                            .textSecondary,
                                                       ),
                                                     ),
                                                   ),
@@ -529,12 +539,10 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                 horizontal: 8,
                               ),
                               decoration: BoxDecoration(
-                                color: BACKGROUND_COLOR,
+                                color: context.surfaceAltColor,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: GRAYSCALE_LABEL_200.withValues(
-                                    alpha: 0.7,
-                                  ),
+                                  color: context.borderColor,
                                 ),
                               ),
                               child: Row(
@@ -557,7 +565,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                   Container(
                                     width: 1,
                                     height: 28,
-                                    color: GRAYSCALE_LABEL_200,
+                                    color: context.dividerColor,
                                   ),
                                   Expanded(
                                     child: StreamBuilder<int>(
@@ -591,7 +599,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                                   Container(
                                     width: 1,
                                     height: 28,
-                                    color: GRAYSCALE_LABEL_200,
+                                    color: context.dividerColor,
                                   ),
                                   Expanded(
                                     child: StreamBuilder<int>(
@@ -637,10 +645,10 @@ class _UserDetailPageState extends State<UserDetailPage> {
                         height: 46,
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: WHITE,
+                          color: context.cardColor,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
+                            color: context.borderColor,
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -665,7 +673,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                           indicatorSize: TabBarIndicatorSize.tab,
                           dividerColor: Colors.transparent,
                           labelColor: WHITE,
-                          unselectedLabelColor: GRAYSCALE_LABEL_500,
+                          unselectedLabelColor: context.textSecondary,
                           labelStyle: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w800,
@@ -711,7 +719,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
           style: GoogleFonts.bebasNeue(
             fontSize: 22,
             fontWeight: FontWeight.w700,
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
             height: 1.0,
             letterSpacing: 0.5,
           ),
@@ -719,10 +727,10 @@ class _UserDetailPageState extends State<UserDetailPage> {
         const SizedBox(height: 3),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: GRAYSCALE_LABEL_500,
+            color: context.textSecondary,
           ),
         ),
       ],
@@ -738,27 +746,27 @@ class _UserDetailPageState extends State<UserDetailPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: BACKGROUND_COLOR,
-      shape: RoundedRectangleBorder(
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => SingleChildScrollView(
+      builder: (sheetContext) => SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               // 상단 바
               Container(
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: GRAYSCALE_LABEL_400,
+                  color: sheetContext.borderColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
 
               // 제목
               Text(
@@ -767,17 +775,18 @@ class _UserDetailPageState extends State<UserDetailPage> {
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   height: 1.4,
+                  color: sheetContext.textPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
               // 설명 텍스트
               Text(
                 '이 사람이 만든 다른 계정과 앞으로 만드는 모든 계정이 함께 차단됩니다. 언제든지 차단을 해제할 수 있습니다.',
                 style: TextStyle(
                   fontSize: 13,
-                  color: GRAYSCALE_LABEL_600,
+                  color: sheetContext.textSecondary,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -822,7 +831,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                       child: Container(
                         padding: EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          border: Border.all(color: GRAYSCALE_LABEL_300),
+                          border: Border.all(color: context.borderColor),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
@@ -831,7 +840,7 @@ class _UserDetailPageState extends State<UserDetailPage> {
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: GRAYSCALE_LABEL_900,
+                              color: context.textPrimary,
                             ),
                           ),
                         ),
@@ -894,8 +903,8 @@ class _UserDetailPageState extends State<UserDetailPage> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 24, color: GRAYSCALE_LABEL_600),
-        SizedBox(width: 12),
+        Icon(icon, size: 24, color: context.textSecondary),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -905,15 +914,15 @@ class _UserDetailPageState extends State<UserDetailPage> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: GRAYSCALE_LABEL_900,
+                  color: context.textPrimary,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 description,
                 style: TextStyle(
                   fontSize: 12,
-                  color: GRAYSCALE_LABEL_600,
+                  color: context.textSecondary,
                   height: 1.4,
                 ),
               ),
@@ -943,14 +952,14 @@ class _UserDetailPageState extends State<UserDetailPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: BACKGROUND_COLOR,
-      shape: RoundedRectangleBorder(
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => Padding(
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setState) => Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
             left: 20,
             right: 20,
             top: 20,
@@ -965,23 +974,32 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: GRAYSCALE_LABEL_400,
+                      color: sheetContext.borderColor,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Text(
                   '사용자 신고',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: sheetContext.textPrimary,
+                  ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Text(
                   '신고 사유를 선택해주세요',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: sheetContext.textPrimary,
+                  ),
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 ...reportReasons.map((reason) {
+                  final accent = sheetContext.readableColor(BUTTON);
                   return GestureDetector(
                     onTap: () {
                       setState(() {
@@ -989,55 +1007,66 @@ class _UserDetailPageState extends State<UserDetailPage> {
                       });
                     },
                     child: Container(
-                      margin: EdgeInsets.symmetric(vertical: 4),
-                      padding: EdgeInsets.symmetric(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: selectedReason == reason
-                              ? BUTTON
-                              : GRAYSCALE_LABEL_400,
+                              ? accent
+                              : sheetContext.borderColor,
                           width: selectedReason == reason ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(8),
                         color: selectedReason == reason
-                            ? BUTTON.withOpacity(0.1)
+                            ? accent.withValues(alpha: 0.12)
                             : Colors.transparent,
                       ),
                       child: Row(
                         children: [
-                          Expanded(child: Text(reason)),
+                          Expanded(
+                            child: Text(
+                              reason,
+                              style: TextStyle(color: sheetContext.textPrimary),
+                            ),
+                          ),
                           if (selectedReason == reason)
-                            Icon(Icons.check, color: BUTTON),
+                            Icon(Icons.check, color: accent),
                         ],
                       ),
                     ),
                   );
-                }).toList(),
-                SizedBox(height: 16),
+                }),
+                const SizedBox(height: 16),
                 Text(
                   '추가 설명 (선택사항)',
-                  style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: sheetContext.textSecondary,
+                  ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 TextField(
                   controller: reportController,
                   maxLines: 3,
+                  style: TextStyle(color: sheetContext.textPrimary),
                   decoration: InputDecoration(
                     hintText: '자세한 내용을 입력해주세요',
-                    hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
+                    hintStyle: TextStyle(color: sheetContext.textMuted),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                      borderSide: BorderSide(color: sheetContext.borderColor),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: BUTTON),
+                      borderSide: BorderSide(
+                        color: sheetContext.readableColor(BUTTON),
+                      ),
                     ),
                   ),
                 ),

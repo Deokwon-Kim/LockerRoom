@@ -49,9 +49,9 @@ class _MypageState extends State<Mypage> {
   ) {
     showModalBottomSheet(
       isScrollControlled: true,
-      backgroundColor: GRAYSCALE_LABEL_50,
+      backgroundColor: context.cardColor,
       context: context,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (BuildContext context) {
@@ -59,18 +59,28 @@ class _MypageState extends State<Mypage> {
         return Consumer<ProfileProvider>(
           builder: (context, provider, child) {
             return Container(
-              padding: EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     '프로필 사진 편집',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: context.textPrimary,
+                    ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   ListTile(
-                    leading: Icon(Icons.photo_library, color: BUTTON),
-                    title: Text('사진 선택'),
+                    leading: Icon(
+                      Icons.photo_library,
+                      color: context.readableColor(BUTTON),
+                    ),
+                    title: Text(
+                      '사진 선택',
+                      style: TextStyle(color: context.textPrimary),
+                    ),
                     onTap: () async {
                       Navigator.pop(context);
                       try {
@@ -100,8 +110,11 @@ class _MypageState extends State<Mypage> {
                   if (provider.imageUrl != null &&
                       provider.imageUrl!.isNotEmpty)
                     ListTile(
-                      leading: Icon(Icons.delete, color: Colors.red),
-                      title: Text('사진 삭제'),
+                      leading: const Icon(Icons.delete, color: Colors.red),
+                      title: Text(
+                        '사진 삭제',
+                        style: TextStyle(color: context.textPrimary),
+                      ),
                       onTap: () async {
                         Navigator.pop(context);
                         // 삭제 확인 대화상자
@@ -144,8 +157,11 @@ class _MypageState extends State<Mypage> {
                       },
                     ),
                   ListTile(
-                    leading: Icon(Icons.cancel, color: GRAYSCALE_LABEL_500),
-                    title: Text('취소'),
+                    leading: Icon(Icons.cancel, color: context.textMuted),
+                    title: Text(
+                      '취소',
+                      style: TextStyle(color: context.textSecondary),
+                    ),
                     onTap: () => Navigator.pop(context),
                   ),
                 ],
@@ -171,20 +187,20 @@ class _MypageState extends State<Mypage> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: context.bgColor,
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          backgroundColor: BACKGROUND_COLOR,
+          backgroundColor: context.bgColor,
           scrolledUnderElevation: 0,
           centerTitle: false,
           title: Row(
             children: [
-              const Text(
+              Text(
                 '내 정보',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
-                  color: GRAYSCALE_LABEL_950,
+                  color: context.textPrimary,
                   letterSpacing: -0.4,
                 ),
               ),
@@ -231,11 +247,9 @@ class _MypageState extends State<Mypage> {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: GRAYSCALE_LABEL_200.withValues(alpha: 0.8),
-                      ),
+                      border: Border.all(color: context.borderColor),
                       boxShadow: [
                         BoxShadow(
                           color: BLACK.withValues(alpha: 0.03),
@@ -244,7 +258,15 @@ class _MypageState extends State<Mypage> {
                         ),
                       ],
                     ),
-                    child: Icon(Icons.menu_rounded, color: teamColor, size: 20),
+                    child: Icon(
+                      Icons.menu_rounded,
+                      color:
+                          (context.isDarkMode &&
+                              teamColor.computeLuminance() < 0.22)
+                          ? ACCENT_CORAL
+                          : teamColor,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
@@ -259,11 +281,9 @@ class _MypageState extends State<Mypage> {
               child: Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: WHITE,
+                  color: context.cardColor,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
-                  ),
+                  border: Border.all(color: context.borderColor),
                   boxShadow: [
                     BoxShadow(
                       color: BLACK.withValues(alpha: 0.04),
@@ -400,10 +420,10 @@ class _MypageState extends State<Mypage> {
                                   Flexible(
                                     child: Text(
                                       userName,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w800,
-                                        color: GRAYSCALE_LABEL_950,
+                                        color: context.textPrimary,
                                       ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -415,7 +435,9 @@ class _MypageState extends State<Mypage> {
                                       vertical: 2.5,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: teamColor.withValues(alpha: 0.12),
+                                      color: context
+                                          .readableColor(teamColor)
+                                          .withValues(alpha: 0.16),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
@@ -425,7 +447,7 @@ class _MypageState extends State<Mypage> {
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w800,
-                                        color: teamColor,
+                                        color: context.readableColor(teamColor),
                                       ),
                                     ),
                                   ),
@@ -471,18 +493,18 @@ class _MypageState extends State<Mypage> {
                                         vertical: 6,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: BACKGROUND_COLOR,
+                                        color: context.surfaceAltColor,
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(
-                                          color: GRAYSCALE_LABEL_200,
+                                          color: context.borderColor,
                                         ),
                                       ),
-                                      child: const Text(
+                                      child: Text(
                                         '프로필 사진 변경',
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w700,
-                                          color: GRAYSCALE_LABEL_800,
+                                          color: context.textPrimary,
                                         ),
                                       ),
                                     ),
@@ -529,11 +551,9 @@ class _MypageState extends State<Mypage> {
                         horizontal: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: BACKGROUND_COLOR,
+                        color: context.surfaceAltColor,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
-                        ),
+                        border: Border.all(color: context.borderColor),
                       ),
                       child: Row(
                         children: [
@@ -628,11 +648,9 @@ class _MypageState extends State<Mypage> {
                 height: 46,
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: WHITE,
+                  color: context.cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
-                  ),
+                  border: Border.all(color: context.borderColor),
                   boxShadow: [
                     BoxShadow(
                       color: BLACK.withValues(alpha: 0.03),
@@ -699,7 +717,7 @@ class _MypageState extends State<Mypage> {
           style: GoogleFonts.bebasNeue(
             fontSize: 22,
             fontWeight: FontWeight.w700,
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
             height: 1.0,
             letterSpacing: 0.5,
           ),

@@ -24,6 +24,7 @@ class ScheduleDisplayItem {
 class ScheduleProvider with ChangeNotifier {
   final Map<String, ScheduleModel> _scheduleMap = {};
   bool _loaded = false;
+  bool _isLoading = false;
   StreamSubscription? _subscription;
   StreamSubscription<User?>? _authSubscription;
 
@@ -105,25 +106,10 @@ class ScheduleProvider with ChangeNotifier {
   int getIndexForDate(String dateKey) => _dateToIndexMap[dateKey] ?? -1;
 
   Future<void> load() async {
-    if (_loaded) return;
+    if (_loaded || _isLoading) return;
+    _isLoading = true;
 
-    try {
-      // 1. 초기 CSV 데이터 로드
-      final staticList = await ScheduleService().loadSchedules();
-      for (var s in staticList) {
-        _scheduleMap[s.gameId] = s;
-      }
-
-      // 초기 로드 완료 플래그 (Firestore 응답 전이라도 UI 출력 허용)
-      _loaded = true;
-      _processData(); // 기존 필터링 데이터가 있다면 갱신
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error loading static schedules: $e');
-      // 에러가 나더라도 Firestore 리스너 시도는 하게 둠
-    }
-
-    // 2. 로그인 상태에 따라 Firestore 실시간 리스너 연결 (비로그인 시 permission-denied 방지)
+    // 1. 로그인 상태에 따라 Firestore 실시간 리스너 즉시 연결 (CSV 대기 없이 병렬 시작)
     _authSubscription?.cancel();
     _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user != null) {
@@ -133,6 +119,53 @@ class ScheduleProvider with ChangeNotifier {
         _subscription = null;
       }
     });
+
+    try {
+      // 2. 올해(2026) 시즌 CSV만 우선 로드해 홈 일정 위젯 즉시 표시
+      final currentList = await ScheduleService().loadSchedules(
+        assetPaths: const ['assets/schedules/kbo_2026.csv'],
+      );
+      for (final s in currentList) {
+        _scheduleMap.putIfAbsent(s.gameId, () => s);
+      }
+    } catch (e) {
+      debugPrint('Error loading 2026 static schedules: $e');
+    } finally {
+      // 어떤 경우에도 무한 로딩에 빠지지 않도록 로드 완료 보장
+      _loaded = true;
+      _isLoading = false;
+      _processData();
+      notifyListeners();
+    }
+
+    // 3. 과거 연도(2010~2025) CSV는 백그라운드에서 추가 로드 (Firestore 최신값 보존)
+    unawaited(_loadPastSeasonSchedules());
+  }
+
+  Future<void> _loadPastSeasonSchedules() async {
+    try {
+      final pastPaths = ScheduleService.defaultAssetPaths
+          .where((p) => !p.endsWith('kbo_2026.csv'))
+          .toList();
+      if (pastPaths.isEmpty) return;
+
+      final pastList = await ScheduleService().loadSchedules(
+        assetPaths: pastPaths,
+      );
+      bool added = false;
+      for (final s in pastList) {
+        if (!_scheduleMap.containsKey(s.gameId)) {
+          _scheduleMap[s.gameId] = s;
+          added = true;
+        }
+      }
+      if (added) {
+        _processData();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error loading past static schedules: $e');
+    }
   }
 
   void _subscribeToFirestoreGames() {

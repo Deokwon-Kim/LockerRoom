@@ -79,7 +79,7 @@ class _SocialLoginPageState extends State<SocialLoginPage> {
                         children: [
                           const Spacer(flex: 2),
                           Image.asset(
-                            'assets/images/applogo/ilu_app_icon.png',
+                            context.appLogoAsset,
                             height: 175,
                             fit: BoxFit.contain,
                           ),

@@ -38,7 +38,7 @@ class NoticeViewPage extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: GRAYSCALE_LABEL_950,
+                            color: context.textPrimary,
                           ),
                         ),
                       ),
@@ -47,9 +47,9 @@ class NoticeViewPage extends StatelessWidget {
                         PopupMenuButton<String>(
                           icon: Icon(
                             Icons.more_vert,
-                            color: GRAYSCALE_LABEL_950,
+                            color: context.textPrimary,
                           ),
-                          color: BACKGROUND_COLOR,
+                          color: context.cardColor,
                           onSelected: (String result) {
                             if (result == 'edit' && onEdit != null) {
                               onEdit!();
@@ -65,7 +65,7 @@ class NoticeViewPage extends StatelessWidget {
                                     child: Text(
                                       '수정',
                                       style: TextStyle(
-                                        color: GRAYSCALE_LABEL_800,
+                                        color: context.textPrimary,
                                         fontSize: 14,
                                       ),
                                     ),
@@ -86,16 +86,16 @@ class NoticeViewPage extends StatelessWidget {
                     ],
                   ),
 
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     date,
-                    style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_600),
+                    style: TextStyle(fontSize: 12, color: context.textMuted),
                   ),
                 ],
               ),
             ),
-            Divider(color: GRAYSCALE_LABEL_200, height: 1, thickness: 1),
-            SizedBox(height: 12),
+            Divider(color: context.dividerColor, height: 1, thickness: 1),
+            const SizedBox(height: 12),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -104,8 +104,8 @@ class NoticeViewPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     color: content.isNotEmpty
-                        ? GRAYSCALE_LABEL_800
-                        : GRAYSCALE_LABEL_500,
+                        ? context.textPrimary
+                        : context.textMuted,
                     height: 1.6,
                   ),
                 ),

@@ -149,12 +149,12 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
     const double borderRadiusValue = 8.0;
 
     return Scaffold(
-      backgroundColor: WHITE,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: WHITE,
+        backgroundColor: context.bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: GRAYSCALE_LABEL_950),
+          icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -164,7 +164,7 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
         title: Text(
           "닉네임 변경",
           style: TextStyle(
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -176,16 +176,16 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            SizedBox(height: 40),
+            const SizedBox(height: 40),
             Text(
               "변경하실 닉네임을 입력해주세요",
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: GRAYSCALE_LABEL_900,
+                color: context.textPrimary,
               ),
             ),
-            SizedBox(height: 5),
+            const SizedBox(height: 5),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -201,15 +201,17 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
                         );
                       },
 
-                      cursorColor: teamProvider.selectedTeam!.color,
+                      cursorColor: context.readableColor(
+                        teamProvider.selectedTeam?.color ?? BUTTON,
+                      ),
                       decoration: InputDecoration(
                         hintText: _currentNicknameHint,
                         hintStyle: TextStyle(
-                          color: GRAYSCALE_LABEL_500,
+                          color: context.textMuted,
                           fontSize: 14,
                         ),
                         filled: true,
-                        fillColor: WHITE,
+                        fillColor: context.cardColor,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
                             borderRadiusValue,
@@ -221,7 +223,7 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
                             borderRadiusValue,
                           ),
                           borderSide: BorderSide(
-                            color: GRAYSCALE_LABEL_400,
+                            color: context.borderColor,
                             width: 1.0,
                           ),
                         ),
@@ -230,7 +232,9 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
                             borderRadiusValue,
                           ),
                           borderSide: BorderSide(
-                            color: teamProvider.selectedTeam!.color,
+                            color: context.readableColor(
+                              teamProvider.selectedTeam?.color ?? BUTTON,
+                            ),
                             width: 1.0,
                           ),
                         ),
@@ -243,7 +247,7 @@ class _NicknameChangePageState extends State<NicknameChangePage> {
                       maxLength: 8,
                       style: TextStyle(
                         fontSize: 14,
-                        color: GRAYSCALE_LABEL_950,
+                        color: context.textPrimary,
                       ),
                     ),
                   ),

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/page/notice/feature_announcement_admin_page.dart';
 import 'package:lockerroom/page/notice/notice_page.dart';
 import 'package:toastification/toastification.dart';
 
@@ -35,24 +36,36 @@ class _NoticeListPageState extends State<NoticeListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: WHITE,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: WHITE,
-        title: const Text(
+        backgroundColor: context.bgColor,
+        title: Text(
           '공지사항',
           style: TextStyle(
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
-        foregroundColor: GRAYSCALE_LABEL_950,
+        foregroundColor: context.textPrimary,
 
         actions: [
-          if (_isAdmin())
+          if (_isAdmin()) ...[
+            IconButton(
+              tooltip: '신규 기능 안내 관리',
+              icon: const Icon(Icons.campaign_outlined),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FeatureAnnouncementAdminPage(),
+                  ),
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.add),
               onPressed: () async {
@@ -71,6 +84,7 @@ class _NoticeListPageState extends State<NoticeListPage> {
                 }
               },
             ),
+          ],
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -206,19 +220,19 @@ class _NoticeListPageState extends State<NoticeListPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: GRAYSCALE_LABEL_950,
+                          color: context.textPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         timestamp != null
                             ? _formatDateTime(timestamp.toDate())
                             : '날짜 없음',
                         style: TextStyle(
                           fontSize: 12,
-                          color: GRAYSCALE_LABEL_600,
+                          color: context.textMuted,
                         ),
                       ),
                     ],

@@ -46,14 +46,15 @@ class _NameChangePageState extends State<NameChangePage> {
     const double borderRadiusValue = 8.0;
 
     return Scaffold(
-      backgroundColor: WHITE,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: WHITE,
+        backgroundColor: context.bgColor,
+        foregroundColor: context.textPrimary,
         elevation: 0,
         title: Text(
           "이름 변경",
           style: TextStyle(
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -65,16 +66,16 @@ class _NameChangePageState extends State<NameChangePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            SizedBox(height: 40),
+            const SizedBox(height: 40),
             Text(
               "변경하실 이름을 입력해주세요",
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: GRAYSCALE_LABEL_900,
+                color: context.textPrimary,
               ),
             ),
-            SizedBox(height: 5),
+            const SizedBox(height: 5),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
@@ -85,16 +86,18 @@ class _NameChangePageState extends State<NameChangePage> {
                       controller: _nameChangeController,
                       onChanged: _onNameChanged,
 
-                      cursorColor: teamProvider.selectedTeam?.color,
+                      cursorColor: context.readableColor(
+                        teamProvider.selectedTeam?.color ?? BUTTON,
+                      ),
 
                       decoration: InputDecoration(
                         hintText: _currentNameHint,
                         hintStyle: TextStyle(
-                          color: GRAYSCALE_LABEL_500,
+                          color: context.textMuted,
                           fontSize: 14,
                         ),
                         filled: true,
-                        fillColor: WHITE,
+                        fillColor: context.cardColor,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
                             borderRadiusValue,
@@ -106,7 +109,7 @@ class _NameChangePageState extends State<NameChangePage> {
                             borderRadiusValue,
                           ),
                           borderSide: BorderSide(
-                            color: GRAYSCALE_LABEL_400,
+                            color: context.borderColor,
                             width: 1.0,
                           ),
                         ),
@@ -115,7 +118,9 @@ class _NameChangePageState extends State<NameChangePage> {
                             borderRadiusValue,
                           ),
                           borderSide: BorderSide(
-                            color: teamProvider.selectedTeam!.color,
+                            color: context.readableColor(
+                              teamProvider.selectedTeam?.color ?? BUTTON,
+                            ),
                             width: 1.0,
                           ),
                         ),
@@ -128,7 +133,7 @@ class _NameChangePageState extends State<NameChangePage> {
                       maxLength: 8,
                       style: TextStyle(
                         fontSize: 14,
-                        color: GRAYSCALE_LABEL_950,
+                        color: context.textPrimary,
                       ),
                     ),
                   ),

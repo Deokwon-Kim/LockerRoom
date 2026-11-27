@@ -50,8 +50,6 @@ class _BottomTabBarState extends State<BottomTabBar> {
       _previousSelectedTeam = _teamProvider.selectedTeam;
       _teamProvider.addListener(_handleTeamProviderChange);
 
-      _checkAndShowCheerSongPopup();
-
       _tabProvider = context.read<TabProvider>();
       _tabProvider.addListener(_handleTabProviderChange);
       _selectedIndex = _tabProvider.selectedIndex;
@@ -92,161 +90,6 @@ class _BottomTabBarState extends State<BottomTabBar> {
         );
       }
     }
-  }
-
-  // 팝업 표시 여부 확인 및 표시
-  Future<void> _checkAndShowCheerSongPopup() async {
-    final prefs = await SharedPreferences.getInstance();
-    final bool dontShowAgain = prefs.getBool('dontShowMainPopup') ?? false;
-
-    if (!dontShowAgain) {
-      if (mounted) _showCheerSongGuidePopup();
-    }
-  }
-
-  void _showCheerSongGuidePopup() {
-    bool isChecked = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            backgroundColor: WHITE,
-            title: Row(
-              children: [
-                Icon(
-                  Icons.notifications_active,
-                  color: context.read<TeamProvider>().selectedTeam?.color,
-                  size: 28,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  '공지사항',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'kbo',
-                  ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildGuideItem('', 'ILU 업데이트 안내 ⚾️'),
-                const SizedBox(height: 12),
-                _buildGuideItem('', '1.퀴즈 시즌제 시작! 레전드 티어에 도전하세요'),
-                const SizedBox(height: 12),
-                _buildGuideItem('', '2.홈 화면 리뉴얼!'),
-                const SizedBox(height: 12),
-                _buildGuideItem('', '새로워진 ILU를 지금 만나보세요.'),
-                const SizedBox(height: 20),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      isChecked = !isChecked;
-                    });
-                  },
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: Checkbox(
-                          value: isChecked,
-                          activeColor: context
-                              .read<TeamProvider>()
-                              .selectedTeam
-                              ?.color,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          onChanged: (value) {
-                            setState(() {
-                              isChecked = value ?? false;
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        '다시 보지 않기',
-                        style: TextStyle(
-                          color: GRAYSCALE_LABEL_600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (isChecked) {
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setBool('dontShowMainPopup', true);
-                    }
-                    if (!context.mounted) return;
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context
-                        .read<TeamProvider>()
-                        .selectedTeam
-                        ?.color,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: const Text(
-                    '확인',
-                    style: TextStyle(
-                      color: WHITE,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'kbo',
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  // 가이드 아이템 빌더
-  Widget _buildGuideItem(String emoji, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 20)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.4,
-              color: GRAYSCALE_LABEL_800,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    );
   }
 
   @override
@@ -310,6 +153,12 @@ class _BottomTabBarState extends State<BottomTabBar> {
       Mypage(userId: FirebaseAuth.instance.currentUser?.uid ?? ''),
     ];
 
+    final teamColor = teamProvider.selectedTeam?.color ?? BUTTON;
+    final activeTabColor =
+        (context.isDarkMode && teamColor.computeLuminance() < 0.22)
+        ? ACCENT_CORAL
+        : teamColor;
+
     return Scaffold(
       body: pages[_selectedIndex],
       bottomNavigationBar: Container(
@@ -320,8 +169,9 @@ class _BottomTabBarState extends State<BottomTabBar> {
             // _buildScoreBanner(),
             CustomPaint(
               painter: ConvexTabBarPainter(
-                backgroundColor: WHITE,
-                shadowColor: GRAYSCALE_LABEL_100.withValues(alpha: 0.5),
+                backgroundColor: context.cardColor,
+                shadowColor: (context.isDarkMode ? BLACK : GRAYSCALE_LABEL_100)
+                    .withValues(alpha: 0.5),
               ),
               child: Theme(
                 data: Theme.of(context).copyWith(
@@ -333,7 +183,7 @@ class _BottomTabBarState extends State<BottomTabBar> {
                   currentIndex: _selectedIndex,
                   onTap: _onItemTapped,
                   type: BottomNavigationBarType.fixed,
-                  selectedItemColor: teamProvider.selectedTeam?.color,
+                  selectedItemColor: activeTabColor,
                   unselectedItemColor: GRAYSCALE_LABEL_500,
                   backgroundColor: Colors.transparent,
                   elevation: 0,
@@ -393,207 +243,24 @@ class _BottomTabBarState extends State<BottomTabBar> {
     );
   }
 
-  // Widget _buildScoreBanner() {
-  //   // 홈 탭(_selectedIndex == 0)일 때만 배너 노출
-  //   if (_selectedIndex != 0) return const SizedBox.shrink();
-
-  //   return Consumer2<TeamProvider, ScheduleProvider>(
-  //     builder: (context, teamProvider, scheduleProvider, child) {
-  //       final selectedTeam = teamProvider.selectedTeam;
-  //       if (selectedTeam == null || !scheduleProvider.loaded) {
-  //         return const SizedBox.shrink();
-  //       }
-
-  //       final teamName = selectedTeam.symplename;
-  //       final now = DateTime.now();
-
-  //       // 1. 관련 게임 필터링 (내 팀의 오늘 경기 / 진행 경기 / 가장 가까운 다음 경기)
-  //       final relatedGames = scheduleProvider.allSchedules.where((s) {
-  //         final isMyTeam = s.homeTeam == teamName || s.awayTeam == teamName;
-  //         if (!isMyTeam) return false;
-
-  //         // LIVE거나, 오늘 경기거나, 혹은 아직 치러지지 않은 미래의 경기들
-  //         final isToday =
-  //             s.dateTimeKst.year == now.year &&
-  //             s.dateTimeKst.month == now.month &&
-  //             s.dateTimeKst.day == now.day;
-  //         final isFuture = s.dateTimeKst.isAfter(now);
-
-  //         return isToday || isFuture || s.status == 'LIVE';
-  //       }).toList();
-
-  //       if (relatedGames.isEmpty) return const SizedBox.shrink();
-
-  //       // 가장 우선순위 높은 게임 선택 (LIVE -> 가장 가까운 미래)
-  //       relatedGames.sort((a, b) {
-  //         if (a.status == 'LIVE' && b.status != 'LIVE') return -1;
-  //         if (a.status != 'LIVE' && b.status == 'LIVE') return 1;
-  //         return a.dateTimeKst.compareTo(b.dateTimeKst);
-  //       });
-
-  //       final game = relatedGames.first;
-  //       final isLive = game.status == 'LIVE';
-  //       final isFinal = game.status == 'FINAL';
-
-  //       // 상태 텍스트
-  //       String statusText = '경기 전';
-  //       if (isLive)
-  //         statusText = game.inning ?? 'LIVE';
-  //       else if (isFinal)
-  //         statusText = '종료';
-  //       else if (game.status == 'PPD')
-  //         statusText = '우천취소';
-
-  //       // 팀 모델 찾기
-  //       final homeTeam = teamProvider.findTeamByName(game.homeTeam);
-  //       final awayTeam = teamProvider.findTeamByName(game.awayTeam);
-
-  //       return GestureDetector(
-  //         onTap: () {
-  //           Navigator.push(
-  //             context,
-  //             MaterialPageRoute(
-  //               builder: (context) => SchedulePage(teamModel: selectedTeam),
-  //             ),
-  //           );
-  //         },
-  //         child: Padding(
-  //           padding: const EdgeInsets.only(left: 10.0, right: 10.0),
-  //           child: Container(
-  //             width: double.infinity,
-  //             height: 60,
-  //             decoration: BoxDecoration(
-  //               color: selectedTeam.color,
-  //               borderRadius: const BorderRadius.only(
-  //                 topLeft: Radius.circular(20),
-  //                 topRight: Radius.circular(20),
-  //               ),
-  //               boxShadow: [
-  //                 BoxShadow(
-  //                   color: Colors.black.withOpacity(0.1),
-  //                   blurRadius: 10,
-  //                   offset: const Offset(0, -2),
-  //                 ),
-  //               ],
-  //             ),
-  //             padding: const EdgeInsets.symmetric(horizontal: 16),
-  //             child: Row(
-  //               children: [
-  //                 const SizedBox(width: 8),
-  //                 Text(
-  //                   game.stadium,
-  //                   style: const TextStyle(
-  //                     color: WHITE,
-  //                     fontSize: 13,
-  //                     fontWeight: FontWeight.bold,
-  //                   ),
-  //                 ),
-  //                 const SizedBox(width: 8),
-  //                 Container(
-  //                   padding: const EdgeInsets.symmetric(
-  //                     horizontal: 8,
-  //                     vertical: 3,
-  //                   ),
-  //                   decoration: BoxDecoration(
-  //                     gradient: const LinearGradient(
-  //                       colors: [Color(0xFFFF2D55), Color(0xFF8E5AFF)],
-  //                     ),
-  //                     borderRadius: BorderRadius.circular(10),
-  //                   ),
-  //                   child: Text(
-  //                     statusText,
-  //                     style: const TextStyle(
-  //                       color: WHITE,
-  //                       fontSize: 9,
-  //                       fontWeight: FontWeight.bold,
-  //                     ),
-  //                   ),
-  //                 ),
-  //                 const Spacer(),
-  //                 Row(
-  //                   children: [
-  //                     if (awayTeam != null)
-  //                       Image.asset(awayTeam.logoPath, height: 28),
-  //                     const SizedBox(width: 8),
-  //                     if (isLive || isFinal)
-  //                       Text(
-  //                         '${game.awayScore}',
-  //                         style: const TextStyle(
-  //                           color: WHITE,
-  //                           fontSize: 18,
-  //                           fontWeight: FontWeight.bold,
-  //                           fontFamily: 'kbo',
-  //                         ),
-  //                       ),
-  //                     if (isLive)
-  //                       Padding(
-  //                         padding: const EdgeInsets.symmetric(horizontal: 8),
-  //                         child: Text(
-  //                           ':',
-  //                           style: TextStyle(
-  //                             color: WHITE.withOpacity(0.5),
-  //                             fontSize: 16,
-  //                             fontWeight: FontWeight.bold,
-  //                           ),
-  //                         ),
-  //                       )
-  //                     else if (isLive != null)
-  //                       Padding(
-  //                         padding: const EdgeInsets.symmetric(horizontal: 8),
-  //                         child: Text(
-  //                           'vs',
-  //                           style: TextStyle(
-  //                             color: WHITE.withOpacity(0.5),
-  //                             fontSize: 16,
-  //                             fontWeight: FontWeight.bold,
-  //                           ),
-  //                         ),
-  //                       ),
-  //                     if (isLive || isFinal)
-  //                       Text(
-  //                         '${game.homeScore}',
-  //                         style: const TextStyle(
-  //                           color: WHITE,
-  //                           fontSize: 18,
-  //                           fontWeight: FontWeight.bold,
-  //                           fontFamily: 'kbo',
-  //                         ),
-  //                       ),
-  //                     const SizedBox(width: 8),
-  //                     if (homeTeam != null)
-  //                       Image.asset(homeTeam.logoPath, height: 28),
-  //                   ],
-  //                 ),
-  //                 const SizedBox(width: 10),
-  //                 // 더보기 화살표
-  //                 Icon(
-  //                   Icons.arrow_forward_ios_rounded,
-  //                   color: WHITE.withOpacity(0.5),
-  //                   size: 14,
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
-
   Widget _buildTabIcon(
     int index,
     IconData unselectedIcon,
     IconData selectedIcon,
   ) {
     bool isSelected = _selectedIndex == index;
+    final teamColor =
+        context.watch<TeamProvider>().selectedTeam?.color ?? BUTTON;
+    final activeColor =
+        (context.isDarkMode && teamColor.computeLuminance() < 0.22)
+        ? ACCENT_CORAL
+        : teamColor;
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 8),
       child: Icon(
         isSelected ? selectedIcon : unselectedIcon,
         size: 29,
-        color: isSelected
-            ? context.watch<TeamProvider>().selectedTeam?.color
-            : Colors.grey,
+        color: isSelected ? activeColor : Colors.grey,
       ),
     );
   }
@@ -605,15 +272,19 @@ class _BottomTabBarState extends State<BottomTabBar> {
     String selectedSvgPath,
   ) {
     bool isSelected = _selectedIndex == index;
+    final teamColor =
+        context.watch<TeamProvider>().selectedTeam?.color ?? BUTTON;
+    final activeColor =
+        (context.isDarkMode && teamColor.computeLuminance() < 0.22)
+        ? ACCENT_CORAL
+        : teamColor;
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 8), // 상하 패딩 조절
       child: SvgIcon(
         assetPath: isSelected ? selectedSvgPath : unselectedSvgPath,
         width: 28,
         height: 28,
-        color: isSelected
-            ? context.watch<TeamProvider>().selectedTeam?.color
-            : Colors.grey,
+        color: isSelected ? activeColor : Colors.grey,
       ),
     );
   }

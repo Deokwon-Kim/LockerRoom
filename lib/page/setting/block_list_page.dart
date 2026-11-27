@@ -85,15 +85,16 @@ class _BlockListPageState extends State<BlockListPage> {
     }
 
     return Scaffold(
-      backgroundColor: WHITE,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: WHITE,
+        backgroundColor: context.bgColor,
+        foregroundColor: context.textPrimary,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: const Text(
+        title: Text(
           '차단 목록',
           style: TextStyle(
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -112,12 +113,12 @@ class _BlockListPageState extends State<BlockListPage> {
                   Icon(
                     Icons.block_flipped,
                     size: 60,
-                    color: GRAYSCALE_LABEL_400,
+                    color: context.textMuted,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     '차단한 사용자가 없습니다',
-                    style: TextStyle(fontSize: 16, color: GRAYSCALE_LABEL_600),
+                    style: TextStyle(fontSize: 16, color: context.textSecondary),
                   ),
                 ],
               ),
@@ -146,9 +147,9 @@ class _BlockListPageState extends State<BlockListPage> {
                         ),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: GRAYSCALE_LABEL_50,
+                            color: context.cardColor,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: GRAYSCALE_LABEL_200),
+                            border: Border.all(color: context.borderColor),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -165,10 +166,10 @@ class _BlockListPageState extends State<BlockListPage> {
                                     children: [
                                       Text(
                                         userName,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w600,
-                                          color: GRAYSCALE_LABEL_950,
+                                          color: context.textPrimary,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -179,7 +180,7 @@ class _BlockListPageState extends State<BlockListPage> {
                                         '차단한 날짜: $formattedDate',
                                         style: TextStyle(
                                           fontSize: 11,
-                                          color: GRAYSCALE_LABEL_600,
+                                          color: context.textSecondary,
                                           fontWeight: FontWeight.w400,
                                         ),
                                       ),
@@ -204,16 +205,16 @@ class _BlockListPageState extends State<BlockListPage> {
                                     ),
                                     decoration: BoxDecoration(
                                       border: Border.all(
-                                        color: GRAYSCALE_LABEL_400,
+                                        color: context.borderColor,
                                       ),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       '차단 해제',
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: GRAYSCALE_LABEL_700,
+                                        color: context.textSecondary,
                                       ),
                                     ),
                                   ),
@@ -244,15 +245,21 @@ class _BlockListPageState extends State<BlockListPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: WHITE,
-        title: Text('차단 해제'),
-        content: Text('${userName}님의 차단을 해제하시겠습니까?'),
+        backgroundColor: context.cardColor,
+        title: Text(
+          '차단 해제',
+          style: TextStyle(color: context.textPrimary),
+        ),
+        content: Text(
+          '${userName}님의 차단을 해제하시겠습니까?',
+          style: TextStyle(color: context.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               '취소',
-              style: TextStyle(color: GRAYSCALE_LABEL_700),
+              style: TextStyle(color: context.textSecondary),
             ),
           ),
           TextButton(
@@ -271,7 +278,10 @@ class _BlockListPageState extends State<BlockListPage> {
                 title: Text('${userName}님의 차단이 해제되었습니다'),
               );
             },
-            child: const Text('해제', style: TextStyle(color: BUTTON)),
+            child: Text(
+              '해제',
+              style: TextStyle(color: context.readableColor(BUTTON)),
+            ),
           ),
         ],
       ),

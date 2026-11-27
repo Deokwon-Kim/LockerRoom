@@ -85,11 +85,16 @@ class _IntutionTabBarState extends State<IntutionTabBar> {
                 child: Container(
                   height: 70,
                   decoration: BoxDecoration(
-                    color: WHITE,
+                    color: context.cardColor,
                     borderRadius: BorderRadius.circular(50),
+                    border: context.isDarkMode
+                        ? Border.all(color: context.borderColor, width: 1)
+                        : null,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withOpacity(
+                          context.isDarkMode ? 0.35 : 0.1,
+                        ),
                         spreadRadius: 1,
                         blurRadius: 10,
                         offset: Offset(0, 3),
@@ -138,9 +143,11 @@ class _IntutionTabBarState extends State<IntutionTabBar> {
     required int index,
   }) {
     final isSelected = _selectedIndex == index;
+    final teamColor =
+        context.watch<TeamProvider>().selectedTeam?.color ?? BUTTON;
     final color = isSelected
-        ? context.watch<TeamProvider>().selectedTeam?.color
-        : GRAYSCALE_LABEL_500;
+        ? context.readableColor(teamColor)
+        : context.textSecondary;
 
     return Expanded(
       child: GestureDetector(

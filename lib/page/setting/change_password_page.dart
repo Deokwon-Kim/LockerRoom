@@ -61,27 +61,33 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   }) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle: TextStyle(color: GRAYSCALE_LABEL_500, fontSize: 14),
+      hintStyle: TextStyle(color: context.textMuted, fontSize: 14),
       filled: true,
-      fillColor: WHITE,
+      fillColor: context.cardColor,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: GRAYSCALE_LABEL_400, width: 1.0),
+        borderSide: BorderSide(color: context.borderColor, width: 1.0),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: BUTTON, width: 1.0),
+        borderSide: BorderSide(
+          color: context.readableColor(BUTTON),
+          width: 1.0,
+        ),
       ),
-      contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 15.0),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16.0,
+        vertical: 15.0,
+      ),
       suffixIcon: onToggleObscure != null && isObscured != null
           ? IconButton(
               icon: Icon(
                 isObscured ? Icons.visibility_off : Icons.visibility,
-                color: GRAYSCALE_LABEL_500,
+                color: context.textMuted,
               ),
               onPressed: onToggleObscure,
             )
@@ -107,7 +113,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: GRAYSCALE_LABEL_900,
+            color: context.textPrimary,
           ),
         ),
         SizedBox(height: bottomMarginLabelToField),
@@ -116,13 +122,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           child: TextField(
             controller: controller,
             obscureText: isObscured,
-            cursorColor: BUTTON,
+            cursorColor: context.readableColor(BUTTON),
             decoration: _passwordInputDecoration(
               hintText,
               onToggleObscure: onToggleObscure,
               isObscured: isObscured,
             ),
-            style: TextStyle(fontSize: 14, color: GRAYSCALE_LABEL_950),
+            style: TextStyle(fontSize: 14, color: context.textPrimary),
           ),
         ),
       ],
@@ -237,12 +243,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     const double fieldHeight = 52.0;
     const double borderRadiusValue = 8.0;
     return Scaffold(
-      backgroundColor: WHITE,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: WHITE,
+        backgroundColor: context.bgColor,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: GRAYSCALE_LABEL_950),
+          icon: Icon(Icons.arrow_back_ios, color: context.textPrimary),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -252,7 +258,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         title: Text(
           "비밀번호 변경",
           style: TextStyle(
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
