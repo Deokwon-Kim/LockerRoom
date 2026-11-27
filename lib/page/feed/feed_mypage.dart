@@ -13,6 +13,7 @@ import 'package:lockerroom/page/afterMarket/after_market_detail_page.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_edit_page.dart';
+import 'package:lockerroom/page/feed/feed_search_page.dart';
 import 'package:lockerroom/page/follow/follow_list_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_detail_page.dart';
 import 'package:lockerroom/page/myPage/quiz_trophy_page.dart';
@@ -23,8 +24,8 @@ import 'package:lockerroom/provider/follow_provider.dart';
 import 'package:lockerroom/provider/market_feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
-import 'package:lockerroom/utils/media_utils.dart';
-import 'package:lockerroom/widgets/network_video_player.dart';
+import 'package:lockerroom/widgets/feed_hashtag_editor.dart';
+import 'package:lockerroom/widgets/feed_media_gallery.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -102,9 +103,9 @@ class _FeedMypageState extends State<FeedMypage> {
         return DefaultTabController(
           length: 3,
           child: Scaffold(
-            backgroundColor: BACKGROUND_COLOR,
+            backgroundColor: context.bgColor,
             appBar: AppBar(
-              backgroundColor: BACKGROUND_COLOR,
+              backgroundColor: context.bgColor,
               scrolledUnderElevation: 0,
               centerTitle: false,
               titleSpacing: 0,
@@ -121,10 +122,10 @@ class _FeedMypageState extends State<FeedMypage> {
                             widget.post.userNickName;
                         return Text(
                           nickname,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
-                            color: GRAYSCALE_LABEL_950,
+                            color: context.textPrimary,
                             letterSpacing: -0.4,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -220,11 +221,9 @@ class _FeedMypageState extends State<FeedMypage> {
                   child: Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
-                      ),
+                      border: Border.all(color: context.borderColor),
                       boxShadow: [
                         BoxShadow(
                           color: BLACK.withValues(alpha: 0.04),
@@ -260,11 +259,11 @@ class _FeedMypageState extends State<FeedMypage> {
                                     backgroundImage: profileUrl != null
                                         ? NetworkImage(profileUrl)
                                         : null,
-                                    backgroundColor: GRAYSCALE_LABEL_100,
+                                    backgroundColor: context.surfaceAltColor,
                                     child: profileUrl == null
-                                        ? const Icon(
+                                        ? Icon(
                                             Icons.person_rounded,
-                                            color: GRAYSCALE_LABEL_400,
+                                            color: context.textMuted,
                                             size: 36,
                                           )
                                         : null,
@@ -286,6 +285,7 @@ class _FeedMypageState extends State<FeedMypage> {
                                           style: TextStyle(
                                             fontSize: 19,
                                             fontWeight: FontWeight.w800,
+                                            color: context.textPrimary,
                                           ),
                                         ),
                                       ),
@@ -297,7 +297,7 @@ class _FeedMypageState extends State<FeedMypage> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: activeTeamColor.withValues(
-                                            alpha: 0.12,
+                                            alpha: 0.14,
                                           ),
                                           borderRadius: BorderRadius.circular(
                                             6,
@@ -310,7 +310,9 @@ class _FeedMypageState extends State<FeedMypage> {
                                           style: TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w800,
-                                            color: activeTeamColor,
+                                            color: context.readableColor(
+                                              activeTeamColor,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -322,8 +324,8 @@ class _FeedMypageState extends State<FeedMypage> {
                                         ? '${targetTeamModel?.stadium ?? "ILU 라운지"}'
                                         : (targetTeamModel?.stadium ??
                                               'ILU 라운지'),
-                                    style: const TextStyle(
-                                      color: GRAYSCALE_LABEL_500,
+                                    style: TextStyle(
+                                      color: context.textSecondary,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -348,16 +350,16 @@ class _FeedMypageState extends State<FeedMypage> {
                                               vertical: 6,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: GRAYSCALE_LABEL_100,
+                                              color: context.surfaceAltColor,
                                               borderRadius:
                                                   BorderRadius.circular(10),
                                             ),
-                                            child: const Text(
+                                            child: Text(
                                               '이 사용자가 회원님을 차단했습니다',
                                               style: TextStyle(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w700,
-                                                color: GRAYSCALE_LABEL_600,
+                                                color: context.textSecondary,
                                               ),
                                             ),
                                           );
@@ -383,7 +385,8 @@ class _FeedMypageState extends State<FeedMypage> {
                                                       ),
                                                   decoration: BoxDecoration(
                                                     color: isFollowing
-                                                        ? BACKGROUND_COLOR
+                                                        ? context
+                                                              .surfaceAltColor
                                                         : activeTeamColor,
                                                     borderRadius:
                                                         BorderRadius.circular(
@@ -391,8 +394,8 @@ class _FeedMypageState extends State<FeedMypage> {
                                                         ),
                                                     border: isFollowing
                                                         ? Border.all(
-                                                            color:
-                                                                GRAYSCALE_LABEL_300,
+                                                            color: context
+                                                                .borderColor,
                                                           )
                                                         : null,
                                                   ),
@@ -406,7 +409,8 @@ class _FeedMypageState extends State<FeedMypage> {
                                                         fontWeight:
                                                             FontWeight.w800,
                                                         color: isFollowing
-                                                            ? GRAYSCALE_LABEL_800
+                                                            ? context
+                                                                  .textPrimary
                                                             : WHITE,
                                                       ),
                                                     ),
@@ -441,19 +445,21 @@ class _FeedMypageState extends State<FeedMypage> {
                                                       vertical: 7,
                                                     ),
                                                 decoration: BoxDecoration(
-                                                  color: BACKGROUND_COLOR,
+                                                  color:
+                                                      context.surfaceAltColor,
                                                   borderRadius:
                                                       BorderRadius.circular(10),
                                                   border: Border.all(
-                                                    color: GRAYSCALE_LABEL_200,
+                                                    color: context.borderColor,
                                                   ),
                                                 ),
-                                                child: const Text(
+                                                child: Text(
                                                   '차단',
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.w700,
-                                                    color: GRAYSCALE_LABEL_700,
+                                                    color:
+                                                        context.textSecondary,
                                                   ),
                                                 ),
                                               ),
@@ -478,11 +484,9 @@ class _FeedMypageState extends State<FeedMypage> {
                             horizontal: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: BACKGROUND_COLOR,
+                            color: context.surfaceAltColor,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
-                            ),
+                            border: Border.all(color: context.borderColor),
                           ),
                           child: Row(
                             children: [
@@ -504,7 +508,7 @@ class _FeedMypageState extends State<FeedMypage> {
                               Container(
                                 width: 1,
                                 height: 28,
-                                color: GRAYSCALE_LABEL_200,
+                                color: context.dividerColor,
                               ),
                               Expanded(
                                 child: StreamBuilder<int>(
@@ -538,7 +542,7 @@ class _FeedMypageState extends State<FeedMypage> {
                               Container(
                                 width: 1,
                                 height: 28,
-                                color: GRAYSCALE_LABEL_200,
+                                color: context.dividerColor,
                               ),
                               Expanded(
                                 child: StreamBuilder<int>(
@@ -584,11 +588,9 @@ class _FeedMypageState extends State<FeedMypage> {
                     height: 46,
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
-                      ),
+                      border: Border.all(color: context.borderColor),
                       boxShadow: [
                         BoxShadow(
                           color: BLACK.withValues(alpha: 0.03),
@@ -612,7 +614,7 @@ class _FeedMypageState extends State<FeedMypage> {
                       indicatorSize: TabBarIndicatorSize.tab,
                       dividerColor: Colors.transparent,
                       labelColor: WHITE,
-                      unselectedLabelColor: GRAYSCALE_LABEL_500,
+                      unselectedLabelColor: context.textSecondary,
                       labelStyle: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
@@ -665,7 +667,7 @@ class _FeedMypageState extends State<FeedMypage> {
           style: GoogleFonts.bebasNeue(
             fontSize: 22,
             fontWeight: FontWeight.w700,
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
             height: 1.0,
             letterSpacing: 0.5,
           ),
@@ -673,10 +675,10 @@ class _FeedMypageState extends State<FeedMypage> {
         const SizedBox(height: 3),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: GRAYSCALE_LABEL_500,
+            color: context.textSecondary,
           ),
         ),
       ],
@@ -692,7 +694,7 @@ class _FeedMypageState extends State<FeedMypage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -774,9 +776,9 @@ class _FeedMypageState extends State<FeedMypage> {
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          border: Border.all(color: GRAYSCALE_LABEL_300),
+                          border: Border.all(color: context.borderColor),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
@@ -785,7 +787,7 @@ class _FeedMypageState extends State<FeedMypage> {
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: GRAYSCALE_LABEL_900,
+                              color: context.textPrimary,
                             ),
                           ),
                         ),
@@ -845,36 +847,38 @@ class _FeedMypageState extends State<FeedMypage> {
     required String title,
     required String description,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 24, color: GRAYSCALE_LABEL_600),
-        SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: GRAYSCALE_LABEL_900,
+    return Builder(
+      builder: (context) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 24, color: context.textSecondary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: context.textPrimary,
+                  ),
                 ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: GRAYSCALE_LABEL_600,
-                  height: 1.4,
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.textSecondary,
+                    height: 1.4,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -931,7 +935,7 @@ class UserPostsTab extends StatelessWidget {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: WHITE,
+                    color: context.cardColor,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
@@ -941,18 +945,18 @@ class UserPostsTab extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.edit_note_rounded,
                     size: 30,
-                    color: GRAYSCALE_LABEL_400,
+                    color: context.textMuted,
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   '작성한 게시물이 없습니다',
                   style: TextStyle(
                     fontSize: 15,
-                    color: GRAYSCALE_LABEL_600,
+                    color: context.textSecondary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -979,11 +983,9 @@ class UserPostsTab extends StatelessWidget {
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                 decoration: BoxDecoration(
-                  color: WHITE,
+                  color: context.cardColor,
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: GRAYSCALE_LABEL_200.withValues(alpha: 0.6),
-                  ),
+                  border: Border.all(color: context.borderColor),
                   boxShadow: [
                     BoxShadow(
                       color: BLACK.withValues(alpha: 0.04),
@@ -1009,7 +1011,7 @@ class UserPostsTab extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: GRAYSCALE_LABEL_200,
+                                    color: context.borderColor,
                                     width: 1,
                                   ),
                                 ),
@@ -1018,11 +1020,11 @@ class UserPostsTab extends StatelessWidget {
                                   backgroundImage: profileUrl != null
                                       ? NetworkImage(profileUrl)
                                       : null,
-                                  backgroundColor: GRAYSCALE_LABEL_100,
+                                  backgroundColor: context.surfaceAltColor,
                                   child: profileUrl == null
-                                      ? const Icon(
+                                      ? Icon(
                                           Icons.person_rounded,
-                                          color: GRAYSCALE_LABEL_500,
+                                          color: context.textMuted,
                                           size: 20,
                                         )
                                       : null,
@@ -1046,10 +1048,10 @@ class UserPostsTab extends StatelessWidget {
                                         p.userNickName;
                                     return Text(
                                       nickname,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w800,
-                                        color: GRAYSCALE_LABEL_950,
+                                        color: context.textPrimary,
                                       ),
                                     );
                                   },
@@ -1057,8 +1059,8 @@ class UserPostsTab extends StatelessWidget {
                                 const SizedBox(height: 1),
                                 Text(
                                   timeAgo(p.createdAt),
-                                  style: const TextStyle(
-                                    color: GRAYSCALE_LABEL_400,
+                                  style: TextStyle(
+                                    color: context.textMuted,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -1078,9 +1080,9 @@ class UserPostsTab extends StatelessWidget {
                                 postUserId,
                               );
                             },
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.more_horiz_rounded,
-                              color: GRAYSCALE_LABEL_500,
+                              color: context.textSecondary,
                               size: 20,
                             ),
                           ),
@@ -1090,11 +1092,32 @@ class UserPostsTab extends StatelessWidget {
                         const SizedBox(height: 10),
                         Text(
                           p.text,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             height: 1.45,
-                            color: GRAYSCALE_LABEL_900,
+                            color: context.textPrimary,
                           ),
+                        ),
+                      ],
+                      if (p.hashtags.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        FeedHashtagChips(
+                          hashtags: p.hashtags,
+                          accentColor:
+                              context
+                                  .read<TeamProvider>()
+                                  .selectedTeam
+                                  ?.color ??
+                              BUTTON,
+                          onTapTag: (tag) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    FeedSearchPage(initialQuery: '#$tag'),
+                              ),
+                            );
+                          },
                         ),
                       ],
                       const SizedBox(height: 10),
@@ -1102,11 +1125,9 @@ class UserPostsTab extends StatelessWidget {
                         Container(
                           margin: const EdgeInsets.only(bottom: 10),
                           decoration: BoxDecoration(
-                            color: BACKGROUND_COLOR,
+                            color: context.surfaceAltColor,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: GRAYSCALE_LABEL_200.withValues(alpha: 0.8),
-                            ),
+                            border: Border.all(color: context.borderColor),
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: Column(
@@ -1126,7 +1147,7 @@ class UserPostsTab extends StatelessWidget {
                                   horizontal: 12,
                                   vertical: 8,
                                 ),
-                                color: WHITE,
+                                color: context.cardColor,
                                 child: Row(
                                   children: [
                                     const Icon(
@@ -1156,98 +1177,27 @@ class UserPostsTab extends StatelessWidget {
                       ],
                       // 이미지/영상 슬라이드
                       if (p.mediaUrls.isNotEmpty)
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final bool inSingle = p.mediaUrls.length == 1;
-                            final double avilableWidth = constraints.maxWidth;
-                            final double listHeight = (avilableWidth * 0.55)
-                                .clamp(160.0, 320.0);
-                            final double itemWidth = inSingle
-                                ? avilableWidth
-                                : (avilableWidth * 0.48).clamp(
-                                    140.0,
-                                    avilableWidth,
-                                  );
-
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: SizedBox(
-                                height: listHeight,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: p.mediaUrls.length,
-                                  itemBuilder: (_, i) {
-                                    final url = p.mediaUrls[i];
-                                    final isVideo = MediaUtils.isVideoFromPost(
-                                      p,
-                                      i,
-                                    );
-                                    return Padding(
-                                      padding: EdgeInsets.only(
-                                        right: inSingle ? 0 : 8,
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(16),
-                                        child: isVideo
-                                            ? NetworkVideoPlayer(
-                                                videoUrl: url,
-                                                width: itemWidth,
-                                                height: listHeight,
-                                                fit: BoxFit.cover,
-                                                autoPlay: true,
-                                                muted: true,
-                                                showControls: false,
-                                              )
-                                            : Image.network(
-                                                url,
-                                                height: listHeight,
-                                                width: itemWidth,
-                                                fit: BoxFit.cover,
-                                                loadingBuilder:
-                                                    (
-                                                      context,
-                                                      child,
-                                                      loadingProgress,
-                                                    ) {
-                                                      if (loadingProgress ==
-                                                          null) {
-                                                        return child;
-                                                      }
-                                                      final color =
-                                                          context
-                                                              .read<
-                                                                TeamProvider
-                                                              >()
-                                                              .selectedTeam
-                                                              ?.color ??
-                                                          BUTTON;
-                                                      return SizedBox(
-                                                        height: listHeight,
-                                                        width: itemWidth,
-                                                        child: Center(
-                                                          child:
-                                                              CircularProgressIndicator(
-                                                                color: color,
-                                                              ),
-                                                        ),
-                                                      );
-                                                    },
-                                              ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            );
-                          },
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: FeedMediaGallery(
+                            post: p,
+                            accentColor:
+                                context
+                                    .read<TeamProvider>()
+                                    .selectedTeam
+                                    ?.color ??
+                                BUTTON,
+                            maxSingleHeight: 400,
+                            multiItemHeight: 230,
+                          ),
                         ),
                       // 좋아요 + 댓글 캡슐 바
                       Container(
                         padding: const EdgeInsets.only(top: 10),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           border: Border(
                             top: BorderSide(
-                              color: GRAYSCALE_LABEL_100,
+                              color: context.dividerColor,
                               width: 1,
                             ),
                           ),
@@ -1271,8 +1221,8 @@ class UserPostsTab extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isLiked
-                                      ? Colors.red.withValues(alpha: 0.08)
-                                      : BACKGROUND_COLOR,
+                                      ? Colors.red.withValues(alpha: 0.14)
+                                      : context.surfaceAltColor,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Row(
@@ -1285,7 +1235,7 @@ class UserPostsTab extends StatelessWidget {
                                       size: 16,
                                       color: isLiked
                                           ? Colors.red
-                                          : GRAYSCALE_LABEL_600,
+                                          : context.textSecondary,
                                     ),
                                     const SizedBox(width: 5),
                                     Text(
@@ -1295,7 +1245,7 @@ class UserPostsTab extends StatelessWidget {
                                         fontWeight: FontWeight.w700,
                                         color: isLiked
                                             ? Colors.red
-                                            : GRAYSCALE_LABEL_700,
+                                            : context.textSecondary,
                                       ),
                                     ),
                                   ],
@@ -1314,24 +1264,24 @@ class UserPostsTab extends StatelessWidget {
                                     vertical: 5,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: BACKGROUND_COLOR,
+                                    color: context.surfaceAltColor,
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         CupertinoIcons.chat_bubble,
                                         size: 15,
-                                        color: GRAYSCALE_LABEL_600,
+                                        color: context.textSecondary,
                                       ),
                                       const SizedBox(width: 5),
                                       Text(
                                         '${comments.length}',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
-                                          color: GRAYSCALE_LABEL_700,
+                                          color: context.textSecondary,
                                         ),
                                       ),
                                     ],
@@ -1347,22 +1297,22 @@ class UserPostsTab extends StatelessWidget {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: BACKGROUND_COLOR,
+                                  color: context.surfaceAltColor,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.photo_library_outlined,
                                       size: 12,
-                                      color: GRAYSCALE_LABEL_500,
+                                      color: context.textMuted,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
                                       '${p.mediaUrls.length}',
-                                      style: const TextStyle(
-                                        color: GRAYSCALE_LABEL_500,
+                                      style: TextStyle(
+                                        color: context.textMuted,
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -1392,15 +1342,17 @@ class UserPostsTab extends StatelessWidget {
     String targetUserId,
     String postUserId,
   ) {
+    final isAdmin =
+        FirebaseAuth.instance.currentUser?.email?.toLowerCase() ==
+        'kdw0032@gmail.com';
     showModalBottomSheet(
       isScrollControlled: true,
       context: context,
-      backgroundColor: GRAYSCALE_LABEL_50,
+      backgroundColor: context.bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        height: 200,
+      builder: (context) => SafeArea(
         child: Padding(
           padding: EdgeInsets.all(20.0),
           child: Column(
@@ -1432,7 +1384,7 @@ class UserPostsTab extends StatelessWidget {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -1440,14 +1392,19 @@ class UserPostsTab extends StatelessWidget {
                       children: [
                         Text(
                           '게시물 수정',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimary,
+                          ),
                         ),
-                        Icon(Icons.edit_outlined, color: BLACK),
+                        Icon(Icons.edit_outlined, color: context.textPrimary),
                       ],
                     ),
                   ),
                 ),
                 SizedBox(height: 10),
+              ],
+              if (isOwner || isAdmin) ...[
                 GestureDetector(
                   onTap: () {
                     Navigator.pop(context); // 바텀시트 닫기
@@ -1495,7 +1452,9 @@ class UserPostsTab extends StatelessWidget {
                     ),
                   ),
                 ),
-              ] else ...[
+                if (!isOwner) SizedBox(height: 10),
+              ],
+              if (!isOwner) ...[
                 GestureDetector(
                   onTap: () {
                     final reporter = FirebaseAuth.instance.currentUser;
@@ -1606,7 +1565,7 @@ class UserPostsTab extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: context.bgColor,
         title: Text('게시물 신고'),
         content: SingleChildScrollView(
           child: Column(
@@ -1754,7 +1713,7 @@ class UserPostsTab extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1836,9 +1795,9 @@ class UserPostsTab extends StatelessWidget {
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          border: Border.all(color: GRAYSCALE_LABEL_300),
+                          border: Border.all(color: context.borderColor),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
@@ -1847,7 +1806,7 @@ class UserPostsTab extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: GRAYSCALE_LABEL_900,
+                              color: context.textPrimary,
                             ),
                           ),
                         ),
@@ -1906,36 +1865,38 @@ class UserPostsTab extends StatelessWidget {
     required String title,
     required String description,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 24, color: GRAYSCALE_LABEL_600),
-        SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: GRAYSCALE_LABEL_900,
+    return Builder(
+      builder: (context) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 24, color: context.textSecondary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: context.textPrimary,
+                  ),
                 ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: GRAYSCALE_LABEL_600,
-                  height: 1.4,
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.textSecondary,
+                    height: 1.4,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -2121,7 +2082,7 @@ class UserMarketPostsTab extends StatelessWidget {
     showModalBottomSheet(
       isScrollControlled: true,
       context: context,
-      backgroundColor: GRAYSCALE_LABEL_50,
+      backgroundColor: context.bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2151,7 +2112,7 @@ class UserMarketPostsTab extends StatelessWidget {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -2159,9 +2120,12 @@ class UserMarketPostsTab extends StatelessWidget {
                       children: [
                         Text(
                           '게시물 수정',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimary,
+                          ),
                         ),
-                        Icon(Icons.edit_outlined, color: BLACK),
+                        Icon(Icons.edit_outlined, color: context.textPrimary),
                       ],
                     ),
                   ),
@@ -2330,7 +2294,7 @@ class UserMarketPostsTab extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: context.bgColor,
         title: Text('마켓 게시물 신고'),
         content: SingleChildScrollView(
           child: Column(
@@ -2475,7 +2439,7 @@ class UserMarketPostsTab extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2521,9 +2485,9 @@ class UserMarketPostsTab extends StatelessWidget {
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          border: Border.all(color: GRAYSCALE_LABEL_300),
+                          border: Border.all(color: context.borderColor),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
@@ -2532,7 +2496,7 @@ class UserMarketPostsTab extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: GRAYSCALE_LABEL_900,
+                              color: context.textPrimary,
                             ),
                           ),
                         ),
@@ -2616,10 +2580,10 @@ class _UserAttendancesTab extends StatelessWidget {
             .toList();
 
         if (records.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
               '공개된 직관기록이 없습니다',
-              style: TextStyle(fontSize: 14, color: GRAYSCALE_LABEL_500),
+              style: TextStyle(fontSize: 14, color: context.textMuted),
             ),
           );
         }
@@ -2654,9 +2618,9 @@ class _UserAttendancesTab extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: WHITE,
+                  color: context.cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: GRAYSCALE_LABEL_200),
+                  border: Border.all(color: context.borderColor),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -2669,7 +2633,7 @@ class _UserAttendancesTab extends StatelessWidget {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: badgeColor.withValues(alpha: 0.12),
+                            color: badgeColor.withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -2685,10 +2649,10 @@ class _UserAttendancesTab extends StatelessWidget {
                         Expanded(
                           child: Text(
                             '${item.date} · ${item.stadium}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: GRAYSCALE_LABEL_500,
+                              color: context.textMuted,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -2696,18 +2660,18 @@ class _UserAttendancesTab extends StatelessWidget {
                         if (item.commentsCount > 0)
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 CupertinoIcons.chat_bubble,
                                 size: 13,
-                                color: GRAYSCALE_LABEL_500,
+                                color: context.textMuted,
                               ),
                               const SizedBox(width: 3),
                               Text(
                                 '${item.commentsCount}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w700,
-                                  color: GRAYSCALE_LABEL_600,
+                                  color: context.textSecondary,
                                 ),
                               ),
                             ],
@@ -2717,20 +2681,20 @@ class _UserAttendancesTab extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       '${item.myTeam} ${item.myScore} : ${item.opponentScore} ${item.oppTeam ?? ''}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
-                        color: GRAYSCALE_LABEL_950,
+                        color: context.textPrimary,
                       ),
                     ),
                     if ((item.seat ?? '').isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         '🎫 ${item.seat}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
-                          color: BUTTON,
+                          color: context.readableColor(BUTTON),
                         ),
                       ),
                     ],
@@ -2740,9 +2704,9 @@ class _UserAttendancesTab extends StatelessWidget {
                         item.memo!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: GRAYSCALE_LABEL_700,
+                          color: context.textSecondary,
                           height: 1.4,
                         ),
                       ),

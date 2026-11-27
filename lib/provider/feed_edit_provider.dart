@@ -1,20 +1,39 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:lockerroom/model/post_model.dart';
+import 'package:lockerroom/utils/media_utils.dart';
+
+class EditableMediaItem {
+  final String? remoteUrl;
+  final File? localFile;
+  final bool isVideo;
+
+  const EditableMediaItem({
+    this.remoteUrl,
+    this.localFile,
+    required this.isVideo,
+  });
+
+  bool get isRemote => remoteUrl != null;
+}
 
 class FeedEditProvider extends ChangeNotifier {
+  static const int maxMediaCount = 5;
+
   final _postCollection = FirebaseFirestore.instance.collection('posts');
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  // 수정 중인 미디어 리스트
-  List<String> _editableMediaUrls = [];
-  List<String> get editableMediaUrls => _editableMediaUrls;
+  List<EditableMediaItem> _items = [];
+  List<EditableMediaItem> get items => _items;
 
-  // 삭제된 미디어 URL (storage 정리용)
-  List<String> _deletedMediaUrls = [];
+  List<String> get editableMediaUrls =>
+      _items.where((e) => e.isRemote).map((e) => e.remoteUrl!).toList();
 
-  // 로딩상태
+  final List<String> _deletedMediaUrls = [];
+
   bool _isUploading = false;
   bool get isUploading => _isUploading;
 
@@ -23,60 +42,114 @@ class FeedEditProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 초기화 (기존 게시물 데이터 로드)
   void initializeEdit(PostModel post) {
-    _editableMediaUrls = List.from(post.mediaUrls);
+    _items = post.mediaUrls
+        .map(
+          (url) => EditableMediaItem(
+            remoteUrl: url,
+            isVideo: MediaUtils.isVideoUrl(url),
+          ),
+        )
+        .toList();
     _deletedMediaUrls.clear();
+    _isUploading = false;
     notifyListeners();
   }
 
-  // 미디어 삭제
+  void addImages(List<File> files) {
+    for (final file in files) {
+      if (_items.length >= maxMediaCount) break;
+      _items.add(EditableMediaItem(localFile: file, isVideo: false));
+    }
+    notifyListeners();
+  }
+
+  void addVideo(File file) {
+    if (_items.length >= maxMediaCount) return;
+    _items.add(EditableMediaItem(localFile: file, isVideo: true));
+    notifyListeners();
+  }
+
+  void moveMedia(int from, int to) {
+    if (from < 0 || from >= _items.length || to < 0 || to >= _items.length) {
+      return;
+    }
+    final item = _items.removeAt(from);
+    _items.insert(to, item);
+    notifyListeners();
+  }
+
   void removeMedia(int index) {
-    if (index < 0 || index >= _editableMediaUrls.length) return;
-
-    String removedUrl = _editableMediaUrls[index];
-    _deletedMediaUrls.add(removedUrl);
-    _editableMediaUrls.removeAt(index);
+    if (index < 0 || index >= _items.length) return;
+    final removed = _items.removeAt(index);
+    if (removed.remoteUrl != null) {
+      _deletedMediaUrls.add(removed.remoteUrl!);
+    }
     notifyListeners();
   }
 
-  // 삭제된 미디어 Storage에서 정리
   Future<void> _cleanupDeletedMedia() async {
-    for (String url in _deletedMediaUrls) {
+    for (final url in _deletedMediaUrls) {
       try {
-        final ref = _storage.refFromURL(url);
-        await ref.delete();
+        await _storage.refFromURL(url).delete();
       } catch (e) {
-        print('Storage 삭제 실패: $e');
+        debugPrint('Storage 삭제 실패: $e');
       }
     }
     _deletedMediaUrls.clear();
   }
 
-  // 게시물 업데이트 (text + media)
-  Future<bool> updatePost({
+  Future<String> _uploadLocalItem(
+    String userId,
+    EditableMediaItem item,
+  ) async {
+    final file = item.localFile!;
+    final ext = item.isVideo ? 'mp4' : 'jpg';
+    final path =
+        'posts/$userId/${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+    final ref = _storage.ref().child(path.endsWith('.$ext') ? path : '$path.$ext');
+    final metadata = SettableMetadata(
+      contentType: item.isVideo ? 'video/mp4' : 'image/jpeg',
+    );
+    await ref.putFile(file, metadata);
+    return ref.getDownloadURL();
+  }
+
+  /// 게시물 업데이트 (text + hashtags + 추가/삭제/재정렬된 mediaUrls). 성공 시 최종 mediaUrls 반환.
+  Future<List<String>?> updatePost({
     required String postId,
+    required String userId,
     required String newText,
+    required List<String> hashtags,
   }) async {
     try {
+      final finalUrls = <String>[];
+      for (final item in _items) {
+        if (item.isRemote) {
+          finalUrls.add(item.remoteUrl!);
+        } else if (item.localFile != null) {
+          final uploaded = await _uploadLocalItem(userId, item);
+          finalUrls.add(uploaded);
+        }
+      }
+
       await _postCollection.doc(postId).update({
         'text': newText,
-        'mediaUrls': _editableMediaUrls,
+        'hashtags': hashtags,
+        'mediaUrls': finalUrls,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      // 삭제된 미디어 정리
       await _cleanupDeletedMedia();
-      return true;
+      return finalUrls;
     } catch (e) {
-      print('게시물 업데이트 실패: $e');
-      return false;
+      debugPrint('게시물 업데이트 실패: $e');
+      return null;
     }
   }
 
-  // Provider 초기화
   void reset() {
-    _editableMediaUrls.clear();
+    _items.clear();
     _deletedMediaUrls.clear();
     _isUploading = false;
     notifyListeners();

@@ -153,7 +153,12 @@ class UploadProvider extends ChangeNotifier {
       maxWidth: 1440,
     );
     if (pickedCamera != null) {
-      _camera = File(pickedCamera.path);
+      final file = File(pickedCamera.path);
+      if (_camera == null) {
+        _camera = file;
+      } else {
+        _images = [..._images, file];
+      }
       notifyListeners();
     }
   }
@@ -164,7 +169,14 @@ class UploadProvider extends ChangeNotifier {
       maxWidth: 1440,
     );
     if (pickedImages.isNotEmpty) {
-      setImages(pickedImages.map((e) => File(e.path)).toList());
+      final existingPaths = _images.map((e) => e.path).toSet();
+      final appended = pickedImages
+          .map((e) => File(e.path))
+          .where((file) => !existingPaths.contains(file.path))
+          .toList();
+      if (appended.isNotEmpty) {
+        setImages([..._images, ...appended]);
+      }
     }
   }
 
@@ -422,6 +434,7 @@ class UploadProvider extends ChangeNotifier {
     required String userNickName,
     required String name,
     required String text,
+    List<String> hashtags = const [],
     VoidCallback? onCompleted,
   }) {
     final payload = _PendingPostPayload(
@@ -429,6 +442,7 @@ class UploadProvider extends ChangeNotifier {
       userNickName: userNickName,
       name: name,
       text: text,
+      hashtags: List<String>.from(hashtags),
       images: List<File>.from(_images),
       camera: _camera,
       video: _video,
@@ -566,6 +580,7 @@ class UploadProvider extends ChangeNotifier {
         'userNickName': payload.userNickName,
         'name': payload.name,
         'text': payload.text,
+        'hashtags': payload.hashtags,
         'mediaUrls': mediaUrls,
         'meetupId': payload.meetupId,
         'createdAt': FieldValue.serverTimestamp(),
@@ -651,6 +666,7 @@ class _PendingPostPayload {
   final String userNickName;
   final String name;
   final String text;
+  final List<String> hashtags;
   final List<File> images;
   final File? camera;
   final File? video;
@@ -663,6 +679,7 @@ class _PendingPostPayload {
     required this.userNickName,
     required this.name,
     required this.text,
+    this.hashtags = const [],
     required this.images,
     required this.camera,
     required this.video,

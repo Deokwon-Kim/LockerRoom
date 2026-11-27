@@ -17,12 +17,14 @@ import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/utils/media_utils.dart';
+import 'package:lockerroom/widgets/feed_hashtag_editor.dart';
 import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
 class FeedSearchPage extends StatefulWidget {
-  const FeedSearchPage({super.key});
+  final String? initialQuery;
+  const FeedSearchPage({super.key, this.initialQuery});
 
   @override
   State<FeedSearchPage> createState() => _FeedSearchPageState();
@@ -57,9 +59,16 @@ class _FeedSearchPageState extends State<FeedSearchPage> {
       };
       _blockProvider!.addListener(_blockListener!);
 
-      _isSearching = false;
-      _searchController.clear();
-      context.read<FeedProvider>().setQuery('');
+      final initial = widget.initialQuery?.trim() ?? '';
+      if (initial.isNotEmpty) {
+        _isSearching = true;
+        _searchController.text = initial;
+        context.read<FeedProvider>().setQuery(initial);
+      } else {
+        _isSearching = false;
+        _searchController.clear();
+        context.read<FeedProvider>().setQuery('');
+      }
       setState(() {});
     });
   }
@@ -84,12 +93,17 @@ class _FeedSearchPageState extends State<FeedSearchPage> {
         Provider.of<TeamProvider>(context).selectedTeam?.color ?? BUTTON;
     final feedProvider = _feedProvider;
     return Scaffold(
-      backgroundColor: WHITE,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: WHITE,
+        backgroundColor: context.bgColor,
+        foregroundColor: context.textPrimary,
         title: Text(
           '검색',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: context.textPrimary,
+          ),
         ),
       ),
       body: Column(
@@ -98,14 +112,17 @@ class _FeedSearchPageState extends State<FeedSearchPage> {
             padding: const EdgeInsets.fromLTRB(15, 10, 15, 10),
             child: TextFormField(
               controller: _searchController,
-              cursorColor: BUTTON,
+              cursorColor: context.readableColor(selectedColor),
               cursorHeight: 18,
               minLines: 1,
               maxLines: 3,
               keyboardType: TextInputType.multiline,
               textInputAction: TextInputAction.newline,
               enableIMEPersonalizedLearning: true,
-              style: TextStyle(decoration: TextDecoration.none),
+              style: TextStyle(
+                decoration: TextDecoration.none,
+                color: context.textPrimary,
+              ),
               onChanged: (value) {
                 setState(() {
                   _isSearching = value.isNotEmpty;
@@ -117,35 +134,39 @@ class _FeedSearchPageState extends State<FeedSearchPage> {
               },
               decoration: InputDecoration(
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(
+                filled: true,
+                fillColor: context.cardColor,
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 10,
                 ),
                 labelText: '사용자 또는 게시물 검색',
-                labelStyle: TextStyle(color: Colors.grey, fontSize: 13),
+                labelStyle: TextStyle(color: context.textMuted, fontSize: 13),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                  borderSide: BorderSide(color: context.borderColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                  borderSide: BorderSide(
+                    color: context.readableColor(selectedColor),
+                  ),
                 ),
               ),
             ),
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Expanded(
             child: ContainedTabBarView(
               tabs: [
-                Text('사용자', style: TextStyle(color: Colors.black)),
-                Text('게시물', style: TextStyle(color: Colors.black)),
+                Text('사용자', style: TextStyle(color: context.textPrimary)),
+                Text('게시물', style: TextStyle(color: context.textPrimary)),
               ],
               tabBarProperties: TabBarProperties(
-                indicatorColor: selectedColor,
+                indicatorColor: context.readableColor(selectedColor),
                 indicatorSize: TabBarIndicatorSize.tab,
                 indicatorWeight: 3.0,
-                unselectedLabelColor: GRAYSCALE_LABEL_500,
+                unselectedLabelColor: context.textMuted,
               ),
               views: [_userResult(feedProvider), _postResult(feedProvider)],
             ),
@@ -292,7 +313,7 @@ class _PostWidgetState extends State<PostWidget> {
       child: Padding(
         padding: const EdgeInsets.only(left: 15, right: 15, bottom: 15),
         child: Card(
-          color: WHITE,
+          color: context.cardColor,
 
           child: Padding(
             padding: const EdgeInsets.all(15.0),
@@ -328,11 +349,11 @@ class _PostWidgetState extends State<PostWidget> {
                             backgroundImage: url != null
                                 ? NetworkImage(url)
                                 : null,
-                            backgroundColor: GRAYSCALE_LABEL_300,
+                            backgroundColor: context.surfaceAltColor,
                             child: url == null
-                                ? const Icon(
+                                ? Icon(
                                     Icons.person,
-                                    color: Colors.black,
+                                    color: context.textMuted,
                                     size: 25,
                                   )
                                 : null,
@@ -362,7 +383,7 @@ class _PostWidgetState extends State<PostWidget> {
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.black,
+                                  color: context.textPrimary,
                                 ),
                               ),
                             );
@@ -373,21 +394,25 @@ class _PostWidgetState extends State<PostWidget> {
                           child: Text(
                             timeAgo(widget.post.createdAt),
                             style: TextStyle(
-                              color: GRAYSCALE_LABEL_500,
+                              color: context.textMuted,
                               fontSize: 13,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    Spacer(),
+                    const Spacer(),
 
                     PopupMenuTheme(
-                      data: PopupMenuThemeData(color: BACKGROUND_COLOR),
+                      data: PopupMenuThemeData(color: context.cardColor),
                       child: PopupMenuButton<String>(
                         icon: const Icon(Icons.more_horiz),
                         onSelected: (value) async {
-                          if (value == 'delete' && isOwner) {
+                          final isAdmin =
+                              FirebaseAuth.instance.currentUser?.email
+                                  ?.toLowerCase() ==
+                              'kdw0032@gmail.com';
+                          if (value == 'delete' && (isOwner || isAdmin)) {
                             // 삭제 확인 다이얼로그 추가
                             showDialog(
                               context: context,
@@ -444,59 +469,74 @@ class _PostWidgetState extends State<PostWidget> {
                             );
                           }
                         },
-                        itemBuilder: (context) => [
-                          if (isOwner)
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Text(
-                                '삭제하기',
-                                style: TextStyle(color: RED_DANGER_TEXT_50),
-                              ),
-                            )
-                          else ...[
-                            PopupMenuItem(
-                              value: 'report',
-                              child: Text(
-                                '신고',
-                                style: TextStyle(
-                                  color: BLACK,
-                                  fontWeight: FontWeight.bold,
+                        itemBuilder: (context) {
+                          final isAdmin =
+                              FirebaseAuth.instance.currentUser?.email
+                                  ?.toLowerCase() ==
+                              'kdw0032@gmail.com';
+                          return [
+                            if (isOwner || isAdmin)
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text(
+                                  '삭제하기',
+                                  style: TextStyle(color: RED_DANGER_TEXT_50),
                                 ),
                               ),
-                            ),
-                            PopupMenuItem(
-                              value: 'block',
-                              child: Text(
-                                '사용자 차단',
-                                style: TextStyle(
-                                  color: BLACK,
-                                  fontWeight: FontWeight.bold,
+                            if (!isOwner) ...[
+                              PopupMenuItem(
+                                value: 'report',
+                                child: Text(
+                                  '신고',
+                                  style: TextStyle(
+                                    color: BLACK,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ],
+                              PopupMenuItem(
+                                value: 'block',
+                                child: Text(
+                                  '사용자 차단',
+                                  style: TextStyle(
+                                    color: BLACK,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ];
+                        },
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 // 본문
-                Text(widget.post.text),
+                Text(
+                  widget.post.text,
+                  style: TextStyle(color: context.textPrimary),
+                ),
+                if (widget.post.hashtags.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  FeedHashtagChips(
+                    hashtags: widget.post.hashtags,
+                    accentColor:
+                        context.read<TeamProvider>().selectedTeam?.color ??
+                        BUTTON,
+                    onTapTag: (tag) {
+                      context.read<FeedProvider>().setQuery('#$tag');
+                    },
+                  ),
+                ],
                 const SizedBox(height: 8),
                 if (extractUrl(widget.post.text) != null) ...[
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   Container(
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.surfaceAltColor,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.2),
-                          blurRadius: 8,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
+                      border: Border.all(color: context.borderColor),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: Column(
@@ -510,11 +550,11 @@ class _PostWidgetState extends State<PostWidget> {
                           },
                         ),
                         Container(
-                          padding: EdgeInsets.symmetric(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 8,
                           ),
-                          decoration: BoxDecoration(color: WHITE),
+                          decoration: BoxDecoration(color: context.cardColor),
                           child: Row(
                             children: [
                               Icon(Icons.link, size: 16, color: Colors.blue),

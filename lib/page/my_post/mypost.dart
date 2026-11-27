@@ -7,11 +7,13 @@ import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_edit_page.dart';
+import 'package:lockerroom/page/feed/feed_search_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
-import 'package:lockerroom/utils/media_utils.dart';
-import 'package:lockerroom/widgets/network_video_player.dart';
+import 'package:lockerroom/provider/team_provider.dart';
+import 'package:lockerroom/widgets/feed_hashtag_editor.dart';
+import 'package:lockerroom/widgets/feed_media_gallery.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -23,7 +25,7 @@ class MypostPage extends StatelessWidget {
     final feedProvider = Provider.of<FeedProvider>(context, listen: false);
 
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       body: StreamBuilder<List<PostModel>>(
         stream: feedProvider.listenMyPosts(),
         builder: (context, snapshot) {
@@ -31,8 +33,10 @@ class MypostPage extends StatelessWidget {
             return const Center(child: Text('에러 발생'));
           }
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: BUTTON),
+            return Center(
+              child: CircularProgressIndicator(
+                color: context.readableColor(BUTTON),
+              ),
             );
           }
 
@@ -47,7 +51,7 @@ class MypostPage extends StatelessWidget {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
@@ -134,11 +138,9 @@ class MyPostWidget extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
         decoration: BoxDecoration(
-          color: WHITE,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: GRAYSCALE_LABEL_200.withValues(alpha: 0.6),
-          ),
+          border: Border.all(color: context.borderColor),
           boxShadow: [
             BoxShadow(
               color: BLACK.withValues(alpha: 0.04),
@@ -199,10 +201,10 @@ class MyPostWidget extends StatelessWidget {
                                 post.userNickName;
                             return Text(
                               nickName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
-                                color: GRAYSCALE_LABEL_950,
+                                color: context.textPrimary,
                               ),
                             );
                           },
@@ -210,8 +212,8 @@ class MyPostWidget extends StatelessWidget {
                         const SizedBox(height: 1),
                         Text(
                           timeAgo(post.createdAt),
-                          style: const TextStyle(
-                            color: GRAYSCALE_LABEL_400,
+                          style: TextStyle(
+                            color: context.textMuted,
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),
@@ -224,9 +226,9 @@ class MyPostWidget extends StatelessWidget {
                     onPressed: () {
                       _showPostOptionBottomSheet(context, post, feedProvider);
                     },
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.more_horiz_rounded,
-                      color: GRAYSCALE_LABEL_500,
+                      color: context.textMuted,
                       size: 20,
                     ),
                   ),
@@ -236,11 +238,28 @@ class MyPostWidget extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   post.text,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     height: 1.45,
-                    color: GRAYSCALE_LABEL_900,
+                    color: context.textPrimary,
                   ),
+                ),
+              ],
+              if (post.hashtags.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                FeedHashtagChips(
+                  hashtags: post.hashtags,
+                  accentColor:
+                      context.read<TeamProvider>().selectedTeam?.color ??
+                      BUTTON,
+                  onTapTag: (tag) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => FeedSearchPage(initialQuery: '#$tag'),
+                      ),
+                    );
+                  },
                 ),
               ],
               const SizedBox(height: 10),
@@ -248,11 +267,9 @@ class MyPostWidget extends StatelessWidget {
                 Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
-                    color: BACKGROUND_COLOR,
+                    color: context.surfaceAltColor,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: GRAYSCALE_LABEL_200.withValues(alpha: 0.8),
-                    ),
+                    border: Border.all(color: context.borderColor),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Column(
@@ -270,7 +287,7 @@ class MyPostWidget extends StatelessWidget {
                           horizontal: 12,
                           vertical: 8,
                         ),
-                        color: WHITE,
+                        color: context.cardColor,
                         child: Row(
                           children: [
                             const Icon(
@@ -300,83 +317,23 @@ class MyPostWidget extends StatelessWidget {
               ],
               // 이미지/영상 슬라이드
               if (post.mediaUrls.isNotEmpty)
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final bool inSingle = post.mediaUrls.length == 1;
-                    final double availableWidth = constraints.maxWidth;
-                    final double listHeight = (availableWidth * 0.55).clamp(
-                      160.0,
-                      320.0,
-                    );
-                    final double itemWidth = inSingle
-                        ? availableWidth
-                        : (availableWidth * 0.48).clamp(140.0, availableWidth);
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: SizedBox(
-                        height: listHeight,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: post.mediaUrls.length,
-                          itemBuilder: (_, i) {
-                            final url = post.mediaUrls[i];
-                            final isVideo = MediaUtils.isVideoFromPost(post, i);
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                right: inSingle ? 0 : 8,
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: isVideo
-                                    ? NetworkVideoPlayer(
-                                        videoUrl: url,
-                                        width: itemWidth,
-                                        height: listHeight,
-                                        fit: BoxFit.cover,
-                                        autoPlay: true,
-                                        muted: true,
-                                        showControls: false,
-                                      )
-                                    : Image.network(
-                                        url,
-                                        height: listHeight,
-                                        width: itemWidth,
-                                        fit: BoxFit.cover,
-                                        loadingBuilder:
-                                            (context, child, loadingProgress) {
-                                              if (loadingProgress == null) {
-                                                return child;
-                                              }
-                                              return SizedBox(
-                                                height: listHeight,
-                                                width: itemWidth,
-                                                child: const Center(
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                        color: BUTTON,
-                                                      ),
-                                                ),
-                                              );
-                                            },
-                                      ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    );
-                  },
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: FeedMediaGallery(
+                    post: post,
+                    accentColor:
+                        context.read<TeamProvider>().selectedTeam?.color ??
+                        BUTTON,
+                    maxSingleHeight: 400,
+                    multiItemHeight: 230,
+                  ),
                 ),
               // 하단 좋아요 + 댓글 캡슐 바
               Container(
                 padding: const EdgeInsets.only(top: 10),
                 decoration: BoxDecoration(
                   border: Border(
-                    top: BorderSide(
-                      color: GRAYSCALE_LABEL_100,
-                      width: 1,
-                    ),
+                    top: BorderSide(color: GRAYSCALE_LABEL_100, width: 1),
                   ),
                 ),
                 child: Row(
@@ -398,8 +355,8 @@ class MyPostWidget extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: isLiked
-                              ? Colors.red.withValues(alpha: 0.08)
-                              : BACKGROUND_COLOR,
+                              ? Colors.red.withValues(alpha: 0.12)
+                              : context.surfaceAltColor,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -412,7 +369,7 @@ class MyPostWidget extends StatelessWidget {
                               size: 16,
                               color: isLiked
                                   ? Colors.red
-                                  : GRAYSCALE_LABEL_600,
+                                  : context.textSecondary,
                             ),
                             const SizedBox(width: 5),
                             Text(
@@ -422,7 +379,7 @@ class MyPostWidget extends StatelessWidget {
                                 fontWeight: FontWeight.w700,
                                 color: isLiked
                                     ? Colors.red
-                                    : GRAYSCALE_LABEL_700,
+                                    : context.textSecondary,
                               ),
                             ),
                           ],
@@ -439,24 +396,24 @@ class MyPostWidget extends StatelessWidget {
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: BACKGROUND_COLOR,
+                            color: context.surfaceAltColor,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 CupertinoIcons.chat_bubble,
                                 size: 15,
-                                color: GRAYSCALE_LABEL_600,
+                                color: context.textSecondary,
                               ),
                               const SizedBox(width: 5),
                               Text(
                                 '${comment.length}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: GRAYSCALE_LABEL_700,
+                                  color: context.textSecondary,
                                 ),
                               ),
                             ],
@@ -472,22 +429,22 @@ class MyPostWidget extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: BACKGROUND_COLOR,
+                          color: context.surfaceAltColor,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.photo_library_outlined,
                               size: 12,
-                              color: GRAYSCALE_LABEL_500,
+                              color: context.textMuted,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '${post.mediaUrls.length}',
-                              style: const TextStyle(
-                                color: GRAYSCALE_LABEL_500,
+                              style: TextStyle(
+                                color: context.textMuted,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -513,7 +470,7 @@ class MyPostWidget extends StatelessWidget {
     showModalBottomSheet(
       isScrollControlled: true,
       context: context,
-      backgroundColor: GRAYSCALE_LABEL_50,
+      backgroundColor: context.bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -550,7 +507,7 @@ class MyPostWidget extends StatelessWidget {
                   width: double.infinity,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: WHITE,
+                    color: context.cardColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -558,9 +515,12 @@ class MyPostWidget extends StatelessWidget {
                     children: [
                       Text(
                         '게시물 수정',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: context.textPrimary,
+                        ),
                       ),
-                      Icon(Icons.edit_outlined, color: BLACK),
+                      Icon(Icons.edit_outlined, color: context.textPrimary),
                     ],
                   ),
                 ),
@@ -592,7 +552,7 @@ class MyPostWidget extends StatelessWidget {
                   width: double.infinity,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: WHITE,
+                    color: context.cardColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(

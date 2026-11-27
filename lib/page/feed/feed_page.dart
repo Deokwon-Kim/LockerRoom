@@ -6,12 +6,13 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/widgets/attendance_feed_card.dart';
+import 'package:lockerroom/widgets/feed_hashtag_editor.dart';
+import 'package:lockerroom/widgets/feed_media_gallery.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_edit_page.dart';
 import 'package:lockerroom/page/feed/feed_mypage.dart';
 import 'package:lockerroom/page/feed/feed_search_page.dart';
-import 'package:lockerroom/page/feed/fullscreen_video_player.dart';
 import 'package:lockerroom/page/meetup/meetup_detail_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
@@ -19,12 +20,9 @@ import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/upload_provider.dart';
-import 'package:lockerroom/utils/media_utils.dart';
-import 'package:lockerroom/widgets/network_video_player.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 import 'package:lockerroom/provider/team_provider.dart';
-import 'package:lockerroom/page/feed/fullscreen_image_viewer.dart';
 
 class FeedPage extends StatefulWidget {
   final PostModel? post; // nullable로 변경
@@ -95,24 +93,20 @@ class _FeedPageState extends State<FeedPage> {
         context.watch<TeamProvider>().selectedTeam?.color ?? BUTTON;
 
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         titleSpacing: 20,
         title: Row(
           children: [
-            Image.asset(
-              'assets/images/applogo/ilu_app_icon.png',
-              height: 30,
-              fit: BoxFit.contain,
-            ),
+            Image.asset(context.appLogoAsset, height: 30, fit: BoxFit.contain),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               '피드',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: BLACK,
+                color: context.textPrimary,
                 letterSpacing: -0.5,
               ),
             ),
@@ -120,7 +114,7 @@ class _FeedPageState extends State<FeedPage> {
         ),
         centerTitle: false,
         scrolledUnderElevation: 0,
-        backgroundColor: WHITE,
+        backgroundColor: context.cardColor,
         elevation: 0,
         actions: [
           Padding(
@@ -139,12 +133,12 @@ class _FeedPageState extends State<FeedPage> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: BACKGROUND_COLOR,
+                  color: context.bgColor,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   CupertinoIcons.search,
-                  color: GRAYSCALE_LABEL_800,
+                  color: context.textPrimary,
                   size: 18,
                 ),
               ),
@@ -157,7 +151,7 @@ class _FeedPageState extends State<FeedPage> {
           // 상단 카테고리 필터 칩 바
           Container(
             width: double.infinity,
-            color: WHITE,
+            color: context.cardColor,
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -175,10 +169,10 @@ class _FeedPageState extends State<FeedPage> {
                           vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color: isSelected ? teamColor : BACKGROUND_COLOR,
+                          color: isSelected ? teamColor : context.bgColor,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isSelected ? teamColor : GRAYSCALE_LABEL_200,
+                            color: isSelected ? teamColor : context.borderColor,
                           ),
                         ),
                         child: Text(
@@ -198,7 +192,7 @@ class _FeedPageState extends State<FeedPage> {
               ),
             ),
           ),
-          const Divider(height: 1, color: GRAYSCALE_LABEL_200),
+          Divider(height: 1, color: context.dividerColor),
           // 백그라운드 업로드 진행/실패 배너 (인스타/스레드 스타일)
           Consumer<UploadProvider>(
             builder: (context, uploadProvider, _) {
@@ -207,7 +201,7 @@ class _FeedPageState extends State<FeedPage> {
               }
               return Container(
                 width: double.infinity,
-                color: WHITE,
+                color: context.cardColor,
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -371,7 +365,6 @@ class _PostWidgetState extends State<PostWidget> {
   late final CommentProvider _commentProvider;
   BlockProvider? _blockProvider;
   VoidCallback? _blockListener;
-  int _currentMediaIndex = 0;
 
   String timeAgo(DateTime date) {
     final now = DateTime.now();
@@ -466,9 +459,9 @@ class _PostWidgetState extends State<PostWidget> {
         margin: const EdgeInsets.only(left: 16, right: 16, bottom: 14),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: WHITE,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: GRAYSCALE_LABEL_100),
+          border: Border.all(color: context.borderColor),
           boxShadow: [
             BoxShadow(
               color: BLACK.withValues(alpha: 0.04),
@@ -545,10 +538,10 @@ class _PostWidgetState extends State<PostWidget> {
                               Flexible(
                                 child: Text(
                                   nickname,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w800,
-                                    color: BLACK,
+                                    color: context.textPrimary,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -613,11 +606,28 @@ class _PostWidgetState extends State<PostWidget> {
               const SizedBox(height: 12),
               Text(
                 widget.post.text,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   height: 1.48,
-                  color: GRAYSCALE_LABEL_900,
+                  color: context.textPrimary,
                 ),
+              ),
+            ],
+
+            if (widget.post.hashtags.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              FeedHashtagChips(
+                hashtags: widget.post.hashtags,
+                accentColor:
+                    context.read<TeamProvider>().selectedTeam?.color ?? BUTTON,
+                onTapTag: (tag) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FeedSearchPage(initialQuery: '#$tag'),
+                    ),
+                  );
+                },
               ),
             ],
 
@@ -639,7 +649,7 @@ class _PostWidgetState extends State<PostWidget> {
                     return Container(
                       height: 76,
                       decoration: BoxDecoration(
-                        color: BACKGROUND_COLOR,
+                        color: context.surfaceAltColor,
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Center(
@@ -671,9 +681,9 @@ class _PostWidgetState extends State<PostWidget> {
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: BACKGROUND_COLOR,
+                        color: context.surfaceAltColor,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: GRAYSCALE_LABEL_200),
+                        border: Border.all(color: context.borderColor),
                       ),
                       child: Row(
                         children: [
@@ -729,10 +739,10 @@ class _PostWidgetState extends State<PostWidget> {
                                 const SizedBox(height: 5),
                                 Text(
                                   meetup.title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: BLACK,
+                                    color: context.textPrimary,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -740,9 +750,9 @@ class _PostWidgetState extends State<PostWidget> {
                                 const SizedBox(height: 3),
                                 Text(
                                   '${meetup.awayTeam} vs ${meetup.homeTeam} · ${meetup.stadium} (${meetup.participants.length}/${meetup.maxParticipants}명)',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
-                                    color: GRAYSCALE_LABEL_600,
+                                    color: context.textSecondary,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   maxLines: 1,
@@ -758,9 +768,9 @@ class _PostWidgetState extends State<PostWidget> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: WHITE,
+                              color: context.cardColor,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: GRAYSCALE_LABEL_200),
+                              border: Border.all(color: context.borderColor),
                             ),
                             child: Text(
                               '참여 ›',
@@ -784,9 +794,9 @@ class _PostWidgetState extends State<PostWidget> {
               const SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(
-                  color: BACKGROUND_COLOR,
+                  color: context.surfaceAltColor,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: GRAYSCALE_LABEL_200),
+                  border: Border.all(color: context.borderColor),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Column(
@@ -802,7 +812,7 @@ class _PostWidgetState extends State<PostWidget> {
                         horizontal: 12,
                         vertical: 8,
                       ),
-                      color: WHITE,
+                      color: context.cardColor,
                       child: Row(
                         children: [
                           const Icon(Icons.link, size: 15, color: Colors.blue),
@@ -829,237 +839,11 @@ class _PostWidgetState extends State<PostWidget> {
             // 4. 이미지/영상 스냅 슬라이더 (1/N 캡슐 + 하단 도트 인디케이터)
             if (widget.post.mediaUrls.isNotEmpty) ...[
               const SizedBox(height: 12),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final bool isSingle = widget.post.mediaUrls.length == 1;
-                  final double availableWidth = constraints.maxWidth;
-
-                  if (isSingle) {
-                    final url = widget.post.mediaUrls[0];
-                    final isVideo = MediaUtils.isVideoFromPost(widget.post, 0);
-
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: isVideo
-                          ? AspectRatio(
-                              aspectRatio: 16 / 9,
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          FullscreenVideoPlayer(videoUrl: url),
-                                    ),
-                                  );
-                                },
-                                child: NetworkVideoPlayer(
-                                  videoUrl: url,
-                                  width: availableWidth,
-                                  height: availableWidth * 9 / 16,
-                                  fit: BoxFit.contain,
-                                  autoPlay: true,
-                                  muted: true,
-                                  showControls: false,
-                                ),
-                              ),
-                            )
-                          : GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => FullscreenImageViewer(
-                                      imageUrls: widget.post.mediaUrls,
-                                      initialIndex: 0,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxHeight: 420,
-                                ),
-                                child: Image.network(
-                                  url,
-                                  width: availableWidth,
-                                  fit: BoxFit.cover,
-                                  loadingBuilder:
-                                      (context, child, loadingProgress) {
-                                        if (loadingProgress == null) {
-                                          return child;
-                                        }
-                                        return SizedBox(
-                                          height: 220,
-                                          child: Center(
-                                            child: CircularProgressIndicator(
-                                              color: selectedColor,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      height: 200,
-                                      color: GRAYSCALE_LABEL_100,
-                                      child: const Center(
-                                        child: Icon(
-                                          Icons.broken_image_outlined,
-                                          color: GRAYSCALE_LABEL_400,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                    );
-                  } else {
-                    final double sliderHeight = availableWidth * 0.78;
-                    final int totalMedia = widget.post.mediaUrls.length;
-                    final int safeIndex = _currentMediaIndex.clamp(
-                      0,
-                      totalMedia - 1,
-                    );
-
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: SizedBox(
-                        height: sliderHeight,
-                        width: availableWidth,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            PageView.builder(
-                              itemCount: totalMedia,
-                              onPageChanged: (idx) {
-                                setState(() => _currentMediaIndex = idx);
-                              },
-                              itemBuilder: (_, i) {
-                                final url = widget.post.mediaUrls[i];
-                                final isVideo = MediaUtils.isVideoFromPost(
-                                  widget.post,
-                                  i,
-                                );
-                                return isVideo
-                                    ? GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  FullscreenVideoPlayer(
-                                                    videoUrl: url,
-                                                  ),
-                                            ),
-                                          );
-                                        },
-                                        child: NetworkVideoPlayer(
-                                          videoUrl: url,
-                                          width: availableWidth,
-                                          height: sliderHeight,
-                                          fit: BoxFit.cover,
-                                          autoPlay: true,
-                                          muted: true,
-                                          showControls: false,
-                                        ),
-                                      )
-                                    : GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  FullscreenImageViewer(
-                                                    imageUrls:
-                                                        widget.post.mediaUrls,
-                                                    initialIndex: i,
-                                                  ),
-                                            ),
-                                          );
-                                        },
-                                        child: Image.network(
-                                          url,
-                                          height: sliderHeight,
-                                          width: availableWidth,
-                                          fit: BoxFit.cover,
-                                          loadingBuilder:
-                                              (
-                                                context,
-                                                child,
-                                                loadingProgress,
-                                              ) {
-                                                if (loadingProgress == null) {
-                                                  return child;
-                                                }
-                                                return SizedBox(
-                                                  height: sliderHeight,
-                                                  width: availableWidth,
-                                                  child: Center(
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          color: selectedColor,
-                                                        ),
-                                                  ),
-                                                );
-                                              },
-                                        ),
-                                      );
-                              },
-                            ),
-                            // 우측 상단 1 / N 캡슐 인디케이터
-                            Positioned(
-                              top: 12,
-                              right: 12,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.6),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  '${safeIndex + 1} / $totalMedia',
-                                  style: const TextStyle(
-                                    color: WHITE,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // 하단 도트 인디케이터
-                            Positioned(
-                              bottom: 10,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: List.generate(
-                                  totalMedia,
-                                  (dotIdx) => AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 2.5,
-                                    ),
-                                    width: safeIndex == dotIdx ? 14 : 5,
-                                    height: 5,
-                                    decoration: BoxDecoration(
-                                      color: safeIndex == dotIdx
-                                          ? WHITE
-                                          : WHITE.withValues(alpha: 0.45),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-                },
+              FeedMediaGallery(
+                post: widget.post,
+                accentColor: selectedColor,
+                maxSingleHeight: 460,
+                multiItemHeight: 260,
               ),
             ],
 
@@ -1085,8 +869,8 @@ class _PostWidgetState extends State<PostWidget> {
                     ),
                     decoration: BoxDecoration(
                       color: isLiked
-                          ? Colors.red.withValues(alpha: 0.1)
-                          : BACKGROUND_COLOR,
+                          ? Colors.red.withValues(alpha: 0.12)
+                          : context.surfaceAltColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -1095,7 +879,7 @@ class _PostWidgetState extends State<PostWidget> {
                         Icon(
                           isLiked ? Icons.favorite : Icons.favorite_border,
                           size: 16,
-                          color: isLiked ? Colors.red : GRAYSCALE_LABEL_600,
+                          color: isLiked ? Colors.red : context.textSecondary,
                         ),
                         const SizedBox(width: 5),
                         Text(
@@ -1103,7 +887,7 @@ class _PostWidgetState extends State<PostWidget> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: isLiked ? Colors.red : GRAYSCALE_LABEL_700,
+                            color: isLiked ? Colors.red : context.textPrimary,
                           ),
                         ),
                       ],
@@ -1133,24 +917,24 @@ class _PostWidgetState extends State<PostWidget> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: BACKGROUND_COLOR,
+                          color: context.surfaceAltColor,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
+                            Icon(
                               CupertinoIcons.chat_bubble,
                               size: 15,
-                              color: GRAYSCALE_LABEL_600,
+                              color: context.textSecondary,
                             ),
                             const SizedBox(width: 5),
                             Text(
                               '${comments.length}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: GRAYSCALE_LABEL_700,
+                                color: context.textPrimary,
                               ),
                             ),
                           ],
@@ -1172,15 +956,17 @@ class _PostWidgetState extends State<PostWidget> {
     PostModel post,
     bool isOwner,
   ) {
+    final isAdmin =
+        FirebaseAuth.instance.currentUser?.email?.toLowerCase() ==
+        'kdw0032@gmail.com';
     showModalBottomSheet(
       isScrollControlled: true,
       context: context,
-      backgroundColor: GRAYSCALE_LABEL_50,
+      backgroundColor: context.bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        height: 200,
+      builder: (context) => SafeArea(
         child: Padding(
           padding: EdgeInsets.all(20.0),
           child: Column(
@@ -1212,7 +998,7 @@ class _PostWidgetState extends State<PostWidget> {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -1220,14 +1006,19 @@ class _PostWidgetState extends State<PostWidget> {
                       children: [
                         Text(
                           '게시물 수정',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimary,
+                          ),
                         ),
-                        Icon(Icons.edit_outlined, color: BLACK),
+                        Icon(Icons.edit_outlined, color: context.textPrimary),
                       ],
                     ),
                   ),
                 ),
                 SizedBox(height: 10),
+              ],
+              if (isOwner || isAdmin) ...[
                 GestureDetector(
                   onTap: () {
                     Navigator.pop(context); // 바텀시트 닫기
@@ -1254,7 +1045,7 @@ class _PostWidgetState extends State<PostWidget> {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -1275,7 +1066,9 @@ class _PostWidgetState extends State<PostWidget> {
                     ),
                   ),
                 ),
-              ] else ...[
+                if (!isOwner) SizedBox(height: 10),
+              ],
+              if (!isOwner) ...[
                 GestureDetector(
                   onTap: () {
                     final reporter = FirebaseAuth.instance.currentUser;
@@ -1302,7 +1095,7 @@ class _PostWidgetState extends State<PostWidget> {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -1338,7 +1131,7 @@ class _PostWidgetState extends State<PostWidget> {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(

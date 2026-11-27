@@ -8,9 +8,11 @@ import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/widgets/attendance_feed_card.dart';
+import 'package:lockerroom/widgets/feed_hashtag_editor.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_edit_page.dart';
 import 'package:lockerroom/page/feed/feed_mypage.dart';
+import 'package:lockerroom/page/feed/feed_search_page.dart';
 import 'package:lockerroom/page/feed/fullscreen_image_viewer.dart';
 import 'package:lockerroom/page/feed/fullscreen_video_player.dart';
 import 'package:lockerroom/page/meetup/meetup_detail_page.dart';
@@ -137,14 +139,14 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
     }
 
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: context.bgColor,
         title: Padding(
           padding: const EdgeInsets.only(top: 10.0),
           child: Column(
             children: [
-              Image.asset('assets/images/applogo/ilu_app_icon.png', height: 36),
+              Image.asset(context.appLogoAsset, height: 36),
             ],
           ),
         ),
@@ -185,7 +187,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
               bottom: 15.0,
             ),
             child: Card(
-              color: WHITE,
+              color: context.cardColor,
               child: Padding(
                 padding: const EdgeInsets.all(15.0),
                 child: Column(
@@ -258,7 +260,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                         child: Text(
                                           nickName,
                                           style: TextStyle(
-                                            color: Colors.black,
+                                            color: context.textPrimary,
                                             fontSize: 15,
                                             fontWeight: FontWeight.w500,
                                           ),
@@ -271,7 +273,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                                         child: Text(
                                           timeAgo(_currentPost.createdAt),
                                           style: TextStyle(
-                                            color: GRAYSCALE_LABEL_500,
+                                            color: context.textMuted,
                                             fontSize: 13,
                                           ),
                                         ),
@@ -295,13 +297,37 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                               isOwner,
                             );
                           },
-                          icon: Icon(Icons.more_horiz),
+                          icon: Icon(
+                            Icons.more_horiz,
+                            color: context.textPrimary,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     // 본문
-                    Text(_currentPost.text),
+                    Text(
+                      _currentPost.text,
+                      style: TextStyle(color: context.textPrimary),
+                    ),
+                    if (_currentPost.hashtags.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      FeedHashtagChips(
+                        hashtags: _currentPost.hashtags,
+                        accentColor:
+                            context.read<TeamProvider>().selectedTeam?.color ??
+                            BUTTON,
+                        onTapTag: (tag) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  FeedSearchPage(initialQuery: '#$tag'),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                     if (_currentPost.attendanceSummary != null) ...[
                       const SizedBox(height: 10),
                       AttendanceFeedCard(
@@ -1521,15 +1547,17 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
     FeedProvider feedProvider,
     bool isOwner,
   ) {
+    final isAdmin =
+        FirebaseAuth.instance.currentUser?.email?.toLowerCase() ==
+        'kdw0032@gmail.com';
     showModalBottomSheet(
       isScrollControlled: true,
       context: context,
-      backgroundColor: GRAYSCALE_LABEL_50,
+      backgroundColor: context.bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        height: 200,
+      builder: (context) => SafeArea(
         child: Padding(
           padding: EdgeInsets.all(20.0),
           child: Column(
@@ -1570,7 +1598,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -1578,14 +1606,19 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                       children: [
                         Text(
                           '게시물 수정',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimary,
+                          ),
                         ),
-                        Icon(Icons.edit_outlined, color: BLACK),
+                        Icon(Icons.edit_outlined, color: context.textPrimary),
                       ],
                     ),
                   ),
                 ),
                 SizedBox(height: 10),
+              ],
+              if (isOwner || isAdmin) ...[
                 GestureDetector(
                   onTap: () {
                     final pageContext = this.context;
@@ -1626,7 +1659,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -1647,7 +1680,9 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     ),
                   ),
                 ),
-              ] else ...[
+                if (!isOwner) SizedBox(height: 10),
+              ],
+              if (!isOwner) ...[
                 GestureDetector(
                   onTap: () {
                     final reporter = FirebaseAuth.instance.currentUser;
@@ -1674,7 +1709,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -1710,7 +1745,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -1760,7 +1795,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1974,7 +2009,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2183,7 +2218,7 @@ class _FeedDetailPageState extends State<FeedDetailPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: context.bgColor,
         title: Text('댓글 신고'),
         content: SingleChildScrollView(
           child: Column(

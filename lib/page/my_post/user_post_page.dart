@@ -8,12 +8,13 @@ import 'package:lockerroom/model/post_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
 import 'package:lockerroom/page/feed/feed_detail_page.dart';
 import 'package:lockerroom/page/feed/feed_edit_page.dart';
+import 'package:lockerroom/page/feed/feed_search_page.dart';
 import 'package:lockerroom/provider/block_provider.dart';
 import 'package:lockerroom/provider/feed_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
-import 'package:lockerroom/utils/media_utils.dart';
-import 'package:lockerroom/widgets/network_video_player.dart';
+import 'package:lockerroom/widgets/feed_hashtag_editor.dart';
+import 'package:lockerroom/widgets/feed_media_gallery.dart';
 import 'package:provider/provider.dart';
 import 'package:toastification/toastification.dart';
 
@@ -63,7 +64,7 @@ class _UserPostPageState extends State<UserPostPage> {
 
         final imageUrl = (data['profileImage'] as String?) ?? '';
         return Scaffold(
-          backgroundColor: BACKGROUND_COLOR,
+          backgroundColor: context.bgColor,
           body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: FirebaseFirestore.instance
                 .collection('posts')
@@ -89,7 +90,7 @@ class _UserPostPageState extends State<UserPostPage> {
                         width: 60,
                         height: 60,
                         decoration: BoxDecoration(
-                          color: WHITE,
+                          color: context.cardColor,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
@@ -99,18 +100,18 @@ class _UserPostPageState extends State<UserPostPage> {
                             ),
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.edit_note_rounded,
                           size: 30,
-                          color: GRAYSCALE_LABEL_400,
+                          color: context.textMuted,
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      Text(
                         '작성한 게시물이 없습니다',
                         style: TextStyle(
                           fontSize: 15,
-                          color: GRAYSCALE_LABEL_600,
+                          color: context.textSecondary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -141,11 +142,9 @@ class _UserPostPageState extends State<UserPostPage> {
                         vertical: 7,
                       ),
                       decoration: BoxDecoration(
-                        color: WHITE,
+                        color: context.cardColor,
                         borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: GRAYSCALE_LABEL_200.withValues(alpha: 0.6),
-                        ),
+                        border: Border.all(color: context.borderColor),
                         boxShadow: [
                           BoxShadow(
                             color: BLACK.withValues(alpha: 0.04),
@@ -166,20 +165,20 @@ class _UserPostPageState extends State<UserPostPage> {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: GRAYSCALE_LABEL_200,
+                                      color: context.borderColor,
                                       width: 1,
                                     ),
                                   ),
                                   child: CircleAvatar(
-                                    backgroundColor: GRAYSCALE_LABEL_100,
+                                    backgroundColor: context.surfaceAltColor,
                                     radius: 19,
                                     backgroundImage: imageUrl.isNotEmpty
                                         ? NetworkImage(imageUrl)
                                         : null,
                                     child: imageUrl.isEmpty
-                                        ? const Icon(
+                                        ? Icon(
                                             Icons.person_rounded,
-                                            color: GRAYSCALE_LABEL_500,
+                                            color: context.textMuted,
                                             size: 20,
                                           )
                                         : null,
@@ -205,10 +204,10 @@ class _UserPostPageState extends State<UserPostPage> {
                                                   p.userNickName;
                                               return Text(
                                                 nickName,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w800,
-                                                  color: GRAYSCALE_LABEL_950,
+                                                  color: context.textPrimary,
                                                 ),
                                               );
                                             },
@@ -216,8 +215,8 @@ class _UserPostPageState extends State<UserPostPage> {
                                       const SizedBox(height: 1),
                                       Text(
                                         timeAgo(p.createdAt),
-                                        style: const TextStyle(
-                                          color: GRAYSCALE_LABEL_400,
+                                        style: TextStyle(
+                                          color: context.textMuted,
                                           fontSize: 11,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -235,9 +234,9 @@ class _UserPostPageState extends State<UserPostPage> {
                                       isOwnerOfThisPost,
                                     );
                                   },
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.more_horiz_rounded,
-                                    color: GRAYSCALE_LABEL_500,
+                                    color: context.textSecondary,
                                     size: 20,
                                   ),
                                 ),
@@ -247,11 +246,32 @@ class _UserPostPageState extends State<UserPostPage> {
                               const SizedBox(height: 10),
                               Text(
                                 p.text,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   height: 1.45,
-                                  color: GRAYSCALE_LABEL_900,
+                                  color: context.textPrimary,
                                 ),
+                              ),
+                            ],
+                            if (p.hashtags.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              FeedHashtagChips(
+                                hashtags: p.hashtags,
+                                accentColor:
+                                    context
+                                        .read<TeamProvider>()
+                                        .selectedTeam
+                                        ?.color ??
+                                    BUTTON,
+                                onTapTag: (tag) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          FeedSearchPage(initialQuery: '#$tag'),
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                             const SizedBox(height: 10),
@@ -259,12 +279,10 @@ class _UserPostPageState extends State<UserPostPage> {
                               Container(
                                 margin: const EdgeInsets.only(bottom: 10),
                                 decoration: BoxDecoration(
-                                  color: BACKGROUND_COLOR,
+                                  color: context.surfaceAltColor,
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                    color: GRAYSCALE_LABEL_200.withValues(
-                                      alpha: 0.8,
-                                    ),
+                                    color: context.borderColor,
                                   ),
                                 ),
                                 clipBehavior: Clip.antiAlias,
@@ -285,7 +303,7 @@ class _UserPostPageState extends State<UserPostPage> {
                                         horizontal: 12,
                                         vertical: 8,
                                       ),
-                                      color: WHITE,
+                                      color: context.cardColor,
                                       child: Row(
                                         children: [
                                           const Icon(
@@ -316,89 +334,16 @@ class _UserPostPageState extends State<UserPostPage> {
 
                             // 이미지/영상 슬라이드
                             if (p.mediaUrls.isNotEmpty)
-                              LayoutBuilder(
-                                builder: (context, constraint) {
-                                  final bool inSingle = p.mediaUrls.length == 1;
-                                  final double avilableWidth =
-                                      constraint.maxWidth;
-                                  final double listHeight =
-                                      (avilableWidth * 0.55).clamp(160, 320);
-                                  final double itemWidth = inSingle
-                                      ? avilableWidth
-                                      : (avilableWidth * 0.48).clamp(
-                                          140,
-                                          avilableWidth,
-                                        );
-
-                                  return SizedBox(
-                                    height: listHeight,
-                                    child: ListView.builder(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: p.mediaUrls.length,
-                                      itemBuilder: (_, i) {
-                                        final url = p.mediaUrls[i];
-                                        final isVideo =
-                                            MediaUtils.isVideoFromPost(p, i);
-                                        return Padding(
-                                          padding: EdgeInsets.only(
-                                            right: inSingle ? 0 : 8,
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                            child: isVideo
-                                                ? NetworkVideoPlayer(
-                                                    videoUrl: url,
-                                                    width: itemWidth,
-                                                    height: listHeight,
-                                                    fit: BoxFit.cover,
-                                                    autoPlay: true,
-                                                    muted: true,
-                                                    showControls: false,
-                                                  )
-                                                : Image.network(
-                                                    url,
-                                                    height: listHeight,
-                                                    width: itemWidth,
-                                                    fit: BoxFit.cover,
-                                                    loadingBuilder:
-                                                        (
-                                                          context,
-                                                          child,
-                                                          loadingProgress,
-                                                        ) {
-                                                          if (loadingProgress ==
-                                                              null) {
-                                                            return child;
-                                                          }
-                                                          final color =
-                                                              context
-                                                                  .read<
-                                                                    TeamProvider
-                                                                  >()
-                                                                  .selectedTeam
-                                                                  ?.color ??
-                                                              BUTTON;
-                                                          return SizedBox(
-                                                            height: listHeight,
-                                                            width: itemWidth,
-                                                            child: Center(
-                                                              child:
-                                                                  CircularProgressIndicator(
-                                                                    color:
-                                                                        color,
-                                                                  ),
-                                                            ),
-                                                          );
-                                                        },
-                                                  ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  );
-                                },
+                              FeedMediaGallery(
+                                post: p,
+                                accentColor:
+                                    context
+                                        .read<TeamProvider>()
+                                        .selectedTeam
+                                        ?.color ??
+                                    BUTTON,
+                                maxSingleHeight: 400,
+                                multiItemHeight: 230,
                               ),
                           ],
                         ),
@@ -434,9 +379,12 @@ class _UserPostPageState extends State<UserPostPage> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: BACKGROUND_COLOR,
-        title: Text('댓글 신고'),
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: dialogContext.cardColor,
+        title: Text(
+          '게시물 신고',
+          style: TextStyle(color: dialogContext.textPrimary),
+        ),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,11 +392,16 @@ class _UserPostPageState extends State<UserPostPage> {
             children: [
               Text(
                 '신고 사유를 선택해주세요',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: dialogContext.textPrimary,
+                ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               StatefulBuilder(
                 builder: (context, setState) {
+                  final accent = context.readableColor(BUTTON);
                   return Column(
                     children: reportReasons.map((reason) {
                       return GestureDetector(
@@ -458,28 +411,33 @@ class _UserPostPageState extends State<UserPostPage> {
                           });
                         },
                         child: Container(
-                          margin: EdgeInsets.symmetric(vertical: 4),
-                          padding: EdgeInsets.symmetric(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 10,
                           ),
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: selectedReason == reason
-                                  ? BUTTON
-                                  : GRAYSCALE_LABEL_400,
+                                  ? accent
+                                  : context.borderColor,
                               width: selectedReason == reason ? 2 : 1,
                             ),
                             borderRadius: BorderRadius.circular(8),
                             color: selectedReason == reason
-                                ? BUTTON.withOpacity(0.1)
+                                ? accent.withValues(alpha: 0.12)
                                 : Colors.transparent,
                           ),
                           child: Row(
                             children: [
-                              Expanded(child: Text(reason)),
+                              Expanded(
+                                child: Text(
+                                  reason,
+                                  style: TextStyle(color: context.textPrimary),
+                                ),
+                              ),
                               if (selectedReason == reason)
-                                Icon(Icons.check, color: BUTTON),
+                                Icon(Icons.check, color: accent),
                             ],
                           ),
                         ),
@@ -488,28 +446,34 @@ class _UserPostPageState extends State<UserPostPage> {
                   );
                 },
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 '추가 설명 (선택사항)',
-                style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: dialogContext.textSecondary,
+                ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               TextField(
                 controller: reportController,
                 maxLines: 3,
+                style: TextStyle(color: dialogContext.textPrimary),
                 decoration: InputDecoration(
                   hintText: '자세한 내용을 입력해주세요',
-                  hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
+                  hintStyle: TextStyle(color: dialogContext.textMuted),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: GRAYSCALE_LABEL_400),
+                    borderSide: BorderSide(color: dialogContext.borderColor),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: BUTTON),
+                    borderSide: BorderSide(
+                      color: dialogContext.readableColor(BUTTON),
+                    ),
                   ),
                 ),
               ),
@@ -518,8 +482,11 @@ class _UserPostPageState extends State<UserPostPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('취소', style: TextStyle(color: Colors.black)),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              '취소',
+              style: TextStyle(color: dialogContext.textSecondary),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -588,27 +555,27 @@ class _UserPostPageState extends State<UserPostPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: BACKGROUND_COLOR,
-      shape: RoundedRectangleBorder(
+      backgroundColor: context.cardColor,
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => SingleChildScrollView(
+      builder: (sheetContext) => SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               // 상단 바
               Container(
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: GRAYSCALE_LABEL_400,
+                  color: sheetContext.borderColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
 
               // 제목
               Text(
@@ -617,17 +584,18 @@ class _UserPostPageState extends State<UserPostPage> {
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   height: 1.4,
+                  color: sheetContext.textPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
               // 설명 텍스트
               Text(
                 '이 사람이 만든 다른 계정과 앞으로 만드는 모든 계정이 함께 차단됩니다. 언제든지 차단을 해제할 수 있습니다.',
                 style: TextStyle(
                   fontSize: 13,
-                  color: GRAYSCALE_LABEL_600,
+                  color: sheetContext.textSecondary,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -668,11 +636,11 @@ class _UserPostPageState extends State<UserPostPage> {
                 children: [
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                      onTap: () => Navigator.pop(sheetContext),
                       child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
-                          border: Border.all(color: GRAYSCALE_LABEL_300),
+                          border: Border.all(color: sheetContext.borderColor),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
@@ -681,7 +649,7 @@ class _UserPostPageState extends State<UserPostPage> {
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: GRAYSCALE_LABEL_900,
+                              color: sheetContext.textPrimary,
                             ),
                           ),
                         ),
@@ -746,8 +714,8 @@ class _UserPostPageState extends State<UserPostPage> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 24, color: GRAYSCALE_LABEL_600),
-        SizedBox(width: 12),
+        Icon(icon, size: 24, color: context.textSecondary),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,15 +725,15 @@ class _UserPostPageState extends State<UserPostPage> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: GRAYSCALE_LABEL_900,
+                  color: context.textPrimary,
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 description,
                 style: TextStyle(
                   fontSize: 12,
-                  color: GRAYSCALE_LABEL_600,
+                  color: context.textSecondary,
                   height: 1.4,
                 ),
               ),
@@ -782,15 +750,17 @@ class _UserPostPageState extends State<UserPostPage> {
     FeedProvider feedProvider,
     bool isOwner,
   ) {
+    final isAdmin =
+        FirebaseAuth.instance.currentUser?.email?.toLowerCase() ==
+        'kdw0032@gmail.com';
     showModalBottomSheet(
       isScrollControlled: true,
       context: context,
-      backgroundColor: GRAYSCALE_LABEL_50,
+      backgroundColor: context.bgColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        height: 200,
+      builder: (context) => SafeArea(
         child: Padding(
           padding: EdgeInsets.all(20.0),
           child: Column(
@@ -822,7 +792,7 @@ class _UserPostPageState extends State<UserPostPage> {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -830,14 +800,19 @@ class _UserPostPageState extends State<UserPostPage> {
                       children: [
                         Text(
                           '게시물 수정',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: context.textPrimary,
+                          ),
                         ),
-                        Icon(Icons.edit_outlined, color: BLACK),
+                        Icon(Icons.edit_outlined, color: context.textPrimary),
                       ],
                     ),
                   ),
                 ),
                 SizedBox(height: 10),
+              ],
+              if (isOwner || isAdmin) ...[
                 GestureDetector(
                   onTap: () {
                     Navigator.pop(context); // 바텀시트 닫기
@@ -864,7 +839,7 @@ class _UserPostPageState extends State<UserPostPage> {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -885,7 +860,9 @@ class _UserPostPageState extends State<UserPostPage> {
                     ),
                   ),
                 ),
-              ] else ...[
+                if (!isOwner) SizedBox(height: 10),
+              ],
+              if (!isOwner) ...[
                 GestureDetector(
                   onTap: () {
                     final reporter = FirebaseAuth.instance.currentUser;
@@ -912,7 +889,7 @@ class _UserPostPageState extends State<UserPostPage> {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -948,7 +925,7 @@ class _UserPostPageState extends State<UserPostPage> {
                     width: double.infinity,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(

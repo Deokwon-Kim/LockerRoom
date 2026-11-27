@@ -33,12 +33,17 @@ class _LikedPostsPageState extends State<LikedPostsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: context.bgColor,
+        foregroundColor: context.textPrimary,
         title: Text(
           '좋아요한 게시물',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: context.textPrimary,
+          ),
         ),
         scrolledUnderElevation: 0,
       ),
@@ -47,7 +52,12 @@ class _LikedPostsPageState extends State<LikedPostsPage> {
           final likedPosts = feedProvider.likedPosts;
 
           if (likedPosts.isEmpty) {
-            return Center(child: Text('좋아요한 게시물이 없습니다.'));
+            return Center(
+              child: Text(
+                '좋아요한 게시물이 없습니다.',
+                style: TextStyle(color: context.textSecondary),
+              ),
+            );
           }
 
           return ListView.builder(

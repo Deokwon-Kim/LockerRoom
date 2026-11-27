@@ -79,10 +79,18 @@ class FeedProvider extends ChangeNotifier {
           .toList();
       _filteredUsers = [];
     } else {
+      final normalizedTagQuery = _query.startsWith('#')
+          ? _query.substring(1).trim()
+          : _query;
       _filteredPosts = _allPosts.where((post) {
         if (_blockedUserIds.contains(post.userId)) return false;
         if (_blockedByUserIds.contains(post.userId)) return false;
-        return post.text.toLowerCase().contains(_query);
+        final matchesText = post.text.toLowerCase().contains(_query);
+        final matchesTag = normalizedTagQuery.isNotEmpty &&
+            post.hashtags.any(
+              (tag) => tag.toLowerCase().contains(normalizedTagQuery),
+            );
+        return matchesText || matchesTag;
       }).toList();
 
       _filteredUsers = _allUsers.where((user) {

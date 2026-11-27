@@ -7,6 +7,8 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter_link_previewer/flutter_link_previewer.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/meetup_model.dart';
+import 'package:lockerroom/model/post_model.dart';
+import 'package:lockerroom/widgets/feed_hashtag_editor.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
 import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
@@ -26,6 +28,8 @@ class FeedUploadPage extends StatefulWidget {
 class _UploadPageState extends State<FeedUploadPage> {
   late final TextEditingController _captionController;
   bool _requestedProfileLoad = false;
+  final List<String> _hashtags = [];
+  bool _showMediaPickerCard = false;
 
   @override
   void initState() {
@@ -70,12 +74,14 @@ class _UploadPageState extends State<FeedUploadPage> {
         uploadProvider.images.isNotEmpty || uploadProvider.camera != null;
     final hasVideo = uploadProvider.video != null;
     final captionText = _captionController.text;
+    final mergedTags = PostModel.mergeHashtags(captionText, _hashtags);
 
     uploadProvider.startBackgroundPost(
       userId: currentUser.uid,
       userNickName: userNickName,
       name: name ?? '',
       text: captionText,
+      hashtags: mergedTags,
       onCompleted: () {
         FirebaseAnalytics.instance.logEvent(
           name: 'feed_upload',
@@ -88,6 +94,7 @@ class _UploadPageState extends State<FeedUploadPage> {
     );
 
     _captionController.clear();
+    _hashtags.clear();
     widget.onUploaded?.call();
   }
 
@@ -102,8 +109,8 @@ class _UploadPageState extends State<FeedUploadPage> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            backgroundColor: WHITE,
+          builder: (dialogContext) => AlertDialog(
+            backgroundColor: dialogContext.cardColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -112,12 +119,12 @@ class _UploadPageState extends State<FeedUploadPage> {
               children: [
                 CircularProgressIndicator(color: themeColor),
                 const SizedBox(height: 18),
-                const Text(
+                Text(
                   '동영상 처리 중...',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: GRAYSCALE_LABEL_900,
+                    color: dialogContext.textPrimary,
                   ),
                 ),
               ],
@@ -184,19 +191,19 @@ class _UploadPageState extends State<FeedUploadPage> {
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           '새 게시물 작성',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
             letterSpacing: -0.3,
           ),
         ),
         centerTitle: false,
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: context.bgColor,
         scrolledUnderElevation: 0,
         actions: [
           Padding(
@@ -263,11 +270,9 @@ class _UploadPageState extends State<FeedUploadPage> {
                     Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: WHITE,
+                        color: context.cardColor,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
-                        ),
+                        border: Border.all(color: context.borderColor),
                         boxShadow: [
                           BoxShadow(
                             color: BLACK.withValues(alpha: 0.04),
@@ -338,10 +343,10 @@ class _UploadPageState extends State<FeedUploadPage> {
                                             userNickName.isNotEmpty
                                                 ? userNickName
                                                 : 'ILU 팬',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w800,
-                                              color: GRAYSCALE_LABEL_950,
+                                              color: context.textPrimary,
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -354,9 +359,9 @@ class _UploadPageState extends State<FeedUploadPage> {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: themeColor.withValues(
-                                                alpha: 0.12,
-                                              ),
+                                              color: context
+                                                  .readableColor(themeColor)
+                                                  .withValues(alpha: 0.16),
                                               borderRadius:
                                                   BorderRadius.circular(8),
                                             ),
@@ -365,7 +370,9 @@ class _UploadPageState extends State<FeedUploadPage> {
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.w800,
-                                                color: themeColor,
+                                                color: context.readableColor(
+                                                  themeColor,
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -373,12 +380,12 @@ class _UploadPageState extends State<FeedUploadPage> {
                                       ],
                                     ),
                                     const SizedBox(height: 2),
-                                    const Text(
+                                    Text(
                                       '전체 공개 · ILU 피드',
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
-                                        color: GRAYSCALE_LABEL_500,
+                                        color: context.textMuted,
                                       ),
                                     ),
                                   ],
@@ -390,12 +397,10 @@ class _UploadPageState extends State<FeedUploadPage> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: BACKGROUND_COLOR,
+                                  color: context.surfaceAltColor,
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: GRAYSCALE_LABEL_200.withValues(
-                                      alpha: 0.8,
-                                    ),
+                                    color: context.borderColor,
                                   ),
                                 ),
                                 child: Text(
@@ -405,7 +410,7 @@ class _UploadPageState extends State<FeedUploadPage> {
                                     fontWeight: FontWeight.w700,
                                     color: charCount > 450
                                         ? RED_DANGER_TEXT_50
-                                        : GRAYSCALE_LABEL_500,
+                                        : context.textSecondary,
                                   ),
                                 ),
                               ),
@@ -420,13 +425,9 @@ class _UploadPageState extends State<FeedUploadPage> {
                               vertical: 10,
                             ),
                             decoration: BoxDecoration(
-                              color: BACKGROUND_COLOR,
+                              color: context.surfaceAltColor,
                               borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: GRAYSCALE_LABEL_200.withValues(
-                                  alpha: 0.7,
-                                ),
-                              ),
+                              border: Border.all(color: context.borderColor),
                             ),
                             child: TextField(
                               controller: _captionController,
@@ -435,23 +436,47 @@ class _UploadPageState extends State<FeedUploadPage> {
                               minLines: 5,
                               maxLength: 500,
                               onChanged: (_) => setState(() {}),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 15,
                                 height: 1.5,
-                                color: GRAYSCALE_LABEL_950,
+                                color: context.isDarkMode
+                                    ? WHITE
+                                    : context.textPrimary,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: '오늘 직관 분위기나 야구 이야기를 자유롭게 남겨보세요! (필수)',
                                 hintStyle: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: GRAYSCALE_LABEL_400,
+                                  color: context.textMuted,
                                 ),
                                 border: InputBorder.none,
                                 counterText: '',
                                 isDense: true,
                               ),
                             ),
+                          ),
+
+                          const SizedBox(height: 12),
+                          FeedHashtagEditor(
+                            tags: _hashtags,
+                            accentColor: context.readableColor(themeColor),
+                            onAdd: (tag) {
+                              if (_hashtags.contains(tag)) return;
+                              setState(() => _hashtags.add(tag));
+                            },
+                            onRemove: (tag) {
+                              setState(() => _hashtags.remove(tag));
+                            },
+                            onToggleQuickTag: (tag) {
+                              setState(() {
+                                if (_hashtags.contains(tag)) {
+                                  _hashtags.remove(tag);
+                                } else if (_hashtags.length < 10) {
+                                  _hashtags.add(tag);
+                                }
+                              });
+                            },
                           ),
 
                           // 직관 모임 첨부 배너 (티켓 스타일 + 해제 가능)
@@ -615,12 +640,12 @@ class _UploadPageState extends State<FeedUploadPage> {
                               children: [
                                 Row(
                                   children: [
-                                    const Text(
+                                    Text(
                                       '첨부된 미디어',
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w800,
-                                        color: GRAYSCALE_LABEL_900,
+                                        color: context.textPrimary,
                                       ),
                                     ),
                                     const SizedBox(width: 6),
@@ -640,18 +665,20 @@ class _UploadPageState extends State<FeedUploadPage> {
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w800,
-                                          color: themeColor,
+                                          color: context.readableColor(
+                                            themeColor,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const Text(
+                                Text(
                                   '가로로 스크롤하여 확인',
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
-                                    color: GRAYSCALE_LABEL_400,
+                                    color: context.textMuted,
                                   ),
                                 ),
                               ],
@@ -662,45 +689,62 @@ class _UploadPageState extends State<FeedUploadPage> {
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
                                 itemCount: totalMediaCount + 1,
-                                separatorBuilder: (_, __) =>
+                                separatorBuilder: (_, _) =>
                                     const SizedBox(width: 10),
                                 itemBuilder: (context, index) {
                                   if (index == totalMediaCount) {
-                                    // 마지막 + 추가 타일
+                                    final accent = context.readableColor(
+                                      themeColor,
+                                    );
                                     return GestureDetector(
-                                      onTap: () => pickImageBottomSheet(
-                                        context,
-                                        uploadProvider,
-                                      ),
+                                      onTap: () {
+                                        setState(() {
+                                          _showMediaPickerCard =
+                                              !_showMediaPickerCard;
+                                        });
+                                      },
                                       child: Container(
                                         width: 104,
                                         height: 104,
                                         decoration: BoxDecoration(
-                                          color: BACKGROUND_COLOR,
+                                          color: _showMediaPickerCard
+                                              ? accent.withValues(alpha: 0.12)
+                                              : context.surfaceAltColor,
                                           borderRadius: BorderRadius.circular(
                                             16,
                                           ),
                                           border: Border.all(
-                                            color: GRAYSCALE_LABEL_300,
+                                            color: _showMediaPickerCard
+                                                ? accent
+                                                : context.borderColor,
                                             width: 1.2,
                                           ),
                                         ),
-                                        child: const Column(
+                                        child: Column(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
                                             Icon(
-                                              Icons.add_rounded,
-                                              color: GRAYSCALE_LABEL_500,
+                                              _showMediaPickerCard
+                                                  ? Icons
+                                                        .keyboard_arrow_up_rounded
+                                                  : Icons.add_rounded,
+                                              color: _showMediaPickerCard
+                                                  ? accent
+                                                  : context.textSecondary,
                                               size: 26,
                                             ),
-                                            SizedBox(height: 4),
+                                            const SizedBox(height: 4),
                                             Text(
-                                              '미디어 추가',
+                                              _showMediaPickerCard
+                                                  ? '접기'
+                                                  : '추가하기',
                                               style: TextStyle(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.w700,
-                                                color: GRAYSCALE_LABEL_500,
+                                                color: _showMediaPickerCard
+                                                    ? accent
+                                                    : context.textSecondary,
                                               ),
                                             ),
                                           ],
@@ -708,7 +752,6 @@ class _UploadPageState extends State<FeedUploadPage> {
                                       ),
                                     );
                                   }
-
                                   if (index < uploadProvider.images.length) {
                                     return SizedBox(
                                       width: 104,
@@ -831,17 +874,15 @@ class _UploadPageState extends State<FeedUploadPage> {
                       ),
                     ),
 
-                    // 원탭 미디어 추가 툴바 카드 (바텀시트 없이 바로 실행)
-                    if (!hasLink) ...[
+                    // 원탭 미디어 추가 툴바 카드 (첨부 전 기본 노출, 첨부 후엔 '추가하기' 클릭 시 노출)
+                    if (!hasLink && (!hasMedia || _showMediaPickerCard)) ...[
                       const SizedBox(height: 14),
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: WHITE,
+                          color: context.cardColor,
                           borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                            color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
-                          ),
+                          border: Border.all(color: context.borderColor),
                           boxShadow: [
                             BoxShadow(
                               color: BLACK.withValues(alpha: 0.03),
@@ -856,28 +897,39 @@ class _UploadPageState extends State<FeedUploadPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
-                                  '원탭 미디어 추가 (선택사항)',
+                                Text(
+                                  '미디어 추가 (선택사항)',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
-                                    color: GRAYSCALE_LABEL_700,
+                                    color: context.textPrimary,
                                   ),
                                 ),
-                                GestureDetector(
-                                  onTap: () => pickImageBottomSheet(
-                                    context,
-                                    uploadProvider,
-                                  ),
-                                  child: Text(
-                                    '전체 옵션 보기',
+                                if (hasMedia)
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _showMediaPickerCard = false;
+                                      });
+                                    },
+                                    child: Text(
+                                      '접기',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: context.textMuted,
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  Text(
+                                    '1탭으로 바로 추가',
                                     style: TextStyle(
                                       fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: themeColor,
+                                      fontWeight: FontWeight.w600,
+                                      color: context.textMuted,
                                     ),
                                   ),
-                                ),
                               ],
                             ),
                             const SizedBox(height: 10),
@@ -891,6 +943,11 @@ class _UploadPageState extends State<FeedUploadPage> {
                                     onTap: () async {
                                       if (uploadProvider.isUploading) return;
                                       await uploadProvider.pickCamera();
+                                      if (mounted) {
+                                        setState(() {
+                                          _showMediaPickerCard = false;
+                                        });
+                                      }
                                     },
                                   ),
                                 ),
@@ -903,6 +960,11 @@ class _UploadPageState extends State<FeedUploadPage> {
                                     onTap: () async {
                                       if (uploadProvider.isUploading) return;
                                       await uploadProvider.pickImages();
+                                      if (mounted) {
+                                        setState(() {
+                                          _showMediaPickerCard = false;
+                                        });
+                                      }
                                     },
                                   ),
                                 ),
@@ -912,11 +974,18 @@ class _UploadPageState extends State<FeedUploadPage> {
                                     icon: Icons.movie_creation_rounded,
                                     label: '동영상',
                                     themeColor: themeColor,
-                                    onTap: () => _pickVideoDirectly(
-                                      context,
-                                      uploadProvider,
-                                      themeColor,
-                                    ),
+                                    onTap: () async {
+                                      await _pickVideoDirectly(
+                                        context,
+                                        uploadProvider,
+                                        themeColor,
+                                      );
+                                      if (mounted) {
+                                        setState(() {
+                                          _showMediaPickerCard = false;
+                                        });
+                                      }
+                                    },
                                   ),
                                 ),
                               ],
@@ -941,12 +1010,12 @@ class _UploadPageState extends State<FeedUploadPage> {
                           vertical: 14,
                         ),
                         decoration: BoxDecoration(
-                          color: WHITE,
+                          color: context.cardColor,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: uploadProvider.meetupId != null
                                 ? themeColor.withValues(alpha: 0.5)
-                                : GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
+                                : context.borderColor,
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -962,12 +1031,14 @@ class _UploadPageState extends State<FeedUploadPage> {
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: themeColor.withValues(alpha: 0.1),
+                                color: context
+                                    .readableColor(themeColor)
+                                    .withValues(alpha: 0.14),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
                                 Icons.groups_rounded,
-                                color: themeColor,
+                                color: context.readableColor(themeColor),
                                 size: 20,
                               ),
                             ),
@@ -980,19 +1051,19 @@ class _UploadPageState extends State<FeedUploadPage> {
                                     uploadProvider.meetupId != null
                                         ? '첨부된 직관모임 변경하기'
                                         : '내 직관모임 첨부하기 (선택)',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w800,
-                                      color: GRAYSCALE_LABEL_900,
+                                      color: context.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  const Text(
+                                  Text(
                                     '모임을 첨부하면 피드의 직관모임 탭에도 함께 노출돼요',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w500,
-                                      color: GRAYSCALE_LABEL_500,
+                                      color: context.textMuted,
                                     ),
                                   ),
                                 ],
@@ -1000,7 +1071,7 @@ class _UploadPageState extends State<FeedUploadPage> {
                             ),
                             Icon(
                               Icons.chevron_right_rounded,
-                              color: GRAYSCALE_LABEL_400,
+                              color: context.textMuted,
                               size: 22,
                             ),
                           ],
@@ -1029,7 +1100,7 @@ class _UploadPageState extends State<FeedUploadPage> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1050,7 +1121,7 @@ class _UploadPageState extends State<FeedUploadPage> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: GRAYSCALE_LABEL_300,
+                        color: sheetContext.borderColor,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -1059,12 +1130,12 @@ class _UploadPageState extends State<FeedUploadPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         '참여 중인 직관모임 선택',
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
-                          color: GRAYSCALE_LABEL_950,
+                          color: sheetContext.textPrimary,
                         ),
                       ),
                       if (uploadProvider.meetupId != null)
@@ -1098,13 +1169,13 @@ class _UploadPageState extends State<FeedUploadPage> {
                         }
                         final meetups = snapshot.data!;
                         if (meetups.isEmpty) {
-                          return const Center(
+                          return Center(
                             child: Text(
                               '참여 중인 직관모임이 없습니다.\n직관모임 탭에서 모임을 만들거나 참여해 보세요!',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13,
-                                color: GRAYSCALE_LABEL_500,
+                                color: context.textMuted,
                                 fontWeight: FontWeight.w600,
                                 height: 1.5,
                               ),
@@ -1128,12 +1199,12 @@ class _UploadPageState extends State<FeedUploadPage> {
                               child: Container(
                                 padding: const EdgeInsets.all(14),
                                 decoration: BoxDecoration(
-                                  color: WHITE,
+                                  color: sheetContext.cardColor,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
                                     color: isSelected
                                         ? themeColor
-                                        : GRAYSCALE_LABEL_200,
+                                        : sheetContext.borderColor,
                                     width: isSelected ? 1.6 : 1,
                                   ),
                                 ),
@@ -1144,13 +1215,15 @@ class _UploadPageState extends State<FeedUploadPage> {
                                       height: 40,
                                       decoration: BoxDecoration(
                                         color: themeColor.withValues(
-                                          alpha: 0.1,
+                                          alpha: 0.14,
                                         ),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Icon(
                                         Icons.groups_rounded,
-                                        color: themeColor,
+                                        color: sheetContext.readableColor(
+                                          themeColor,
+                                        ),
                                         size: 20,
                                       ),
                                     ),
@@ -1162,10 +1235,10 @@ class _UploadPageState extends State<FeedUploadPage> {
                                         children: [
                                           Text(
                                             m.title,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w800,
-                                              color: GRAYSCALE_LABEL_950,
+                                              color: sheetContext.textPrimary,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -1173,10 +1246,10 @@ class _UploadPageState extends State<FeedUploadPage> {
                                           const SizedBox(height: 3),
                                           Text(
                                             '${m.awayTeam} vs ${m.homeTeam} · ${m.stadium} (${m.gameDate})',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
-                                              color: GRAYSCALE_LABEL_500,
+                                              color: sheetContext.textSecondary,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -1220,201 +1293,33 @@ class _UploadPageState extends State<FeedUploadPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: BACKGROUND_COLOR,
+          color: context.surfaceAltColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: GRAYSCALE_LABEL_200.withValues(alpha: 0.8)),
+          border: Border.all(color: context.borderColor),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: themeColor, size: 22),
+            Icon(
+              icon,
+              color:
+                  (context.isDarkMode && themeColor.computeLuminance() < 0.22)
+                  ? ACCENT_CORAL
+                  : themeColor,
+              size: 22,
+            ),
             const SizedBox(height: 5),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: GRAYSCALE_LABEL_800,
+                color: context.textPrimary,
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Future<dynamic> pickImageBottomSheet(
-    BuildContext context,
-    UploadProvider uploadProvider,
-  ) {
-    return showModalBottomSheet(
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: GRAYSCALE_LABEL_50,
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: GRAYSCALE_LABEL_200,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Row(
-                  children: [
-                    Icon(Icons.perm_media, color: BUTTON),
-                    SizedBox(width: 8),
-                    Text(
-                      '미디어 추가',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                        color: BLACK,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12),
-                Container(height: 1, color: GRAYSCALE_LABEL_200),
-                SizedBox(height: 8),
-
-                ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  leading: CircleAvatar(
-                    backgroundColor: BUTTON.withOpacity(0.1),
-                    child: Icon(Icons.camera_alt_rounded, color: BUTTON),
-                  ),
-                  title: Text(
-                    '사진 촬영',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text('카메라로 바로 촬영합니다.'),
-                  onTap: () async {
-                    if (uploadProvider.isUploading) return;
-                    await uploadProvider.pickCamera();
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  leading: CircleAvatar(
-                    backgroundColor: BUTTON.withOpacity(0.1),
-                    child: Icon(Icons.photo, color: BUTTON),
-                  ),
-                  title: Text(
-                    '사진 선택',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text('여러 장 선택할 수 있어요.'),
-                  onTap: () async {
-                    if (uploadProvider.isUploading) return;
-                    await uploadProvider.pickImages();
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  leading: CircleAvatar(
-                    backgroundColor: BUTTON.withOpacity(0.1),
-                    child: Icon(Icons.movie, color: BUTTON),
-                  ),
-                  title: Text(
-                    '동영상 선택',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text('최대 1분짜리 동영상만 업로드 가능합니다.'),
-                  onTap: () async {
-                    if (uploadProvider.isUploading) return;
-                    try {
-                      // 로딩 다이얼로그 표시
-                      if (context.mounted) {
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (context) => AlertDialog(
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CircularProgressIndicator(color: BUTTON),
-                                SizedBox(height: 20),
-                                Text(
-                                  '동영상 처리 중...',
-                                  style: TextStyle(fontSize: 16),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-
-                      // ⚡ wechat_assets_picker 사용 (빠름)
-                      await uploadProvider.pickVideoFast(context);
-
-                      if (context.mounted) {
-                        Navigator.pop(context); // 로딩 다이얼로그 닫기
-                        Navigator.pop(context); // 바텀시트(메뉴) 닫기
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        Navigator.pop(context); // 로딩 다이얼로그 닫기
-                        Navigator.pop(context); // 바텀시트(메뉴) 닫기
-
-                        // 바텀시트가 닫힌 후 메시지 표시
-
-                        if (context.mounted) {
-                          toastification.show(
-                            context: context,
-                            type: ToastificationType.error,
-                            alignment: Alignment.bottomCenter,
-                            autoCloseDuration: Duration(seconds: 4),
-                            title: Text(
-                              e.toString().replaceAll('Exception:', ''),
-                            ),
-                          );
-                        }
-                      }
-                    }
-                  },
-                ),
-                SizedBox(height: 4),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      '닫기',
-                      style: TextStyle(color: GRAYSCALE_LABEL_500),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 

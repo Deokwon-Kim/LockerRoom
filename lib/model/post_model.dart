@@ -13,6 +13,7 @@ class PostModel {
   final String userNickName;
   final String userName;
   final List<String> likedBy;
+  final List<String> hashtags;
   final String? meetupId;
   final Map<String, dynamic>? attendanceSummary;
 
@@ -29,6 +30,7 @@ class PostModel {
     required this.userNickName,
     required this.userName,
     required this.likedBy,
+    this.hashtags = const [],
     this.meetupId,
     this.attendanceSummary,
   });
@@ -68,9 +70,29 @@ class PostModel {
       userNickName: data['userNickName'] ?? '사용자',
       userName: data['name'] ?? '',
       likedBy: List<String>.from(data['likedBy'] ?? const []),
+      hashtags: List<String>.from(data['hashtags'] ?? const []),
       meetupId: data['meetupId'],
       attendanceSummary: attendanceSummary,
     );
+  }
+
+  static List<String> mergeHashtags(String text, List<String> explicitTags) {
+    final result = <String>[];
+    final seen = <String>{};
+    for (final raw in explicitTags) {
+      final clean = raw.trim().replaceFirst(RegExp(r'^#+'), '');
+      if (clean.isNotEmpty && seen.add(clean)) {
+        result.add(clean);
+      }
+    }
+    final regex = RegExp(r'#([^\s#]+)');
+    for (final m in regex.allMatches(text)) {
+      final tag = m.group(1)?.trim() ?? '';
+      if (tag.isNotEmpty && seen.add(tag)) {
+        result.add(tag);
+      }
+    }
+    return result.take(10).toList();
   }
 
   PostModel copyWith({
@@ -83,6 +105,7 @@ class PostModel {
     String? userNickName,
     String? userName,
     List<String>? likedBy,
+    List<String>? hashtags,
     String? meetupId,
     Map<String, dynamic>? attendanceSummary,
   }) {
@@ -99,6 +122,7 @@ class PostModel {
       userNickName: userNickName ?? this.userNickName,
       userName: userName ?? this.userName,
       likedBy: likedBy ?? this.likedBy,
+      hashtags: hashtags ?? this.hashtags,
       meetupId: meetupId ?? this.meetupId,
       attendanceSummary: attendanceSummary ?? this.attendanceSummary,
     );
@@ -117,6 +141,7 @@ class PostModel {
       'userNickName': userNickName,
       'userName': userName,
       'likedBy': likedBy,
+      'hashtags': hashtags,
       'meetupId': meetupId,
       if (attendanceSummary != null) 'attendanceSummary': attendanceSummary,
     };
