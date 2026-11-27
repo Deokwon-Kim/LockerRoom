@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lockerroom/model/mate_checklist_model.dart';
 
 class MeetupModel {
   final String id;
@@ -33,6 +34,7 @@ class MeetupModel {
   final List<String> pendingParticipants;
   final List<String> likedBy;
   final int likeCount;
+  final MateChecklistModel? mateTags;
 
   // 공지사항 메시지 ID (announcementId 필드를 사용)
   String? get noticeMessageId => announcementId;
@@ -70,6 +72,7 @@ class MeetupModel {
     this.pendingParticipants = const [],
     this.likedBy = const [],
     this.likeCount = 0,
+    this.mateTags,
   });
 
   factory MeetupModel.fromFirestore(DocumentSnapshot doc) {
@@ -114,6 +117,9 @@ class MeetupModel {
       pendingParticipants: List<String>.from(data['pendingParticipants'] ?? []),
       likedBy: List<String>.from(data['likedBy'] ?? []),
       likeCount: data['likeCount'] ?? 0,
+      mateTags: data['mateTags'] is Map<String, dynamic>
+          ? MateChecklistModel.fromMap(data['mateTags'] as Map<String, dynamic>)
+          : null,
     );
   }
   Map<String, dynamic> toFirestore() {
@@ -151,6 +157,7 @@ class MeetupModel {
       'pendingParticipants': pendingParticipants,
       'likedBy': likedBy,
       'likeCount': likeCount,
+      if (mateTags != null) 'mateTags': mateTags!.toMap(),
     };
   }
 
@@ -187,6 +194,7 @@ class MeetupModel {
     List<String>? pendingParticipants,
     List<String>? likedBy,
     int? likeCount,
+    MateChecklistModel? mateTags,
   }) {
     return MeetupModel(
       id: id ?? this.id,
@@ -217,9 +225,11 @@ class MeetupModel {
       pendingParticipants: pendingParticipants ?? this.pendingParticipants,
       likedBy: likedBy ?? this.likedBy,
       likeCount: likeCount ?? this.likeCount,
+      mateTags: mateTags ?? this.mateTags,
     );
   }
 
+  bool get isSmallGroup => maxParticipants <= 4;
   bool get isFull => participants.length >= maxParticipants;
   int get remainingSlots => maxParticipants - participants.length;
 }

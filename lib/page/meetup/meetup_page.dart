@@ -5,8 +5,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/mate_checklist_model.dart';
 import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/page/meetup/chat_list_page.dart';
+import 'package:lockerroom/page/meetup/mate_checklist_page.dart';
 import 'package:lockerroom/page/meetup/meetup_detail_page.dart';
 import 'package:lockerroom/page/meetup/meetup_upload_page.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
@@ -14,6 +16,8 @@ import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:badges/badges.dart' as badges;
+
+enum _MateQuickFilter { all, smallGroup, highMatch, nonSmoke, watchUntilEnd }
 
 class MeetupPage extends StatefulWidget {
   const MeetupPage({super.key});
@@ -26,13 +30,34 @@ class _MeetupPageState extends State<MeetupPage> {
   bool _isButtonVisible = true;
   double _lastScrollPosition = 0;
   bool _isMyMeetupsExpanded = true;
+  _MateQuickFilter _mateFilter = _MateQuickFilter.all;
+  MateChecklistModel? _myChecklist;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<MeetupProvider>().fetchMeetups();
+      _loadMyChecklist();
     });
+  }
+
+  Future<void> _loadMyChecklist() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+      final raw = doc.data()?['mateChecklist'];
+      if (raw is Map<String, dynamic> && mounted) {
+        setState(() {
+          _myChecklist = MateChecklistModel.fromMap(raw);
+        });
+      }
+    } catch (_) {}
   }
 
   // 스크롤 방향 감지
@@ -57,32 +82,62 @@ class _MeetupPageState extends State<MeetupPage> {
     final teamProvider = context.read<TeamProvider>();
     final selectedTeam = teamProvider.selectedTeam;
 
+    final rawTeamColor = selectedTeam?.color ?? BUTTON;
+    final accentColor = context.readableColor(rawTeamColor);
+    final fabTextColor =
+        ThemeData.estimateBrightnessForColor(accentColor) == Brightness.dark
+        ? WHITE
+        : Colors.black;
+
     return Scaffold(
-      backgroundColor: WHITE,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: selectedTeam?.color ?? BUTTON,
+        backgroundColor: context.bgColor,
+        elevation: 0,
         scrolledUnderElevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: context.textPrimary),
         title: Text(
           '함께 직관 가요!',
           style: TextStyle(
-            color: WHITE,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+            color: context.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
           ),
         ),
-        centerTitle: true,
-        iconTheme: IconThemeData(color: WHITE),
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ChatListPage()),
-              );
-            },
-            icon: TotalUnreadBadge(
-              currentUserId: FirebaseAuth.instance.currentUser?.uid ?? '',
-              child: Icon(CupertinoIcons.paperplane_fill, color: WHITE),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Center(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ChatListPage()),
+                  );
+                },
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: context.cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.borderColor),
+                  ),
+                  child: Center(
+                    child: TotalUnreadBadge(
+                      currentUserId:
+                          FirebaseAuth.instance.currentUser?.uid ?? '',
+                      child: Icon(
+                        CupertinoIcons.paperplane_fill,
+                        color: context.textPrimary,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -100,12 +155,12 @@ class _MeetupPageState extends State<MeetupPage> {
           ),
 
           AnimatedPositioned(
-            duration: Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 200),
             curve: Curves.easeInOut,
-            bottom: _isButtonVisible ? 70 : -100,
-            right: 15,
+            bottom: _isButtonVisible ? 72 : -100,
+            right: 16,
             child: AnimatedOpacity(
-              duration: Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 200),
               opacity: _isButtonVisible ? 1.0 : 0.0,
               child: GestureDetector(
                 onTap: () {
@@ -115,15 +170,36 @@ class _MeetupPageState extends State<MeetupPage> {
                   );
                 },
                 child: Container(
-                  width: 70,
-                  height: 70,
-                  alignment: Alignment.center,
-                  padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: teamProvider.selectedTeam?.color,
-                    borderRadius: BorderRadius.circular(20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 13,
                   ),
-                  child: Icon(Icons.add, color: WHITE, size: 30),
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.22),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add, color: fabTextColor, size: 20),
+                      const SizedBox(width: 6),
+                      Text(
+                        '모임 만들기',
+                        style: TextStyle(
+                          color: fabTextColor,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -138,8 +214,8 @@ class _MeetupPageState extends State<MeetupPage> {
       builder: (context, meetUpProvider, teamProvider, child) {
         final selectedTeam = teamProvider.selectedTeam?.color;
         return Container(
-          padding: const EdgeInsets.all(16),
-          color: WHITE,
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+          color: context.bgColor,
           child: Column(
             children: [
               Row(
@@ -147,22 +223,25 @@ class _MeetupPageState extends State<MeetupPage> {
                   Expanded(
                     child: _filterChip(
                       label: meetUpProvider.selectedStadium ?? '구장 전체',
+                      isActive: meetUpProvider.selectedStadium != null,
                       onTap: () => _showStadiumFilter(context),
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _filterChip(
                       label: meetUpProvider.selecteedTeam ?? '팀 전체',
+                      isActive: meetUpProvider.selecteedTeam != null,
                       onTap: () => _showTeamFilter(context),
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _filterChip(
                       label: meetUpProvider.selectedDate != null
                           ? '${meetUpProvider.selectedDate!.month}/${meetUpProvider.selectedDate!.day}'
                           : '날짜 전체',
+                      isActive: meetUpProvider.selectedDate != null,
                       onTap: () =>
                           _showDateFilter(context, selectedTeam ?? BUTTON),
                     ),
@@ -174,7 +253,10 @@ class _MeetupPageState extends State<MeetupPage> {
                   meetUpProvider.selectedDate != null)
                 TextButton(
                   onPressed: () => meetUpProvider.clearFileters(),
-                  child: Text('필터 초기화', style: TextStyle(color: BLACK)),
+                  child: Text(
+                    '필터 초기화',
+                    style: TextStyle(color: context.textPrimary),
+                  ),
                 ),
             ],
           ),
@@ -183,14 +265,27 @@ class _MeetupPageState extends State<MeetupPage> {
     );
   }
 
-  Widget _filterChip({required String label, required VoidCallback onTap}) {
+  Widget _filterChip({
+    required String label,
+    required VoidCallback onTap,
+    bool isActive = false,
+  }) {
+    final accentColor = context.readableColor(
+      context.read<TeamProvider>().selectedTeam?.color ?? BUTTON,
+    );
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          border: Border.all(color: GRAYSCALE_LABEL_300),
-          borderRadius: BorderRadius.circular(20),
+          color: isActive
+              ? accentColor.withValues(alpha: 0.1)
+              : context.cardColor,
+          border: Border.all(
+            color: isActive ? accentColor : context.borderColor,
+          ),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -199,11 +294,19 @@ class _MeetupPageState extends State<MeetupPage> {
               child: Text(
                 label,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isActive ? accentColor : context.textPrimary,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            Icon(Icons.arrow_drop_down, size: 16),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: isActive ? accentColor : context.textSecondary,
+            ),
           ],
         ),
       ),
@@ -221,12 +324,31 @@ class _MeetupPageState extends State<MeetupPage> {
           );
         }
 
-        final meetups = meetUpProvider.filteredMeetups;
+        final rawMeetups = meetUpProvider.filteredMeetups;
+        final meetups = rawMeetups.where((m) {
+          switch (_mateFilter) {
+            case _MateQuickFilter.all:
+              return true;
+            case _MateQuickFilter.smallGroup:
+              return m.isSmallGroup;
+            case _MateQuickFilter.highMatch:
+              if (_myChecklist == null || m.mateTags == null) return false;
+              return _myChecklist!.calculateMatchPercent(m.mateTags!) >= 80;
+            case _MateQuickFilter.nonSmoke:
+              return m.mateTags?.isNonSmoke ?? false;
+            case _MateQuickFilter.watchUntilEnd:
+              return m.mateTags?.isWatchUntilEnd ?? false;
+          }
+        }).toList();
         final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
         return ListView(
           padding: EdgeInsets.all(16),
           children: [
+            _buildMateChecklistBanner(teamProvider.selectedTeam?.color),
+            const SizedBox(height: 10),
+            _buildMateQuickFilterRow(teamProvider.selectedTeam?.color),
+            const SizedBox(height: 12),
             if (currentUserId != null)
               StreamBuilder<List<MeetupModel>>(
                 stream: meetUpProvider.getAppliedMeetupStream(currentUserId),
@@ -323,38 +445,39 @@ class _MeetupPageState extends State<MeetupPage> {
         );
       },
       child: Container(
-        width: 200,
+        width: 210,
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
-          color: WHITE,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: GRAYSCALE_LABEL_300),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          color: context.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.borderColor),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Stack(
             children: [
               // 배경 이미지
               if (meetup.images.isNotEmpty)
                 Image.network(
                   meetup.images.first,
-                  width: 200,
+                  width: 210,
                   height: 140,
                   fit: BoxFit.cover,
                 )
               else
                 Container(
-                  width: 200,
+                  width: 210,
                   height: 140,
-                  color: GRAYSCALE_LABEL_100,
-                  child: Icon(Icons.image, color: GRAYSCALE_LABEL_300),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [teamColor, teamColor.withValues(alpha: 0.72)],
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.stadium_outlined, color: WHITE, size: 32),
+                  ),
                 ),
 
               // 그라데이션 오버레이 (텍스트 가독성)
@@ -465,8 +588,14 @@ class _MeetupPageState extends State<MeetupPage> {
     final selectedTeam = teamProvider.selectedTeam;
 
     return Card(
-      color: WHITE,
-      margin: EdgeInsets.only(bottom: 12),
+      color: context.cardColor,
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: context.borderColor),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
           Navigator.push(
@@ -505,7 +634,7 @@ class _MeetupPageState extends State<MeetupPage> {
                         userNickName,
                         style: TextStyle(
                           fontSize: 15,
-                          color: BLACK,
+                          color: context.textPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -579,25 +708,27 @@ class _MeetupPageState extends State<MeetupPage> {
                               TextSpan(
                                 text: meetup.awayTeam,
                                 style: TextStyle(
-                                  color:
-                                      teamProvider
-                                          .findTeamByName(meetup.awayTeam)
-                                          ?.color ??
-                                      BUTTON,
+                                  color: context.readableColor(
+                                    teamProvider
+                                            .findTeamByName(meetup.awayTeam)
+                                            ?.color ??
+                                        BUTTON,
+                                  ),
                                 ),
                               ),
-                              const TextSpan(
+                              TextSpan(
                                 text: ' vs ',
-                                style: TextStyle(color: BLACK),
+                                style: TextStyle(color: context.textPrimary),
                               ),
                               TextSpan(
                                 text: meetup.homeTeam,
                                 style: TextStyle(
-                                  color:
-                                      teamProvider
-                                          .findTeamByName(meetup.homeTeam)
-                                          ?.color ??
-                                      BUTTON,
+                                  color: context.readableColor(
+                                    teamProvider
+                                            .findTeamByName(meetup.homeTeam)
+                                            ?.color ??
+                                        BUTTON,
+                                  ),
                                 ),
                               ),
                             ],
@@ -666,16 +797,115 @@ class _MeetupPageState extends State<MeetupPage> {
               ),
 
               SizedBox(height: 8),
+              if (meetup.mateTags != null) ...[
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    if (_myChecklist != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '성향 ${_myChecklist!.calculateMatchPercent(meetup.mateTags!)}% 일치',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ),
+                    ...meetup.mateTags!
+                        .toSummaryTags(maxTags: 3)
+                        .map(
+                          (tag) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: context.surfaceAltColor,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              tag,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: context.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
               Row(
                 children: [
-                  Icon(Icons.person, size: 18),
-                  Text(
-                    '${meetup.participants.length}/${meetup.maxParticipants}명',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: meetup.isFull ? Colors.red : BUTTON,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: meetup.maxParticipants > 0
+                            ? (meetup.participants.length /
+                                      meetup.maxParticipants)
+                                  .clamp(0.0, 1.0)
+                            : 0.0,
+                        minHeight: 6,
+                        backgroundColor: context.surfaceAltColor,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          meetup.isFull
+                              ? Colors.red
+                              : context.readableColor(
+                                  selectedTeam?.color ?? BUTTON,
+                                ),
+                        ),
+                      ),
                     ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    meetup.isFull
+                        ? '${meetup.participants.length}/${meetup.maxParticipants}명 · 모집 마감'
+                        : '${meetup.participants.length}/${meetup.maxParticipants}명 · ${meetup.remainingSlots}자리 남음',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: meetup.isFull ? Colors.red : context.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        meetup.isApprovalRequired
+                            ? Icons.lock_outline_rounded
+                            : Icons.bolt_rounded,
+                        size: 14,
+                        color: context.textMuted,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        meetup.isApprovalRequired ? '방장 승인' : '바로 참여',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: context.textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -700,14 +930,14 @@ class _MeetupPageState extends State<MeetupPage> {
       '도쿄돔',
     ];
     showModalBottomSheet(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.cardColor,
       context: context,
       builder: (context) {
         return ListView(
-          padding: EdgeInsets.all(10),
+          padding: const EdgeInsets.all(10),
           children: [
             ListTile(
-              title: Text('전체'),
+              title: Text('전체', style: TextStyle(color: context.textPrimary)),
               onTap: () {
                 context.read<MeetupProvider>().setStadiumFilter(null);
                 Navigator.pop(context);
@@ -715,7 +945,10 @@ class _MeetupPageState extends State<MeetupPage> {
             ),
             ...stadium.map((stadium) {
               return ListTile(
-                title: Text(stadium),
+                title: Text(
+                  stadium,
+                  style: TextStyle(color: context.textPrimary),
+                ),
                 onTap: () {
                   context.read<MeetupProvider>().setStadiumFilter(stadium);
                   Navigator.pop(context);
@@ -742,14 +975,14 @@ class _MeetupPageState extends State<MeetupPage> {
       '롯데',
     ];
     showModalBottomSheet(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.cardColor,
       context: context,
       builder: (context) {
         return ListView(
-          padding: EdgeInsets.all(10),
+          padding: const EdgeInsets.all(10),
           children: [
             ListTile(
-              title: Text('전체'),
+              title: Text('전체', style: TextStyle(color: context.textPrimary)),
               onTap: () {
                 context.read<MeetupProvider>().setTeamFilter(null);
                 Navigator.pop(context);
@@ -757,7 +990,7 @@ class _MeetupPageState extends State<MeetupPage> {
             ),
             ...teams.map((team) {
               return ListTile(
-                title: Text(team),
+                title: Text(team, style: TextStyle(color: context.textPrimary)),
                 onTap: () {
                   context.read<MeetupProvider>().setTeamFilter(team);
                   Navigator.pop(context);
@@ -775,25 +1008,31 @@ class _MeetupPageState extends State<MeetupPage> {
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
         final base = Theme.of(context);
+        final readableTeam = context.readableColor(teamColor);
         return Localizations.override(
           context: context,
-          locale: Locale('ko', 'KR'),
+          locale: const Locale('ko', 'KR'),
           child: Theme(
             data: base.copyWith(
               datePickerTheme: DatePickerThemeData(
-                backgroundColor: BACKGROUND_COLOR,
-                headerBackgroundColor: BACKGROUND_COLOR,
+                backgroundColor: context.cardColor,
+                headerBackgroundColor: context.cardColor,
+                headerForegroundColor: context.textPrimary,
               ),
               colorScheme: base.colorScheme.copyWith(
-                primary: teamColor,
-                surface: BACKGROUND_COLOR,
-                onSurface: Colors.black,
+                primary: readableTeam,
+                onPrimary:
+                    context.isDarkMode && readableTeam.computeLuminance() > 0.5
+                    ? BLACK
+                    : WHITE,
+                surface: context.cardColor,
+                onSurface: context.textPrimary,
               ),
               textButtonTheme: TextButtonThemeData(
-                style: TextButton.styleFrom(foregroundColor: teamColor),
+                style: TextButton.styleFrom(foregroundColor: readableTeam),
               ),
             ),
             child: child!,
@@ -804,6 +1043,130 @@ class _MeetupPageState extends State<MeetupPage> {
     if (date != null) {
       context.read<MeetupProvider>().setDateFilter(date);
     }
+  }
+
+  Widget _buildMateChecklistBanner(Color? rawTeamColor) {
+    final accentColor = context.readableColor(rawTeamColor ?? BUTTON);
+    final hasChecklist = _myChecklist != null;
+    final hiColor = _myChecklist?.highlightColor ?? accentColor;
+
+    return GestureDetector(
+      onTap: () async {
+        final updated = await Navigator.push<MateChecklistModel>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MateChecklistPage(initialTab: hasChecklist ? 1 : 0),
+          ),
+        );
+        if (updated != null && mounted) {
+          setState(() => _myChecklist = updated);
+        } else {
+          _loadMyChecklist();
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: context.borderColor),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: hiColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.checklist_rounded,
+                color: accentColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    hasChecklist
+                        ? '내 직관메이트 체크리스트 · 공유 카드'
+                        : '내 직관메이트 체크리스트 만들기',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    hasChecklist
+                        ? '성향 매칭 활성화됨 · 탭해서 수정 또는 SNS 공유'
+                        : '체크해 두면 나와 잘 맞는 직관모임 매칭률(%)을 보여드려요',
+                    style: TextStyle(fontSize: 11.5, color: context.textMuted),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: context.textMuted, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMateQuickFilterRow(Color? rawTeamColor) {
+    final accentColor = context.readableColor(rawTeamColor ?? BUTTON);
+    final selectedTextColor =
+        ThemeData.estimateBrightnessForColor(accentColor) == Brightness.dark
+        ? WHITE
+        : Colors.black;
+
+    const items = <MapEntry<_MateQuickFilter, String>>[
+      MapEntry(_MateQuickFilter.all, '전체'),
+      MapEntry(_MateQuickFilter.smallGroup, '소수정예 4명 이하'),
+      MapEntry(_MateQuickFilter.highMatch, '성향 80%+'),
+      MapEntry(_MateQuickFilter.nonSmoke, '비흡연'),
+      MapEntry(_MateQuickFilter.watchUntilEnd, '끝까지 봄'),
+    ];
+
+    return SizedBox(
+      height: 34,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: items.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, idx) {
+          final entry = items[idx];
+          final selected = _mateFilter == entry.key;
+          return GestureDetector(
+            onTap: () => setState(() => _mateFilter = entry.key),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: selected ? accentColor : context.cardColor,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: selected ? accentColor : context.borderColor,
+                ),
+              ),
+              child: Text(
+                entry.value,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? selectedTextColor : context.textSecondary,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 

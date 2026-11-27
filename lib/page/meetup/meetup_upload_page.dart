@@ -7,9 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lockerroom/const/color.dart';
+import 'package:lockerroom/model/mate_checklist_model.dart';
 import 'package:lockerroom/model/meetup_model.dart';
 import 'package:lockerroom/model/schedule_model.dart';
 import 'package:lockerroom/provider/meetup_provider.dart';
+import 'package:lockerroom/provider/schdule_Provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/services/schedule_service.dart';
 import 'package:provider/provider.dart';
@@ -70,7 +72,13 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
 
   Future<void> _loadSchedules() async {
     try {
-      final schedules = await ScheduleService().loadSchedules();
+      final scheduleProvider = context.read<ScheduleProvider>();
+      if (!scheduleProvider.loaded) {
+        await scheduleProvider.load();
+      }
+      final schedules = scheduleProvider.allSchedules.isNotEmpty
+          ? scheduleProvider.allSchedules
+          : await ScheduleService().loadSchedules();
       final now = DateTime.now();
 
       // 미래 경기만 필터링 (오늘 포함)
@@ -169,32 +177,31 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
       lastDate: lastDate,
       builder: (context, child) {
         final base = Theme.of(context);
+        final rawTeamColor =
+            context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
+        final readableTeam = context.readableColor(rawTeamColor);
         return Localizations.override(
           context: context,
           locale: const Locale('ko', 'KR'),
           child: Theme(
             data: base.copyWith(
-              datePickerTheme: const DatePickerThemeData(
-                backgroundColor: BACKGROUND_COLOR,
-                headerBackgroundColor: BACKGROUND_COLOR,
+              datePickerTheme: DatePickerThemeData(
+                backgroundColor: context.cardColor,
+                headerBackgroundColor: context.cardColor,
+                headerForegroundColor: context.textPrimary,
                 surfaceTintColor: Colors.transparent,
               ),
               colorScheme: base.colorScheme.copyWith(
-                primary: context
-                    .read<TeamProvider>()
-                    .selectedTeam
-                    ?.color, // 선택 색상
-                onPrimary: WHITE,
-                surface: BLACK,
-                onSurface: BLACK,
+                primary: readableTeam,
+                onPrimary:
+                    context.isDarkMode && readableTeam.computeLuminance() > 0.5
+                    ? BLACK
+                    : WHITE,
+                surface: context.cardColor,
+                onSurface: context.textPrimary,
               ),
               textButtonTheme: TextButtonThemeData(
-                style: TextButton.styleFrom(
-                  foregroundColor: context
-                      .read<TeamProvider>()
-                      .selectedTeam
-                      ?.color,
-                ),
+                style: TextButton.styleFrom(foregroundColor: readableTeam),
               ),
             ),
             child: child!,
@@ -227,7 +234,7 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
     final dailySchedules = _getSchedulesForDate(_selectedDate!);
 
     showModalBottomSheet(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.cardColor,
       context: context,
       isScrollControlled: true,
       builder: (context) {
@@ -241,21 +248,27 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                 children: [
                   Text(
                     '${DateFormat('MM월 dd일').format(_selectedDate!)} 경기 선택',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: context.textPrimary,
                     ),
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
+                    icon: Icon(Icons.close, color: context.textPrimary),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
               if (dailySchedules.isEmpty)
-                const Expanded(
-                  child: Center(child: Text('해당 날짜에 예정된 경기가 없습니다')),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      '해당 날짜에 예정된 경기가 없습니다',
+                      style: TextStyle(color: context.textMuted),
+                    ),
+                  ),
                 )
               else
                 Expanded(
@@ -284,11 +297,23 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
     final isSelected = _selectedSchedules?.gameId == schedule.gameId;
     final dateFormat = DateFormat('MM월 dd일 (E)', 'ko_KR');
     final timeFormat = DateFormat('HH:mm');
+    final teamColor =
+        context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
+    final readableTeam = context.readableColor(teamColor);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: isSelected ? Colors.blue.shade50 : WHITE,
+      color: isSelected
+          ? readableTeam.withValues(alpha: 0.16)
+          : context.surfaceAltColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isSelected ? readableTeam : context.borderColor,
+        ),
+      ),
       child: InkWell(
+        borderRadius: BorderRadius.circular(12),
         onTap: () {
           setState(() {
             _selectedSchedules = schedule;
@@ -307,23 +332,23 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                   Icon(
                     Icons.calendar_today,
                     size: 14,
-                    color: GRAYSCALE_LABEL_500,
+                    color: context.textMuted,
                   ),
-                  SizedBox(width: 4),
+                  const SizedBox(width: 4),
                   Text(
                     dateFormat.format(schedule.dateTimeKst),
-                    style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+                    style: TextStyle(fontSize: 12, color: context.textMuted),
                   ),
-                  SizedBox(width: 8),
-                  Icon(Icons.access_time, size: 14, color: GRAYSCALE_LABEL_500),
-                  SizedBox(width: 4),
+                  const SizedBox(width: 8),
+                  Icon(Icons.access_time, size: 14, color: context.textMuted),
+                  const SizedBox(width: 4),
                   Text(
                     timeFormat.format(schedule.dateTimeKst),
-                    style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+                    style: TextStyle(fontSize: 12, color: context.textMuted),
                   ),
                 ],
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -333,10 +358,11 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: context.textPrimary,
                       ),
                     ),
                   ),
-                  if (isSelected) Icon(Icons.check_circle, color: Colors.blue),
+                  if (isSelected) Icon(Icons.check_circle, color: readableTeam),
                 ],
               ),
               SizedBox(height: 4),
@@ -472,6 +498,18 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
           throw Exception('모임 수정 실패');
         }
       } else {
+        MateChecklistModel? hostMateTags;
+        try {
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+          final rawChecklist = userDoc.data()?['mateChecklist'];
+          if (rawChecklist is Map<String, dynamic>) {
+            hostMateTags = MateChecklistModel.fromMap(rawChecklist);
+          }
+        } catch (_) {}
+
         final meetup = MeetupModel(
           id: '',
           userId: user.uid,
@@ -492,6 +530,7 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
           minBirthYear: int.tryParse(_minYearController.text),
           maxBirthYear: int.tryParse(_maxYearController.text),
           isApprovalRequired: _isApprovalRequired,
+          mateTags: hostMateTags,
         );
 
         final success = await context.read<MeetupProvider>().createMeetup(
@@ -541,481 +580,956 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
     }
   }
 
+  int get _completedStepCount {
+    int count = 0;
+    if (_selectedDate != null) count++;
+    if (_selectedSchedules != null) count++;
+    if (_selectedMyTeam != null) count++;
+    if (_titleController.text.trim().isNotEmpty) count++;
+    if (_contentController.text.trim().isNotEmpty) count++;
+    if (_existingImageUrls.isNotEmpty || _selectedImages.isNotEmpty) count++;
+    return count;
+  }
+
   @override
   Widget build(BuildContext context) {
     final teamProvider = context.read<TeamProvider>();
     final selectedTeam = teamProvider.selectedTeam;
+    final teamColor = selectedTeam?.color ?? BUTTON;
+    final readableTeam = context.readableColor(teamColor);
+    final completedSteps = _completedStepCount;
+    final isReadyToSubmit = completedSteps == 6;
 
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: selectedTeam?.color ?? BUTTON,
+        backgroundColor: context.bgColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: context.textPrimary,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
-          _isEditMode ? '직관 모임 수정하기' : '직관 모임 만들기',
+          _isEditMode ? '직관 모임 수정' : '직관 모임 만들기',
           style: TextStyle(
             fontSize: 18,
-            color: WHITE,
-            fontWeight: FontWeight.bold,
+            color: context.textPrimary,
+            fontWeight: FontWeight.w800,
           ),
         ),
-        iconTheme: IconThemeData(color: WHITE),
+        centerTitle: false,
+        titleSpacing: 0,
         actions: [
-          TextButton(
-            onPressed: _isUploading ? null : _submit,
-            child: _isUploading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: WHITE,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Text(
-                    _isEditMode ? '수정' : '등록',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: WHITE,
-                      fontWeight: FontWeight.bold,
-                    ),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: ACCENT_CORAL.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$completedSteps/6 완료',
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                    color: ACCENT_CORAL,
                   ),
+                ),
+              ),
+            ),
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: completedSteps / 6,
+                minHeight: 4,
+                backgroundColor: context.surfaceAltColor,
+                valueColor: const AlwaysStoppedAnimation<Color>(ACCENT_CORAL),
+              ),
+            ),
+          ),
+        ),
       ),
-
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         behavior: HitTestBehavior.translucent,
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
             children: [
-              Text(
-                '모임제목',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 20),
-              // 모임 제목
-              TextFormField(
-                cursorColor: selectedTeam?.color ?? BUTTON,
-                controller: _titleController,
-                decoration: InputDecoration(
-                  hintText: '예) 같이 응원하실 분 구해요!',
-                  hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return '제목을 입력해주세요';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
-              // 경기 날짜 선택
-              InkWell(
-                onTap: _selectDate,
-                child: Card(
-                  color: BACKGROUND_COLOR,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '경기 날짜 *',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _selectedDate == null
-                                  ? '날짜를 선택해주세요'
-                                  : DateFormat(
-                                      'yyyy년 MM월 dd일 (E)',
-                                      'ko_KR',
-                                    ).format(_selectedDate!),
-                              style: TextStyle(
-                                color: _selectedDate == null
-                                    ? GRAYSCALE_LABEL_500
-                                    : BLACK,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Icon(
-                          Icons.calendar_today,
-                          color: selectedTeam?.color ?? BUTTON,
-                        ),
-                      ],
+              // 1. 경기 · 응원팀 선택 카드
+              _buildSectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader(
+                      title: '1. 경기 · 응원팀 선택',
+                      badgeText: '필수',
+                      isRequired: true,
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 경기 선택 카드
-              Card(
-                color: selectedTeam?.color,
-                child: InkWell(
-                  onTap: _showSchedulePicker,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: _selectDate,
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: context.surfaceAltColor,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: context.borderColor),
+                        ),
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              '경기 선택 *',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: WHITE,
-                              ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '경기 날짜',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.textMuted,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _selectedDate == null
+                                      ? '날짜를 선택해주세요'
+                                      : DateFormat(
+                                          'yyyy년 MM월 dd일 (E)',
+                                          'ko_KR',
+                                        ).format(_selectedDate!),
+                                  style: TextStyle(
+                                    color: _selectedDate == null
+                                        ? context.textMuted
+                                        : context.textPrimary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
                             Icon(
-                              Icons.arrow_forward_ios,
-                              size: 16,
-                              color: WHITE,
+                              Icons.calendar_today_rounded,
+                              size: 19,
+                              color: readableTeam,
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        // ... (표시 부분)
-                        if (_selectedSchedules == null)
-                          Text(
-                            _selectedDate == null
-                                ? '날짜를 먼저 선택해주세요'
-                                : '경기를 선택해주세요',
-                            style: TextStyle(color: WHITE),
-                          )
-                        else
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${_selectedSchedules!.homeTeam} vs ${_selectedSchedules!.awayTeam}',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: WHITE,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    InkWell(
+                      onTap: _showSchedulePicker,
+                      borderRadius: BorderRadius.circular(16),
+                      child: _selectedSchedules == null
+                          ? Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                color: context.surfaceAltColor,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: context.borderColor),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '경기 선택',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: context.textMuted,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _selectedDate == null
+                                            ? '날짜를 먼저 선택해주세요'
+                                            : '터치하여 경기를 선택해주세요',
+                                        style: TextStyle(
+                                          color: context.textMuted,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 15,
+                                    color: context.textMuted,
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    teamColor,
+                                    Color.lerp(teamColor, BLACK, 0.35) ??
+                                        teamColor,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${_selectedSchedules!.awayTeam} vs ${_selectedSchedules!.homeTeam}',
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w900,
+                                            color: WHITE,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          '${DateFormat('HH:mm').format(_selectedSchedules!.dateTimeKst)} · ${_selectedSchedules!.stadium}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: WHITE.withValues(
+                                              alpha: 0.85,
+                                            ),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: WHITE.withValues(alpha: 0.18),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      '변경',
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: WHITE,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                    ),
+                    if (_selectedSchedules != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        '같이 응원하고 싶은 팀',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: context.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children:
+                            [
+                              _selectedSchedules!.awayTeam,
+                              _selectedSchedules!.homeTeam,
+                            ].toSet().toList().asMap().entries.map((entry) {
+                              final idx = entry.key;
+                              final teamName = entry.value;
+                              final isSelected = _selectedMyTeam == teamName;
+                              final matchedTeam = teamProvider.findTeamByName(
+                                teamName,
+                              );
+                              return Expanded(
+                                child: Padding(
+                                  padding: EdgeInsets.only(
+                                    left: idx == 0 ? 0 : 8,
+                                  ),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(14),
+                                    onTap: () => setState(
+                                      () => _selectedMyTeam = teamName,
+                                    ),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 160,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 11,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? readableTeam.withValues(
+                                                alpha: 0.14,
+                                              )
+                                            : context.surfaceAltColor,
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? readableTeam
+                                              : context.borderColor,
+                                          width: isSelected ? 1.8 : 1.0,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          if (matchedTeam != null &&
+                                              matchedTeam
+                                                  .logoPath
+                                                  .isNotEmpty) ...[
+                                            Image.asset(
+                                              matchedTeam.logoPath,
+                                              width: 22,
+                                              height: 22,
+                                              fit: BoxFit.contain,
+                                            ),
+                                            const SizedBox(width: 6),
+                                          ],
+                                          Flexible(
+                                            child: Text(
+                                              '$teamName 응원',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 13.5,
+                                                fontWeight: FontWeight.w800,
+                                                color: isSelected
+                                                    ? readableTeam
+                                                    : context.textSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // 2. 모임 소개 카드
+              _buildSectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader(
+                      title: '2. 모임 소개',
+                      badgeText: '필수',
+                      isRequired: true,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      cursorColor: readableTeam,
+                      controller: _titleController,
+                      style: TextStyle(
+                        color: context.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      decoration: _buildInputDecoration(
+                        context: context,
+                        hintText: '예) 같이 응원하실 분 구해요!',
+                        accentColor: readableTeam,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return '제목을 입력해주세요';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: ['치맥 직관 🍗', '초보 환영 ⚾', '열정 응원 🔥']
+                          .map(
+                            (tag) => InkWell(
+                              borderRadius: BorderRadius.circular(999),
+                              onTap: () {
+                                final current = _titleController.text.trim();
+                                if (!current.contains(tag)) {
+                                  _titleController.text = current.isEmpty
+                                      ? tag
+                                      : '$current $tag';
+                                  _titleController.selection =
+                                      TextSelection.fromPosition(
+                                        TextPosition(
+                                          offset: _titleController.text.length,
+                                        ),
+                                      );
+                                  setState(() {});
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: context.surfaceAltColor,
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: context.borderColor,
+                                  ),
+                                ),
+                                child: Text(
+                                  '+ $tag',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.textSecondary,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${DateFormat('HH:mm').format(_selectedSchedules!.dateTimeKst)} | ${_selectedSchedules!.stadium}',
-                                style: TextStyle(fontSize: 12, color: WHITE),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      cursorColor: readableTeam,
+                      controller: _contentController,
+                      maxLines: 5,
+                      style: TextStyle(
+                        color: context.textPrimary,
+                        fontSize: 14,
+                        height: 1.45,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      decoration: _buildInputDecoration(
+                        context: context,
+                        hintText: '좌석 구역이나 모임 분위기를 자유롭게 적어주세요',
+                        accentColor: readableTeam,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return '설명을 입력해주세요';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // 3. 인원 및 참여 조건 카드
+              _buildSectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '3. 인원 및 참여 조건',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          '$_maxParticipants명',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            color: readableTeam,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      children: [2, 4, 6, 10].map((preset) {
+                        final selected = _maxParticipants == preset;
+                        return GestureDetector(
+                          onTap: () =>
+                              setState(() => _maxParticipants = preset),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? readableTeam
+                                  : context.surfaceAltColor,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: selected
+                                    ? readableTeam
+                                    : context.borderColor,
                               ),
-                            ],
+                            ),
+                            child: Text(
+                              '$preset명',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: selected
+                                    ? (context.isDarkMode &&
+                                              readableTeam.computeLuminance() >
+                                                  0.5
+                                          ? BLACK
+                                          : WHITE)
+                                    : context.textSecondary,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: _maxParticipants > 2
+                              ? () => setState(() => _maxParticipants--)
+                              : null,
+                          icon: Icon(
+                            Icons.remove_circle_outline,
+                            color: _maxParticipants > 2
+                                ? readableTeam
+                                : context.borderColor,
+                          ),
+                        ),
+                        Expanded(
+                          child: Slider(
+                            activeColor: readableTeam,
+                            inactiveColor: context.borderColor,
+                            value: _maxParticipants.toDouble(),
+                            min: 2,
+                            max: 20,
+                            onChanged: (value) {
+                              setState(() => _maxParticipants = value.toInt());
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: _maxParticipants < 20
+                              ? () => setState(() => _maxParticipants++)
+                              : null,
+                          icon: Icon(
+                            Icons.add_circle_outline,
+                            color: _maxParticipants < 20
+                                ? readableTeam
+                                : context.borderColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '연령 제한 (선택)',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: context.textSecondary,
+                          ),
+                        ),
+                        if (_minYearController.text.isNotEmpty ||
+                            _maxYearController.text.isNotEmpty)
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _minYearController.clear();
+                                _maxYearController.clear();
+                              });
+                            },
+                            child: Text(
+                              '초기화',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: readableTeam,
+                              ),
+                            ),
+                          )
+                        else
+                          Text(
+                            '미입력 시 전체',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: context.textMuted,
+                            ),
                           ),
                       ],
                     ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 16),
-
-              // 응원팀 선택
-              if (_selectedSchedules != null)
-                DropdownButtonFormField<String>(
-                  dropdownColor: WHITE,
-                  value: _selectedMyTeam,
-                  decoration: InputDecoration(
-                    labelText: '같이 응원하고 싶은 팀',
-                    labelStyle: TextStyle(color: GRAYSCALE_LABEL_400),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
-                    ),
-                  ),
-                  items:
-                      [
-                        _selectedSchedules!.homeTeam,
-                        _selectedSchedules!.awayTeam,
-                      ].toSet().map((team) {
-                        return DropdownMenuItem(value: team, child: Text(team));
-                      }).toList(),
-                  onChanged: (value) => setState(() => _selectedMyTeam = value),
-                  validator: (value) =>
-                      value == null ? '같이 응원하고 싶은 팀을 선택해주세요' : null,
-                ),
-              SizedBox(height: 16),
-
-              // 최대 참여인원
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '모집 인원',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      Text(
-                        '$_maxParticipants명',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: _maxParticipants > 2
-                            ? () {
-                                setState(() {
-                                  _maxParticipants--;
-                                });
-                              }
-                            : null,
-                        icon: Icon(
-                          Icons.remove_circle_outline,
-                          color: _maxParticipants > 2
-                              ? selectedTeam?.color ?? BUTTON
-                              : GRAYSCALE_LABEL_300,
-                        ),
-                      ),
-                      Expanded(
-                        child: Slider(
-                          activeColor: selectedTeam?.color ?? BUTTON,
-                          value: _maxParticipants.toDouble(),
-                          min: 2,
-                          max: 20,
-                          onChanged: (value) {
-                            setState(() => _maxParticipants = value.toInt());
-                          },
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: _maxParticipants < 20
-                            ? () {
-                                setState(() {
-                                  _maxParticipants++;
-                                });
-                              }
-                            : null,
-                        icon: Icon(
-                          Icons.add_circle_outline,
-                          color: _maxParticipants < 20
-                              ? selectedTeam?.color ?? BUTTON
-                              : GRAYSCALE_LABEL_300,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 24),
-                  Text(
-                    '연령 제한 (선택)',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _minYearController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            hintText: '출생연도 최소 (ex: 1990)',
-                            hintStyle: TextStyle(fontSize: 13),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: GRAYSCALE_LABEL_300,
-                              ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _minYearController,
+                            keyboardType: TextInputType.number,
+                            style: TextStyle(
+                              color: context.textPrimary,
+                              fontSize: 13.5,
                             ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: selectedTeam?.color ?? BUTTON,
-                              ),
+                            onChanged: (_) => setState(() {}),
+                            decoration: _buildInputDecoration(
+                              context: context,
+                              hintText: '최소 (예: 1995)',
+                              accentColor: readableTeam,
                             ),
                           ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text('~'),
-                      ),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _maxYearController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            hintText: '출생연도 최대 (ex: 2000)',
-                            hintStyle: TextStyle(fontSize: 13),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: GRAYSCALE_LABEL_300,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: selectedTeam?.color ?? BUTTON,
-                              ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(
+                            '~',
+                            style: TextStyle(
+                              color: context.textMuted,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '방장 승인 후 참여',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: TextFormField(
+                            controller: _maxYearController,
+                            keyboardType: TextInputType.number,
+                            style: TextStyle(
+                              color: context.textPrimary,
+                              fontSize: 13.5,
+                            ),
+                            onChanged: (_) => setState(() {}),
+                            decoration: _buildInputDecoration(
+                              context: context,
+                              hintText: '최대 (예: 2005)',
+                              accentColor: readableTeam,
+                            ),
+                          ),
                         ),
-                      ),
-                      Switch(
-                        activeColor: selectedTeam?.color ?? BUTTON,
-                        value: _isApprovalRequired,
-                        onChanged: (value) {
-                          setState(() {
-                            _isApprovalRequired = value;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 16),
-
-                  SizedBox(height: 16),
-
-                  Text(
-                    '상세설명',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 20),
-                  // 모임 설명
-                  TextFormField(
-                    cursorColor: selectedTeam?.color ?? BUTTON,
-                    controller: _contentController,
-                    decoration: InputDecoration(
-                      hintText: '모임에 대한 설명을 입력해주세요',
-                      hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
-                      ),
+                      ],
                     ),
-                    maxLines: 5,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return '설명을 입력해주세요';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 사진 첨부
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '대표 사진 (필수)',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
                       ),
-                      const SizedBox(height: 12),
-
-                      if (_existingImageUrls.isNotEmpty)
-                        _buildImagePreview(
-                          imageProvider: NetworkImage(_existingImageUrls.first),
-                          onRemove: () {
-                            setState(() {
-                              _existingImageUrls.clear();
-                            });
-                          },
-                        )
-                      else if (_selectedImages.isNotEmpty)
-                        _buildImagePreview(
-                          imageProvider: FileImage(
-                            File(_selectedImages.first.path),
-                          ),
-                          onRemove: () {
-                            setState(() {
-                              _selectedImages.clear();
-                            });
-                          },
-                        )
-                      else
-                        InkWell(
-                          onTap: _pickImages,
-                          child: Container(
-                            width: double.infinity,
-                            height: 200,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: GRAYSCALE_LABEL_300),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                      decoration: BoxDecoration(
+                        color: context.surfaceAltColor,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: context.borderColor),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(
-                                  Icons.camera_alt,
-                                  size: 40,
-                                  color:
-                                      selectedTeam?.color ??
-                                      GRAYSCALE_LABEL_500,
-                                ),
-                                const SizedBox(height: 8),
                                 Text(
-                                  '대표 사진 업로드',
+                                  '방장 승인 후 참여',
                                   style: TextStyle(
-                                    color: GRAYSCALE_LABEL_500,
-                                    fontWeight: FontWeight.w500,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: context.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '신청자 프로필을 확인한 뒤 수락할 수 있어요',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: context.textMuted,
                                   ),
                                 ),
                               ],
                             ),
                           ),
+                          Switch.adaptive(
+                            activeThumbColor: WHITE,
+                            activeTrackColor: context.isDarkMode
+                                ? (teamColor.computeLuminance() < 0.22
+                                      ? ACCENT_CORAL
+                                      : teamColor)
+                                : teamColor,
+                            inactiveThumbColor: context.isDarkMode
+                                ? DARK_TEXT_SECONDARY
+                                : WHITE,
+                            inactiveTrackColor: context.isDarkMode
+                                ? DARK_BORDER_COLOR
+                                : GRAYSCALE_LABEL_200,
+                            value: _isApprovalRequired,
+                            onChanged: (value) {
+                              setState(() {
+                                _isApprovalRequired = value;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // 4. 대표 사진 카드
+              _buildSectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader(
+                      title: '4. 대표 사진',
+                      badgeText: '필수',
+                      isRequired: true,
+                    ),
+                    const SizedBox(height: 12),
+                    if (_existingImageUrls.isNotEmpty)
+                      _buildImagePreview(
+                        imageProvider: NetworkImage(_existingImageUrls.first),
+                        onRemove: () {
+                          setState(() {
+                            _existingImageUrls.clear();
+                          });
+                        },
+                      )
+                    else if (_selectedImages.isNotEmpty)
+                      _buildImagePreview(
+                        imageProvider: FileImage(
+                          File(_selectedImages.first.path),
                         ),
-                    ],
-                  ),
-                ],
+                        onRemove: () {
+                          setState(() {
+                            _selectedImages.clear();
+                          });
+                        },
+                      )
+                    else
+                      InkWell(
+                        onTap: _pickImages,
+                        borderRadius: BorderRadius.circular(14),
+                        child: Container(
+                          width: double.infinity,
+                          height: 170,
+                          decoration: BoxDecoration(
+                            color: context.surfaceAltColor,
+                            border: Border.all(color: context.borderColor),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.camera_alt_rounded,
+                                size: 38,
+                                color: readableTeam,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '탭하여 대표 사진 업로드',
+                                style: TextStyle(
+                                  color: context.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13.5,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '경기장 또는 응원 사진 1장을 선택해주세요',
+                                style: TextStyle(
+                                  color: context.textMuted,
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          12,
+          16,
+          MediaQuery.of(context).padding.bottom + 12,
+        ),
+        decoration: BoxDecoration(
+          color: context.cardColor,
+          border: Border(top: BorderSide(color: context.borderColor)),
+        ),
+        child: ElevatedButton(
+          onPressed: _isUploading ? null : _submit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: context.isDarkMode
+                ? (teamColor.computeLuminance() < 0.22
+                      ? ACCENT_CORAL
+                      : teamColor)
+                : teamColor,
+            foregroundColor: WHITE,
+            disabledBackgroundColor: context.borderColor,
+            elevation: 0,
+            minimumSize: const Size(double.infinity, 52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          child: _isUploading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    color: WHITE,
+                    strokeWidth: 2.2,
+                  ),
+                )
+              : Text(
+                  _isEditMode
+                      ? '모임 수정하기'
+                      : (isReadyToSubmit
+                            ? '모임 등록하기'
+                            : '모임 등록하기 ($completedSteps/6)'),
+                  style: const TextStyle(
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w800,
+                    color: WHITE,
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.borderColor),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required String title,
+    required String badgeText,
+    bool isRequired = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: context.textPrimary,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: isRequired
+                ? ACCENT_CORAL.withValues(alpha: 0.14)
+                : context.surfaceAltColor,
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Text(
+            badgeText,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              color: isRequired ? ACCENT_CORAL : context.textMuted,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _buildInputDecoration({
+    required BuildContext context,
+    required String hintText,
+    required Color accentColor,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: TextStyle(color: context.textMuted, fontSize: 13.5),
+      filled: true,
+      fillColor: context.surfaceAltColor,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(13),
+        borderSide: BorderSide(color: context.borderColor),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(13),
+        borderSide: BorderSide(color: accentColor, width: 1.4),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(13),
+        borderSide: const BorderSide(color: RED_DANGER_TEXT_50),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(13),
+        borderSide: const BorderSide(color: RED_DANGER_TEXT_50, width: 1.4),
       ),
     );
   }
@@ -1028,25 +1542,51 @@ class _MeetupUploadPageState extends State<MeetupUploadPage> {
       children: [
         Container(
           width: double.infinity,
-          height: 200,
+          height: 190,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
           ),
         ),
         Positioned(
           top: 10,
           right: 10,
-          child: InkWell(
-            onTap: onRemove,
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(
-                color: Colors.black54,
-                shape: BoxShape.circle,
+          child: Row(
+            children: [
+              InkWell(
+                onTap: _pickImages,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text(
+                    '변경',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: WHITE,
+                    ),
+                  ),
+                ),
               ),
-              child: const Icon(Icons.close, size: 20, color: WHITE),
-            ),
+              const SizedBox(width: 6),
+              InkWell(
+                onTap: onRemove,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.close, size: 18, color: WHITE),
+                ),
+              ),
+            ],
           ),
         ),
       ],

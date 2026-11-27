@@ -255,13 +255,13 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: context.cardColor,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        title: const Text(
+        title: Text(
           '참여 거절',
           style: TextStyle(
-            color: GRAYSCALE_LABEL_900,
+            color: context.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -272,9 +272,9 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
           children: [
             Text(
               '$userName님의 참여를 거절하시겠습니까?',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
-                color: GRAYSCALE_LABEL_700,
+                color: context.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -283,16 +283,20 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
               controller: reasonController,
               maxLines: 3,
               maxLength: 100,
+              style: TextStyle(color: context.textPrimary),
               decoration: InputDecoration(
                 hintText: '거절 사유 (선택)',
-                hintStyle: TextStyle(color: GRAYSCALE_LABEL_400),
+                hintStyle: TextStyle(color: context.textMuted),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: GRAYSCALE_LABEL_300),
+                  borderSide: BorderSide(color: context.borderColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: teamColor, width: 2),
+                  borderSide: BorderSide(
+                    color: context.readableColor(teamColor),
+                    width: 2,
+                  ),
                 ),
                 contentPadding: const EdgeInsets.all(12),
               ),
@@ -308,16 +312,16 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                   style: ElevatedButton.styleFrom(
                     overlayColor: Colors.transparent,
                     elevation: 0,
-                    backgroundColor: GRAYSCALE_LABEL_100,
+                    backgroundColor: context.surfaceAltColor,
                     shadowColor: Colors.transparent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                   onPressed: () => Navigator.pop(context),
-                  child: const Text(
+                  child: Text(
                     '취소',
-                    style: TextStyle(color: GRAYSCALE_LABEL_950),
+                    style: TextStyle(color: context.textPrimary),
                   ),
                 ),
               ),
@@ -1142,7 +1146,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.cardColor,
       builder: (context) => Padding(
         padding: const EdgeInsets.only(left: 10, right: 10, bottom: 10),
         child: Column(
@@ -1150,8 +1154,11 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
 
           children: [
             ListTile(
-              leading: Icon(Icons.feed),
-              title: Text('피드에 공유'),
+              leading: Icon(Icons.feed, color: context.textPrimary),
+              title: Text(
+                '피드에 공유',
+                style: TextStyle(color: context.textPrimary),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 final uploadProvider = context.read<UploadProvider>();
@@ -1181,15 +1188,24 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
             ),
             ListTile(
               leading: Image.asset('assets/images/logo/kakao.png', height: 24),
-              title: Text('카카오톡으로 공유'),
+              title: Text(
+                '카카오톡으로 공유',
+                style: TextStyle(color: context.textPrimary),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _shareMeetupViaKakao();
               },
             ),
             ListTile(
-              leading: Icon(CupertinoIcons.share_up),
-              title: Text('기타 SNS로 공유'),
+              leading: Icon(
+                CupertinoIcons.share_up,
+                color: context.textPrimary,
+              ),
+              title: Text(
+                '기타 SNS로 공유',
+                style: TextStyle(color: context.textPrimary),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _shareMeetupWithImage();
@@ -1208,12 +1224,19 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
           context.read<TeamProvider>().selectedTeam?.color ?? BUTTON;
 
       return Scaffold(
-        backgroundColor: BACKGROUND_COLOR,
-        body: Center(child: CircularProgressIndicator(color: teamColor)),
+        backgroundColor: context.bgColor,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: context.readableColor(teamColor),
+          ),
+        ),
       );
     }
     if (_latestMeetup == null) {
-      return Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: context.bgColor,
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     final teamProvider = context.read<TeamProvider>();
@@ -1233,7 +1256,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
         final isMyMeetup = currentUserId == meetup.userId;
 
         return Scaffold(
-          backgroundColor: BACKGROUND_COLOR,
+          backgroundColor: context.bgColor,
           body: SingleChildScrollView(
             physics: ClampingScrollPhysics(),
             child: Column(
@@ -1498,21 +1521,27 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: BACKGROUND_COLOR,
+                                color: context.cardColor,
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: GRAYSCALE_LABEL_300),
+                                border: Border.all(color: context.borderColor),
                               ),
                               child: Row(
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: BUTTON.withOpacity(0.1),
+                                      color: context
+                                          .readableColor(
+                                            selectedTeam?.color ?? BUTTON,
+                                          )
+                                          .withOpacity(0.14),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       Icons.calendar_today,
-                                      color: selectedTeam?.color ?? BUTTON,
+                                      color: context.readableColor(
+                                        selectedTeam?.color ?? BUTTON,
+                                      ),
                                       size: 18,
                                     ),
                                   ),
@@ -1528,14 +1557,14 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
-                                            color: GRAYSCALE_LABEL_500,
+                                            color: context.textMuted,
                                           ),
                                         ),
                                         Text(
                                           '${DateFormat('MM/dd(E)', 'ko').format(DateTime.parse(meetup.gameDate))} ${meetup.gameTime}',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 13,
-                                            color: BLACK,
+                                            color: context.textPrimary,
                                             fontWeight: FontWeight.bold,
                                           ),
                                           overflow: TextOverflow.ellipsis,
@@ -1552,21 +1581,27 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: BACKGROUND_COLOR,
+                                color: context.cardColor,
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: GRAYSCALE_LABEL_300),
+                                border: Border.all(color: context.borderColor),
                               ),
                               child: Row(
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: BUTTON.withOpacity(0.1),
+                                      color: context
+                                          .readableColor(
+                                            selectedTeam?.color ?? BUTTON,
+                                          )
+                                          .withOpacity(0.14),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       Icons.location_on,
-                                      color: selectedTeam?.color ?? BUTTON,
+                                      color: context.readableColor(
+                                        selectedTeam?.color ?? BUTTON,
+                                      ),
                                       size: 18,
                                     ),
                                   ),
@@ -1582,14 +1617,14 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
-                                            color: GRAYSCALE_LABEL_500,
+                                            color: context.textMuted,
                                           ),
                                         ),
                                         Text(
                                           meetup.stadium,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 13,
-                                            color: BLACK,
+                                            color: context.textPrimary,
                                             fontWeight: FontWeight.bold,
                                           ),
                                           overflow: TextOverflow.ellipsis,
@@ -1651,21 +1686,24 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                               Expanded(
                                 child: RichText(
                                   text: TextSpan(
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
-                                      color: BLACK,
+                                      color: context.textPrimary,
                                     ),
                                     children: [
                                       TextSpan(
                                         text: meetup.myTeam,
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color:
-                                              context
-                                                  .read<TeamProvider>()
-                                                  .findTeamByName(meetup.myTeam)
-                                                  ?.color ??
-                                              BUTTON,
+                                          color: context.readableColor(
+                                            context
+                                                    .read<TeamProvider>()
+                                                    .findTeamByName(
+                                                      meetup.myTeam,
+                                                    )
+                                                    ?.color ??
+                                                BUTTON,
+                                          ),
                                         ),
                                       ),
                                       const TextSpan(
@@ -1690,10 +1728,12 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                         Container(
                           padding: const EdgeInsets.all(15),
                           decoration: BoxDecoration(
-                            color: Colors.amber.withOpacity(0.05),
+                            color: Colors.amber.withOpacity(
+                              context.isDarkMode ? 0.12 : 0.05,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: Colors.amber.withOpacity(0.3),
+                              color: Colors.amber.withOpacity(0.35),
                             ),
                           ),
                           child: Column(
@@ -1701,16 +1741,16 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                             children: [
                               Row(
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.info,
-                                    color: BLACK,
+                                    color: context.textPrimary,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 10),
-                                  const Text(
+                                  Text(
                                     '참여 조건 및 유의사항',
                                     style: TextStyle(
-                                      color: BLACK,
+                                      color: context.textPrimary,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -1725,10 +1765,10 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                     if (meetup.minBirthYear != null)
                                       Row(
                                         children: [
-                                          const Icon(
+                                          Icon(
                                             Icons.cake,
                                             size: 14,
-                                            color: BLACK,
+                                            color: context.textPrimary,
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
@@ -1736,9 +1776,9 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                                     meetup.maxBirthYear
                                                 ? '${meetup.maxBirthYear}년생 출생자만 참여 가능'
                                                 : '${meetup.minBirthYear}~${meetup.maxBirthYear}년생 출생자만 참여 가능',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 13,
-                                              color: BLACK,
+                                              color: context.textPrimary,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
@@ -1747,19 +1787,19 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                     if (meetup.isApprovalRequired) ...[
                                       if (meetup.minBirthYear != null)
                                         const SizedBox(height: 4),
-                                      const Row(
+                                      Row(
                                         children: [
                                           Icon(
                                             Icons.admin_panel_settings,
                                             size: 14,
-                                            color: BLACK,
+                                            color: context.textPrimary,
                                           ),
-                                          SizedBox(width: 6),
+                                          const SizedBox(width: 6),
                                           Text(
                                             '방장 승인 후 참여 가능',
                                             style: TextStyle(
                                               fontSize: 13,
-                                              color: BLACK,
+                                              color: context.textPrimary,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
@@ -1781,20 +1821,20 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                         ),
                       SizedBox(height: 10),
 
-                      const Text(
+                      Text(
                         '상세 설명',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: BLACK,
+                          color: context.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 10),
                       Text(
                         meetup.content,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: BLACK,
+                          color: context.textPrimary,
                           height: 1.5,
                         ),
                       ),
@@ -1802,11 +1842,12 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                       const SizedBox(height: 25),
                       Row(
                         children: [
-                          const Text(
+                          Text(
                             '참여 멤버',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
+                              color: context.textPrimary,
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -1814,7 +1855,9 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                             '${meetup.participants.length}/${meetup.maxParticipants}명',
                             style: TextStyle(
                               fontSize: 13,
-                              color: meetup.isFull ? Colors.red : BUTTON,
+                              color: meetup.isFull
+                                  ? Colors.red
+                                  : context.readableColor(BUTTON),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -1829,9 +1872,9 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                 ),
                               );
                             },
-                            child: const Text(
+                            child: Text(
                               '전체보기',
-                              style: TextStyle(color: GRAYSCALE_LABEL_500),
+                              style: TextStyle(color: context.textMuted),
                             ),
                           ),
                         ],
@@ -1985,10 +2028,10 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                                                 user.userNickName;
                                             return Text(
                                               nickname,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w500,
-                                                color: BLACK,
+                                                color: context.textPrimary,
                                               ),
                                               overflow: TextOverflow.ellipsis,
                                             );
@@ -2016,10 +2059,15 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
               MediaQuery.of(context).padding.bottom + 10,
             ),
             decoration: BoxDecoration(
-              color: WHITE,
+              color: context.cardColor,
+              border: context.isDarkMode
+                  ? Border(top: BorderSide(color: context.borderColor))
+                  : null,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withOpacity(
+                    context.isDarkMode ? 0.25 : 0.05,
+                  ),
                   blurRadius: 10,
                   offset: const Offset(0, -5),
                 ),
@@ -2040,7 +2088,7 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                             : Icons.favorite_border,
                         color: meetup.likedBy.contains(currentUserId)
                             ? Colors.red
-                            : null,
+                            : context.textPrimary,
                       ),
                     ),
                     if (meetup.likeCount > 0)
@@ -2048,7 +2096,10 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                         offset: const Offset(0, -6),
                         child: Text(
                           '${meetup.likeCount}',
-                          style: const TextStyle(fontSize: 10, color: BLACK),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: context.textPrimary,
+                          ),
                         ),
                       ),
                   ],
@@ -2068,14 +2119,19 @@ class _MeetupDetailPageState extends State<MeetupDetailPage> {
                         },
                         icon: Icon(
                           isMyMeetup ? Icons.qr_code_2 : Icons.qr_code_scanner,
-                          color: selectedTeam?.color ?? BUTTON,
+                          color: context.readableColor(
+                            selectedTeam?.color ?? BUTTON,
+                          ),
                         ),
                       ),
                       Transform.translate(
-                        offset: Offset(0, -6),
+                        offset: const Offset(0, -6),
                         child: Text(
                           'QR',
-                          style: TextStyle(fontSize: 10, color: BLACK),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: context.textPrimary,
+                          ),
                         ),
                       ),
                     ],

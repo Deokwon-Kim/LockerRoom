@@ -6,8 +6,10 @@ import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/seat_view_model.dart';
 import 'package:lockerroom/page/alert/confirm_diallog.dart';
+import 'package:lockerroom/page/seat_view/seat_view_detail_page.dart';
 import 'package:lockerroom/page/seat_view/seat_view_upload_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
+import 'package:lockerroom/provider/profile_provider.dart';
 import 'package:lockerroom/provider/seat_view_provider.dart';
 import 'package:lockerroom/provider/team_provider.dart';
 import 'package:lockerroom/provider/user_provider.dart';
@@ -74,28 +76,28 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
     final stadiumFilters = ['전체 구장', ...kSeatViewStadiums];
 
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: context.bgColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               '👀 구장별 좌석 시야',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: GRAYSCALE_LABEL_950,
+                color: context.textPrimary,
               ),
             ),
             Text(
               _selectedStadium,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w600,
-                color: GRAYSCALE_LABEL_500,
+                color: context.textMuted,
               ),
             ),
           ],
@@ -164,7 +166,9 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
                           ),
                           child: st == '전체 구장'
                               ? Container(
-                                  color: selected ? teamColor : WHITE,
+                                  color: selected
+                                      ? teamColor
+                                      : context.cardColor,
                                   alignment: Alignment.center,
                                   child: Text(
                                     '전체',
@@ -173,7 +177,7 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
                                       fontWeight: FontWeight.w800,
                                       color: selected
                                           ? WHITE
-                                          : GRAYSCALE_LABEL_700,
+                                          : context.textPrimary,
                                     ),
                                   ),
                                 )
@@ -189,8 +193,10 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
                                 )
                               : Container(
                                   color: selected
-                                      ? teamColor.withValues(alpha: 0.14)
-                                      : WHITE,
+                                      ? context
+                                            .readableColor(teamColor)
+                                            .withValues(alpha: 0.16)
+                                      : context.cardColor,
                                   alignment: Alignment.center,
                                   child: Text(
                                     shortLabel,
@@ -198,8 +204,8 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
                                       fontSize: 12,
                                       fontWeight: FontWeight.w800,
                                       color: selected
-                                          ? teamColor
-                                          : GRAYSCALE_LABEL_700,
+                                          ? context.readableColor(teamColor)
+                                          : context.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -213,7 +219,9 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
                           fontWeight: selected
                               ? FontWeight.w800
                               : FontWeight.w500,
-                          color: selected ? teamColor : GRAYSCALE_LABEL_600,
+                          color: selected
+                              ? context.readableColor(teamColor)
+                              : context.textSecondary,
                         ),
                       ),
                     ],
@@ -229,18 +237,19 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
               controller: _searchController,
-              cursorColor: BUTTON,
+              cursorColor: context.readableColor(teamColor),
+              style: TextStyle(fontSize: 14, color: context.textPrimary),
               onChanged: (val) => setState(() => _query = val.trim()),
               decoration: InputDecoration(
                 hintText: '블럭 번호·좌석명으로 검색 (예: 306, 네이비)',
-                hintStyle: const TextStyle(
+                hintStyle: TextStyle(
                   fontSize: 13,
-                  color: GRAYSCALE_LABEL_400,
+                  color: context.textMuted,
                 ),
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.search_rounded,
                   size: 20,
-                  color: GRAYSCALE_LABEL_500,
+                  color: context.textMuted,
                 ),
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(
@@ -248,15 +257,15 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
                           _searchController.clear();
                           setState(() => _query = '');
                         },
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.close_rounded,
                           size: 18,
-                          color: GRAYSCALE_LABEL_500,
+                          color: context.textMuted,
                         ),
                       )
                     : null,
                 filled: true,
-                fillColor: WHITE,
+                fillColor: context.cardColor,
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 14,
@@ -264,11 +273,14 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: GRAYSCALE_LABEL_200),
+                  borderSide: BorderSide(color: context.borderColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: teamColor, width: 1.4),
+                  borderSide: BorderSide(
+                    color: context.readableColor(teamColor),
+                    width: 1.4,
+                  ),
                 ),
               ),
             ),
@@ -294,10 +306,10 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: selected ? ACCENT_CORAL : WHITE,
+                      color: selected ? ACCENT_CORAL : context.cardColor,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: selected ? ACCENT_CORAL : GRAYSCALE_LABEL_200,
+                        color: selected ? ACCENT_CORAL : context.borderColor,
                       ),
                     ),
                     child: Text(
@@ -305,7 +317,7 @@ class _SeatViewFeedPageState extends State<SeatViewFeedPage> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: selected ? WHITE : GRAYSCALE_LABEL_700,
+                        color: selected ? WHITE : context.textSecondary,
                       ),
                     ),
                   ),
@@ -448,9 +460,9 @@ class _SeatViewPostCardState extends State<_SeatViewPostCard> {
 
     return Container(
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: GRAYSCALE_LABEL_200),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -460,45 +472,59 @@ class _SeatViewPostCardState extends State<_SeatViewPostCard> {
             padding: const EdgeInsets.fromLTRB(14, 12, 10, 10),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: GRAYSCALE_LABEL_100,
-                  backgroundImage:
-                      post.userProfileImage != null &&
-                          post.userProfileImage!.isNotEmpty
-                      ? CachedNetworkImageProvider(post.userProfileImage!)
-                      : null,
-                  child:
-                      post.userProfileImage == null ||
-                          post.userProfileImage!.isEmpty
-                      ? const Icon(
-                          Icons.person_rounded,
-                          size: 18,
-                          color: GRAYSCALE_LABEL_500,
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 10),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        post.userNickName,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: GRAYSCALE_LABEL_950,
-                        ),
-                      ),
-                      Text(
-                        '${post.stadium} · ${_timeAgo(post.createdAt)}${post.updatedAt != null ? ' · 수정됨' : ''}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: GRAYSCALE_LABEL_500,
-                        ),
-                      ),
-                    ],
+                  child: Consumer<ProfileProvider>(
+                    builder: (context, profileProvider, _) {
+                      profileProvider.subscribeUserProfile(post.userId);
+                      final avatarUrl =
+                          profileProvider.userProfiles[post.userId] ??
+                          post.userProfileImage;
+                      final nickName =
+                          profileProvider.userNicknames[post.userId] ??
+                          post.userNickName;
+                      return Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: context.surfaceAltColor,
+                            backgroundImage:
+                                avatarUrl != null && avatarUrl.isNotEmpty
+                                ? CachedNetworkImageProvider(avatarUrl)
+                                : null,
+                            child: avatarUrl == null || avatarUrl.isEmpty
+                                ? Icon(
+                                    Icons.person_rounded,
+                                    size: 18,
+                                    color: context.textMuted,
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  nickName,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  '${post.stadium} · ${_timeAgo(post.createdAt)}${post.updatedAt != null ? ' · 수정됨' : ''}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: context.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 Container(
@@ -575,22 +601,26 @@ class _SeatViewPostCardState extends State<_SeatViewPostCard> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: BACKGROUND_COLOR,
+                color: context.surfaceAltColor,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: GRAYSCALE_LABEL_200),
+                border: Border.all(color: context.borderColor),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.event_seat_rounded, size: 14, color: BUTTON),
+                  Icon(
+                    Icons.event_seat_rounded,
+                    size: 14,
+                    color: context.readableColor(BUTTON),
+                  ),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
                       post.seatText,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w800,
-                        color: BUTTON,
+                        color: context.readableColor(BUTTON),
                       ),
                     ),
                   ),
@@ -600,57 +630,24 @@ class _SeatViewPostCardState extends State<_SeatViewPostCard> {
           ),
           const SizedBox(height: 10),
 
-          // 3. 실제 시야 사진 캐러셀
+          // 3. 실제 시야 사진 캐러셀 (원본 비율 기반 + 높이 상한으로 글까지 한눈에 표시)
           if (post.imageUrls.isNotEmpty)
-            Stack(
-              children: [
-                SizedBox(
-                  height: 220,
-                  child: PageView.builder(
-                    itemCount: post.imageUrls.length,
-                    onPageChanged: (i) => setState(() => _imageIndex = i),
-                    itemBuilder: (context, i) {
-                      return CachedNetworkImage(
-                        imageUrl: post.imageUrls[i],
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        placeholder: (_, _) =>
-                            Container(color: GRAYSCALE_LABEL_100),
-                        errorWidget: (_, _, _) => Container(
-                          color: GRAYSCALE_LABEL_100,
-                          child: const Icon(
-                            Icons.broken_image_outlined,
-                            color: GRAYSCALE_LABEL_400,
-                          ),
-                        ),
-                      );
-                    },
+            SeatViewPhotoCarousel(
+              imageUrls: post.imageUrls,
+              initialIndex: _imageIndex,
+              minAspectRatio: 0.95,
+              maxHeight: 300,
+              badgeText: '탭하여 상세·확대',
+              onPageChanged: (i) => setState(() => _imageIndex = i),
+              onImageTap: (i) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        SeatViewDetailPage(post: post, initialImageIndex: i),
                   ),
-                ),
-                if (post.imageUrls.length > 1)
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${_imageIndex + 1}/${post.imageUrls.length}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: WHITE,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+                );
+              },
             ),
 
           // 4. 태그 + 후기 + 도움돼요
@@ -671,15 +668,15 @@ class _SeatViewPostCardState extends State<_SeatViewPostCard> {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: BACKGROUND_COLOR,
+                              color: context.surfaceAltColor,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               '#$tag',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                color: GRAYSCALE_LABEL_700,
+                                color: context.textSecondary,
                               ),
                             ),
                           ),
@@ -691,9 +688,9 @@ class _SeatViewPostCardState extends State<_SeatViewPostCard> {
                 if (post.review.isNotEmpty) ...[
                   Text(
                     post.review,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13.5,
-                      color: GRAYSCALE_LABEL_900,
+                      color: context.textPrimary,
                       height: 1.4,
                     ),
                   ),
@@ -711,7 +708,7 @@ class _SeatViewPostCardState extends State<_SeatViewPostCard> {
                                 ? CupertinoIcons.heart_fill
                                 : CupertinoIcons.heart,
                             size: 18,
-                            color: isLiked ? HEART_FILL : GRAYSCALE_LABEL_500,
+                            color: isLiked ? HEART_FILL : context.textMuted,
                           ),
                           const SizedBox(width: 5),
                           Text(
@@ -719,7 +716,8 @@ class _SeatViewPostCardState extends State<_SeatViewPostCard> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: isLiked ? HEART_FILL : GRAYSCALE_LABEL_600,
+                              color:
+                                  isLiked ? HEART_FILL : context.textSecondary,
                             ),
                           ),
                         ],
@@ -730,10 +728,10 @@ class _SeatViewPostCardState extends State<_SeatViewPostCard> {
                       onTap: () => _showCommentSheet(context, post),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             CupertinoIcons.chat_bubble,
                             size: 17,
-                            color: GRAYSCALE_LABEL_500,
+                            color: context.textMuted,
                           ),
                           const SizedBox(width: 5),
                           Text(
