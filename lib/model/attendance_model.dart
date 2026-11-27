@@ -26,6 +26,7 @@ class AttendanceModel {
   final List<String> goodsItems;
   final Map<String, int> goodsPrices;
   final bool isPublic;
+  final bool isFourCut;
   final int commentsCount;
 
   AttendanceModel({
@@ -54,6 +55,7 @@ class AttendanceModel {
     this.goodsItems = const [],
     this.goodsPrices = const {},
     this.isPublic = true,
+    this.isFourCut = false,
     this.commentsCount = 0,
   });
 
@@ -150,6 +152,7 @@ class AttendanceModel {
       goodsItems: goodsItems,
       goodsPrices: goodsPrices,
       isPublic: data['isPublic'] is bool ? data['isPublic'] as bool : true,
+      isFourCut: data['isFourCut'] is bool ? data['isFourCut'] as bool : false,
       commentsCount: data['commentsCount'] is int
           ? data['commentsCount'] as int
           : int.tryParse('${data['commentsCount']}') ?? 0,
@@ -229,6 +232,7 @@ class AttendanceModel {
       if (goodsItems.isNotEmpty) 'goodsItems': goodsItems,
       if (goodsPrices.isNotEmpty) 'goodsPrices': goodsPrices,
       'isPublic': isPublic,
+      'isFourCut': isFourCut,
       'commentsCount': commentsCount,
     };
   }
@@ -260,6 +264,7 @@ class AttendanceModel {
     List<String>? goodsItems,
     Map<String, int>? goodsPrices,
     bool? isPublic,
+    bool? isFourCut,
     int? commentsCount,
   }) {
     return AttendanceModel(
@@ -288,6 +293,7 @@ class AttendanceModel {
       goodsItems: goodsItems ?? this.goodsItems,
       goodsPrices: goodsPrices ?? this.goodsPrices,
       isPublic: isPublic ?? this.isPublic,
+      isFourCut: isFourCut ?? this.isFourCut,
       commentsCount: commentsCount ?? this.commentsCount,
     );
   }

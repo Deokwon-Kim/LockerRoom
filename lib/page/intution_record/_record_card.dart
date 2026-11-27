@@ -56,12 +56,14 @@ class RecordCard extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: WHITE,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: GRAYSCALE_LABEL_200),
+          border: Border.all(color: context.borderColor),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Colors.black.withValues(
+                alpha: context.isDarkMode ? 0.25 : 0.04,
+              ),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -287,67 +289,71 @@ class RecordCard extends StatelessWidget {
   }
 
   Widget _buildGameScore() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            '$myScore',
-            style: GoogleFonts.roboto(
-              fontSize: 30,
-              height: 1.05,
-              fontWeight: FontWeight.w800,
-              color: isWin ? recordedTeamColor : GRAYSCALE_LABEL_500,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Flexible(
-            child: Text(
-              myTeam,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: GRAYSCALE_LABEL_950,
+    return Builder(
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '$myScore',
+              style: GoogleFonts.roboto(
+                fontSize: 30,
+                height: 1.05,
+                fontWeight: FontWeight.w800,
+                color: isWin
+                    ? context.readableColor(recordedTeamColor)
+                    : context.textMuted,
               ),
-              textAlign: TextAlign.end,
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-          const SizedBox(width: 8),
-          const Text(
-            'vs',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: GRAYSCALE_LABEL_400,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              oppTeam,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: GRAYSCALE_LABEL_950,
+            const SizedBox(width: 14),
+            Flexible(
+              child: Text(
+                myTeam,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: context.textPrimary,
+                ),
+                textAlign: TextAlign.end,
+                overflow: TextOverflow.ellipsis,
               ),
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-          const SizedBox(width: 14),
-          Text(
-            '$oppScore',
-            style: GoogleFonts.roboto(
-              fontSize: 30,
-              height: 1.05,
-              fontWeight: FontWeight.w800,
-              color: !isWin && oppScore > myScore
-                  ? GRAYSCALE_LABEL_900
-                  : GRAYSCALE_LABEL_500,
+            const SizedBox(width: 8),
+            Text(
+              'vs',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: context.textMuted,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                oppTeam,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: context.textPrimary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Text(
+              '$oppScore',
+              style: GoogleFonts.roboto(
+                fontSize: 30,
+                height: 1.05,
+                fontWeight: FontWeight.w800,
+                color: !isWin && oppScore > myScore
+                    ? context.textPrimary
+                    : context.textMuted,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -370,32 +376,34 @@ class RecordCard extends StatelessWidget {
 
     final stadium = (data['stadium'] ?? '').toString();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Column(
-        children: [
-          Text(
-            formatDate(data['date']),
-            style: const TextStyle(
-              fontSize: 13,
-              height: 1.2,
-              color: GRAYSCALE_LABEL_600,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          if (stadium.isNotEmpty) ...[
-            const SizedBox(height: 1),
+    return Builder(
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: Column(
+          children: [
             Text(
-              stadium,
-              style: const TextStyle(
+              formatDate(data['date']),
+              style: TextStyle(
                 fontSize: 13,
                 height: 1.2,
-                color: GRAYSCALE_LABEL_500,
+                color: context.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
+            if (stadium.isNotEmpty) ...[
+              const SizedBox(height: 1),
+              Text(
+                stadium,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.2,
+                  color: context.textMuted,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

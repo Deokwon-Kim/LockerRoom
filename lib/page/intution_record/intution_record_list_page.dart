@@ -37,11 +37,13 @@ class _IntutionRecordListPageState extends State<IntutionRecordListPage> {
   // imageUrls 처리: 기존 단일 imageUrl과 새로운 imageUrls 모두 지원
   List<String> _parseImageUrls(Map<String, dynamic> data) {
     if (data['imageUrls'] != null && data['imageUrls'] is List) {
-      return List<String>.from(data['imageUrls']);
+      return List<dynamic>.from(
+        data['imageUrls'],
+      ).map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
     } else if (data['imageUrl'] != null &&
-        data['imageUrl'].toString().isNotEmpty) {
+        data['imageUrl'].toString().trim().isNotEmpty) {
       // 기존 데이터 호환성: 단일 imageUrl을 리스트로 변환
-      return [data['imageUrl'].toString()];
+      return [data['imageUrl'].toString().trim()];
     }
     return [];
   }
@@ -82,6 +84,7 @@ class _IntutionRecordListPageState extends State<IntutionRecordListPage> {
               ),
             )
           : const {},
+      isFourCut: data['isFourCut'] == true,
     );
   }
 
@@ -95,15 +98,15 @@ class _IntutionRecordListPageState extends State<IntutionRecordListPage> {
         ),
       ],
       child: Scaffold(
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: context.bgColor,
         appBar: AppBar(
-          backgroundColor: BACKGROUND_COLOR,
-          title: const Text(
+          backgroundColor: context.bgColor,
+          title: Text(
             '나의 직관기록',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: GRAYSCALE_LABEL_950,
+              color: context.textPrimary,
             ),
           ),
           centerTitle: true,
@@ -112,10 +115,10 @@ class _IntutionRecordListPageState extends State<IntutionRecordListPage> {
           actions: [
             IconButton(
               onPressed: () => _showAddOptionsSheet(context),
-              icon: const Icon(
+              icon: Icon(
                 Icons.add_rounded,
                 size: 28,
-                color: GRAYSCALE_LABEL_900,
+                color: context.textPrimary,
               ),
             ),
           ],
@@ -136,224 +139,282 @@ class _IntutionRecordListPageState extends State<IntutionRecordListPage> {
 
             // ------------------ 리스트 / 4열 티켓 그리드 ------------------
             Expanded(
-              child:
-                  Selector<
-                    IntutionRecordListProvider,
-                    List<Map<String, dynamic>>
-                  >(
-                    selector: (_, lp) => lp.records,
-                    builder: (context, records, child) {
-                      if (records.isEmpty) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 64,
-                                  height: 64,
-                                  decoration: const BoxDecoration(
-                                    color: GRAYSCALE_LABEL_100,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.sports_baseball_outlined,
-                                    size: 30,
-                                    color: GRAYSCALE_LABEL_500,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  '아직 직관 기록이 없어요',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: GRAYSCALE_LABEL_900,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                const Text(
-                                  '첫 직관의 순간을 기록해보세요!',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: GRAYSCALE_LABEL_500,
-                                  ),
-                                ),
-                                const SizedBox(height: 18),
-                                TextButton.icon(
-                                  onPressed: () =>
-                                      _showAddOptionsSheet(context),
-                                  icon: const Icon(Icons.add_rounded, size: 18),
-                                  label: const Text(
-                                    '기록 추가하기',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  style: TextButton.styleFrom(
-                                    backgroundColor: BUTTON,
-                                    foregroundColor: WHITE,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 18,
-                                      vertical: 10,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-
-                      if (_isTicketGridMode) {
-                        final isDescending = context
-                            .select<IntutionRecordListProvider, bool>(
-                              (lp) => lp.isDescending,
-                            );
-                        return GridView.builder(
-                          physics: const ClampingScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
-                          itemCount: records.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: 0.53,
+              child: Selector<IntutionRecordListProvider, List<Map<String, dynamic>>>(
+                selector: (_, lp) => lp.records,
+                builder: (context, records, child) {
+                  if (records.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 64,
+                              height: 64,
+                              decoration: const BoxDecoration(
+                                color: GRAYSCALE_LABEL_100,
+                                shape: BoxShape.circle,
                               ),
-                          itemBuilder: (context, i) {
-                            final d = records[i];
-                            final attendance = _toAttendance(d);
-                            final myTeam = d['myTeam'] ?? '';
-                            final oppTeam = d['oppTeam'] ?? '';
-                            final myScore = d['myScore'] ?? 0;
-                            final oppScore = d['opponentScore'] ?? 0;
-                            final isWin = myScore > oppScore;
-                            final ticketNumber = isDescending
-                                ? (records.length - i)
-                                : (i + 1);
+                              child: const Icon(
+                                Icons.sports_baseball_outlined,
+                                size: 30,
+                                color: GRAYSCALE_LABEL_500,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              '아직 직관 기록이 없어요',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: GRAYSCALE_LABEL_900,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              '첫 직관의 순간을 기록해보세요!',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: GRAYSCALE_LABEL_500,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            TextButton.icon(
+                              onPressed: () => _showAddOptionsSheet(context),
+                              icon: const Icon(Icons.add_rounded, size: 18),
+                              label: const Text(
+                                '기록 추가하기',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              style: TextButton.styleFrom(
+                                backgroundColor: BUTTON,
+                                foregroundColor: WHITE,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
 
-                            final tp = Provider.of<TeamProvider>(
-                              context,
-                              listen: false,
-                            );
-                            final team = tp.findTeamByName(myTeam);
-                            final color = team?.color ?? GRAYSCALE_LABEL_500;
+                  if (_isTicketGridMode) {
+                    final isDescending = context
+                        .select<IntutionRecordListProvider, bool>(
+                          (lp) => lp.isDescending,
+                        );
+                    return GridView.builder(
+                      physics: const ClampingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+                      itemCount: records.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.53,
+                          ),
+                      itemBuilder: (context, i) {
+                        final d = records[i];
+                        final attendance = _toAttendance(d);
+                        final myTeam = d['myTeam'] ?? '';
+                        final oppTeam = d['oppTeam'] ?? '';
+                        final myScore = d['myScore'] ?? 0;
+                        final oppScore = d['opponentScore'] ?? 0;
+                        final isWin = myScore > oppScore;
+                        final ticketNumber = isDescending
+                            ? (records.length - i)
+                            : (i + 1);
 
-                            return TicketStubTile(
-                              data: d,
+                        final tp = Provider.of<TeamProvider>(
+                          context,
+                          listen: false,
+                        );
+                        final team = tp.findTeamByName(myTeam);
+                        final color = team?.color ?? GRAYSCALE_LABEL_500;
+
+                        if (attendance.isFourCut) {
+                          return Align(
+                            alignment: Alignment.topCenter,
+                            child: FourCutGridCard(
                               attendance: attendance,
                               recordedTeam: team,
                               recordedTeamColor: color,
-                              ticketNumber: ticketNumber,
-                              isWin: isWin,
-                              myScore: myScore,
-                              oppScore: oppScore,
-                              myTeam: myTeam,
-                              oppTeam: oppTeam,
                               onTap: () {
+                                final navigator = Navigator.of(this.context);
                                 showDialog(
-                                  context: context,
-                                  builder: (dialogContext) =>
-                                      VerticalTicketPreviewDialog(
-                                        data: d,
-                                        attendance: attendance,
-                                        recordedTeam: team,
-                                        recordedTeamColor: color,
-                                        ticketNumber: ticketNumber,
-                                        isWin: isWin,
-                                        myScore: myScore,
-                                        oppScore: oppScore,
-                                        myTeam: myTeam,
-                                        oppTeam: oppTeam,
-                                        onOpenDetail: () {
-                                          Navigator.pop(dialogContext);
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  IntutionRecordDetailPage(
-                                                    gameId: d['gameId'],
-                                                  ),
-                                            ),
+                                  context: this.context,
+                                  builder: (dialogContext) => FourCutPreviewDialog(
+                                    attendance: attendance,
+                                    recordedTeam: team,
+                                    recordedTeamColor: color,
+                                    onOpenDetail: () {
+                                      Navigator.pop(dialogContext);
+                                      navigator.push(
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              IntutionRecordDetailPage(
+                                                gameId: attendance.gameId,
+                                                attendanceModel: attendance,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    onDelete: () async {
+                                      final confirmed =
+                                          await showDeleteAttendanceConfirmDialog(
+                                            dialogContext,
                                           );
-                                        },
-                                        onDelete: () async {
-                                          final confirmed =
-                                              await showDeleteAttendanceConfirmDialog(
-                                                dialogContext,
-                                              );
-                                          if (!confirmed || !context.mounted) {
-                                            return;
-                                          }
-                                          Navigator.pop(dialogContext);
-                                          final ok = await context
-                                              .read<IntutionRecordProvider>()
-                                              .deleteRecord(attendance);
-                                          if (!context.mounted) return;
-                                          toastification.show(
-                                            context: context,
-                                            type: ok
-                                                ? ToastificationType.success
-                                                : ToastificationType.error,
-                                            autoCloseDuration: const Duration(
-                                              seconds: 2,
-                                            ),
-                                            title: Text(
-                                              ok
-                                                  ? '직관기록이 삭제되었습니다'
-                                                  : '직관기록 삭제에 실패했습니다',
-                                            ),
-                                          );
-                                        },
-                                      ),
+                                      if (!confirmed || !context.mounted) {
+                                        return;
+                                      }
+                                      Navigator.pop(dialogContext);
+                                      final ok = await context
+                                          .read<IntutionRecordProvider>()
+                                          .deleteRecord(attendance);
+                                      if (!context.mounted) return;
+                                      toastification.show(
+                                        context: context,
+                                        type: ok
+                                            ? ToastificationType.success
+                                            : ToastificationType.error,
+                                        autoCloseDuration: const Duration(
+                                          seconds: 2,
+                                        ),
+                                        title: Text(
+                                          ok
+                                              ? '직관기록이 삭제되었습니다'
+                                              : '직관기록 삭제에 실패했습니다',
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 );
                               },
+                            ),
+                          );
+                        }
+
+                        return TicketStubTile(
+                          data: d,
+                          attendance: attendance,
+                          recordedTeam: team,
+                          recordedTeamColor: color,
+                          ticketNumber: ticketNumber,
+                          isWin: isWin,
+                          myScore: myScore,
+                          oppScore: oppScore,
+                          myTeam: myTeam,
+                          oppTeam: oppTeam,
+                          onTap: () {
+                            final navigator = Navigator.of(this.context);
+                            showDialog(
+                              context: this.context,
+                              builder: (dialogContext) =>
+                                  VerticalTicketPreviewDialog(
+                                    data: d,
+                                    attendance: attendance,
+                                    recordedTeam: team,
+                                    recordedTeamColor: color,
+                                    ticketNumber: ticketNumber,
+                                    isWin: isWin,
+                                    myScore: myScore,
+                                    oppScore: oppScore,
+                                    myTeam: myTeam,
+                                    oppTeam: oppTeam,
+                                    onOpenDetail: () {
+                                      Navigator.pop(dialogContext);
+                                      navigator.push(
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              IntutionRecordDetailPage(
+                                                gameId: attendance.gameId,
+                                                attendanceModel: attendance,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    onDelete: () async {
+                                      final confirmed =
+                                          await showDeleteAttendanceConfirmDialog(
+                                            dialogContext,
+                                          );
+                                      if (!confirmed || !context.mounted) {
+                                        return;
+                                      }
+                                      Navigator.pop(dialogContext);
+                                      final ok = await context
+                                          .read<IntutionRecordProvider>()
+                                          .deleteRecord(attendance);
+                                      if (!context.mounted) return;
+                                      toastification.show(
+                                        context: context,
+                                        type: ok
+                                            ? ToastificationType.success
+                                            : ToastificationType.error,
+                                        autoCloseDuration: const Duration(
+                                          seconds: 2,
+                                        ),
+                                        title: Text(
+                                          ok
+                                              ? '직관기록이 삭제되었습니다'
+                                              : '직관기록 삭제에 실패했습니다',
+                                        ),
+                                      );
+                                    },
+                                  ),
                             );
                           },
                         );
-                      }
+                      },
+                    );
+                  }
 
-                      return ListView.builder(
-                        physics: const ClampingScrollPhysics(),
-                        padding: const EdgeInsets.only(bottom: 24),
-                        itemCount: records.length,
-                        itemBuilder: (context, i) {
-                          final d = records[i];
-                          final attendance = _toAttendance(d);
-                          final myTeam = d['myTeam'] ?? '';
-                          final oppTeam = d['oppTeam'] ?? '';
-                          final myScore = d['myScore'] ?? 0;
-                          final oppScore = d['opponentScore'] ?? 0;
-                          final isWin = myScore > oppScore;
+                  return ListView.builder(
+                    physics: const ClampingScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: 24),
+                    itemCount: records.length,
+                    itemBuilder: (context, i) {
+                      final d = records[i];
+                      final attendance = _toAttendance(d);
+                      final myTeam = d['myTeam'] ?? '';
+                      final oppTeam = d['oppTeam'] ?? '';
+                      final myScore = d['myScore'] ?? 0;
+                      final oppScore = d['opponentScore'] ?? 0;
+                      final isWin = myScore > oppScore;
 
-                          final tp = Provider.of<TeamProvider>(
-                            context,
-                            listen: false,
-                          );
-                          final team = tp.findTeamByName(myTeam);
-                          final color = team?.color ?? GRAYSCALE_LABEL_500;
+                      final tp = Provider.of<TeamProvider>(
+                        context,
+                        listen: false,
+                      );
+                      final team = tp.findTeamByName(myTeam);
+                      final color = team?.color ?? GRAYSCALE_LABEL_500;
 
-                          return RecordCard(
-                            data: d,
-                            attendance: attendance,
-                            recordedTeam: team,
-                            recordedTeamColor: color,
-                            isWin: isWin,
-                            myScore: myScore,
-                            oppScore: oppScore,
-                            myTeam: myTeam,
-                            oppTeam: oppTeam,
-                          );
-                        },
+                      return RecordCard(
+                        data: d,
+                        attendance: attendance,
+                        recordedTeam: team,
+                        recordedTeamColor: color,
+                        isWin: isWin,
+                        myScore: myScore,
+                        oppScore: oppScore,
+                        myTeam: myTeam,
+                        oppTeam: oppTeam,
                       );
                     },
-                  ),
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -521,11 +582,14 @@ class _HeaderView extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: WHITE,
+              color: context.cardColor,
               borderRadius: BorderRadius.circular(18),
+              border: context.isDarkMode
+                  ? Border.all(color: context.borderColor)
+                  : null,
               boxShadow: [
                 BoxShadow(
-                  color: BLACK.withOpacity(0.03),
+                  color: BLACK.withOpacity(context.isDarkMode ? 0.2 : 0.03),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -537,12 +601,12 @@ class _HeaderView extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
+                    Text(
                       '⚾ 직관 전적',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: GRAYSCALE_LABEL_950,
+                        color: context.textPrimary,
                       ),
                     ),
                     if (total > 0)
@@ -553,8 +617,10 @@ class _HeaderView extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: winMargin >= 0
-                              ? teamColor.withValues(alpha: 0.12)
-                              : GRAYSCALE_LABEL_100,
+                              ? context
+                                    .readableColor(teamColor)
+                                    .withValues(alpha: 0.14)
+                              : context.surfaceAltColor,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -563,8 +629,8 @@ class _HeaderView extends StatelessWidget {
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: winMargin >= 0
-                                ? teamColor
-                                : GRAYSCALE_LABEL_700,
+                                ? context.readableColor(teamColor)
+                                : context.textSecondary,
                           ),
                         ),
                       ),
@@ -573,15 +639,25 @@ class _HeaderView extends StatelessWidget {
                 const SizedBox(height: 14),
                 Row(
                   children: [
-                    _stat('경기 수', '$total', color: BLACK),
+                    _stat('경기 수', '$total', color: context.textPrimary),
                     _divider(),
-                    _stat('승', '$wins', color: BUTTON),
+                    _stat(
+                      '승',
+                      '$wins',
+                      color: context.isDarkMode
+                          ? const Color(0xFF60A5FA)
+                          : BUTTON,
+                    ),
                     _divider(),
                     _stat('패', '$losses', color: Colors.redAccent),
                     _divider(),
-                    _stat('무', '$draws', color: GRAYSCALE_LABEL_600),
+                    _stat('무', '$draws', color: context.textSecondary),
                     _divider(),
-                    _stat('승률', '$winRate%', color: teamColor),
+                    _stat(
+                      '승률',
+                      '$winRate%',
+                      color: context.readableColor(teamColor),
+                    ),
                   ],
                 ),
                 if (total > 0) ...[
@@ -595,12 +671,16 @@ class _HeaderView extends StatelessWidget {
                           if (wins > 0)
                             Expanded(
                               flex: wins,
-                              child: Container(color: BUTTON),
+                              child: Container(
+                                color: context.isDarkMode
+                                    ? const Color(0xFF60A5FA)
+                                    : BUTTON,
+                              ),
                             ),
                           if (draws > 0)
                             Expanded(
                               flex: draws,
-                              child: Container(color: GRAYSCALE_LABEL_400),
+                              child: Container(color: context.textMuted),
                             ),
                           if (losses > 0)
                             Expanded(
@@ -670,7 +750,7 @@ class _FilterBar extends StatelessWidget {
           return Row(
             children: [
               Material(
-                color: WHITE,
+                color: context.cardColor,
                 borderRadius: BorderRadius.circular(20),
                 child: InkWell(
                   onTap: () => _showYearPicker(context, lp),
@@ -682,32 +762,32 @@ class _FilterBar extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: GRAYSCALE_LABEL_200),
+                      border: Border.all(color: context.borderColor),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.calendar_today_rounded,
                           size: 14,
-                          color: GRAYSCALE_LABEL_600,
+                          color: context.textSecondary,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           lp.selectedYear == null
                               ? '전체'
                               : '${lp.selectedYear}년',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: GRAYSCALE_LABEL_900,
+                            color: context.textPrimary,
                           ),
                         ),
                         const SizedBox(width: 2),
-                        const Icon(
+                        Icon(
                           Icons.keyboard_arrow_down_rounded,
                           size: 18,
-                          color: GRAYSCALE_LABEL_600,
+                          color: context.textSecondary,
                         ),
                       ],
                     ),
@@ -716,7 +796,7 @@ class _FilterBar extends StatelessWidget {
               ),
               const Spacer(),
               Material(
-                color: WHITE,
+                color: context.cardColor,
                 borderRadius: BorderRadius.circular(20),
                 child: InkWell(
                   onTap: onToggleViewMode,
@@ -728,7 +808,7 @@ class _FilterBar extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: GRAYSCALE_LABEL_200),
+                      border: Border.all(color: context.borderColor),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -738,15 +818,15 @@ class _FilterBar extends StatelessWidget {
                               ? Icons.view_agenda_outlined
                               : Icons.grid_view_rounded,
                           size: 15,
-                          color: GRAYSCALE_LABEL_700,
+                          color: context.textSecondary,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           isTicketGridMode ? '카드형' : '티켓형',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: GRAYSCALE_LABEL_800,
+                            color: context.textPrimary,
                           ),
                         ),
                       ],
@@ -756,7 +836,7 @@ class _FilterBar extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Material(
-                color: WHITE,
+                color: context.cardColor,
                 borderRadius: BorderRadius.circular(20),
                 child: InkWell(
                   onTap: lp.toggleSortOrder,
@@ -768,23 +848,23 @@ class _FilterBar extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: GRAYSCALE_LABEL_200),
+                      border: Border.all(color: context.borderColor),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.swap_vert_rounded,
                           size: 16,
-                          color: GRAYSCALE_LABEL_600,
+                          color: context.textSecondary,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           lp.isDescending ? '최신순' : '이전순',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: GRAYSCALE_LABEL_800,
+                            color: context.textPrimary,
                           ),
                         ),
                       ],

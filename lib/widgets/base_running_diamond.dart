@@ -46,9 +46,9 @@ class BaseRunningDiamond extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(compact ? 12 : 14),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: GRAYSCALE_LABEL_200),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,16 +67,16 @@ class BaseRunningDiamond extends StatelessWidget {
                           style: TextStyle(
                             fontSize: compact ? 13 : 14,
                             fontWeight: FontWeight.w800,
-                            color: GRAYSCALE_LABEL_950,
+                            color: context.textPrimary,
                           ),
                         ),
                         const SizedBox(width: 4),
                         GestureDetector(
                           onTap: () => _showRuleDialog(context),
-                          child: const Icon(
+                          child: Icon(
                             Icons.help_outline_rounded,
                             size: 16,
-                            color: GRAYSCALE_LABEL_400,
+                            color: context.textMuted,
                           ),
                         ),
                       ],
@@ -86,7 +86,7 @@ class BaseRunningDiamond extends StatelessWidget {
                       '직관 1경기 = 1베이스 · 4경기마다 1득점(홈인)!',
                       style: TextStyle(
                         fontSize: compact ? 11 : 12,
-                        color: GRAYSCALE_LABEL_500,
+                        color: context.textMuted,
                       ),
                     ),
                   ],
@@ -117,9 +117,9 @@ class BaseRunningDiamond extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(compact ? 10 : 12),
             decoration: BoxDecoration(
-              color: BACKGROUND_COLOR,
+              color: context.surfaceAltColor,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: GRAYSCALE_LABEL_200),
+              border: Border.all(color: context.borderColor),
             ),
             child: Row(
               children: [
@@ -144,7 +144,7 @@ class BaseRunningDiamond extends StatelessWidget {
                         style: TextStyle(
                           fontSize: compact ? 13 : 14,
                           fontWeight: FontWeight.w800,
-                          color: GRAYSCALE_LABEL_950,
+                          color: context.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -152,7 +152,7 @@ class BaseRunningDiamond extends StatelessWidget {
                         hintText,
                         style: TextStyle(
                           fontSize: compact ? 11 : 12,
-                          color: GRAYSCALE_LABEL_600,
+                          color: context.textSecondary,
                           height: 1.35,
                         ),
                       ),
@@ -165,7 +165,7 @@ class BaseRunningDiamond extends StatelessWidget {
                               child: LinearProgressIndicator(
                                 value: progressSteps / 4,
                                 minHeight: 6,
-                                backgroundColor: GRAYSCALE_LABEL_200,
+                                backgroundColor: context.borderColor,
                                 valueColor: const AlwaysStoppedAnimation<Color>(
                                   ACCENT_CORAL,
                                 ),
@@ -175,10 +175,10 @@ class BaseRunningDiamond extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             '$progressSteps / 4',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
-                              color: GRAYSCALE_LABEL_700,
+                              color: context.textSecondary,
                             ),
                           ),
                         ],
@@ -198,11 +198,15 @@ class BaseRunningDiamond extends StatelessWidget {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: WHITE,
+        backgroundColor: ctx.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Text(
+        title: Text(
           '⚾ 1루부터 홈까지 규칙 안내',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: ctx.textPrimary,
+          ),
         ),
         content: const Column(
           mainAxisSize: MainAxisSize.min,

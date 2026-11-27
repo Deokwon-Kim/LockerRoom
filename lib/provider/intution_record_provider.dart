@@ -29,6 +29,7 @@ class IntutionRecordProvider extends ChangeNotifier {
   final Map<String, int> _goodsPrices = {};
   bool _shareSeatView = true;
   bool _shareToFeed = false;
+  bool _isFourCut = false;
 
   List<String> get foodItems => List.unmodifiable(_foodItems);
   Map<String, int> get foodPrices => Map.unmodifiable(_foodPrices);
@@ -36,6 +37,7 @@ class IntutionRecordProvider extends ChangeNotifier {
   Map<String, int> get goodsPrices => Map.unmodifiable(_goodsPrices);
   bool get shareSeatView => _shareSeatView;
   bool get shareToFeed => _shareToFeed;
+  bool get isFourCut => _isFourCut;
 
   void setShareSeatView(bool value) {
     _shareSeatView = value;
@@ -44,6 +46,11 @@ class IntutionRecordProvider extends ChangeNotifier {
 
   void setShareToFeed(bool value) {
     _shareToFeed = value;
+    notifyListeners();
+  }
+
+  void setIsFourCut(bool value) {
+    _isFourCut = value;
     notifyListeners();
   }
 
@@ -655,6 +662,7 @@ class IntutionRecordProvider extends ChangeNotifier {
             0,
         goodsItems: List<String>.from(_goodsItems),
         goodsPrices: Map<String, int>.from(_goodsPrices),
+        isFourCut: _isFourCut,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -856,6 +864,7 @@ class IntutionRecordProvider extends ChangeNotifier {
     _saving = false;
     _selectedImage = null;
     _shouldDeleteImage = false;
+    _isFourCut = false;
     notifyListeners();
   }
 

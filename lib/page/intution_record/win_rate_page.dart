@@ -39,9 +39,9 @@ class _WinRatePageState extends State<WinRatePage> {
     final userNickName =
         userProvider.nickname ?? userProvider.currentUser?.displayName ?? '사용자';
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: context.bgColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         actions: [
@@ -54,11 +54,7 @@ class _WinRatePageState extends State<WinRatePage> {
                 ),
               );
             },
-            icon: const Icon(
-              Icons.add_rounded,
-              size: 28,
-              color: GRAYSCALE_LABEL_900,
-            ),
+            icon: Icon(Icons.add_rounded, size: 28, color: context.textPrimary),
           ),
         ],
         title: Row(
@@ -67,7 +63,7 @@ class _WinRatePageState extends State<WinRatePage> {
               '나의 직관',
               style: TextStyle(
                 fontSize: 24,
-                color: BLACK,
+                color: context.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -80,9 +76,9 @@ class _WinRatePageState extends State<WinRatePage> {
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: GRAYSCALE_LABEL_300),
+                      border: Border.all(color: context.borderColor),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -91,14 +87,14 @@ class _WinRatePageState extends State<WinRatePage> {
                           lp.selectedYear == null ? '전체' : '${lp.selectedYear}',
                           style: GoogleFonts.bebasNeue(
                             fontSize: 18,
-                            color: GRAYSCALE_LABEL_600,
+                            color: context.textPrimary,
                           ),
                         ),
                         SizedBox(width: 4),
                         Icon(
                           Icons.keyboard_arrow_down,
                           size: 16,
-                          color: GRAYSCALE_LABEL_600,
+                          color: context.textSecondary,
                         ),
                       ],
                     ),
@@ -280,11 +276,16 @@ class _WinRatePageState extends State<WinRatePage> {
                       height: 340,
                       clipBehavior: Clip.hardEdge,
                       decoration: BoxDecoration(
-                        color: WHITE,
+                        color: context.cardColor,
                         borderRadius: BorderRadius.circular(32),
+                        border: context.isDarkMode
+                            ? Border.all(color: context.borderColor)
+                            : null,
                         boxShadow: [
                           BoxShadow(
-                            color: BLACK.withOpacity(0.05),
+                            color: BLACK.withOpacity(
+                              context.isDarkMode ? 0.25 : 0.05,
+                            ),
                             blurRadius: 20,
                             offset: Offset(0, 10),
                           ),
@@ -296,7 +297,7 @@ class _WinRatePageState extends State<WinRatePage> {
                           // Background Logo (Watermark)
                           if (tp.selectedTeam != null)
                             Opacity(
-                              opacity: 0.1,
+                              opacity: context.isDarkMode ? 0.16 : 0.1,
                               child: Transform.scale(
                                 scale: 1.5,
                                 child: Image.asset(
@@ -318,13 +319,15 @@ class _WinRatePageState extends State<WinRatePage> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: teamColor.withOpacity(0.12),
+                                  color: context
+                                      .readableColor(teamColor)
+                                      .withOpacity(0.14),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
                                   fairyTitle,
                                   style: TextStyle(
-                                    color: teamColor,
+                                    color: context.readableColor(teamColor),
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -334,7 +337,7 @@ class _WinRatePageState extends State<WinRatePage> {
                               Text(
                                 '승률',
                                 style: TextStyle(
-                                  color: GRAYSCALE_LABEL_500,
+                                  color: context.textSecondary,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 1.5,
@@ -351,10 +354,12 @@ class _WinRatePageState extends State<WinRatePage> {
                                       fontSize: 132,
                                       fontWeight: FontWeight.bold,
                                       height: 1,
-                                      color: teamColor,
+                                      color: context.readableColor(teamColor),
                                       shadows: [
                                         Shadow(
-                                          color: teamColor.withOpacity(0.3),
+                                          color: context
+                                              .readableColor(teamColor)
+                                              .withOpacity(0.3),
                                           offset: Offset(0, 10),
                                           blurRadius: 20,
                                         ),
@@ -367,7 +372,7 @@ class _WinRatePageState extends State<WinRatePage> {
                                       '%',
                                       style: GoogleFonts.blackHanSans(
                                         fontSize: 38,
-                                        color: teamColor,
+                                        color: context.readableColor(teamColor),
                                       ),
                                     ),
                                   ),
@@ -384,7 +389,7 @@ class _WinRatePageState extends State<WinRatePage> {
                                     Text(
                                       userNickName,
                                       style: TextStyle(
-                                        color: teamColor,
+                                        color: context.readableColor(teamColor),
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -397,6 +402,7 @@ class _WinRatePageState extends State<WinRatePage> {
                                         icon: Icon(
                                           CupertinoIcons.share,
                                           size: 15,
+                                          color: context.textSecondary,
                                         ),
                                       ),
                                   ],
@@ -682,12 +688,12 @@ class _WinRatePageState extends State<WinRatePage> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: GRAYSCALE_LABEL_200.withValues(alpha: 0.7)),
+        border: Border.all(color: context.borderColor),
         boxShadow: [
           BoxShadow(
-            color: BLACK.withValues(alpha: 0.04),
+            color: BLACK.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -699,18 +705,20 @@ class _WinRatePageState extends State<WinRatePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 '⚔️ 상대팀별 직관 상성',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
-                  color: GRAYSCALE_LABEL_950,
+                  color: context.textPrimary,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
-                  color: teamColor.withValues(alpha: 0.10),
+                  color: context
+                      .readableColor(teamColor)
+                      .withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -718,7 +726,7 @@ class _WinRatePageState extends State<WinRatePage> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    color: teamColor,
+                    color: context.readableColor(teamColor),
                   ),
                 ),
               ),
@@ -736,10 +744,14 @@ class _WinRatePageState extends State<WinRatePage> {
                         vertical: 9,
                       ),
                       decoration: BoxDecoration(
-                        color: teamColor.withValues(alpha: 0.08),
+                        color: context
+                            .readableColor(teamColor)
+                            .withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: teamColor.withValues(alpha: 0.2),
+                          color: context
+                              .readableColor(teamColor)
+                              .withValues(alpha: 0.25),
                         ),
                       ),
                       child: Column(
@@ -750,16 +762,16 @@ class _WinRatePageState extends State<WinRatePage> {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
-                              color: teamColor,
+                              color: context.readableColor(teamColor),
                             ),
                           ),
                           const SizedBox(height: 3),
                           Text(
                             'vs ${killerTarget.name}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
-                              color: GRAYSCALE_LABEL_950,
+                              color: context.textPrimary,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -777,10 +789,10 @@ class _WinRatePageState extends State<WinRatePage> {
                         vertical: 9,
                       ),
                       decoration: BoxDecoration(
-                        color: RED_DANGER_TEXT_50.withValues(alpha: 0.07),
+                        color: RED_DANGER_TEXT_50.withValues(alpha: 0.09),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: RED_DANGER_TEXT_50.withValues(alpha: 0.2),
+                          color: RED_DANGER_TEXT_50.withValues(alpha: 0.25),
                         ),
                       ),
                       child: Column(
@@ -797,10 +809,10 @@ class _WinRatePageState extends State<WinRatePage> {
                           const SizedBox(height: 3),
                           Text(
                             'vs ${nemesisTarget.name}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
-                              color: GRAYSCALE_LABEL_950,
+                              color: context.textPrimary,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -815,7 +827,9 @@ class _WinRatePageState extends State<WinRatePage> {
           ...displayList.map((stat) {
             final rate = stat.winRate;
             final isStrong = rate >= 50;
-            final barColor = isStrong ? teamColor : GRAYSCALE_LABEL_400;
+            final barColor = isStrong
+                ? context.readableColor(teamColor)
+                : GRAYSCALE_LABEL_400;
             return Padding(
               padding: const EdgeInsets.only(bottom: 11),
               child: Column(
@@ -833,19 +847,19 @@ class _WinRatePageState extends State<WinRatePage> {
                       const SizedBox(width: 8),
                       Text(
                         stat.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: GRAYSCALE_LABEL_900,
+                          color: context.textPrimary,
                         ),
                       ),
                       const Spacer(),
                       Text(
                         '${stat.wins}승 ${stat.draws > 0 ? '${stat.draws}무 ' : ''}${stat.losses}패',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: GRAYSCALE_LABEL_500,
+                          color: context.textMuted,
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -970,11 +984,14 @@ class _WinRatePageState extends State<WinRatePage> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(24),
+        border: context.isDarkMode
+            ? Border.all(color: context.borderColor)
+            : null,
         boxShadow: [
           BoxShadow(
-            color: BLACK.withOpacity(0.03),
+            color: BLACK.withOpacity(context.isDarkMode ? 0.2 : 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -986,12 +1003,12 @@ class _WinRatePageState extends State<WinRatePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 '🔥 최근 직관 흐름',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: BLACK,
+                  color: context.textPrimary,
                 ),
               ),
               Container(
@@ -1001,8 +1018,8 @@ class _WinRatePageState extends State<WinRatePage> {
                 ),
                 decoration: BoxDecoration(
                   color: currentWinStreak > 0
-                      ? teamColor.withOpacity(0.12)
-                      : GRAYSCALE_LABEL_200,
+                      ? context.readableColor(teamColor).withOpacity(0.14)
+                      : context.surfaceAltColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -1011,8 +1028,8 @@ class _WinRatePageState extends State<WinRatePage> {
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     color: currentWinStreak > 0
-                        ? teamColor
-                        : GRAYSCALE_LABEL_700,
+                        ? context.readableColor(teamColor)
+                        : context.textSecondary,
                   ),
                 ),
               ),
@@ -1082,7 +1099,9 @@ class _WinRatePageState extends State<WinRatePage> {
                               fontWeight: isLatest
                                   ? FontWeight.bold
                                   : FontWeight.w500,
-                              color: isLatest ? BLACK : GRAYSCALE_LABEL_500,
+                              color: isLatest
+                                  ? context.textPrimary
+                                  : context.textMuted,
                             ),
                           ),
                         ],
@@ -1094,11 +1113,11 @@ class _WinRatePageState extends State<WinRatePage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text(
+                  Text(
                     '최다 연승',
                     style: TextStyle(
                       fontSize: 11,
-                      color: GRAYSCALE_LABEL_500,
+                      color: context.textMuted,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1108,7 +1127,7 @@ class _WinRatePageState extends State<WinRatePage> {
                     style: GoogleFonts.bebasNeue(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: teamColor,
+                      color: context.readableColor(teamColor),
                     ),
                   ),
                 ],
@@ -1135,11 +1154,14 @@ class _WinRatePageState extends State<WinRatePage> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(24),
+        border: context.isDarkMode
+            ? Border.all(color: context.borderColor)
+            : null,
         boxShadow: [
           BoxShadow(
-            color: BLACK.withOpacity(0.03),
+            color: BLACK.withOpacity(context.isDarkMode ? 0.2 : 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1148,12 +1170,12 @@ class _WinRatePageState extends State<WinRatePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '⚡ 직관 공·수 화력',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: BLACK,
+              color: context.textPrimary,
             ),
           ),
           const SizedBox(height: 14),
@@ -1163,10 +1185,10 @@ class _WinRatePageState extends State<WinRatePage> {
                 child: _buildMiniMetric(
                   label: '평균 득점',
                   value: '${avgMyRuns.toStringAsFixed(1)}점',
-                  color: BUTTON,
+                  color: context.readableColor(BUTTON),
                 ),
               ),
-              Container(width: 1, height: 36, color: GRAYSCALE_LABEL_200),
+              Container(width: 1, height: 36, color: context.dividerColor),
               Expanded(
                 child: _buildMiniMetric(
                   label: '평균 실점',
@@ -1174,19 +1196,21 @@ class _WinRatePageState extends State<WinRatePage> {
                   color: Colors.redAccent,
                 ),
               ),
-              Container(width: 1, height: 36, color: GRAYSCALE_LABEL_200),
+              Container(width: 1, height: 36, color: context.dividerColor),
               Expanded(
                 child: _buildMiniMetric(
                   label: '평균 득실 마진',
                   value: '$marginPrefix${avgMargin.toStringAsFixed(1)}',
-                  color: avgMargin >= 0 ? teamColor : GRAYSCALE_LABEL_600,
+                  color: avgMargin >= 0
+                      ? context.readableColor(teamColor)
+                      : context.textSecondary,
                 ),
               ),
             ],
           ),
           if (bestMatch != null) ...[
             const SizedBox(height: 16),
-            const Divider(height: 1, color: GRAYSCALE_LABEL_200),
+            Divider(height: 1, color: context.dividerColor),
             const SizedBox(height: 14),
             InkWell(
               borderRadius: BorderRadius.circular(14),
@@ -1207,7 +1231,7 @@ class _WinRatePageState extends State<WinRatePage> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: BACKGROUND_COLOR,
+                  color: context.surfaceAltColor,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
@@ -1229,21 +1253,21 @@ class _WinRatePageState extends State<WinRatePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             '최고의 직관 승리 경기',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: GRAYSCALE_LABEL_500,
+                              color: context.textMuted,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${bestMatch['date'] ?? ''} · vs ${bestMatch['oppTeam'] ?? ''}${bestMatch['stadium'] != null ? ' (${bestMatch['stadium']})' : ''}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: BLACK,
+                              color: context.textPrimary,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -1326,11 +1350,14 @@ class _WinRatePageState extends State<WinRatePage> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(24),
+        border: context.isDarkMode
+            ? Border.all(color: context.borderColor)
+            : null,
         boxShadow: [
           BoxShadow(
-            color: BLACK.withOpacity(0.03),
+            color: BLACK.withOpacity(context.isDarkMode ? 0.2 : 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1342,12 +1369,12 @@ class _WinRatePageState extends State<WinRatePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 '🏟️ KBO 구장 도장깨기',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: BLACK,
+                  color: context.textPrimary,
                 ),
               ),
               Text(
@@ -1355,7 +1382,7 @@ class _WinRatePageState extends State<WinRatePage> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: teamColor,
+                  color: context.readableColor(teamColor),
                 ),
               ),
             ],
@@ -1366,8 +1393,10 @@ class _WinRatePageState extends State<WinRatePage> {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: GRAYSCALE_LABEL_200,
-              valueColor: AlwaysStoppedAnimation<Color>(teamColor),
+              backgroundColor: context.surfaceAltColor,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                context.readableColor(teamColor),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -1385,16 +1414,17 @@ class _WinRatePageState extends State<WinRatePage> {
               final stadium = _kboMainStadiums[index];
               final count = stadiumVisits[stadium] ?? 0;
               final visited = count > 0;
+              final readableTeam = context.readableColor(teamColor);
 
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
                   color: visited
-                      ? teamColor.withOpacity(0.1)
-                      : BACKGROUND_COLOR,
+                      ? readableTeam.withOpacity(0.12)
+                      : context.surfaceAltColor,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: visited ? teamColor : GRAYSCALE_LABEL_200,
+                    color: visited ? readableTeam : context.borderColor,
                     width: visited ? 1.5 : 1,
                   ),
                 ),
@@ -1404,7 +1434,7 @@ class _WinRatePageState extends State<WinRatePage> {
                     Icon(
                       visited ? Icons.verified_rounded : Icons.stadium_outlined,
                       size: 15,
-                      color: visited ? teamColor : GRAYSCALE_LABEL_400,
+                      color: visited ? readableTeam : context.textMuted,
                     ),
                     const SizedBox(width: 5),
                     Flexible(
@@ -1415,7 +1445,9 @@ class _WinRatePageState extends State<WinRatePage> {
                           fontWeight: visited
                               ? FontWeight.bold
                               : FontWeight.w500,
-                          color: visited ? BLACK : GRAYSCALE_LABEL_400,
+                          color: visited
+                              ? context.textPrimary
+                              : context.textMuted,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1446,11 +1478,14 @@ class _WinRatePageState extends State<WinRatePage> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(24),
+        border: context.isDarkMode
+            ? Border.all(color: context.borderColor)
+            : null,
         boxShadow: [
           BoxShadow(
-            color: BLACK.withOpacity(0.03),
+            color: BLACK.withOpacity(context.isDarkMode ? 0.2 : 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1462,12 +1497,12 @@ class _WinRatePageState extends State<WinRatePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 '⚾ 직관 전적',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: BLACK,
+                  color: context.textPrimary,
                 ),
               ),
               if (totalGames > 0)
@@ -1478,8 +1513,8 @@ class _WinRatePageState extends State<WinRatePage> {
                   ),
                   decoration: BoxDecoration(
                     color: winMargin >= 0
-                        ? teamColor.withOpacity(0.12)
-                        : GRAYSCALE_LABEL_200,
+                        ? context.readableColor(teamColor).withOpacity(0.14)
+                        : context.surfaceAltColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -1487,7 +1522,9 @@ class _WinRatePageState extends State<WinRatePage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: winMargin >= 0 ? teamColor : GRAYSCALE_LABEL_700,
+                      color: winMargin >= 0
+                          ? context.readableColor(teamColor)
+                          : context.textSecondary,
                     ),
                   ),
                 ),
@@ -1500,18 +1537,18 @@ class _WinRatePageState extends State<WinRatePage> {
                 child: _buildRecordColumnItem(
                   label: '경기 수',
                   value: '$totalGames',
-                  color: BLACK,
+                  color: context.textPrimary,
                 ),
               ),
-              Container(width: 1, height: 36, color: GRAYSCALE_LABEL_200),
+              Container(width: 1, height: 36, color: context.dividerColor),
               Expanded(
                 child: _buildRecordColumnItem(
                   label: '승',
                   value: '$wins',
-                  color: BUTTON,
+                  color: context.isDarkMode ? const Color(0xFF60A5FA) : BUTTON,
                 ),
               ),
-              Container(width: 1, height: 36, color: GRAYSCALE_LABEL_200),
+              Container(width: 1, height: 36, color: context.dividerColor),
               Expanded(
                 child: _buildRecordColumnItem(
                   label: '패',
@@ -1519,12 +1556,12 @@ class _WinRatePageState extends State<WinRatePage> {
                   color: Colors.redAccent,
                 ),
               ),
-              Container(width: 1, height: 36, color: GRAYSCALE_LABEL_200),
+              Container(width: 1, height: 36, color: context.dividerColor),
               Expanded(
                 child: _buildRecordColumnItem(
                   label: '무',
                   value: '$draws',
-                  color: GRAYSCALE_LABEL_600,
+                  color: context.textSecondary,
                 ),
               ),
             ],
@@ -1540,12 +1577,16 @@ class _WinRatePageState extends State<WinRatePage> {
                     if (wins > 0)
                       Expanded(
                         flex: wins,
-                        child: Container(color: BUTTON),
+                        child: Container(
+                          color: context.isDarkMode
+                              ? const Color(0xFF60A5FA)
+                              : BUTTON,
+                        ),
                       ),
                     if (draws > 0)
                       Expanded(
                         flex: draws,
-                        child: Container(color: GRAYSCALE_LABEL_400),
+                        child: Container(color: context.textMuted),
                       ),
                     if (losses > 0)
                       Expanded(

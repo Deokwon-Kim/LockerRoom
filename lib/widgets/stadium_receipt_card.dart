@@ -137,9 +137,9 @@ class StadiumReceiptCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: WHITE,
+            color: context.cardColor,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: GRAYSCALE_LABEL_200),
+            border: Border.all(color: context.borderColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -149,13 +149,13 @@ class StadiumReceiptCard extends StatelessWidget {
                   Stack(
                     alignment: Alignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'ILU STADIUM RECEIPT',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.5,
-                          color: GRAYSCALE_LABEL_950,
+                          color: context.textPrimary,
                           fontFamily: 'monospace',
                         ),
                       ),
@@ -273,10 +273,10 @@ class StadiumReceiptCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             CupertinoIcons.share,
                             size: 17,
-                            color: GRAYSCALE_LABEL_600,
+                            color: context.textSecondary,
                           ),
                         ),
                       ),
@@ -285,9 +285,9 @@ class StadiumReceiptCard extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     '$seasonLabel 직관 가성비 영수증',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: GRAYSCALE_LABEL_500,
+                      color: context.textMuted,
                     ),
                   ),
                 ],
@@ -319,20 +319,20 @@ class StadiumReceiptCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     '총 직관 투자금',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w900,
-                      color: GRAYSCALE_LABEL_950,
+                      color: context.textPrimary,
                     ),
                   ),
                   Text(
                     '${formatter.format(totalCost)}원',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
-                      color: GRAYSCALE_LABEL_950,
+                      color: context.textPrimary,
                       fontFamily: 'monospace',
                     ),
                   ),
@@ -345,19 +345,19 @@ class StadiumReceiptCard extends StatelessWidget {
                   vertical: 11,
                 ),
                 decoration: BoxDecoration(
-                  color: BACKGROUND_COLOR,
+                  color: context.surfaceAltColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: GRAYSCALE_LABEL_200),
+                  border: Border.all(color: context.borderColor),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       '🏆 1승당 가성비 ($wins승 $losses패)',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: GRAYSCALE_LABEL_900,
+                        color: context.textPrimary,
                       ),
                     ),
                     Text(
@@ -395,9 +395,9 @@ class _ReceiptRow extends StatelessWidget {
           child: Text(
             label,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: GRAYSCALE_LABEL_600,
+              color: context.textSecondary,
               fontFamily: 'monospace',
             ),
           ),
@@ -405,10 +405,10 @@ class _ReceiptRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           amount,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
             fontFamily: 'monospace',
           ),
         ),
@@ -905,9 +905,9 @@ class _ExpenseRatioChartCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: GRAYSCALE_LABEL_200),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -915,20 +915,20 @@ class _ExpenseRatioChartCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 '📊 직관 지출 비중 그래프',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: GRAYSCALE_LABEL_950,
+                  color: context.textPrimary,
                 ),
               ),
               Text(
                 '총 ${formatter.format(totalCost)}원',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: GRAYSCALE_LABEL_500,
+                  color: context.textMuted,
                 ),
               ),
             ],
@@ -956,20 +956,20 @@ class _ExpenseRatioChartCard extends StatelessWidget {
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
+                        Text(
                           'TOTAL',
                           style: TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.w700,
-                            color: GRAYSCALE_LABEL_500,
+                            color: context.textMuted,
                           ),
                         ),
                         Text(
                           '${(totalCost / 10000).toStringAsFixed(1)}만원',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w900,
-                            color: GRAYSCALE_LABEL_950,
+                            color: context.textPrimary,
                           ),
                         ),
                       ],
@@ -1059,14 +1059,14 @@ class _MonthlyExpenseChartCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: GRAYSCALE_LABEL_200),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
@@ -1074,7 +1074,7 @@ class _MonthlyExpenseChartCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: GRAYSCALE_LABEL_950,
+                  color: context.textPrimary,
                 ),
               ),
               Text(
@@ -1082,7 +1082,7 @@ class _MonthlyExpenseChartCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: GRAYSCALE_LABEL_500,
+                  color: context.textMuted,
                 ),
               ),
             ],

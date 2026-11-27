@@ -244,7 +244,9 @@ class IntuitionRecapData {
     // 일본 구장 매핑
     if (raw.contains('도쿄') || raw.contains('Tokyo')) return '도쿄돔';
     if (raw.contains('교세라') || raw.contains('오사카')) return '교세라돔';
-    if (raw.contains('후쿠오카') || raw.contains('페이페이') || raw.contains('PayPay')) {
+    if (raw.contains('후쿠오카') ||
+        raw.contains('페이페이') ||
+        raw.contains('PayPay')) {
       return '페이페이돔';
     }
     if (raw.contains('오카자기')) return '오카자기';
@@ -491,8 +493,11 @@ class IntuitionRecapData {
 
     final gamesNow = clamped >= 1.0
         ? totalGames
-        : (activeIndex + (stepFraction >= arrivalThreshold || activeIndex == 0 ? 1 : 0))
-            .clamp(1, totalGames);
+        : (activeIndex +
+                  (stepFraction >= arrivalThreshold || activeIndex == 0
+                      ? 1
+                      : 0))
+              .clamp(1, totalGames);
 
     return RecapSnapshot(
       gamesCount: gamesNow,

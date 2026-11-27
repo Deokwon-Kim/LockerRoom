@@ -60,19 +60,19 @@ class _AnalysisPageState extends State<AnalysisPage> {
     final teamColor = teamProvider.selectedTeam?.color ?? BUTTON;
 
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: BACKGROUND_COLOR,
+        backgroundColor: context.bgColor,
         scrolledUnderElevation: 0,
         elevation: 0,
         title: Row(
           children: [
-            const Text(
+            Text(
               '직관 분석',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: BLACK,
+                color: context.textPrimary,
               ),
             ),
             const SizedBox(width: 10),
@@ -86,9 +86,9 @@ class _AnalysisPageState extends State<AnalysisPage> {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: GRAYSCALE_LABEL_300),
+                      border: Border.all(color: context.borderColor),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -97,17 +97,17 @@ class _AnalysisPageState extends State<AnalysisPage> {
                           lp.selectedYear == null
                               ? '전체'
                               : '${lp.selectedYear}년',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: BLACK,
+                            color: context.textPrimary,
                           ),
                         ),
                         const SizedBox(width: 4),
-                        const Icon(
+                        Icon(
                           Icons.keyboard_arrow_down,
                           size: 16,
-                          color: GRAYSCALE_LABEL_600,
+                          color: context.textSecondary,
                         ),
                       ],
                     ),
@@ -269,9 +269,9 @@ class _AnalysisPageState extends State<AnalysisPage> {
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: GRAYSCALE_LABEL_200),
+        border: Border.all(color: context.borderColor),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -279,18 +279,18 @@ class _AnalysisPageState extends State<AnalysisPage> {
           Expanded(
             child: Text.rich(
               TextSpan(
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
-                  color: GRAYSCALE_LABEL_700,
+                  color: context.textSecondary,
                 ),
                 children: [
                   TextSpan(text: '🏟️ $seasonTitle'),
                   TextSpan(
                     text: '$total경기',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
-                      color: GRAYSCALE_LABEL_950,
+                      color: context.textPrimary,
                     ),
                   ),
                   TextSpan(text: ' · $wins승 $draws무 $losses패'),
@@ -305,7 +305,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w900,
-              color: teamColor,
+              color: context.readableColor(teamColor),
             ),
           ),
         ],
@@ -329,14 +329,14 @@ class _AnalysisPageState extends State<AnalysisPage> {
             selected: isSelected,
             selectedColor: teamColor,
             checkmarkColor: WHITE,
-            backgroundColor: WHITE,
+            backgroundColor: context.cardColor,
             labelStyle: TextStyle(
               fontSize: 13,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? WHITE : GRAYSCALE_LABEL_600,
+              color: isSelected ? WHITE : context.textSecondary,
             ),
             side: BorderSide(
-              color: isSelected ? teamColor : GRAYSCALE_LABEL_300,
+              color: isSelected ? teamColor : context.borderColor,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -549,11 +549,14 @@ class _SeatAnalysisState extends State<_SeatAnalysis> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: WHITE,
+          color: context.cardColor,
           borderRadius: BorderRadius.circular(16),
+          border: context.isDarkMode
+              ? Border.all(color: context.borderColor)
+              : null,
           boxShadow: [
             BoxShadow(
-              color: BLACK.withOpacity(0.04),
+              color: BLACK.withOpacity(context.isDarkMode ? 0.2 : 0.04),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -571,10 +574,10 @@ class _SeatAnalysisState extends State<_SeatAnalysis> {
                       Flexible(
                         child: Text(
                           title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: BLACK,
+                            color: context.textPrimary,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -607,10 +610,10 @@ class _SeatAnalysisState extends State<_SeatAnalysis> {
                   children: [
                     Text(
                       '${stats.total}경기',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
-                        color: GRAYSCALE_LABEL_600,
+                        color: context.textSecondary,
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -619,7 +622,7 @@ class _SeatAnalysisState extends State<_SeatAnalysis> {
                           ? Icons.keyboard_arrow_up
                           : Icons.keyboard_arrow_down,
                       size: 20,
-                      color: GRAYSCALE_LABEL_500,
+                      color: context.textMuted,
                     ),
                   ],
                 ),
@@ -633,21 +636,21 @@ class _SeatAnalysisState extends State<_SeatAnalysis> {
                   style: GoogleFonts.bebasNeue(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
-                    color: teamColor,
+                    color: context.readableColor(teamColor),
                   ),
                 ),
                 const SizedBox(width: 6),
-                const Text(
+                Text(
                   '승률',
-                  style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+                  style: TextStyle(fontSize: 12, color: context.textMuted),
                 ),
                 const Spacer(),
                 Text(
                   '${stats.wins}승  ${stats.draws}무  ${stats.losses}패',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: BLACK,
+                    color: context.textPrimary,
                   ),
                 ),
               ],
@@ -849,12 +852,12 @@ class _CostAnalysis extends StatelessWidget {
           losses: lossCount,
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           '🏟️ 구장별 지출 랭킹',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: BLACK,
+            color: context.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -864,8 +867,11 @@ class _CostAnalysis extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: WHITE,
+              color: context.cardColor,
               borderRadius: BorderRadius.circular(14),
+              border: context.isDarkMode
+                  ? Border.all(color: context.borderColor)
+                  : null,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -875,16 +881,17 @@ class _CostAnalysis extends StatelessWidget {
                   children: [
                     Text(
                       entry.key,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
+                        color: context.textPrimary,
                       ),
                     ),
                     Text(
                       '${format.format(entry.value)}원 (${(percent * 100).toStringAsFixed(1)}%)',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: teamColor,
+                        color: context.readableColor(teamColor),
                         fontSize: 13,
                       ),
                     ),
@@ -1314,19 +1321,19 @@ class _AnalysisMiniHeroCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GRAYSCALE_LABEL_200),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             eyebrow,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: GRAYSCALE_LABEL_500,
+              color: context.textMuted,
             ),
           ),
           const SizedBox(height: 4),
@@ -1334,10 +1341,10 @@ class _AnalysisMiniHeroCard extends StatelessWidget {
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w900,
-              color: GRAYSCALE_LABEL_950,
+              color: context.textPrimary,
             ),
           ),
           const SizedBox(height: 3),
@@ -1348,7 +1355,7 @@ class _AnalysisMiniHeroCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
-              color: accentColor,
+              color: context.readableColor(accentColor),
             ),
           ),
         ],
@@ -1416,29 +1423,29 @@ class _HomeAwayComparisonCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: GRAYSCALE_LABEL_200),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 '🏠 홈 vs ✈️ 원정 승률 맞대결',
                 style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w800,
-                  color: GRAYSCALE_LABEL_950,
+                  color: context.textPrimary,
                 ),
               ),
               Text(
                 '총 ${homeStats.total + awayStats.total}경기',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: GRAYSCALE_LABEL_500,
+                  color: context.textMuted,
                 ),
               ),
             ],
@@ -1566,11 +1573,14 @@ class _ModernStatCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
+        border: context.isDarkMode
+            ? Border.all(color: context.borderColor)
+            : null,
         boxShadow: [
           BoxShadow(
-            color: BLACK.withOpacity(0.04),
+            color: BLACK.withOpacity(context.isDarkMode ? 0.2 : 0.04),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -1586,10 +1596,10 @@ class _ModernStatCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: BLACK,
+                      color: context.textPrimary,
                     ),
                   ),
                   if (badgeText != null) ...[
@@ -1617,10 +1627,10 @@ class _ModernStatCard extends StatelessWidget {
               ),
               Text(
                 '${stats.total}경기',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: GRAYSCALE_LABEL_600,
+                  color: context.textSecondary,
                 ),
               ),
             ],
@@ -1633,21 +1643,21 @@ class _ModernStatCard extends StatelessWidget {
                 style: GoogleFonts.bebasNeue(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: teamColor,
+                  color: context.readableColor(teamColor),
                 ),
               ),
               const SizedBox(width: 6),
-              const Text(
+              Text(
                 '승률',
-                style: TextStyle(fontSize: 12, color: GRAYSCALE_LABEL_500),
+                style: TextStyle(fontSize: 12, color: context.textMuted),
               ),
               const Spacer(),
               Text(
                 '${stats.wins}승  ${stats.draws}무  ${stats.losses}패',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: BLACK,
+                  color: context.textPrimary,
                 ),
               ),
             ],

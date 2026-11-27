@@ -58,9 +58,9 @@ class AttendanceFeedCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(13),
         decoration: BoxDecoration(
-          color: BACKGROUND_COLOR,
+          color: context.surfaceAltColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: teamColor.withValues(alpha: 0.22)),
+          border: Border.all(color: teamColor.withValues(alpha: 0.25)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,10 +91,10 @@ class AttendanceFeedCard extends StatelessWidget {
                     if (date.isNotEmpty) date,
                     if (stadium.isNotEmpty) stadium,
                   ].join(' · '),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
-                    color: GRAYSCALE_LABEL_500,
+                    color: context.textMuted,
                   ),
                 ),
               ],
@@ -102,10 +102,10 @@ class AttendanceFeedCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               '$myTeam $myScore : $oppScore $oppTeam',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w900,
-                color: GRAYSCALE_LABEL_950,
+                color: context.textPrimary,
               ),
             ),
             if (seat.isNotEmpty) ...[
@@ -114,10 +114,10 @@ class AttendanceFeedCard extends StatelessWidget {
                 '🪑 $seat',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: GRAYSCALE_LABEL_600,
+                  color: context.textSecondary,
                 ),
               ),
             ],

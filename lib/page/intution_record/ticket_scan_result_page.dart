@@ -199,7 +199,7 @@ class TicketScanResultPage extends StatelessWidget {
                               children: [
                                 Image.asset(
                                   awayTeamModel?.calenderLogo ??
-                                      'assets/images/applogo/ilu_app_icon.png',
+                                      context.appLogoAsset,
                                   width: 56,
                                   height: 56,
                                   fit: BoxFit.contain,
@@ -270,7 +270,7 @@ class TicketScanResultPage extends StatelessWidget {
                               children: [
                                 Image.asset(
                                   homeTeamModel?.calenderLogo ??
-                                      'assets/images/applogo/ilu_app_icon.png',
+                                      context.appLogoAsset,
                                   width: 56,
                                   height: 56,
                                   fit: BoxFit.contain,

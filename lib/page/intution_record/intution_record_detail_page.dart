@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,6 +10,7 @@ import 'package:lockerroom/model/attendance_model.dart';
 import 'package:lockerroom/model/comment_model.dart';
 import 'package:lockerroom/model/schedule_model.dart';
 import 'package:lockerroom/page/intution_record/_ticket_stub_tile.dart';
+import 'package:lockerroom/page/intution_record/baseball_four_cut_studio_page.dart';
 import 'package:lockerroom/page/intution_record/ticker_camera_scan_page.dart';
 import 'package:lockerroom/provider/comment_provider.dart';
 import 'package:lockerroom/provider/intution_record_provider.dart';
@@ -72,9 +75,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
     if (bySymple != null) return bySymple.calenderLogo;
     final list = tp.getTeam('team');
     final byFull = list.where((t) => t.name == nameOrSymple).toList();
-    return byFull.isNotEmpty
-        ? byFull.first.calenderLogo
-        : 'assets/images/applogo/ilu_app_icon.png';
+    return byFull.isNotEmpty ? byFull.first.calenderLogo : context.appLogoAsset;
   }
 
   // 날짜 포맷 변환: "2025.01.15" -> "2025년 1월 15일"
@@ -419,29 +420,32 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: WHITE,
+        backgroundColor: ctx.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
+        title: Text(
           '피드에 직관 인증 공유',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: ctx.textPrimary,
+          ),
         ),
-        content: const Text(
+        content: Text(
           '이 직관기록(스코어·구장·사진)을 피드에 공유할까요?\n다른 팬들과 댓글로 소통할 수 있습니다.',
-          style: TextStyle(fontSize: 13.5, color: GRAYSCALE_LABEL_700),
+          style: TextStyle(fontSize: 13.5, color: ctx.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              '취소',
-              style: TextStyle(color: GRAYSCALE_LABEL_600),
-            ),
+            child: Text('취소', style: TextStyle(color: ctx.textMuted)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: BUTTON,
-              foregroundColor: WHITE,
+              backgroundColor: ctx.isDarkMode
+                  ? const Color(0xFF60A5FA)
+                  : BUTTON,
+              foregroundColor: ctx.isDarkMode ? Colors.black : WHITE,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -515,7 +519,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
     final myTeamLogo = _logoForTeam(teamProvider, attendance.myTeam);
     final oppTeamLogo = attendance.oppTeam != null
         ? _logoForTeam(teamProvider, attendance.oppTeam!)
-        : 'assets/images/applogo/ilu_app_icon.png';
+        : context.appLogoAsset;
 
     final myScore = attendance.myScore;
     final oppScore = attendance.opponentScore;
@@ -631,6 +635,54 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => BaseballFourCutStudioPage(
+                                      initialTeam: myTeamModel,
+                                      opponentName: attendance.oppTeam,
+                                      stadium: attendance.stadium,
+                                      dateText: attendance.date,
+                                      myScore: attendance.myScore.toString(),
+                                      oppScore: attendance.opponentScore
+                                          .toString(),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.grid_view_rounded,
+                                      size: 14,
+                                      color: WHITE,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      '네컷',
+                                      style: TextStyle(
+                                        color: WHITE,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             GestureDetector(
                               onTap: () => _confirmAndShareToFeed(attendance),
                               child: Container(
@@ -763,12 +815,14 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                   Container(
                     padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: GRAYSCALE_LABEL_200),
+                      border: Border.all(color: context.borderColor),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
+                          color: Colors.black.withValues(
+                            alpha: context.isDarkMode ? 0.25 : 0.06,
+                          ),
                           blurRadius: 16,
                           offset: const Offset(0, 6),
                         ),
@@ -788,10 +842,10 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                                 Expanded(
                                   child: Text(
                                     '${_formatDate(attendance.date)}${timeText.isNotEmpty ? ' $timeText' : ''} · ${attendance.stadium}${dh.isNotEmpty ? ' ($dh)' : ''}',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: GRAYSCALE_LABEL_600,
+                                      color: context.textSecondary,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -825,12 +879,12 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                             Expanded(
                               child: Column(
                                 children: [
-                                  const Text(
+                                  Text(
                                     '응원 팀',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: GRAYSCALE_LABEL_500,
+                                      color: context.textMuted,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
@@ -843,10 +897,10 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                                   const SizedBox(height: 6),
                                   Text(
                                     attendance.myTeam,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
-                                      color: GRAYSCALE_LABEL_950,
+                                      color: context.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -861,7 +915,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                                 style: GoogleFonts.roboto(
                                   fontSize: 32,
                                   fontWeight: FontWeight.w900,
-                                  color: GRAYSCALE_LABEL_950,
+                                  color: context.textPrimary,
                                   letterSpacing: -0.5,
                                 ),
                               ),
@@ -869,12 +923,12 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                             Expanded(
                               child: Column(
                                 children: [
-                                  const Text(
+                                  Text(
                                     '상대 팀',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: GRAYSCALE_LABEL_500,
+                                      color: context.textMuted,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
@@ -887,10 +941,10 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                                   const SizedBox(height: 6),
                                   Text(
                                     attendance.oppTeam ?? '',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
-                                      color: GRAYSCALE_LABEL_950,
+                                      color: context.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -910,9 +964,9 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                       vertical: 14,
                     ),
                     decoration: BoxDecoration(
-                      color: WHITE,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: GRAYSCALE_LABEL_200),
+                      border: Border.all(color: context.borderColor),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -920,14 +974,14 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(
+                            SizedBox(
                               width: 72,
                               child: Text(
                                 '좌석 정보',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: GRAYSCALE_LABEL_500,
+                                  color: context.textMuted,
                                 ),
                               ),
                             ),
@@ -939,27 +993,30 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                                   fontWeight: FontWeight.w700,
                                   height: 1.35,
                                   color: seat.isNotEmpty
-                                      ? GRAYSCALE_LABEL_950
-                                      : GRAYSCALE_LABEL_400,
+                                      ? context.textPrimary
+                                      : context.textMuted,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 10),
-                          child: Divider(height: 1, color: GRAYSCALE_LABEL_100),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: Divider(
+                            height: 1,
+                            color: context.dividerColor,
+                          ),
                         ),
                         Row(
                           children: [
-                            const SizedBox(
+                            SizedBox(
                               width: 72,
                               child: Text(
                                 '티켓 금액',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: GRAYSCALE_LABEL_500,
+                                  color: context.textMuted,
                                 ),
                               ),
                             ),
@@ -970,8 +1027,8 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
                                   color: (attendance.ticketPrice ?? 0) > 0
-                                      ? GRAYSCALE_LABEL_950
-                                      : GRAYSCALE_LABEL_400,
+                                      ? context.textPrimary
+                                      : context.textMuted,
                                 ),
                               ),
                             ),
@@ -979,17 +1036,17 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                         ),
                         if (attendance.foodItems.isNotEmpty ||
                             (attendance.foodCost ?? 0) > 0) ...[
-                          const Divider(height: 20, color: GRAYSCALE_LABEL_100),
+                          Divider(height: 20, color: context.dividerColor),
                           Row(
                             children: [
-                              const SizedBox(
+                              SizedBox(
                                 width: 68,
                                 child: Text(
                                   '구장 먹거리',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: GRAYSCALE_LABEL_500,
+                                    color: context.textMuted,
                                   ),
                                 ),
                               ),
@@ -1001,10 +1058,10 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                                     if ((attendance.foodCost ?? 0) > 0)
                                       _formatPrice(attendance.foodCost!),
                                   ].join(' · '),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
-                                    color: GRAYSCALE_LABEL_950,
+                                    color: context.textPrimary,
                                   ),
                                 ),
                               ),
@@ -1013,17 +1070,17 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                         ],
                         if (attendance.goodsItems.isNotEmpty ||
                             (attendance.goodsCost ?? 0) > 0) ...[
-                          const Divider(height: 20, color: GRAYSCALE_LABEL_100),
+                          Divider(height: 20, color: context.dividerColor),
                           Row(
                             children: [
-                              const SizedBox(
+                              SizedBox(
                                 width: 68,
                                 child: Text(
                                   '유니폼·굿즈',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: GRAYSCALE_LABEL_500,
+                                    color: context.textMuted,
                                   ),
                                 ),
                               ),
@@ -1035,10 +1092,10 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                                     if ((attendance.goodsCost ?? 0) > 0)
                                       _formatPrice(attendance.goodsCost!),
                                   ].join(' · '),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
-                                    color: GRAYSCALE_LABEL_950,
+                                    color: context.textPrimary,
                                   ),
                                 ),
                               ),
@@ -1053,15 +1110,15 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                   // 4) 줄 노트 감성 직관 일기 카드 (투명 배경 + NanumPenScript)
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.transparent,
+                      color: context.cardColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: GRAYSCALE_LABEL_200),
+                      border: Border.all(color: context.borderColor),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(15),
                       child: CustomPaint(
                         painter: _RuledPaperPainter(
-                          lineColor: GRAYSCALE_LABEL_200.withValues(alpha: 0.7),
+                          lineColor: context.borderColor.withValues(alpha: 0.7),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -1072,19 +1129,19 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
+                                  Text(
                                     '⚾ 오늘의 직관 일기',
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
-                                      color: GRAYSCALE_LABEL_600,
+                                      color: context.textSecondary,
                                     ),
                                   ),
                                   Text(
                                     '$stadiumShort에서의 기록',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: GRAYSCALE_LABEL_400,
+                                      color: context.textMuted,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -1099,8 +1156,8 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                                   fontSize: 22,
                                   height: 1.35,
                                   color: memo.isNotEmpty
-                                      ? GRAYSCALE_LABEL_950
-                                      : GRAYSCALE_LABEL_400,
+                                      ? context.textPrimary
+                                      : context.textMuted,
                                 ),
                               ),
                             ],
@@ -1201,9 +1258,9 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: WHITE,
+        color: context.cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GRAYSCALE_LABEL_200),
+        border: Border.all(color: context.borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1212,30 +1269,30 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
             children: [
               Text(
                 '💬 댓글 ${comments.length}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: GRAYSCALE_LABEL_950,
+                  color: context.textPrimary,
                 ),
               ),
               const Spacer(),
               Text(
                 attendance.isPublic ? '전체 공개' : '비공개',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: GRAYSCALE_LABEL_500,
+                  color: context.textMuted,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
           if (comments.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
               child: Text(
                 '첫 댓글로 직관 이야기를 나눠보세요!',
-                style: TextStyle(fontSize: 13, color: GRAYSCALE_LABEL_500),
+                style: TextStyle(fontSize: 13, color: context.textMuted),
               ),
             )
           else
@@ -1269,7 +1326,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: BACKGROUND_COLOR,
+                color: context.surfaceAltColor,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -1279,7 +1336,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: accentColor,
+                      color: context.readableColor(accentColor),
                     ),
                   ),
                   const Spacer(),
@@ -1290,10 +1347,10 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                       _replyToUserId = null;
                       _replyIsToReply = false;
                     }),
-                    child: const Icon(
+                    child: Icon(
                       Icons.close_rounded,
                       size: 16,
-                      color: GRAYSCALE_LABEL_500,
+                      color: context.textMuted,
                     ),
                   ),
                 ],
@@ -1306,13 +1363,15 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
               Expanded(
                 child: TextField(
                   controller: _commentController,
-                  cursorColor: accentColor,
+                  cursorColor: context.readableColor(accentColor),
+                  style: TextStyle(fontSize: 13.5, color: context.textPrimary),
                   decoration: InputDecoration(
                     hintText: _isOwner
                         ? '댓글 또는 답글을 입력하세요'
                         : '이 직관기록에 댓글을 남겨보세요',
+                    hintStyle: TextStyle(color: context.textMuted),
                     filled: true,
-                    fillColor: BACKGROUND_COLOR,
+                    fillColor: context.surfaceAltColor,
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 14,
@@ -1368,10 +1427,10 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
           : EdgeInsets.zero,
       decoration: isReply
           ? BoxDecoration(
-              color: BACKGROUND_COLOR,
+              color: context.surfaceAltColor,
               borderRadius: BorderRadius.circular(10),
-              border: const Border(
-                left: BorderSide(color: GRAYSCALE_LABEL_300, width: 2.5),
+              border: Border(
+                left: BorderSide(color: context.borderColor, width: 2.5),
               ),
             )
           : null,
@@ -1381,19 +1440,19 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
           Row(
             children: [
               if (isReply) ...[
-                const Icon(
+                Icon(
                   Icons.subdirectory_arrow_right_rounded,
                   size: 15,
-                  color: GRAYSCALE_LABEL_400,
+                  color: context.textMuted,
                 ),
                 const SizedBox(width: 4),
               ],
               Text(
                 c.userName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
-                  color: GRAYSCALE_LABEL_950,
+                  color: context.textPrimary,
                 ),
               ),
               if (c.userId == _targetOwnerId) ...[
@@ -1404,7 +1463,9 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                     vertical: 1,
                   ),
                   decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.12),
+                    color: context
+                        .readableColor(accentColor)
+                        .withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -1412,7 +1473,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: accentColor,
+                      color: context.readableColor(accentColor),
                     ),
                   ),
                 ),
@@ -1501,25 +1562,22 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: BACKGROUND_COLOR,
+      backgroundColor: context.bgColor,
       appBar: _isEditing
           ? AppBar(
-              backgroundColor: BACKGROUND_COLOR,
+              backgroundColor: context.bgColor,
               elevation: 0,
               centerTitle: true,
               leading: IconButton(
-                icon: const Icon(
-                  Icons.close_rounded,
-                  color: GRAYSCALE_LABEL_900,
-                ),
+                icon: Icon(Icons.close_rounded, color: context.textPrimary),
                 onPressed: () => setState(() => _isEditing = false),
               ),
-              title: const Text(
+              title: Text(
                 '직관 기록 수정',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: GRAYSCALE_LABEL_950,
+                  color: context.textPrimary,
                 ),
               ),
               scrolledUnderElevation: 0,
@@ -1614,7 +1672,7 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                     );
                     final oppTeamLogo = attendance.oppTeam != null
                         ? _logoForTeam(teamProvider, attendance.oppTeam!)
-                        : 'assets/images/applogo/ilu_app_icon.png';
+                        : context.appLogoAsset;
 
                     return SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
@@ -1926,6 +1984,171 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                           const SizedBox(height: 10),
                           Consumer<IntutionRecordProvider>(
                             builder: (context, intutionProvider, child) {
+                              if (attendance.isFourCut) {
+                                return Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 9,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: accentColor.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(11),
+                                        border: Border.all(
+                                          color: accentColor.withValues(
+                                            alpha: 0.25,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.lock_outline_rounded,
+                                            size: 16,
+                                            color: accentColor,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              '네컷으로 등록된 기록은 네컷 스튜디오에서만 사진을 수정할 수 있어요',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: accentColor,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Container(
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0F172A),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            child: ConstrainedBox(
+                                              constraints: const BoxConstraints(
+                                                maxHeight: 340,
+                                              ),
+                                              child:
+                                                  intutionProvider
+                                                      .image
+                                                      .isNotEmpty
+                                                  ? Image.file(
+                                                      intutionProvider
+                                                          .image
+                                                          .first,
+                                                      fit: BoxFit.contain,
+                                                    )
+                                                  : (attendance
+                                                            .imageUrls
+                                                            .isNotEmpty
+                                                        ? CachedNetworkImage(
+                                                            imageUrl: attendance
+                                                                .imageUrls
+                                                                .first,
+                                                            fit: BoxFit.contain,
+                                                          )
+                                                        : const SizedBox(
+                                                            height: 120,
+                                                          )),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          SizedBox(
+                                            width: double.infinity,
+                                            child: OutlinedButton.icon(
+                                              onPressed: () async {
+                                                final generated = await Navigator.push<File>(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        BaseballFourCutStudioPage(
+                                                          initialTeam:
+                                                              teamProvider
+                                                                  .findTeamByName(
+                                                                    attendance
+                                                                        .myTeam,
+                                                                  ),
+                                                          opponentName:
+                                                              attendance
+                                                                  .oppTeam,
+                                                          stadium: attendance
+                                                              .stadium,
+                                                          dateText:
+                                                              attendance.date,
+                                                          myScore:
+                                                              _myTeamScore.text,
+                                                          oppScore:
+                                                              _oppTeamScore
+                                                                  .text,
+                                                          returnFileOnConfirm:
+                                                              true,
+                                                        ),
+                                                  ),
+                                                );
+                                                if (generated != null &&
+                                                    mounted) {
+                                                  intutionProvider.setImages([
+                                                    generated,
+                                                  ]);
+                                                  intutionProvider.setIsFourCut(
+                                                    true,
+                                                  );
+                                                }
+                                              },
+                                              icon: const Icon(
+                                                Icons.auto_awesome_outlined,
+                                                size: 17,
+                                              ),
+                                              label: const Text(
+                                                '🎞️ 네컷 스튜디오에서 다시 만들기',
+                                              ),
+                                              style: OutlinedButton.styleFrom(
+                                                foregroundColor: WHITE,
+                                                side: BorderSide(
+                                                  color: WHITE.withValues(
+                                                    alpha: 0.28,
+                                                  ),
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 11,
+                                                    ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          const Text(
+                                            '일반 앨범 사진 추가 · 개별 삭제는 비활성화됨',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.white60,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }
                               if (intutionProvider.isImagePicking) {
                                 return Container(
                                   height: 160,
@@ -2504,12 +2727,15 @@ class _IntutionRecordDetailPageState extends State<IntutionRecordDetailPage> {
                             ),
                           ),
                           const SizedBox(height: 18),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: WHITE,
+                          Material(
+                            color: WHITE,
+                            shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: GRAYSCALE_LABEL_200),
+                              side: const BorderSide(
+                                color: GRAYSCALE_LABEL_200,
+                              ),
                             ),
+                            clipBehavior: Clip.antiAlias,
                             child: SwitchListTile(
                               value: _isPublic,
                               activeThumbColor: accentColor,

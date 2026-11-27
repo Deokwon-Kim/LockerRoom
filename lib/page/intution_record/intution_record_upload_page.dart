@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:lockerroom/const/color.dart';
 import 'package:lockerroom/model/schedule_model.dart';
@@ -8,6 +10,7 @@ import 'package:toastification/toastification.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lockerroom/model/scanned_ticket_data.dart';
+import 'package:lockerroom/page/intution_record/baseball_four_cut_studio_page.dart';
 import 'package:lockerroom/page/intution_record/intution_record_list_page.dart';
 import 'package:lockerroom/widgets/stadium_receipt_card.dart';
 
@@ -36,6 +39,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
   late final Animation<Offset> _hintBounceOffset;
   bool _showScrollHint = true;
   int _currentImageIndex = 0;
+  bool _useFourCutMode = false;
 
   @override
   void initState() {
@@ -267,18 +271,18 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
               intutionProvider.saving || intutionProvider.isImagePicking;
 
           return Scaffold(
-            backgroundColor: BACKGROUND_COLOR,
+            backgroundColor: context.bgColor,
             appBar: AppBar(
-              title: const Text(
+              title: Text(
                 '직관 기록 추가',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: GRAYSCALE_LABEL_950,
+                  color: context.textPrimary,
                 ),
               ),
               centerTitle: true,
-              backgroundColor: BACKGROUND_COLOR,
+              backgroundColor: context.bgColor,
               elevation: 0,
               scrolledUnderElevation: 0,
               actions: [
@@ -403,8 +407,8 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: WHITE,
-                            border: Border.all(color: GRAYSCALE_LABEL_200),
+                            color: context.cardColor,
+                            border: Border.all(color: context.borderColor),
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
@@ -425,15 +429,15 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
                                       vertical: 3,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: GRAYSCALE_LABEL_100,
+                                      color: context.surfaceAltColor,
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
                                       '${g.stadium} · ${_formatGameTime(g.dateTimeKst)}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
-                                        color: GRAYSCALE_LABEL_700,
+                                        color: context.textSecondary,
                                       ),
                                     ),
                                   ),
@@ -480,7 +484,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
                                         const SizedBox(height: 4),
                                         Image.asset(
                                           myTeamModel?.calenderLogo ??
-                                              'assets/images/applogo/ilu_app_icon.png',
+                                              context.appLogoAsset,
                                           width: 44,
                                           height: 44,
                                           fit: BoxFit.contain,
@@ -488,10 +492,10 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
                                         const SizedBox(height: 4),
                                         Text(
                                           myTeamSymple,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w700,
-                                            color: GRAYSCALE_LABEL_950,
+                                            color: context.textPrimary,
                                           ),
                                         ),
                                       ],
@@ -503,14 +507,14 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: GRAYSCALE_LABEL_50,
+                                      color: context.surfaceAltColor,
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'VS',
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: GRAYSCALE_LABEL_500,
+                                        color: context.textMuted,
                                         fontWeight: FontWeight.w800,
                                         letterSpacing: 1,
                                       ),
@@ -530,7 +534,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
                                         const SizedBox(height: 4),
                                         Image.asset(
                                           oppenentTeamModel?.calenderLogo ??
-                                              'assets/images/applogo/ilu_app_icon.png',
+                                              context.appLogoAsset,
                                           width: 44,
                                           height: 44,
                                           fit: BoxFit.contain,
@@ -635,231 +639,434 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
                         const SizedBox(height: 22),
                         _buildSectionTitle('직관 사진', isOptional: true),
                         const SizedBox(height: 10),
-                        intutionProvider.isImagePicking
-                            ? Container(
-                                width: double.infinity,
-                                height: 180,
-                                decoration: BoxDecoration(
-                                  color: WHITE,
-                                  border: Border.all(
-                                    color: GRAYSCALE_LABEL_200,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() => _useFourCutMode = false);
+                                  intutionProvider.setIsFourCut(false);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 10,
                                   ),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 30,
-                                        height: 30,
-                                        child: CircularProgressIndicator(
-                                          color: accentColor,
-                                          strokeWidth: 3,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      const Text(
-                                        '사진 불러오는 중...',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: GRAYSCALE_LABEL_600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            : intutionProvider.image.isNotEmpty
-                            ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: double.infinity,
-                                    height: 360,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: GRAYSCALE_LABEL_200,
-                                      ),
-                                      borderRadius: BorderRadius.circular(16),
+                                  decoration: BoxDecoration(
+                                    color: !_useFourCutMode
+                                        ? accentColor
+                                        : WHITE,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: !_useFourCutMode
+                                          ? accentColor
+                                          : GRAYSCALE_LABEL_200,
                                     ),
-                                    child: Stack(
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '🎫 기존 티켓형',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: !_useFourCutMode
+                                          ? WHITE
+                                          : GRAYSCALE_LABEL_700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () async {
+                                  setState(() => _useFourCutMode = true);
+                                  final date = selectedDate ?? DateTime.now();
+                                  final dateStr =
+                                      '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
+                                  final generated = await Navigator.push<File>(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => BaseballFourCutStudioPage(
+                                        initialTeam: teamProvider
+                                            .findTeamByName(myTeamSymple),
+                                        opponentName: opponentSymple,
+                                        stadium: g.stadium,
+                                        dateText: dateStr,
+                                        myScore: intutionProvider
+                                            .myScoreController
+                                            .text,
+                                        oppScore: intutionProvider
+                                            .oppScoreContreller
+                                            .text,
+                                        returnFileOnConfirm: true,
+                                      ),
+                                    ),
+                                  );
+                                  if (generated != null && mounted) {
+                                    intutionProvider.setImages([generated]);
+                                    intutionProvider.setIsFourCut(true);
+                                    setState(() => _currentImageIndex = 0);
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _useFourCutMode
+                                        ? accentColor
+                                        : WHITE,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: _useFourCutMode
+                                          ? accentColor
+                                          : GRAYSCALE_LABEL_200,
+                                    ),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '🎞️ 직관 네컷형',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: _useFourCutMode
+                                          ? WHITE
+                                          : GRAYSCALE_LABEL_700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        if (_useFourCutMode)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0F172A),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              children: [
+                                if (intutionProvider.image.isNotEmpty) ...[
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxHeight: 340,
+                                      ),
+                                      child: Image.file(
+                                        intutionProvider.image.first,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () async {
+                                      final date =
+                                          selectedDate ?? DateTime.now();
+                                      final dateStr =
+                                          '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
+                                      final generated =
+                                          await Navigator.push<File>(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  BaseballFourCutStudioPage(
+                                                    initialTeam: teamProvider
+                                                        .findTeamByName(
+                                                          myTeamSymple,
+                                                        ),
+                                                    opponentName:
+                                                        opponentSymple,
+                                                    stadium: g.stadium,
+                                                    dateText: dateStr,
+                                                    myScore: intutionProvider
+                                                        .myScoreController
+                                                        .text,
+                                                    oppScore: intutionProvider
+                                                        .oppScoreContreller
+                                                        .text,
+                                                    returnFileOnConfirm: true,
+                                                  ),
+                                            ),
+                                          );
+                                      if (generated != null && mounted) {
+                                        intutionProvider.setImages([generated]);
+                                        intutionProvider.setIsFourCut(true);
+                                        setState(() => _currentImageIndex = 0);
+                                      }
+                                    },
+                                    icon: const Icon(
+                                      Icons.auto_awesome_outlined,
+                                      size: 17,
+                                    ),
+                                    label: Text(
+                                      intutionProvider.image.isNotEmpty
+                                          ? '🎞️ 네컷 스튜디오에서 다시 만들기'
+                                          : '🎞️ 네컷 스튜디오 열기',
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: WHITE,
+                                      side: BorderSide(
+                                        color: WHITE.withValues(alpha: 0.28),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 11,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  '네컷 기록은 네컷 스튜디오에서만 사진을 수정할 수 있어요',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white60,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          intutionProvider.isImagePicking
+                              ? Container(
+                                  width: double.infinity,
+                                  height: 180,
+                                  decoration: BoxDecoration(
+                                    color: WHITE,
+                                    border: Border.all(
+                                      color: GRAYSCALE_LABEL_200,
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        PageView.builder(
-                                          controller: _pageController,
-                                          onPageChanged: (index) {
-                                            setState(() {
-                                              _currentImageIndex = index;
-                                            });
-                                          },
-                                          itemCount:
-                                              intutionProvider.image.length,
-                                          itemBuilder: (context, index) {
-                                            return ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(15),
-                                              child: Image.file(
-                                                intutionProvider.image[index],
-                                                fit: BoxFit.cover,
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                        // 대표 사진 배지 / 대표 사진 설정 버튼
-                                        Positioned(
-                                          top: 12,
-                                          left: 12,
-                                          child: GestureDetector(
-                                            onTap: _currentImageIndex == 0
-                                                ? null
-                                                : () {
-                                                    intutionProvider
-                                                        .setRepresentativeImage(
-                                                          _currentImageIndex,
-                                                        );
-                                                    setState(() {
-                                                      _currentImageIndex = 0;
-                                                    });
-                                                    if (_pageController
-                                                        .hasClients) {
-                                                      _pageController
-                                                          .animateToPage(
-                                                            0,
-                                                            duration:
-                                                                const Duration(
-                                                                  milliseconds:
-                                                                      250,
-                                                                ),
-                                                            curve:
-                                                                Curves.easeOut,
-                                                          );
-                                                    }
-                                                  },
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 6,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: _currentImageIndex == 0
-                                                    ? accentColor
-                                                    : Colors.black.withValues(
-                                                        alpha: 0.65,
-                                                      ),
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    _currentImageIndex == 0
-                                                        ? Icons.star_rounded
-                                                        : Icons
-                                                              .star_outline_rounded,
-                                                    color: WHITE,
-                                                    size: 15,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    _currentImageIndex == 0
-                                                        ? '대표 사진'
-                                                        : '대표 사진으로 설정',
-                                                    style: const TextStyle(
-                                                      color: WHITE,
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
+                                        SizedBox(
+                                          width: 30,
+                                          height: 30,
+                                          child: CircularProgressIndicator(
+                                            color: accentColor,
+                                            strokeWidth: 3,
                                           ),
                                         ),
-                                        if (intutionProvider.image.length > 1)
-                                          Positioned(
-                                            bottom: 14,
-                                            right: 14,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 5,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black.withValues(
-                                                  alpha: 0.6,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                              ),
-                                              child: Text(
-                                                '${_currentImageIndex + 1}/${intutionProvider.image.length}',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        Positioned(
-                                          top: 12,
-                                          right: 12,
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              setState(() {
-                                                intutionProvider.removeImageAt(
-                                                  _currentImageIndex,
-                                                );
-                                                if (_currentImageIndex >=
-                                                        intutionProvider
-                                                            .image
-                                                            .length &&
-                                                    intutionProvider
-                                                        .image
-                                                        .isNotEmpty) {
-                                                  _currentImageIndex =
-                                                      intutionProvider
-                                                          .image
-                                                          .length -
-                                                      1;
-                                                } else if (intutionProvider
-                                                    .image
-                                                    .isEmpty) {
-                                                  _currentImageIndex = 0;
-                                                }
-                                              });
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.all(6),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black.withValues(
-                                                  alpha: 0.65,
-                                                ),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(
-                                                Icons.close_rounded,
-                                                color: Colors.white,
-                                                size: 18,
-                                              ),
-                                            ),
+                                        const SizedBox(height: 12),
+                                        const Text(
+                                          '사진 불러오는 중...',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: GRAYSCALE_LABEL_600,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  if (intutionProvider.image.length > 1) ...[
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        ...List.generate(
-                                          intutionProvider.image.length,
-                                          (index) {
+                                )
+                              : intutionProvider.image.isNotEmpty
+                              ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: double.infinity,
+                                      height: 360,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: GRAYSCALE_LABEL_200,
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Stack(
+                                        children: [
+                                          PageView.builder(
+                                            controller: _pageController,
+                                            onPageChanged: (index) {
+                                              setState(() {
+                                                _currentImageIndex = index;
+                                              });
+                                            },
+                                            itemCount:
+                                                intutionProvider.image.length,
+                                            itemBuilder: (context, index) {
+                                              return ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(15),
+                                                child: Image.file(
+                                                  intutionProvider.image[index],
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                          // 대표 사진 배지 / 대표 사진 설정 버튼
+                                          Positioned(
+                                            top: 12,
+                                            left: 12,
+                                            child: GestureDetector(
+                                              onTap: _currentImageIndex == 0
+                                                  ? null
+                                                  : () {
+                                                      intutionProvider
+                                                          .setRepresentativeImage(
+                                                            _currentImageIndex,
+                                                          );
+                                                      setState(() {
+                                                        _currentImageIndex = 0;
+                                                      });
+                                                      if (_pageController
+                                                          .hasClients) {
+                                                        _pageController
+                                                            .animateToPage(
+                                                              0,
+                                                              duration:
+                                                                  const Duration(
+                                                                    milliseconds:
+                                                                        250,
+                                                                  ),
+                                                              curve: Curves
+                                                                  .easeOut,
+                                                            );
+                                                      }
+                                                    },
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 6,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: _currentImageIndex == 0
+                                                      ? accentColor
+                                                      : Colors.black.withValues(
+                                                          alpha: 0.65,
+                                                        ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      _currentImageIndex == 0
+                                                          ? Icons.star_rounded
+                                                          : Icons
+                                                                .star_outline_rounded,
+                                                      color: WHITE,
+                                                      size: 15,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      _currentImageIndex == 0
+                                                          ? '대표 사진'
+                                                          : '대표 사진으로 설정',
+                                                      style: const TextStyle(
+                                                        color: WHITE,
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          if (intutionProvider.image.length > 1)
+                                            Positioned(
+                                              bottom: 14,
+                                              right: 14,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 5,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black
+                                                      .withValues(alpha: 0.6),
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                ),
+                                                child: Text(
+                                                  '${_currentImageIndex + 1}/${intutionProvider.image.length}',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          Positioned(
+                                            top: 12,
+                                            right: 12,
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                setState(() {
+                                                  intutionProvider
+                                                      .removeImageAt(
+                                                        _currentImageIndex,
+                                                      );
+                                                  if (_currentImageIndex >=
+                                                          intutionProvider
+                                                              .image
+                                                              .length &&
+                                                      intutionProvider
+                                                          .image
+                                                          .isNotEmpty) {
+                                                    _currentImageIndex =
+                                                        intutionProvider
+                                                            .image
+                                                            .length -
+                                                        1;
+                                                  } else if (intutionProvider
+                                                      .image
+                                                      .isEmpty) {
+                                                    _currentImageIndex = 0;
+                                                  }
+                                                });
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.all(
+                                                  6,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black
+                                                      .withValues(alpha: 0.65),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(
+                                                  Icons.close_rounded,
+                                                  color: Colors.white,
+                                                  size: 18,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (intutionProvider.image.length > 1) ...[
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          ...List.generate(intutionProvider.image.length, (
+                                            index,
+                                          ) {
                                             final isSelected =
                                                 index == _currentImageIndex;
                                             return Padding(
@@ -942,78 +1149,77 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
                                                 ),
                                               ),
                                             );
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ],
-                              )
-                            : Material(
-                                color: WHITE,
-                                borderRadius: BorderRadius.circular(14),
-                                child: InkWell(
-                                  onTap: () => intutionProvider.pickImage(),
-                                  borderRadius: BorderRadius.circular(14),
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 18,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: GRAYSCALE_LABEL_200,
+                                          }),
+                                        ],
                                       ),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 42,
-                                          height: 42,
-                                          decoration: BoxDecoration(
-                                            color: accentColor.withValues(
-                                              alpha: 0.1,
+                                    ],
+                                  ],
+                                )
+                              : Material(
+                                  color: WHITE,
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: InkWell(
+                                    onTap: () => intutionProvider.pickImage(),
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 18,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: GRAYSCALE_LABEL_200,
+                                        ),
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 42,
+                                            height: 42,
+                                            decoration: BoxDecoration(
+                                              color: accentColor.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                             ),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
+                                            child: Icon(
+                                              Icons
+                                                  .add_photo_alternate_outlined,
+                                              color: accentColor,
+                                              size: 22,
                                             ),
                                           ),
-                                          child: Icon(
-                                            Icons.add_photo_alternate_outlined,
-                                            color: accentColor,
-                                            size: 22,
+                                          const SizedBox(width: 14),
+                                          const Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                '직관 사진 추가하기',
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: GRAYSCALE_LABEL_900,
+                                                ),
+                                              ),
+                                              SizedBox(height: 2),
+                                              Text(
+                                                '최대 3장까지 등록할 수 있어요',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: GRAYSCALE_LABEL_500,
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ),
-                                        const SizedBox(width: 14),
-                                        const Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              '직관 사진 추가하기',
-                                              style: TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w600,
-                                                color: GRAYSCALE_LABEL_900,
-                                              ),
-                                            ),
-                                            SizedBox(height: 2),
-                                            Text(
-                                              '최대 3장까지 등록할 수 있어요',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: GRAYSCALE_LABEL_500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
                         const SizedBox(height: 22),
                         _buildSectionTitle('좌석 정보', isOptional: true),
                         const SizedBox(height: 10),
@@ -1083,73 +1289,79 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: WHITE,
+                        Material(
+                          color: WHITE,
+                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: GRAYSCALE_LABEL_200),
+                            side: const BorderSide(color: GRAYSCALE_LABEL_200),
                           ),
-                          child: SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            activeThumbColor: ACCENT_CORAL,
-                            title: const Text(
-                              '👀 좌석 시야 게시판에 공유하기',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: GRAYSCALE_LABEL_950,
-                              ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
                             ),
-                            subtitle: const Text(
-                              '사진과 좌석 정보를 입력하면 다른 팬에게도 시야가 공유됩니다',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: GRAYSCALE_LABEL_500,
+                            child: SwitchListTile(
+                              contentPadding: EdgeInsets.zero,
+                              activeThumbColor: ACCENT_CORAL,
+                              title: const Text(
+                                '👀 좌석 시야 게시판에 공유하기',
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: GRAYSCALE_LABEL_950,
+                                ),
                               ),
+                              subtitle: const Text(
+                                '사진과 좌석 정보를 입력하면 다른 팬에게도 시야가 공유됩니다',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                              value: intutionProvider.shareSeatView,
+                              onChanged: intutionProvider.setShareSeatView,
                             ),
-                            value: intutionProvider.shareSeatView,
-                            onChanged: intutionProvider.setShareSeatView,
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: WHITE,
+                        Material(
+                          color: WHITE,
+                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
+                            side: BorderSide(
                               color: intutionProvider.shareToFeed
                                   ? accentColor
                                   : GRAYSCALE_LABEL_200,
                             ),
                           ),
-                          child: SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            activeThumbColor: accentColor,
-                            title: const Text(
-                              '📢 피드에도 직관 인증 올리기',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: GRAYSCALE_LABEL_950,
-                              ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
                             ),
-                            subtitle: const Text(
-                              '경기 스코어·구장 카드와 함께 피드에 공유되어 댓글 소통이 가능해요',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: GRAYSCALE_LABEL_500,
+                            child: SwitchListTile(
+                              contentPadding: EdgeInsets.zero,
+                              activeThumbColor: accentColor,
+                              title: const Text(
+                                '📢 피드에도 직관 인증 올리기',
+                                style: TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: GRAYSCALE_LABEL_950,
+                                ),
                               ),
+                              subtitle: const Text(
+                                '경기 스코어·구장 카드와 함께 피드에 공유되어 댓글 소통이 가능해요',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: GRAYSCALE_LABEL_500,
+                                ),
+                              ),
+                              value: intutionProvider.shareToFeed,
+                              onChanged: intutionProvider.setShareToFeed,
                             ),
-                            value: intutionProvider.shareToFeed,
-                            onChanged: intutionProvider.setShareToFeed,
                           ),
                         ),
                       ],
@@ -1292,10 +1504,10 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: GRAYSCALE_LABEL_950,
+            color: context.textPrimary,
           ),
         ),
         if (isOptional) ...[
@@ -1303,15 +1515,15 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
             decoration: BoxDecoration(
-              color: GRAYSCALE_LABEL_100,
+              color: context.surfaceAltColor,
               borderRadius: BorderRadius.circular(6),
             ),
-            child: const Text(
+            child: Text(
               '선택',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: GRAYSCALE_LABEL_500,
+                color: context.textMuted,
               ),
             ),
           ),
@@ -1322,7 +1534,7 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
 
   Widget _buildDateSelectorCard(IntutionRecordProvider provider) {
     return Material(
-      color: WHITE,
+      color: context.cardColor,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: () => _selectedDate(provider),
@@ -1330,15 +1542,15 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            border: Border.all(color: GRAYSCALE_LABEL_200),
+            border: Border.all(color: context.borderColor),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.calendar_today_rounded,
                 size: 18,
-                color: GRAYSCALE_LABEL_600,
+                color: context.textSecondary,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1346,16 +1558,16 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
                   selectedDate != null
                       ? '${selectedDate!.year}년 ${selectedDate!.month}월 ${selectedDate!.day}일'
                       : '날짜 선택',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: GRAYSCALE_LABEL_900,
+                    color: context.textPrimary,
                   ),
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
-                color: GRAYSCALE_LABEL_400,
+                color: context.textMuted,
                 size: 22,
               ),
             ],
@@ -1374,27 +1586,30 @@ class _IntutionRecordUploadPageState extends State<IntutionRecordUploadPage>
     return InputDecoration(
       hintText: hintText,
       labelText: labelText,
-      hintStyle: const TextStyle(fontSize: 14, color: GRAYSCALE_LABEL_400),
-      labelStyle: const TextStyle(fontSize: 14, color: GRAYSCALE_LABEL_500),
+      hintStyle: TextStyle(fontSize: 14, color: context.textMuted),
+      labelStyle: TextStyle(fontSize: 14, color: context.textMuted),
       suffixText: suffixText,
-      suffixStyle: const TextStyle(
+      suffixStyle: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w600,
-        color: GRAYSCALE_LABEL_700,
+        color: context.textSecondary,
       ),
       filled: true,
-      fillColor: WHITE,
+      fillColor: context.cardColor,
       prefixIcon: prefixIcon != null
-          ? Icon(prefixIcon, size: 20, color: GRAYSCALE_LABEL_500)
+          ? Icon(prefixIcon, size: 20, color: context.textMuted)
           : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: GRAYSCALE_LABEL_200),
+        borderSide: BorderSide(color: context.borderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: BUTTON, width: 1.5),
+        borderSide: BorderSide(
+          color: context.readableColor(BUTTON),
+          width: 1.5,
+        ),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
